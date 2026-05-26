@@ -983,13 +983,7 @@ function getApiUrl() {
 }
 
 function getApiHeaders(apiKey) {
-  var headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': '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',
-    'anthropic-version': '2023-06-01',
-    'anthropic-dangerous-allow-browser': 'true'
-  };
-  return headers;
+  return { 'Content-Type': 'application/json' };
 }
 
 // ═══════════════════════════
