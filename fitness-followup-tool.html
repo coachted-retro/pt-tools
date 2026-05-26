@@ -1393,16 +1393,13 @@
 <script>
 
 function getApiUrl() {
-  var proxy = getCfg('proxyUrl');
-  if (proxy) return proxy;
-  // Use corsproxy.io as default - works from any browser without setup
-  return 'https://corsproxy.io/?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages');
+  return getCfg('proxyUrl') || 'https://broken-cake-e9c2.tedscholl.workers.dev';
 }
 
 function getApiHeaders(apiKey) {
   var headers = {
     'Content-Type': 'application/json',
-    'x-api-key': apiKey,
+    'x-api-key': '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',
     'anthropic-version': '2023-06-01',
     'anthropic-dangerous-allow-browser': 'true'
   };
@@ -1603,7 +1600,7 @@ For InBody scans: if only one scan is present treat values as "now_" fields. If 
     const resp=await fetch(getApiUrl(),{
       method:'POST',
       headers: getApiHeaders(apiKey),
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:blocks}]})
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,messages:[{role:'user',content:blocks}]})
     });
     const data=await resp.json();
     if(data.error) throw new Error(data.error.message);
@@ -1748,7 +1745,7 @@ async function generateAssessment(){
     const resp=await fetch(getApiUrl(),{
       method:'POST',
       headers: getApiHeaders(apiKey),
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1800,messages:[{role:'user',content:buildPrompt()}]})
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1800,messages:[{role:'user',content:buildPrompt()}]})
     });
     const data=await resp.json();
     if(data.error) throw new Error(data.error.message);
@@ -1879,7 +1876,7 @@ async function sendEmail(outcome, freq, length){
   await fetch(getApiUrl(),{
     method:'POST',
     headers: getApiHeaders(apiKey),
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:100,
+    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:100,
       messages:[{role:'user',content:`Log 6-week follow-up for ${gv('name')} — Outcome: ${outcome}. Notify: ${emails}. Commitment score: ${gv('commitment-score')}/10. Reply "Logged."`}]})
   });
 }

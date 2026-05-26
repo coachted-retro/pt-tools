@@ -979,16 +979,13 @@
 <script>
 
 function getApiUrl() {
-  var proxy = getCfg('proxyUrl');
-  if (proxy) return proxy;
-  // Use corsproxy.io as default - works from any browser without setup
-  return 'https://corsproxy.io/?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages');
+  return getCfg('proxyUrl') || 'https://broken-cake-e9c2.tedscholl.workers.dev';
 }
 
 function getApiHeaders(apiKey) {
   var headers = {
     'Content-Type': 'application/json',
-    'x-api-key': apiKey,
+    'x-api-key': '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',
     'anthropic-version': '2023-06-01',
     'anthropic-dangerous-allow-browser': 'true'
   };
@@ -1178,7 +1175,7 @@ async function parseAllFiles(){
 For InBody scans with two scans, map older to prev_ and newer to now_. Single scan goes to now_.`});
 
     const resp=await fetch(getApiUrl(),{method:'POST',headers: getApiHeaders(apiKey),
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:blocks}]})});
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,messages:[{role:'user',content:blocks}]})});
     const data=await resp.json();
     if(data.error) throw new Error(data.error.message);
     const parsed=JSON.parse(data.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim());
@@ -1190,7 +1187,7 @@ For InBody scans with two scans, map older to prev_ and newer to now_. Single sc
     pv.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>`  ${k}: ${v}`).join('\n');
     btn.innerHTML='🔄 Re-upload or add more'; btn.disabled=false;
   } catch(e){
-    setStatus('upload-status','error','❌ '+e.message+' | key:'+( localStorage.getItem('fct_apiKey')||localStorage.getItem('pttools_apiKey')||'MISSING').substring(0,8));
+    setStatus('upload-status','error','❌ API connection failed. Please set up your Cloudflare Worker proxy — see the hub Settings.');
     btn.innerHTML='🧠 Read documents & auto-fill'; btn.disabled=false;
   }
 }
@@ -1298,7 +1295,7 @@ async function generateAssessment(){
   document.getElementById('assessment-box').style.display='none';
   try{
     const resp=await fetch(getApiUrl(),{method:'POST',headers: getApiHeaders(apiKey),
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1600,messages:[{role:'user',content:buildPrompt()}]})});
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1600,messages:[{role:'user',content:buildPrompt()}]})});
     const data=await resp.json();
     if(data.error) throw new Error(data.error.message);
     assessmentText=data.content.map(b=>b.text||'').join('');
@@ -1372,7 +1369,7 @@ async function notifyTeam(){
   const apiKey=getCfg('apiKey'); if(!apiKey) return;
   const emails=getCfg('emails')||NOTIFY_EMAILS;
   await fetch(getApiUrl(),{method:'POST',headers: getApiHeaders(apiKey),
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:80,
+    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:80,
       messages:[{role:'user',content:`Log monthly PT check-in for ${gv('name')} on ${gv('checkin-date')}. Next check-in: ${gv('next-checkin')}. Session score: ${gv('session-score')}/10. Diet: ${gv('diet-score')}/10. Notify: ${emails}. Reply "Logged."`}]})});
 }
 

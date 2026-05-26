@@ -1316,16 +1316,13 @@
 <script>
 
 function getApiUrl() {
-  var proxy = getCfg('proxyUrl');
-  if (proxy) return proxy;
-  // Use corsproxy.io as default - works from any browser without setup
-  return 'https://corsproxy.io/?url=' + encodeURIComponent('https://api.anthropic.com/v1/messages');
+  return getCfg('proxyUrl') || 'https://broken-cake-e9c2.tedscholl.workers.dev';
 }
 
 function getApiHeaders(apiKey) {
   var headers = {
     'Content-Type': 'application/json',
-    'x-api-key': apiKey,
+    'x-api-key': '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',
     'anthropic-version': '2023-06-01',
     'anthropic-dangerous-allow-browser': 'true'
   };
@@ -1514,7 +1511,7 @@ For dob use YYYY-MM-DD. For InBody scans extract BMI, PBF%, body fat mass, lean 
     const resp = await fetch(getApiUrl(), {
       method:'POST',
       headers: getApiHeaders(apiKey),
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{ role:'user', content:contentBlocks }] })
+      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1000, messages:[{ role:'user', content:contentBlocks }] })
     });
 
     const data = await resp.json();
@@ -1535,7 +1532,7 @@ For dob use YYYY-MM-DD. For InBody scans extract BMI, PBF%, body fat mass, lean 
     btn.disabled = false;
 
   } catch(e) {
-    setStatus('upload-status','error','❌ Error: ' + e.message + ' | API key present: ' + (!!getCfg('apiKey')) + ' | Key prefix: ' + (localStorage.getItem('fct_apiKey') ? 'fct' : localStorage.getItem('ffu_apiKey') ? 'ffu' : localStorage.getItem('ptci_apiKey') ? 'ptci' : localStorage.getItem('pttools_apiKey') ? 'pttools' : 'NONE'));
+    setStatus('upload-status','error', '❌ ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
     btn.innerHTML = '🧠 Read documents & auto-fill form';
     btn.disabled = false;
   }
@@ -1646,7 +1643,7 @@ async function generateAssessment() {
     const resp = await fetch(getApiUrl(), {
       method:'POST',
       headers: getApiHeaders(apiKey),
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1500, messages:[{ role:'user', content: buildPrompt() }] })
+      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:1500, messages:[{ role:'user', content: buildPrompt() }] })
     });
     const data = await resp.json();
     if (data.error) throw new Error(data.error.message);
@@ -1658,7 +1655,7 @@ async function generateAssessment() {
     document.getElementById('decision-row').style.display = 'grid';
     setStatus('assess-status','','');
   } catch(e) {
-    setStatus('assess-status','error','❌ Error: ' + e.message);
+    setStatus('assess-status','error','❌ ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
   }
 
   btn.disabled = false;
@@ -1912,7 +1909,7 @@ Segmental: LA ${gv('seg-la')}% | RA ${gv('seg-ra')}% | Trunk ${gv('seg-trunk')}%
     method:'POST',
     headers: getApiHeaders(apiKey),
     body: JSON.stringify({
-      model:'claude-sonnet-4-20250514',
+      model:'claude-sonnet-4-5',
       max_tokens:100,
       messages:[{ role:'user', content:`Log this consultation for ${gv('name')} — Decision: ${decision}. Notify: ${notifyEmail}. Reply with only "Logged." — ${body.substring(0,300)}` }]
     })
