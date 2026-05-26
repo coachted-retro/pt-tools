@@ -1589,7 +1589,16 @@ async function parseAllFiles(){
 
     blocks.push({type:'text',text:`Extract all data from these documents and return ONLY valid JSON, no markdown, no explanation:
 {"name":"","phone":"","email":"","gender":"","age":"","orig_goals":"","prev_height":"","prev_age":"","prev_bmi":"","prev_fat":"","prev_lean":"","prev_water":"","prev_pbf":"","now_height":"","now_bmi":"","now_fat":"","now_lean":"","now_water":"","now_pbf":"","prev_seg_la":"","prev_seg_ra":"","prev_seg_trunk":"","prev_seg_ll":"","prev_seg_rl":"","now_seg_la":"","now_seg_ra":"","now_seg_trunk":"","now_seg_ll":"","now_seg_rl":""}
-For InBody scans: if only one scan is present treat values as "now_" fields. If two scans, map older to "prev_" and newer to "now_". Empty string if not found.`});
+For InBody scans: if only one scan is present treat values as "now_" fields. If two scans, map older to "prev_" and newer to "now_". Empty string if not found.
+CRITICAL INBODY EXTRACTION RULES:
+- seg_la = Left Arm segmental lean mass % (look for Left Arm, L.Arm, LA)
+- seg_ra = Right Arm segmental lean mass % (look for Right Arm, R.Arm, RA)
+- seg_trunk = Trunk segmental lean mass % (look for Trunk, Torso)
+- seg_ll = Left Leg segmental lean mass % (look for Left Leg, L.Leg, LL)
+- seg_rl = Right Leg segmental lean mass % (look for Right Leg, R.Leg, RL)
+- These are PERCENTAGE values from the segmental lean analysis bar chart
+- pbf = Percent Body Fat %, lean_mass = Skeletal Muscle Mass lbs
+- fat_mass = Body Fat Mass lbs, water_weight = Total Body Water lbs`});
 
     const resp=await fetch(getApiUrl(),{
       method:'POST',

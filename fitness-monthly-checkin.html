@@ -1166,7 +1166,21 @@ async function parseAllFiles(){
     }
     blocks.push({type:'text',text:`Extract all data from these documents and return ONLY valid JSON with these exact keys (empty string if not found):
 {"name":"","phone":"","email":"","gender":"","age":"","prev_height":"","prev_weight":"","prev_bmi":"","prev_fat":"","prev_lean":"","prev_water":"","prev_pbf":"","now_height":"","now_weight":"","now_bmi":"","now_fat":"","now_lean":"","now_water":"","now_pbf":"","prev_seg_la":"","prev_seg_ra":"","prev_seg_trunk":"","prev_seg_ll":"","prev_seg_rl":"","now_seg_la":"","now_seg_ra":"","now_seg_trunk":"","now_seg_ll":"","now_seg_rl":""}
-For InBody scans with two scans, map older to prev_ and newer to now_. Single scan goes to now_.`});
+For InBody scans with two scans, map older to prev_ and newer to now_. Single scan goes to now_.
+CRITICAL INBODY EXTRACTION RULES:
+- seg_la = Left Arm segmental lean mass percentage (look for "Left Arm", "L. Arm", "LA" in segmental analysis section)
+- seg_ra = Right Arm segmental lean mass percentage (look for "Right Arm", "R. Arm", "RA")
+- seg_trunk = Trunk segmental lean mass percentage (look for "Trunk", "Torso")
+- seg_ll = Left Leg segmental lean mass percentage (look for "Left Leg", "L. Leg", "LL")
+- seg_rl = Right Leg segmental lean mass percentage (look for "Right Leg", "R. Leg", "RL")
+- These are PERCENTAGE values shown in the segmental lean analysis bar chart section of the InBody report
+- pbf = Percent Body Fat (PBF) percentage number only
+- lean_mass = Skeletal Muscle Mass or Lean Body Mass in lbs
+- fat_mass = Body Fat Mass in lbs
+- water_weight = Total Body Water in lbs
+- bmi = BMI number only
+- For dob use YYYY-MM-DD format
+- Extract member name, height, age from the report header`});
 
     const resp=await fetch(getApiUrl(),{method:'POST',headers: getApiHeaders(apiKey),
       body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,messages:[{role:'user',content:blocks}]})});
