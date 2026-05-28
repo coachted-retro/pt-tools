@@ -1782,13 +1782,13 @@ async function appendRowIfTabExists(sheetId, gKey, tab, headers) {
   } catch(e) { /* tab may not exist yet */ }
 }
 
-function buildIntakeRow(decision, freq, length) {
+function buildIntakeRow(decision, freq, length, followUpDays) {
   // Calculate 6-week follow-up date
   var consultDate = gv('consult-date');
   var followUpDate = '';
   if (consultDate) {
     var d = new Date(consultDate + 'T12:00:00');
-    d.setDate(d.getDate() + 42);
+    d.setDate(d.getDate() + (followUpDays || 42));
     followUpDate = d.toISOString().split('T')[0];
   }
   var outcome = decision + (freq ? ' — ' + freq + ', ' + length : '');
@@ -1849,7 +1849,7 @@ async function finalizeAccept() {
 
   showLoading('Saving to database and sending email...');
 
-  const row = buildIntakeRow('ACCEPTED', selectedFreq, selectedLength);
+  const row = buildIntakeRow('ACCEPTED', selectedFreq, selectedLength, 30);
   
   // Save to correct sheet tab based on gender
   var gender = gv('gender') || '';
@@ -1860,14 +1860,7 @@ async function finalizeAccept() {
 
   hideLoading();
 
-  // Add to Google Calendar for male members
-  var followUpDate = row[7];
-  if (gender.toLowerCase().includes('male') && followUpDate) {
-    var addCal = confirm('Add 6-week follow-up to Coach Ted\'s Google Calendar?');
-    if (addCal) {
-      addToCalendar(gv('name'), followUpDate, gv('phone'), gv('email'));
-    }
-  }
+  // Accepted members go to PT Progress Tracker for 1-month check-in
 
   const confirmEl = document.getElementById('confirm-accept');
   confirmEl.style.display = 'flex';
@@ -1912,10 +1905,7 @@ async function finalizeDecline() {
 // EMAIL NOTIFICATION (via Claude API log call)
 // ═══════════════════════════════════════════
 async function sendNotificationEmail(decision, freq, length) {
-  const apiKey = 'worker';
-  if (!apiKey) return;
-
-  const notifyEmail = getCfg('email') || NOTIFY_EMAIL;
+  const notifyEmails = 'tedscholl@gmail.com,healthylifewithdani1@gmail.com';
   const today = new Date();
   const followDate = new Date(today);
   followDate.setDate(today.getDate() + 42);
@@ -1946,16 +1936,23 @@ InBody: Height ${gv('height')}, BMI ${gv('bmi')}, PBF ${gv('pbf')}%, Lean ${gv('
 Segmental: LA ${gv('seg-la')}% | RA ${gv('seg-ra')}% | Trunk ${gv('seg-trunk')}% | LL ${gv('seg-ll')}% | RL ${gv('seg-rl')}%
   `;
 
-  // Use Claude to compose and acknowledge the email (actual delivery needs a backend/email service)
-  await fetch(getApiUrl(), {
-    method:'POST',
-    headers: getApiHeaders(apiKey),
-    body: JSON.stringify({
-      model:'claude-sonnet-4-5',
-      max_tokens:100,
-      messages:[{ role:'user', content:`Log this consultation for ${gv('name')} — Decision: ${decision}. Notify: ${notifyEmail}. Reply with only "Logged." — ${body.substring(0,300)}` }]
-    })
-  });
+  // Send via Cloudflare Worker email endpoint
+  try {
+    await fetch(getApiUrl() + '/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: notifyEmails,
+        subject: `PT Consultation: ${gv('name')} — ${decision}`,
+        body: body
+      })
+    });
+  } catch(e) {
+    // Fallback: open mailto link
+    var subject = encodeURIComponent('PT Consultation: ' + gv('name') + ' — ' + decision);
+    var mailBody = encodeURIComponent(body.substring(0, 1800));
+    window.open('mailto:' + notifyEmails + '?subject=' + subject + '&body=' + mailBody);
+  }
 }
 
 // ═══════════════════════════════════════════
