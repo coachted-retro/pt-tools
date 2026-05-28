@@ -6,7 +6,7 @@
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Consultation Tool  v1780001753v1779999736 v1780001686 v1780001837 v1780001850 v1780001860 v1780001877 v1780001888 v1780002271 v1780002701 v1780002710</title>
+<title>Fitness Consultation Tool  v1780001753v1779999736 v1780001686 v1780001837 v1780001850 v1780001860 v1780001877 v1780001888 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1704,7 +1704,7 @@ async function generateAssessment() {
     try {
       var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      console.log('Email notification logged')+'&body='+encodeURIComponent(_b.substring(0,500)),'_blank');
+      // email logged
     } catch(_em) {}
   } catch(e) {
     setStatus('assess-status','error','? ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
@@ -1763,13 +1763,13 @@ async function ensureSheetHeaders(tab) {
   if (!gKey || !sheetId) return;
   var headers = [['Date','Gender','Age','Name','Phone','Email','Goal / Program','Follow-Up Date','Outcome','Advisor Notes','Assessment Summary','Tool Link']];
   var range = tab.replace(/ /g,'%20') + '!A1:L1';
-  var checkUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?key=' + gKey;';
+  var checkUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?key=' + gKey;
   try {
     var r = await fetch(checkUrl);
     var d = await r.json();
     if (!d.values || !d.values[0] || !d.values[0][0]) {
       // Headers not set - write them
-      var writeUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?valueInputOption=USER_ENTERED&key=' + gKey;';
+      var writeUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?valueInputOption=USER_ENTERED&key=' + gKey;
       await fetch(writeUrl, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({values: headers}) });
     }
   } catch(e) { /* silent fail */ }
@@ -1817,7 +1817,7 @@ async function appendRowIfTabExists(sheetId, gKey, tab, headers) {
   // Check if tab has data; if 0 rows, write headers
   try {
     const range = tab.replace(/ /g,'%20') + '!A1:K1';
-    const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range;';
+    const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range;
     const resp = await fetch(url);
     const data = await resp.json();
     if (!data.values || data.values.length === 0) {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monthly PT Check-In  v1780001753v1779999954 v1779999982 v1780000324 v1780000816 v1780000828 v1780001686 v1780001837 v1780002271 v1780002701 v1780002710</title>
+<title>Monthly PT Check-In  v1780001753v1779999954 v1779999982 v1780000324 v1780000816 v1780000828 v1780001686 v1780001837 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1342,7 +1342,7 @@ async function generateAssessment(){
     try {
       var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      console.log('Email notification logged')+'&body='+encodeURIComponent(_b.substring(0,500)),'_blank');
+      // email logged
     } catch(_em) {}
   } catch(e){setStatus('assess-status','error','? Error: '+e.message);}
   btn.disabled=false; btn.innerHTML='* Regenerate Personalized Assessment';
@@ -1358,13 +1358,13 @@ async function ensureSheetHeaders(tab) {
   if (!gKey || !sheetId) return;
   var headers = [['Date','Gender','Age','Name','Phone','Email','Goal / Program','Follow-Up Date','Outcome','Advisor Notes','Assessment Summary','Tool Link']];
   var range = tab.replace(/ /g,'%20') + '!A1:L1';
-  var checkUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?key=' + gKey;';
+  var checkUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?key=' + gKey;
   try {
     var r = await fetch(checkUrl);
     var d = await r.json();
     if (!d.values || !d.values[0] || !d.values[0][0]) {
       // Headers not set - write them
-      var writeUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?valueInputOption=USER_ENTERED&key=' + gKey;';
+      var writeUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?valueInputOption=USER_ENTERED&key=' + gKey;
       await fetch(writeUrl, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({values: headers}) });
     }
   } catch(e) { /* silent fail */ }
@@ -1428,7 +1428,7 @@ async function saveToCheckinHistory(row) {
     assessmentText ? assessmentText.substring(0,600) : ''
   ];
   
-  var url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + encodeURIComponent('Check-In History!A:N') + ':append?valueInputOption=USER_ENTERED&key=' + gKey;';
+  var url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + encodeURIComponent('Check-In History!A:N') + ':append?valueInputOption=USER_ENTERED&key=' + gKey;
   await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({values:[histRow]}) });
 }
 
@@ -1438,7 +1438,7 @@ async function updateNextCheckin(memberName, nextDate) {
   var sheetId = getCfg('ptSheetId') || '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
   try {
     // Find the row with this member name
-    var getUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + encodeURIComponent('Active Clients!A:M') + '?key=' + gKey;';
+    var getUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + encodeURIComponent('Active Clients!A:M') + '?key=' + gKey;
     var resp = await fetch(getUrl);
     var data = await resp.json();
     if (!data.values) return;
@@ -1448,7 +1448,7 @@ async function updateNextCheckin(memberName, nextDate) {
     });
     if (rowIdx < 0) return;
     // Update column J (index 9) = Next Check-In
-    var updateUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + encodeURIComponent('Active Clients!J' + (rowIdx+1)) + '?valueInputOption=USER_ENTERED&key=' + gKey;';
+    var updateUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + encodeURIComponent('Active Clients!J' + (rowIdx+1)) + '?valueInputOption=USER_ENTERED&key=' + gKey;
     await fetch(updateUrl, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({values:[[nextDate]]}) });
   } catch(e) { console.log('Update next check-in failed:', e); }
 }
