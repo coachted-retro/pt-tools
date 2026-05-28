@@ -1792,7 +1792,7 @@ async function appendToSheet(tabName, rowValues) {
   if (!gKey) { console.warn('No Google Sheets API key'); return false; }
 
   const range = encodeURIComponent(tabName + '!A1');
-  const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED
+  const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED';
 
   try {
     const resp = await fetch(url, {
