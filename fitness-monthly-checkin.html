@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monthly PT Check-In v1779999954 v1779999982 v1780000324</title>
+<title>Monthly PT Check-In v1779999954 v1779999982 v1780000324 v1780000816 v1780000828</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1375,7 +1375,7 @@ async function appendToSheet(row){
   const sheetId=getCfg('sheetId')||SHEET_ID_DEFAULT;
   // gKey hardcoded
   const range=encodeURIComponent('Sheet1!A1');
-  const url='https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED
+  const url='https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED';
   try{
     const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
     const data=await resp.json();
