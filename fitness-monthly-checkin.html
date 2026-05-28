@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monthly PT Check-In</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4f0;
+    --surface: #ffffff;
+    --surface2: #e8ede8;
+    --surface3: #dde5dd;
+    --border: #d0d8d0;
+    --border2: #b8c4b8;
+    --text: #161e16;
+    --text2: #526052;
+    --text3: #8a9e8a;
+    --accent: #2e5e38;
+    --accent-light: #e4f0e6;
+    --accent2: #1a4472;
+    --accent2-light: #e4eef8;
+    --gold: #8a6a1e;
+    --gold-light: #f8f0dc;
+    --danger: #943030;
+    --danger-light: #fceee8;
+    --warning: #7a5a10;
+    --warning-light: #fdf4dc;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.05);
+    --font: 'Cabinet Grotesk', 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 248px; background: var(--text);
+    position: fixed; top: 0; left: 0; bottom: 0;
+    display: flex; flex-direction: column; z-index: 100;
+  }
+
+  .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+
+  .logo-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: 3px 9px;
+    border-radius: 999px; margin-bottom: 12px;
+  }
+
+  .sidebar-logo h1 { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.3; letter-spacing: -.01em; }
+  .sidebar-logo p { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 3px; }
+
+  .sidebar-nav { flex: 1; padding: 16px 10px; overflow-y: auto; }
+
+  .nav-section { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.25); letter-spacing: .09em; text-transform: uppercase; padding: 0 8px; margin: 16px 0 6px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 8px;
+    font-size: 13px; color: rgba(255,255,255,.52);
+    cursor: pointer; transition: all .15s;
+    margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.88); }
+  .nav-item.active { background: rgba(255,255,255,.11); color: #fff; font-weight: 500; }
+  .nav-item.done .pip { background: var(--accent); }
+  .nav-item.active .pip { background: #fff; color: var(--text); }
+
+  .pip {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(255,255,255,.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-family: var(--mono); flex-shrink: 0; color: rgba(255,255,255,.5);
+    transition: all .2s;
+  }
+  .nav-item.done .pip { color: #fff; }
+  .nav-item.active .pip { color: var(--text); font-weight: 700; }
+
+  .sidebar-footer { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,.07); font-size: 11px; color: rgba(255,255,255,.26); line-height: 1.7; }
+  .sidebar-footer a { color: rgba(255,255,255,.4); text-decoration: none; }
+  .sidebar-footer a:hover { color: rgba(255,255,255,.75); }
+
+  /* ── MAIN ── */
+  .main { margin-left: 248px; flex: 1; }
+
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 32px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+
+  .breadcrumb { font-size: 13px; color: var(--text2); }
+  .breadcrumb strong { color: var(--text); font-weight: 500; }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .advisor-field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); }
+  .advisor-field input { border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; font-size: 13px; font-family: var(--font); background: var(--bg); color: var(--text); width: 148px; }
+  .icon-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 17px; padding: 6px; border-radius: 6px; transition: all .15s; }
+  .icon-btn:hover { background: var(--surface2); color: var(--text); }
+
+  /* ── CONTENT ── */
+  .content { padding: 32px; max-width: 900px; }
+
+  .page-header { margin-bottom: 24px; }
+  .page-header h2 { font-size: 22px; font-weight: 700; letter-spacing: -.02em; color: var(--text); margin-bottom: 5px; }
+  .page-header p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  /* ── DATE BANNER ── */
+  .date-banner {
+    background: var(--accent); color: #fff;
+    border-radius: var(--radius-lg); padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; gap: 12px;
+    flex-wrap: wrap;
+  }
+  .date-banner .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; opacity: .7; }
+  .date-banner .value { font-size: 16px; font-weight: 700; margin-top: 1px; }
+  .date-banner .divider { width: 1px; background: rgba(255,255,255,.25); align-self: stretch; }
+
+  /* ── CARDS ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .card-title { font-size: 11px; font-weight: 700; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 16px; display: flex; align-items: center; gap: 7px; }
+  .card-title .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .card-title .dot.blue { background: var(--accent2); }
+  .card-title .dot.gold { background: var(--gold); }
+
+  /* ── GRID ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+
+  /* ── FIELDS ── */
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { font-size: 12px; font-weight: 500; color: var(--text2); }
+  .field input, .field select, .field textarea {
+    font-family: var(--font); font-size: 14px; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg); color: var(--text);
+    transition: border-color .15s, background .15s; width: 100%;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+  .field textarea { resize: vertical; min-height: 76px; line-height: 1.6; }
+  .field input.auto, .field select.auto, .field textarea.auto { border-color: var(--accent); background: var(--accent-light); }
+
+  /* ── RATING SCALES ── */
+  .scale-wrap { margin-top: 4px; }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .scale-btns { display: flex; gap: 4px; }
+  .scale-btn {
+    flex: 1; padding: 8px 2px; border: 1px solid var(--border2);
+    border-radius: 7px; font-size: 12px; font-weight: 600;
+    font-family: var(--mono); background: var(--surface2);
+    color: var(--text2); cursor: pointer; text-align: center; transition: all .15s;
+  }
+  .scale-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .scale-btn.s1,.scale-btn.s2,.scale-btn.s3 { }
+  .scale-btn.selected { color: #fff; border-color: transparent; }
+  .scale-btn[data-v="1"].selected,.scale-btn[data-v="2"].selected,.scale-btn[data-v="3"].selected { background: #c94040; }
+  .scale-btn[data-v="4"].selected,.scale-btn[data-v="5"].selected { background: #d4853a; }
+  .scale-btn[data-v="6"].selected,.scale-btn[data-v="7"].selected { background: #c4a820; }
+  .scale-btn[data-v="8"].selected,.scale-btn[data-v="9"].selected { background: #4a9445; }
+  .scale-btn[data-v="10"].selected { background: var(--accent); }
+
+  /* ── TAGS ── */
+  .tag-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .tag {
+    padding: 7px 13px; border: 1px solid var(--border2); border-radius: 999px;
+    font-size: 13px; cursor: pointer; color: var(--text2);
+    background: var(--surface2); transition: all .15s;
+  }
+  .tag:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .tag.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── WIN BADGES ── */
+  .win-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 8px; }
+  .win-tag {
+    padding: 9px 10px; border: 1px solid #c0d8c0; border-radius: var(--radius);
+    font-size: 12px; cursor: pointer; color: var(--text2);
+    background: var(--surface2); transition: all .15s; text-align: center;
+  }
+  .win-tag:hover { border-color: var(--accent); background: var(--accent-light); }
+  .win-tag.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── INBODY COMPARE ── */
+  .compare-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .compare-col {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 16px 18px;
+  }
+  .compare-col.current { border-color: var(--accent); border-width: 1.5px; }
+  .col-head {
+    font-size: 11px; font-weight: 700; color: var(--text3);
+    text-transform: uppercase; letter-spacing: .07em;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+  }
+  .badge { font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+  .badge-prev { background: var(--surface3); color: var(--text2); }
+  .badge-now { background: var(--accent-light); color: var(--accent); }
+
+  .m-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .m-row:last-child { border-bottom: none; }
+  .m-key { color: var(--text2); }
+  .m-val { display: flex; align-items: center; gap: 6px; }
+  .m-val input {
+    font-family: var(--mono); font-weight: 600; font-size: 14px;
+    border: none; border-bottom: 1.5px solid var(--border2);
+    background: transparent; color: var(--text);
+    width: 80px; text-align: right; padding: 2px 4px;
+    outline: none; transition: border-color .15s;
+  }
+  .m-val input:focus { border-bottom-color: var(--accent); }
+
+  .delta { font-size: 11px; padding: 2px 6px; border-radius: 999px; font-weight: 700; white-space: nowrap; }
+  .up { background: #ddf0dd; color: #2a6e2a; }
+  .down { background: #fce8e8; color: #963030; }
+  .flat { background: var(--surface2); color: var(--text3); }
+
+  /* ── SEG GRID ── */
+  .seg-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
+  .seg-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 8px; text-align: center; }
+  .seg-box label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; display: block; margin-bottom: 6px; }
+  .seg-prev-val { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 4px; }
+  .seg-arrow { font-size: 11px; color: var(--text3); }
+  .seg-input { width: 100%; text-align: center; font-size: 18px; font-weight: 700; font-family: var(--mono); background: transparent; border: none; border-bottom: 1.5px solid var(--border2); color: var(--text); padding: 3px 0; outline: none; transition: border-color .15s; }
+  .seg-input:focus { border-bottom-color: var(--accent); }
+  .seg-unit { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+  /* ── UPLOAD ── */
+  .upload-zone {
+    border: 2px dashed var(--border2); border-radius: var(--radius-lg);
+    padding: 26px 20px; text-align: center; cursor: pointer;
+    transition: all .2s; background: var(--surface2); position: relative;
+  }
+  .upload-zone:hover,.upload-zone.dragover { border-color: var(--accent); background: var(--accent-light); }
+  .upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .upload-icon { font-size: 30px; margin-bottom: 8px; opacity: .45; }
+  .upload-label { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .upload-hint { font-size: 12px; color: var(--text2); }
+
+  .file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .file-chip { display: flex; align-items: center; gap: 10px; padding: 9px 13px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-size: 13px; }
+  .file-chip .fn { flex: 1; font-weight: 500; }
+  .file-chip .fs { color: var(--text3); font-size: 12px; }
+  .file-chip .fst { font-size: 11px; font-weight: 600; color: var(--accent); }
+
+  /* ── STATUS ── */
+  .status-bar { display: none; align-items: center; gap: 10px; padding: 11px 15px; border-radius: var(--radius); font-size: 13px; margin-top: 12px; }
+  .status-bar.show { display: flex; }
+  .status-bar.info { background: var(--accent2-light); color: var(--accent2); border: 1px solid #aac4e0; }
+  .status-bar.success { background: var(--accent-light); color: var(--accent); border: 1px solid #a0c8a0; }
+  .status-bar.error { background: var(--danger-light); color: var(--danger); border: 1px solid #e0a8a8; }
+
+  /* ── BUTTONS ── */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 18px; border-radius: var(--radius); font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; border: 1px solid transparent; white-space: nowrap; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #255030; }
+  .btn-outline { background: var(--surface); color: var(--text); border-color: var(--border2); }
+  .btn-outline:hover:not(:disabled) { background: var(--surface2); }
+  .btn-ghost { background: transparent; color: var(--text2); border-color: var(--border); }
+  .btn-ghost:hover:not(:disabled) { background: var(--surface2); color: var(--text); }
+  .btn-full { width: 100%; }
+  .btn-lg { padding: 13px 24px; font-size: 15px; border-radius: var(--radius-lg); }
+
+  .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.35); border-top-color: currentColor; border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0; }
+  .spinner.dark { border-color: rgba(0,0,0,.12); border-top-color: var(--text); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── NAV ROW ── */
+  .nav-row { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; gap: 12px; }
+
+  /* ── ASSESSMENT ── */
+  .assessment-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px 26px; font-size: 14px; line-height: 1.85; color: var(--text); white-space: pre-wrap; min-height: 240px; display: none; margin-top: 16px; }
+
+  /* ── NEXT DATE PANEL ── */
+  .next-date-panel {
+    background: var(--gold-light); border: 1px solid #d4b870;
+    border-radius: var(--radius-lg); padding: 18px 22px;
+    margin-top: 14px; display: none;
+  }
+  .next-date-panel .nd-title { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .next-date-panel .nd-date { font-size: 22px; font-weight: 700; color: var(--text); font-family: var(--mono); }
+  .next-date-panel .nd-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+  /* ── CONFIRM ── */
+  .confirm-box { background: var(--accent-light); border: 1px solid #a0c8a0; border-radius: var(--radius-lg); padding: 15px 20px; margin-top: 14px; font-size: 14px; color: var(--accent); display: none; align-items: center; gap: 10px; font-weight: 600; }
+  .confirm-box.show { display: flex; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+  /* ── PREVIEW ── */
+  .preview-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; font-size: 12px; font-family: var(--mono); color: var(--text2); white-space: pre-wrap; max-height: 150px; overflow-y: auto; line-height: 1.7; display: none; margin-top: 12px; }
+
+  /* ── CONFIG ── */
+  .config-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.52); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .config-modal { background: var(--surface); border-radius: var(--radius-lg); padding: 28px 32px; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.18); }
+  .config-modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .config-modal p { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.55; }
+  .cfg-f { margin-bottom: 16px; }
+  .cfg-f label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+  .cfg-f input { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--mono); font-size: 13px; background: var(--bg); color: var(--text); }
+  .cfg-f input:focus { outline: none; border-color: var(--accent); }
+  .cfg-note { font-size: 11px; color: var(--text3); margin-top: 4px; line-height: 1.5; }
+
+  /* ── LOADING ── */
+  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(240,244,240,0.88); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+  .loading-overlay.show { display: flex; }
+  .loading-spinner { width: 38px; height: 38px; border: 3px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+  .loading-text { font-size: 14px; color: var(--text2); font-weight: 600; }
+
+  /* ── PAGES ── */
+  .page { display: none; } .page.active { display: block; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; } .main { margin-left: 0; } .content { padding: 20px 16px; }
+    .grid2,.grid3,.grid4,.compare-wrap,.win-grid { grid-template-columns: 1fr; }
+    .seg-grid { grid-template-columns: repeat(3,1fr); }
+  }
+#config-overlay { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- CONFIG -->
+<div class="config-overlay" id="config-overlay">
+  <div class="config-modal">
+    <h3>⚙️ Setup</h3>
+    <p>Enter your credentials once — saved locally in this browser. Use the same Google Sheets API key as your other tools.</p>
+    <div class="cfg-f">
+      <label>Anthropic API Key</label>
+      <input type="password" id="cfg-api-key" placeholder="sk-ant-api03-...">
+      <div class="cfg-note">From <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a> → API Keys</div>
+    </div>
+    <div class="cfg-f">
+      <label>PT Member Progress Tracker — Sheet ID</label>
+      <input type="text" id="cfg-sheet-id" value="1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs">
+      <div class="cfg-note">Already pre-filled with your new tracker sheet. <a href="https://docs.google.com/spreadsheets/d/1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs/edit" target="_blank" style="color:var(--accent)">Open Sheet ↗</a></div>
+    </div>
+    <div class="cfg-f">
+      <label>Google Sheets API Key</label>
+      <input type="password" id="cfg-gkey" placeholder="AIza...">
+    </div>
+    <div class="cfg-f">
+      <label>Notification emails</label>
+      <input type="text" id="cfg-emails" value="tedscholl@gmail.com, healthylifewithdani1@gmail.com">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveConfig()" style="margin-top:4px">Save & continue</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loading-text">Saving...</div>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-chip">Monthly</div>
+      <h1>PT Client<br>Check-In</h1>
+      <p>Monthly progress review</p>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Steps</div>
+      <button class="nav-item active" id="nav-0" onclick="goPage(0)"><span class="pip">1</span> Upload & pre-fill</button>
+      <button class="nav-item" id="nav-1" onclick="goPage(1)"><span class="pip">2</span> Member details</button>
+      <button class="nav-item" id="nav-2" onclick="goPage(2)"><span class="pip">3</span> Training review</button>
+      <button class="nav-item" id="nav-3" onclick="goPage(3)"><span class="pip">4</span> Diet & nutrition</button>
+      <button class="nav-item" id="nav-4" onclick="goPage(4)"><span class="pip">5</span> Wellbeing & lifestyle</button>
+      <button class="nav-item" id="nav-5" onclick="goPage(5)"><span class="pip">6</span> InBody comparison</button>
+      <button class="nav-item" id="nav-6" onclick="goPage(6)"><span class="pip">7</span> Assessment & save</button>
+      <div class="nav-section" style="margin-top:20px">Database</div>
+      <button class="nav-item" onclick="openSheet()"><span class="pip" style="font-size:12px">↗</span> Progress tracker</button>
+    </nav>
+    <div class="sidebar-footer">
+      Monthly PT Check-In<br>
+      <a href="#" onclick="openConfig()">⚙️ Settings</a> &nbsp;·&nbsp;
+      <a href="index.html">⌂ Hub</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb">Monthly Check-In &rsaquo; <strong id="breadcrumb-label">Upload & pre-fill</strong></div>
+      <div class="topbar-right">
+        <div class="advisor-field">
+          <label>Advisor:</label>
+          <input type="text" id="advisor-name" placeholder="Your name" onchange="setCfg('advisor',this.value)">
+        </div>
+        <button class="icon-btn" onclick="openConfig()">⚙️</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ PAGE 0: UPLOAD ══ -->
+      <div class="page active" id="page-0">
+        <div class="page-header">
+          <h2>Upload documents</h2>
+          <p>Upload the member's latest InBody scan PDF or any other document. The AI will extract and pre-fill all matching fields automatically.</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Document upload</div>
+          <div class="upload-zone" id="upload-zone" ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)">
+            <input type="file" id="pdf-input" accept=".pdf,image/*" multiple onchange="handleFiles(this.files)">
+            <div class="upload-icon">📄</div>
+            <div class="upload-label">Drop files here or click to browse</div>
+            <div class="upload-hint">InBody scan PDF or image, previous check-in notes</div>
+          </div>
+          <div id="file-list" class="file-list"></div>
+          <div id="upload-status" class="status-bar"></div>
+          <div id="parsed-preview" class="preview-box"></div>
+          <button class="btn btn-primary btn-full" id="parse-btn" style="display:none;margin-top:14px" onclick="parseAllFiles()">
+            🧠 Read documents & auto-fill
+          </button>
+        </div>
+        <div class="nav-row"><div></div><button class="btn btn-outline" onclick="goPage(1)">Skip — fill manually →</button></div>
+      </div>
+
+      <!-- ══ PAGE 1: MEMBER DETAILS ══ -->
+      <div class="page" id="page-1">
+        <div class="page-header">
+          <h2>Member details</h2>
+          <p>Confirm member info and program details for this check-in.</p>
+        </div>
+
+        <div id="date-banner" class="date-banner">
+          <div><div class="label">Today's check-in</div><div class="value" id="banner-today">—</div></div>
+          <div class="divider"></div>
+          <div><div class="label">Next check-in (auto)</div><div class="value" id="banner-next">—</div></div>
+          <div class="divider"></div>
+          <div><div class="label">Program month</div><div class="value" id="banner-month">—</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Member information</div>
+          <div class="grid2">
+            <div class="field"><label>Check-in date</label><input type="date" id="checkin-date" onchange="updateDates()"></div>
+            <div class="field"><label>Program start date</label><input type="date" id="program-start" onchange="updateDates()"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Member name</label><input type="text" id="name" placeholder="Full name"></div>
+            <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="(555) 000-0000"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Email</label><input type="email" id="email" placeholder="member@email.com"></div>
+            <div class="field"><label>Gender</label>
+              <select id="gender">
+                <option value="">Select...</option>
+                <option>Male</option><option>Female</option>
+                <option>Non-binary</option><option>Prefer not to say</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid3">
+            <div class="field"><label>Age</label><input type="number" id="age" placeholder="e.g. 34"></div>
+            <div class="field"><label>Training frequency</label>
+              <select id="training-freq">
+                <option value="">Select...</option>
+                <option>1x per week</option><option>2x per week</option>
+                <option>3x per week</option><option>4x per week</option>
+                <option>1x every other week</option>
+              </select>
+            </div>
+            <div class="field"><label>Next check-in date</label><input type="date" id="next-checkin" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600"></div>
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goPage(0)">← Back</button>
+          <button class="btn btn-primary" onclick="goPage(2)">Next: Training review →</button>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 2: TRAINING REVIEW ══ -->
+      <div class="page" id="page-2">
+        <div class="page-header">
+          <h2>Training review</h2>
+          <p>How has training been going this month? Capture session data, performance feedback, and any adjustments needed.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Session overview</div>
+          <div class="grid3">
+            <div class="field"><label>Sessions completed this month</label><input type="number" id="sessions-done" min="0" placeholder="e.g. 8"></div>
+            <div class="field"><label>Sessions missed</label><input type="number" id="sessions-missed" min="0" placeholder="e.g. 2"></div>
+            <div class="field"><label>Reason for missed sessions</label>
+              <select id="missed-reason">
+                <option value="">N/A or select...</option>
+                <option>Schedule conflict</option><option>Illness or injury</option>
+                <option>Travel</option><option>Family commitments</option>
+                <option>Fatigue / low energy</option><option>Forgot / no reminder</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Overall session quality this month (1–10)</label>
+            <div class="scale-wrap">
+              <div class="scale-labels"><span>Poor</span><span>Excellent</span></div>
+              <div class="scale-btns" id="scale-session">
+                <div class="scale-btn" data-v="1" onclick="pickScale(this,'session')">1</div>
+                <div class="scale-btn" data-v="2" onclick="pickScale(this,'session')">2</div>
+                <div class="scale-btn" data-v="3" onclick="pickScale(this,'session')">3</div>
+                <div class="scale-btn" data-v="4" onclick="pickScale(this,'session')">4</div>
+                <div class="scale-btn" data-v="5" onclick="pickScale(this,'session')">5</div>
+                <div class="scale-btn" data-v="6" onclick="pickScale(this,'session')">6</div>
+                <div class="scale-btn" data-v="7" onclick="pickScale(this,'session')">7</div>
+                <div class="scale-btn" data-v="8" onclick="pickScale(this,'session')">8</div>
+                <div class="scale-btn" data-v="9" onclick="pickScale(this,'session')">9</div>
+                <div class="scale-btn" data-v="10" onclick="pickScale(this,'session')">10</div>
+              </div>
+            </div>
+            <input type="hidden" id="session-score" value="">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Performance & progress</div>
+          <div class="field"><label>Strength improvements noticed this month</label>
+            <textarea id="strength-progress" placeholder="Heavier weights, more reps, movements that feel easier, new PRs..."></textarea>
+          </div>
+          <div class="field"><label>Endurance & stamina changes</label>
+            <textarea id="endurance-progress" placeholder="Recovery between sets, cardio capacity, how they feel mid-session..."></textarea>
+          </div>
+          <div class="field"><label>Flexibility & mobility changes</label>
+            <textarea id="flex-progress" placeholder="Range of motion improvements, movement quality, reduced stiffness..."></textarea>
+          </div>
+          <div class="field"><label>What exercises or movements are they feeling most confident with?</label>
+            <textarea id="confident-movements" placeholder="Movements that have really clicked this month..."></textarea>
+          </div>
+          <div class="field"><label>Are there any movements or exercises that still feel challenging or need work?</label>
+            <textarea id="challenging-movements" placeholder="Technical issues, discomfort, movements they avoid..."></textarea>
+          </div>
+
+          <hr class="divider">
+          <div class="field" style="margin-bottom:0">
+            <label>Recovery — how well are they recovering between sessions? (1–10)</label>
+            <div class="scale-wrap">
+              <div class="scale-labels"><span>Very sore / not recovering</span><span>Recovering great</span></div>
+              <div class="scale-btns" id="scale-recovery">
+                <div class="scale-btn" data-v="1" onclick="pickScale(this,'recovery')">1</div>
+                <div class="scale-btn" data-v="2" onclick="pickScale(this,'recovery')">2</div>
+                <div class="scale-btn" data-v="3" onclick="pickScale(this,'recovery')">3</div>
+                <div class="scale-btn" data-v="4" onclick="pickScale(this,'recovery')">4</div>
+                <div class="scale-btn" data-v="5" onclick="pickScale(this,'recovery')">5</div>
+                <div class="scale-btn" data-v="6" onclick="pickScale(this,'recovery')">6</div>
+                <div class="scale-btn" data-v="7" onclick="pickScale(this,'recovery')">7</div>
+                <div class="scale-btn" data-v="8" onclick="pickScale(this,'recovery')">8</div>
+                <div class="scale-btn" data-v="9" onclick="pickScale(this,'recovery')">9</div>
+                <div class="scale-btn" data-v="10" onclick="pickScale(this,'recovery')">10</div>
+              </div>
+            </div>
+            <input type="hidden" id="recovery-score" value="">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Program feedback</div>
+          <div class="field"><label>How does the member feel about the current program structure?</label>
+            <select id="program-feel">
+              <option value="">Select...</option>
+              <option>Love it — feels exactly right</option>
+              <option>Good — minor tweaks would help</option>
+              <option>Okay — could use more variety</option>
+              <option>Too easy — ready to progress</option>
+              <option>Too hard — needs to be dialed back</option>
+              <option>Missing something — unsure what</option>
+            </select>
+          </div>
+          <div class="field"><label>Any program adjustments needed or requested?</label>
+            <textarea id="program-adjustments" placeholder="New goals, injuries to work around, preferences, scheduling changes..."></textarea>
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goPage(1)">← Back</button>
+          <button class="btn btn-primary" onclick="goPage(3)">Next: Diet & nutrition →</button>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 3: DIET & NUTRITION ══ -->
+      <div class="page" id="page-3">
+        <div class="page-header">
+          <h2>Diet & nutrition</h2>
+          <p>Review how the member is eating this month — what's working, what isn't, and where support is needed.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot blue"></span> Nutrition adherence</div>
+          <div class="field">
+            <label>Overall diet adherence this month (1–10)</label>
+            <div class="scale-wrap">
+              <div class="scale-labels"><span>Off track</span><span>On point</span></div>
+              <div class="scale-btns" id="scale-diet">
+                <div class="scale-btn" data-v="1" onclick="pickScale(this,'diet')">1</div>
+                <div class="scale-btn" data-v="2" onclick="pickScale(this,'diet')">2</div>
+                <div class="scale-btn" data-v="3" onclick="pickScale(this,'diet')">3</div>
+                <div class="scale-btn" data-v="4" onclick="pickScale(this,'diet')">4</div>
+                <div class="scale-btn" data-v="5" onclick="pickScale(this,'diet')">5</div>
+                <div class="scale-btn" data-v="6" onclick="pickScale(this,'diet')">6</div>
+                <div class="scale-btn" data-v="7" onclick="pickScale(this,'diet')">7</div>
+                <div class="scale-btn" data-v="8" onclick="pickScale(this,'diet')">8</div>
+                <div class="scale-btn" data-v="9" onclick="pickScale(this,'diet')">9</div>
+                <div class="scale-btn" data-v="10" onclick="pickScale(this,'diet')">10</div>
+              </div>
+            </div>
+            <input type="hidden" id="diet-score" value="">
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Are they tracking calories?</label>
+              <select id="cal-tracking">
+                <option value="">Select...</option>
+                <option>Yes — consistently</option><option>Yes — most days</option>
+                <option>Loosely / estimating</option><option>No — not tracking</option>
+              </select>
+            </div>
+            <div class="field"><label>Are they hitting their protein target?</label>
+              <select id="protein-tracking">
+                <option value="">Select...</option>
+                <option>Yes — consistently hitting target</option>
+                <option>Most days — close to target</option>
+                <option>Struggling — below target most days</option>
+                <option>Not tracking protein</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Daily water intake</label>
+              <select id="water-intake">
+                <option value="">Select...</option>
+                <option>Less than 4 glasses</option><option>4–6 glasses</option>
+                <option>6–8 glasses</option><option>8+ glasses / well hydrated</option>
+              </select>
+            </div>
+            <div class="field"><label>Meals per day (average)</label>
+              <input type="number" id="meals-per-day" min="1" max="10" placeholder="e.g. 3">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot blue"></span> Typical daily meals</div>
+          <div class="grid2">
+            <div class="field"><label>Typical breakfast</label><textarea id="breakfast" placeholder="What does breakfast look like most mornings?"></textarea></div>
+            <div class="field"><label>Typical lunch</label><textarea id="lunch" placeholder="What does lunch look like most days?"></textarea></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Typical dinner</label><textarea id="dinner" placeholder="What does dinner look like most evenings?"></textarea></div>
+            <div class="field"><label>Snacks</label><textarea id="snacks" placeholder="What are they snacking on between meals?"></textarea></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot blue"></span> Nutrition challenges & wins</div>
+          <div class="field"><label>What nutrition habits are going well?</label>
+            <textarea id="nutrition-wins" placeholder="Habits they've built, foods they've added, things they're proud of..."></textarea>
+          </div>
+          <div class="field"><label>Where are they struggling with their diet?</label>
+            <textarea id="nutrition-struggles" placeholder="Late-night eating, weekend slip-ups, skipping meals, cravings, social situations..."></textarea>
+          </div>
+          <div class="field"><label>Any changes to supplements since last check-in?</label>
+            <textarea id="supplements-update" placeholder="New supplements started, discontinued, or adjusted..."></textarea>
+          </div>
+          <div class="field"><label>Are they eating differently on training days vs. rest days?</label>
+            <select id="training-day-nutrition">
+              <option value="">Select...</option>
+              <option>Yes — fueling well around training</option>
+              <option>Trying to — not consistently</option>
+              <option>No — eating the same every day</option>
+              <option>Not aware of training day nutrition</option>
+            </select>
+          </div>
+          <div class="field"><label>Pre- and post-workout nutrition habits</label>
+            <textarea id="periworkout-nutrition" placeholder="What are they eating before and after sessions? Timing? Any issues?"></textarea>
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goPage(2)">← Back</button>
+          <button class="btn btn-primary" onclick="goPage(4)">Next: Wellbeing & lifestyle →</button>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 4: WELLBEING ══ -->
+      <div class="page" id="page-4">
+        <div class="page-header">
+          <h2>Wellbeing & lifestyle</h2>
+          <p>Sleep, stress, energy, and the broader lifestyle factors that directly affect training results.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot gold"></span> Energy & motivation</div>
+          <div class="field">
+            <label>Energy levels throughout the day this month (1–10)</label>
+            <div class="scale-wrap">
+              <div class="scale-labels"><span>Exhausted</span><span>High energy</span></div>
+              <div class="scale-btns" id="scale-energy">
+                <div class="scale-btn" data-v="1" onclick="pickScale(this,'energy')">1</div>
+                <div class="scale-btn" data-v="2" onclick="pickScale(this,'energy')">2</div>
+                <div class="scale-btn" data-v="3" onclick="pickScale(this,'energy')">3</div>
+                <div class="scale-btn" data-v="4" onclick="pickScale(this,'energy')">4</div>
+                <div class="scale-btn" data-v="5" onclick="pickScale(this,'energy')">5</div>
+                <div class="scale-btn" data-v="6" onclick="pickScale(this,'energy')">6</div>
+                <div class="scale-btn" data-v="7" onclick="pickScale(this,'energy')">7</div>
+                <div class="scale-btn" data-v="8" onclick="pickScale(this,'energy')">8</div>
+                <div class="scale-btn" data-v="9" onclick="pickScale(this,'energy')">9</div>
+                <div class="scale-btn" data-v="10" onclick="pickScale(this,'energy')">10</div>
+              </div>
+            </div>
+            <input type="hidden" id="energy-score" value="">
+          </div>
+          <div class="field">
+            <label>Motivation to train this month (1–10)</label>
+            <div class="scale-wrap">
+              <div class="scale-labels"><span>Dragging themselves in</span><span>Fired up</span></div>
+              <div class="scale-btns" id="scale-motivation">
+                <div class="scale-btn" data-v="1" onclick="pickScale(this,'motivation')">1</div>
+                <div class="scale-btn" data-v="2" onclick="pickScale(this,'motivation')">2</div>
+                <div class="scale-btn" data-v="3" onclick="pickScale(this,'motivation')">3</div>
+                <div class="scale-btn" data-v="4" onclick="pickScale(this,'motivation')">4</div>
+                <div class="scale-btn" data-v="5" onclick="pickScale(this,'motivation')">5</div>
+                <div class="scale-btn" data-v="6" onclick="pickScale(this,'motivation')">6</div>
+                <div class="scale-btn" data-v="7" onclick="pickScale(this,'motivation')">7</div>
+                <div class="scale-btn" data-v="8" onclick="pickScale(this,'motivation')">8</div>
+                <div class="scale-btn" data-v="9" onclick="pickScale(this,'motivation')">9</div>
+                <div class="scale-btn" data-v="10" onclick="pickScale(this,'motivation')">10</div>
+              </div>
+            </div>
+            <input type="hidden" id="motivation-score" value="">
+          </div>
+          <div class="field"><label>What's been keeping them motivated this month?</label>
+            <textarea id="motivation-drivers" placeholder="Results they've noticed, how they feel, accountability, upcoming events..."></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot gold"></span> Sleep & stress</div>
+          <div class="field">
+            <label>Sleep quality this month (1–10)</label>
+            <div class="scale-wrap">
+              <div class="scale-labels"><span>Poor sleep</span><span>Sleeping great</span></div>
+              <div class="scale-btns" id="scale-sleep">
+                <div class="scale-btn" data-v="1" onclick="pickScale(this,'sleep')">1</div>
+                <div class="scale-btn" data-v="2" onclick="pickScale(this,'sleep')">2</div>
+                <div class="scale-btn" data-v="3" onclick="pickScale(this,'sleep')">3</div>
+                <div class="scale-btn" data-v="4" onclick="pickScale(this,'sleep')">4</div>
+                <div class="scale-btn" data-v="5" onclick="pickScale(this,'sleep')">5</div>
+                <div class="scale-btn" data-v="6" onclick="pickScale(this,'sleep')">6</div>
+                <div class="scale-btn" data-v="7" onclick="pickScale(this,'sleep')">7</div>
+                <div class="scale-btn" data-v="8" onclick="pickScale(this,'sleep')">8</div>
+                <div class="scale-btn" data-v="9" onclick="pickScale(this,'sleep')">9</div>
+                <div class="scale-btn" data-v="10" onclick="pickScale(this,'sleep')">10</div>
+              </div>
+            </div>
+            <input type="hidden" id="sleep-score" value="">
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Average hours of sleep per night</label>
+              <select id="sleep-hours">
+                <option value="">Select...</option>
+                <option>Less than 5 hours</option><option>5–6 hours</option>
+                <option>6–7 hours</option><option>7–8 hours</option><option>8+ hours</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Overall stress level this month (1–10)</label>
+              <div class="scale-wrap" style="margin-top:2px">
+                <div class="scale-btns" id="scale-stress">
+                  <div class="scale-btn" data-v="1" onclick="pickScale(this,'stress')">1</div>
+                  <div class="scale-btn" data-v="2" onclick="pickScale(this,'stress')">2</div>
+                  <div class="scale-btn" data-v="3" onclick="pickScale(this,'stress')">3</div>
+                  <div class="scale-btn" data-v="4" onclick="pickScale(this,'stress')">4</div>
+                  <div class="scale-btn" data-v="5" onclick="pickScale(this,'stress')">5</div>
+                  <div class="scale-btn" data-v="6" onclick="pickScale(this,'stress')">6</div>
+                  <div class="scale-btn" data-v="7" onclick="pickScale(this,'stress')">7</div>
+                  <div class="scale-btn" data-v="8" onclick="pickScale(this,'stress')">8</div>
+                  <div class="scale-btn" data-v="9" onclick="pickScale(this,'stress')">9</div>
+                  <div class="scale-btn" data-v="10" onclick="pickScale(this,'stress')">10</div>
+                </div>
+              </div>
+              <input type="hidden" id="stress-score" value="">
+            </div>
+          </div>
+          <div class="field"><label>Any lifestyle changes or events this month that have affected training or recovery?</label>
+            <textarea id="lifestyle-changes" placeholder="Travel, work demands, illness, family events, seasonal changes..."></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot gold"></span> Current challenges & wins</div>
+          <div class="field"><label>What has been the biggest challenge this month?</label>
+            <textarea id="current-challenges" placeholder="In their own words — what's been hardest?"></textarea>
+          </div>
+          <div class="field"><label>Select all the wins from this month (tap all that apply)</label>
+            <div class="win-grid" id="win-tags">
+              <div class="win-tag" onclick="toggleWin(this)">💪 New strength PR</div>
+              <div class="win-tag" onclick="toggleWin(this)">⚖️ Weight lost</div>
+              <div class="win-tag" onclick="toggleWin(this)">📉 Body fat reduced</div>
+              <div class="win-tag" onclick="toggleWin(this)">💚 More energy daily</div>
+              <div class="win-tag" onclick="toggleWin(this)">😴 Sleeping better</div>
+              <div class="win-tag" onclick="toggleWin(this)">🥗 Eating cleaner</div>
+              <div class="win-tag" onclick="toggleWin(this)">🧘 Less stressed</div>
+              <div class="win-tag" onclick="toggleWin(this)">🏃 Better endurance</div>
+              <div class="win-tag" onclick="toggleWin(this)">🤸 More flexible</div>
+              <div class="win-tag" onclick="toggleWin(this)">👕 Clothes fitting better</div>
+              <div class="win-tag" onclick="toggleWin(this)">🧪 Better lab results</div>
+              <div class="win-tag" onclick="toggleWin(this)">🎯 Hit a goal</div>
+              <div class="win-tag" onclick="toggleWin(this)">📸 Progress photos</div>
+              <div class="win-tag" onclick="toggleWin(this)">💬 Feeling more confident</div>
+              <div class="win-tag" onclick="toggleWin(this)">🔄 Consistent attendance</div>
+            </div>
+            <input type="hidden" id="wins-list" value="">
+          </div>
+          <div class="field" style="margin-bottom:0"><label>Any other wins or milestones worth noting?</label>
+            <textarea id="other-wins" placeholder="Anything the data doesn't capture — how they feel, what others have noticed, personal breakthroughs..."></textarea>
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goPage(3)">← Back</button>
+          <button class="btn btn-primary" onclick="goPage(5)">Next: InBody comparison →</button>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 5: INBODY ══ -->
+      <div class="page" id="page-5">
+        <div class="page-header">
+          <h2>InBody comparison</h2>
+          <p>Enter today's scan alongside last month's results. Changes are calculated automatically.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Body composition — last month vs. today</div>
+          <div class="compare-wrap">
+            <div class="compare-col">
+              <div class="col-head">Previous scan <span class="badge badge-prev">Last month</span></div>
+              <div class="m-row"><span class="m-key">Height</span><span class="m-val"><input type="text" id="prev-height" placeholder="5'10&quot;" style="width:90px;text-align:right"></span></div>
+              <div class="m-row"><span class="m-key">Weight (lb)</span><span class="m-val"><input type="number" id="prev-weight" step="0.1" placeholder="—"></span></div>
+              <div class="m-row"><span class="m-key">BMI</span><span class="m-val"><input type="number" id="prev-bmi" step="0.1" placeholder="—"></span></div>
+              <div class="m-row"><span class="m-key">Body fat (lb)</span><span class="m-val"><input type="number" id="prev-fat" step="0.1" placeholder="—"></span></div>
+              <div class="m-row"><span class="m-key">Lean mass (lb)</span><span class="m-val"><input type="number" id="prev-lean" step="0.1" placeholder="—"></span></div>
+              <div class="m-row"><span class="m-key">Water weight (lb)</span><span class="m-val"><input type="number" id="prev-water" step="0.1" placeholder="—"></span></div>
+              <div class="m-row"><span class="m-key">PBF %</span><span class="m-val"><input type="number" id="prev-pbf" step="0.1" placeholder="—"></span></div>
+            </div>
+            <div class="compare-col current">
+              <div class="col-head">Today's scan <span class="badge badge-now">Current</span></div>
+              <div class="m-row"><span class="m-key">Height</span><span class="m-val"><input type="text" id="now-height" placeholder="5'10&quot;" style="width:90px;text-align:right"></span></div>
+              <div class="m-row"><span class="m-key">Weight (lb)</span><span class="m-val"><input type="number" id="now-weight" step="0.1" placeholder="—" oninput="calcDelta('weight','prev-weight','now-weight','delta-weight',true)"> <span id="delta-weight" class="delta"></span></span></div>
+              <div class="m-row"><span class="m-key">BMI</span><span class="m-val"><input type="number" id="now-bmi" step="0.1" placeholder="—" oninput="calcDelta('bmi','prev-bmi','now-bmi','delta-bmi',true)"> <span id="delta-bmi" class="delta"></span></span></div>
+              <div class="m-row"><span class="m-key">Body fat (lb)</span><span class="m-val"><input type="number" id="now-fat" step="0.1" placeholder="—" oninput="calcDelta('fat','prev-fat','now-fat','delta-fat',true)"> <span id="delta-fat" class="delta"></span></span></div>
+              <div class="m-row"><span class="m-key">Lean mass (lb)</span><span class="m-val"><input type="number" id="now-lean" step="0.1" placeholder="—" oninput="calcDelta('lean','prev-lean','now-lean','delta-lean',false)"> <span id="delta-lean" class="delta"></span></span></div>
+              <div class="m-row"><span class="m-key">Water weight (lb)</span><span class="m-val"><input type="number" id="now-water" step="0.1" placeholder="—" oninput="calcDelta('water','prev-water','now-water','delta-water',false)"> <span id="delta-water" class="delta"></span></span></div>
+              <div class="m-row"><span class="m-key">PBF %</span><span class="m-val"><input type="number" id="now-pbf" step="0.1" placeholder="—" oninput="calcDelta('pbf','prev-pbf','now-pbf','delta-pbf',true)"> <span id="delta-pbf" class="delta"></span></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Segmental lean analysis</div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:14px">Previous values shown above each input. Enter today's readings.</p>
+          <div class="seg-grid">
+            <div class="seg-box">
+              <label>Left arm</label>
+              <div class="seg-prev-val" id="sp-la">Prev: —</div>
+              <input class="seg-input" type="number" id="now-seg-la" step="0.1" placeholder="—">
+              <div class="seg-unit">% today</div>
+            </div>
+            <div class="seg-box">
+              <label>Right arm</label>
+              <div class="seg-prev-val" id="sp-ra">Prev: —</div>
+              <input class="seg-input" type="number" id="now-seg-ra" step="0.1" placeholder="—">
+              <div class="seg-unit">% today</div>
+            </div>
+            <div class="seg-box">
+              <label>Trunk</label>
+              <div class="seg-prev-val" id="sp-trunk">Prev: —</div>
+              <input class="seg-input" type="number" id="now-seg-trunk" step="0.1" placeholder="—">
+              <div class="seg-unit">% today</div>
+            </div>
+            <div class="seg-box">
+              <label>Left leg</label>
+              <div class="seg-prev-val" id="sp-ll">Prev: —</div>
+              <input class="seg-input" type="number" id="now-seg-ll" step="0.1" placeholder="—">
+              <div class="seg-unit">% today</div>
+            </div>
+            <div class="seg-box">
+              <label>Right leg</label>
+              <div class="seg-prev-val" id="sp-rl">Prev: —</div>
+              <input class="seg-input" type="number" id="now-seg-rl" step="0.1" placeholder="—">
+              <div class="seg-unit">% today</div>
+            </div>
+          </div>
+          <hr class="divider">
+          <div class="grid3">
+            <div class="field"><label>Prev left arm %</label><input type="number" id="prev-seg-la" step="0.1" placeholder="—" oninput="refreshSeg()"></div>
+            <div class="field"><label>Prev right arm %</label><input type="number" id="prev-seg-ra" step="0.1" placeholder="—" oninput="refreshSeg()"></div>
+            <div class="field"><label>Prev trunk %</label><input type="number" id="prev-seg-trunk" step="0.1" placeholder="—" oninput="refreshSeg()"></div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label>Prev left leg %</label><input type="number" id="prev-seg-ll" step="0.1" placeholder="—" oninput="refreshSeg()"></div>
+            <div class="field"><label>Prev right leg %</label><input type="number" id="prev-seg-rl" step="0.1" placeholder="—" oninput="refreshSeg()"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Advisor scan notes</div>
+          <div class="field" style="margin-bottom:0"><label>Observations from today's InBody — what stood out?</label>
+            <textarea id="scan-notes" placeholder="Trends, improvements, areas of concern, how results compare to what the member is experiencing..."></textarea>
+          </div>
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goPage(4)">← Back</button>
+          <button class="btn btn-primary" onclick="goPage(6)">Next: Assessment & save →</button>
+        </div>
+      </div>
+
+      <!-- ══ PAGE 6: ASSESSMENT ══ -->
+      <div class="page" id="page-6">
+        <div class="page-header">
+          <h2>Assessment & save</h2>
+          <p>Generate the AI-powered monthly assessment, then save everything to the progress tracker.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Generate monthly assessment</div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:16px">The AI will synthesize all check-in data into a personalized member-facing assessment covering this month's progress, nutrition, wellbeing, and recommended focus areas for next month.</p>
+          <button class="btn btn-primary btn-lg btn-full" id="gen-btn" onclick="generateAssessment()">
+            ✨ Generate monthly assessment
+          </button>
+          <div id="assess-status" class="status-bar" style="margin-top:12px"></div>
+          <div id="assessment-box" class="assessment-box"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot gold"></span> Advisor notes</div>
+          <div class="field" style="margin-bottom:0"><label>Private advisor notes (not included in member assessment)</label>
+            <textarea id="advisor-notes" style="min-height:90px" placeholder="Internal observations, flags for next session, things to monitor, program adjustments to make..."></textarea>
+          </div>
+        </div>
+
+        <div id="next-date-panel" class="next-date-panel">
+          <div class="nd-title">📅 Next check-in scheduled</div>
+          <div class="nd-date" id="nd-date-display">—</div>
+          <div class="nd-sub" id="nd-date-sub">One month from today</div>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-full" id="save-btn" onclick="saveCheckin()" style="margin-top:14px">
+          📊 Save to progress tracker & notify team
+        </button>
+
+        <div id="confirm-save" class="confirm-box">
+          ✅ Saved to PT Member Progress Tracker. Next check-in scheduled. Team notified.
+        </div>
+
+        <div class="nav-row">
+          <button class="btn btn-ghost" onclick="goPage(5)">← Back to InBody</button>
+          <button class="btn btn-outline" onclick="resetForm()">🔄 New check-in</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+
+function getApiUrl() {
+  return getCfg('proxyUrl') || 'https://broken-cake-e9c2.tedscholl.workers.dev';
+}
+
+function getApiHeaders(apiKey) {
+  return { 'Content-Type': 'application/json' };
+}
+
+// ═══════════════════════════
+// CONFIG
+// ═══════════════════════════
+const SHEET_ID_DEFAULT = '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
+const NOTIFY_EMAILS = 'tedscholl@gmail.com, healthylifewithdani1@gmail.com';
+
+function getCfg(k){ return localStorage.getItem('fct_'+k)||localStorage.getItem('ffu_'+k)||localStorage.getItem('ptci_'+k)||localStorage.getItem('pttools_'+k)||''; }
+function setCfg(k,v){ localStorage.setItem('fct_'+k,v);localStorage.setItem('ffu_'+k,v);localStorage.setItem('ptci_'+k,v);localStorage.setItem('pttools_'+k,v); }
+
+function saveConfig() {
+  // Auto-save with hardcoded values - no user input needed
+  var prefixes = ['fct_','ffu_','ptci_','pttools_'];
+  prefixes.forEach(function(p) {
+    localStorage.setItem(p+'apiKey', 'worker');
+    localStorage.setItem(p+'gKey', 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ');
+    localStorage.setItem(p+'configured', '1');
+    localStorage.setItem(p+'proxyUrl', 'https://broken-cake-e9c2.tedscholl.workers.dev');
+    localStorage.setItem(p+'sheetId', '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g');
+    localStorage.setItem(p+'ptSheetId', '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs');
+  });
+  var el = document.getElementById('config-overlay');
+  if (el) el.style.display = 'none';
+}
+
+function openConfig(){
+  /* config overlay suppressed - keys hardcoded */
+  if(getCfg('apiKey')) document.getElementById('cfg-api-key').value=getCfg('apiKey');
+  if(getCfg('sheetId')) document.getElementById('cfg-sheet-id').value=getCfg('sheetId');
+  if('AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ') document.getElementById('cfg-gkey').value='AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
+  if(getCfg('emails')) document.getElementById('cfg-emails').value=getCfg('emails');
+}
+
+function openSheet(){ window.open('https://docs.google.com/spreadsheets/d/'+(getCfg('sheetId')||SHEET_ID_DEFAULT)+'/edit','_blank'); }
+
+window.addEventListener('load',()=>{
+  saveConfig(); // auto-populate all keys
+
+  localStorage.setItem('fct_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
+  localStorage.setItem('ffu_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
+  localStorage.setItem('ptci_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
+  var k=localStorage.getItem('fct_gKey')||localStorage.getItem('ffu_gKey')||localStorage.getItem('ptci_gKey'); if(!k){ /* config overlay suppressed - keys hardcoded */ }
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('checkin-date').value=today;
+  updateDates();
+  const adv=getCfg('advisor'); if(adv){ const el=document.getElementById('advisor-name'); if(el&&!el.value) el.value=adv; }
+
+});
+
+function updateDates(){
+  const checkinVal=document.getElementById('checkin-date').value;
+  const startVal=document.getElementById('program-start').value;
+  if(!checkinVal) return;
+  const checkin=new Date(checkinVal+'T12:00:00');
+  const next=new Date(checkin);
+  next.setMonth(next.getMonth()+1);
+  const fmt=(d)=>d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const fmtISO=(d)=>d.toISOString().split('T')[0];
+  document.getElementById('next-checkin').value=fmtISO(next);
+  document.getElementById('banner-today').textContent=fmt(checkin);
+  document.getElementById('banner-next').textContent=fmt(next);
+  document.getElementById('nd-date-display').textContent=fmt(next);
+  document.getElementById('next-date-panel').style.display='block';
+  if(startVal){
+    const start=new Date(startVal+'T12:00:00');
+    const months=Math.round((checkin-start)/(1000*60*60*24*30));
+    document.getElementById('banner-month').textContent='Month '+(months+1);
+  } else {
+    document.getElementById('banner-month').textContent='—';
+  }
+}
+
+// ═══════════════════════════
+// NAVIGATION
+// ═══════════════════════════
+let currentPage=0;
+const pageLabels=['Upload & pre-fill','Member details','Training review','Diet & nutrition','Wellbeing & lifestyle','InBody comparison','Assessment & save'];
+
+function goPage(n){
+  document.getElementById('page-'+currentPage).classList.remove('active');
+  document.getElementById('nav-'+currentPage).classList.remove('active');
+  currentPage=n;
+  document.getElementById('page-'+n).classList.add('active');
+  for(let i=0;i<7;i++){
+    const nav=document.getElementById('nav-'+i);
+    nav.classList.remove('active','done');
+    if(i<n) nav.classList.add('done');
+  }
+  document.getElementById('nav-'+n).classList.add('active');
+  document.getElementById('breadcrumb-label').textContent=pageLabels[n];
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ═══════════════════════════
+// SCALES
+// ═══════════════════════════
+function pickScale(el,group){
+  document.getElementById('scale-'+group).querySelectorAll('.scale-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById(group+'-score').value=el.getAttribute('data-v');
+}
+
+// ═══════════════════════════
+// WIN TAGS
+// ═══════════════════════════
+function toggleWin(el){
+  el.classList.toggle('selected');
+  const wins=Array.from(document.querySelectorAll('#win-tags .win-tag.selected')).map(t=>t.textContent.trim());
+  document.getElementById('wins-list').value=wins.join(', ');
+}
+
+// ═══════════════════════════
+// INBODY DELTAS
+// ═══════════════════════════
+function calcDelta(name,prevId,nowId,deltaId,lowerIsBetter){
+  const prev=parseFloat(document.getElementById(prevId).value);
+  const now=parseFloat(document.getElementById(nowId).value);
+  const el=document.getElementById(deltaId);
+  if(isNaN(prev)||isNaN(now)){el.textContent='';el.className='delta';return;}
+  const diff=(now-prev).toFixed(1);
+  const pos=parseFloat(diff)>0;
+  const good=lowerIsBetter?!pos:pos;
+  el.textContent=(pos?'+':'')+diff;
+  el.className='delta '+(parseFloat(diff)===0?'flat':good?'up':'down');
+}
+
+function refreshSeg(){
+  ['la','ra','trunk','ll','rl'].forEach(id=>{
+    const v=document.getElementById('prev-seg-'+id).value;
+    document.getElementById('sp-'+id).textContent='Prev: '+(v?v+'%':'—');
+  });
+}
+
+// ═══════════════════════════
+// FILE UPLOAD
+// ═══════════════════════════
+let uploadedFiles=[];
+
+function handleDrag(e,over){e.preventDefault();document.getElementById('upload-zone').classList.toggle('dragover',over);}
+function handleDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('dragover');handleFiles(e.dataTransfer.files);}
+
+function handleFiles(files){
+  if(!files||!files.length) return;
+  uploadedFiles=Array.from(files);
+  const listEl=document.getElementById('file-list');
+  listEl.innerHTML=uploadedFiles.map((f,i)=>`
+    <div class="file-chip" id="fchip-${i}">
+      <span style="font-size:18px">${f.type.includes('pdf')?'📄':'🖼️'}</span>
+      <span class="fn">${f.name}</span>
+      <span class="fs">${(f.size/1024).toFixed(0)} KB</span>
+      <span class="fst" id="fst-${i}">Ready</span>
+    </div>`).join('');
+  document.getElementById('parse-btn').style.display='block';
+  setStatus('upload-status','','');
+}
+
+function setStatus(id,type,msg){
+  const el=document.getElementById(id);
+  el.className='status-bar'+(type?' '+type:'');
+  el.innerHTML=msg; el.style.display=type?'flex':'none';
+}
+
+function toBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej(new Error('Read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+async function parseAllFiles(){
+  const apiKey=getCfg('apiKey'); if(!apiKey){openConfig();return;}
+  const btn=document.getElementById('parse-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Reading...';
+  setStatus('upload-status','info','<span class="spinner dark"></span>&nbsp; Extracting data from documents...');
+  try{
+    const blocks=[];
+    for(let i=0;i<uploadedFiles.length;i++){
+      const f=uploadedFiles[i];
+      document.getElementById('fst-'+i).textContent='Reading...';
+      const b64=await toBase64(f);
+      const mt=f.type==='application/pdf'?'application/pdf':(f.type||'image/jpeg');
+      blocks.push(mt==='application/pdf'?{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}}:{type:'image',source:{type:'base64',media_type:mt,data:b64}});
+      document.getElementById('fst-'+i).textContent='✓ Loaded';
+    }
+    blocks.push({type:'text',text:`Extract all data from these documents and return ONLY valid JSON with these exact keys (empty string if not found):
+{"name":"","phone":"","email":"","gender":"","age":"","prev_height":"","prev_weight":"","prev_bmi":"","prev_fat":"","prev_lean":"","prev_water":"","prev_pbf":"","now_height":"","now_weight":"","now_bmi":"","now_fat":"","now_lean":"","now_water":"","now_pbf":"","prev_seg_la":"","prev_seg_ra":"","prev_seg_trunk":"","prev_seg_ll":"","prev_seg_rl":"","now_seg_la":"","now_seg_ra":"","now_seg_trunk":"","now_seg_ll":"","now_seg_rl":""}
+For InBody scans with two scans, map older to prev_ and newer to now_. Single scan goes to now_.
+CRITICAL INBODY EXTRACTION RULES:
+- seg_la = Left Arm segmental lean mass percentage (look for "Left Arm", "L. Arm", "LA" in segmental analysis section)
+- seg_ra = Right Arm segmental lean mass percentage (look for "Right Arm", "R. Arm", "RA")
+- seg_trunk = Trunk segmental lean mass percentage (look for "Trunk", "Torso")
+- seg_ll = Left Leg segmental lean mass percentage (look for "Left Leg", "L. Leg", "LL")
+- seg_rl = Right Leg segmental lean mass percentage (look for "Right Leg", "R. Leg", "RL")
+- These are PERCENTAGE values shown in the segmental lean analysis bar chart section of the InBody report
+- pbf = Percent Body Fat (PBF) percentage number only
+- lean_mass = Skeletal Muscle Mass or Lean Body Mass in lbs
+- fat_mass = Body Fat Mass in lbs
+- water_weight = Total Body Water in lbs
+- bmi = BMI number only
+- For dob use YYYY-MM-DD format
+- Extract member name, height, age from the report header`});
+
+    const resp=await fetch(getApiUrl(),{method:'POST',headers: getApiHeaders(apiKey),
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:800,messages:[{role:'user',content:blocks}]})});
+    const data=await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    const parsed=JSON.parse(data.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim());
+    autoFill(parsed);
+    const n=Object.entries(parsed).filter(([k,v])=>v).length;
+    setStatus('upload-status','success',`✅ ${n} fields auto-filled. Review and continue.`);
+    const pv=document.getElementById('parsed-preview');
+    pv.style.display='block';
+    pv.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>`  ${k}: ${v}`).join('\n');
+    btn.innerHTML='🔄 Re-upload or add more'; btn.disabled=false;
+  } catch(e){
+    setStatus('upload-status','error','❌ API connection failed. Please set up your Cloudflare Worker proxy — see the hub Settings.');
+    btn.innerHTML='🧠 Read documents & auto-fill'; btn.disabled=false;
+  }
+}
+
+function sf(id,val){
+  if(!val) return;
+  const el=document.getElementById(id); if(!el) return;
+  el.tagName==='SELECT'?Array.from(el.options).some(o=>{if(o.text.toLowerCase().includes(String(val).toLowerCase())){el.value=o.value;return true;}}):el.value=val;
+  el.classList.add('auto');
+}
+
+function autoFill(d){
+  sf('name',d.name);sf('phone',d.phone);sf('email',d.email);sf('gender',d.gender);sf('age',d.age);
+  sf('prev-height',d.prev_height);sf('prev-weight',d.prev_weight);sf('prev-bmi',d.prev_bmi);
+  sf('prev-fat',d.prev_fat);sf('prev-lean',d.prev_lean);sf('prev-water',d.prev_water);sf('prev-pbf',d.prev_pbf);
+  sf('now-height',d.now_height);sf('now-weight',d.now_weight);sf('now-bmi',d.now_bmi);
+  sf('now-fat',d.now_fat);sf('now-lean',d.now_lean);sf('now-water',d.now_water);sf('now-pbf',d.now_pbf);
+  sf('prev-seg-la',d.prev_seg_la);sf('prev-seg-ra',d.prev_seg_ra);sf('prev-seg-trunk',d.prev_seg_trunk);
+  sf('prev-seg-ll',d.prev_seg_ll);sf('prev-seg-rl',d.prev_seg_rl);
+  sf('now-seg-la',d.now_seg_la);sf('now-seg-ra',d.now_seg_ra);sf('now-seg-trunk',d.now_seg_trunk);
+  sf('now-seg-ll',d.now_seg_ll);sf('now-seg-rl',d.now_seg_rl);
+  refreshSeg();
+  ['bmi','fat','lean','water','pbf','weight'].forEach(m=>calcDelta(m,'prev-'+m,'now-'+m,'delta-'+m,m==='lean'?false:true));
+}
+
+// ═══════════════════════════
+// ASSESSMENT
+// ═══════════════════════════
+let assessmentText='';
+
+  // ── Send email notification immediately after assessment ──
+  try {
+    var emailSubject = 'PT Assessment Ready: ' + (gv('name') || gv('fu-name') || gv('member-name') || 'Member');
+    var emailBody = 'ASSESSMENT COMPLETED\n' +
+      '================\n' +
+      'Date: ' + (gv('consult-date') || gv('fu-date') || gv('checkin-date') || new Date().toLocaleDateString()) + '\n' +
+      'Advisor: ' + (gv('advisor-name') || getCfg('advisor') || '') + '\n\n' +
+      'MEMBER CONTACT\n' +
+      '--------------\n' +
+      'Name: ' + (gv('name') || gv('fu-name') || '') + '\n' +
+      'Phone: ' + (gv('phone') || gv('fu-phone') || '') + '\n' +
+      'Email: ' + (gv('email') || gv('fu-email') || '') + '\n' +
+      'Gender: ' + (gv('gender') || '') + ' | Age: ' + (gv('age') || '') + '\n' +
+      'Goals: ' + (gv('goals') || gv('orig-goals') || '') + '\n\n' +
+      'FULL ASSESSMENT\n' +
+      '---------------\n' +
+      assessmentText;
+    
+    // Open Gmail compose with assessment pre-filled
+    var gmailBody = encodeURIComponent(emailBody.substring(0, 9000));
+    var gmailSubj = encodeURIComponent(emailSubject);
+    var gmailUrl = 'https://mail.google.com/mail/?view=cm' +
+      '&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com' +
+      '&su=' + gmailSubj +
+      '&body=' + gmailBody;
+    window.open(gmailUrl, '_blank');
+  } catch(eml) { console.log('Assessment email error:', eml.message); }
+function gv(id){return (document.getElementById(id)||{}).value||'';}
+
+function buildPrompt(){
+  return `You are a professional personal training advisor conducting a monthly check-in with an active client. Generate a warm, thorough, member-facing monthly progress assessment in four clearly labeled sections. Address the member directly throughout.
+
+1. THIS MONTH'S PROGRESS
+Summarize the member's training performance, consistency, and physical results this month. Reference their session completion rate, performance improvements, and InBody scan changes with specific numbers. Acknowledge their effort honestly — celebrate what went well and note where there is room to grow, without judgment.
+
+2. NUTRITION & RECOVERY CHECK-IN
+Review how their diet and lifestyle habits have supported or limited their progress this month. Comment on their nutrition adherence score, protein and calorie tracking, hydration, sleep quality, and stress levels. Connect these directly to the physical results and how they've been feeling in sessions. Offer practical, specific guidance for the coming month.
+
+3. WINS & HIGHLIGHTS
+Celebrate this month's victories — both measurable and personal. Reference the wins they selected and any standout moments from the check-in. Make this section feel genuinely affirming and specific to them, not generic.
+
+4. FOCUS AREAS FOR NEXT MONTH
+Based on everything from this check-in, provide clear advisor recommendations for the coming month. Include:
+- Training adjustments or progressions based on their performance and feedback
+- Specific nutrition priorities to focus on
+- Recovery or lifestyle habits to address
+- Any program modifications based on their challenges or requests
+- One or two clear, achievable goals to aim for before the next check-in
+
+--- CHECK-IN DATA ---
+Member: ${gv('name')} | Age: ${gv('age')} | Gender: ${gv('gender')}
+Advisor: ${gv('advisor-name')||getCfg('advisor')} | Check-in date: ${gv('checkin-date')}
+Program start: ${gv('program-start')} | Training frequency: ${gv('training-freq')}
+Next check-in: ${gv('next-checkin')}
+
+TRAINING:
+Sessions completed: ${gv('sessions-done')} | Missed: ${gv('sessions-missed')} | Reason: ${gv('missed-reason')}
+Session quality score: ${gv('session-score')}/10 | Recovery score: ${gv('recovery-score')}/10
+Strength progress: ${gv('strength-progress')}
+Endurance progress: ${gv('endurance-progress')}
+Flexibility progress: ${gv('flex-progress')}
+Confident movements: ${gv('confident-movements')}
+Challenging movements: ${gv('challenging-movements')}
+Program feedback: ${gv('program-feel')}
+Adjustments requested: ${gv('program-adjustments')}
+
+NUTRITION:
+Diet adherence: ${gv('diet-score')}/10
+Calorie tracking: ${gv('cal-tracking')} | Protein target: ${gv('protein-tracking')}
+Water intake: ${gv('water-intake')} | Meals/day: ${gv('meals-per-day')}
+Breakfast: ${gv('breakfast')} | Lunch: ${gv('lunch')} | Dinner: ${gv('dinner')} | Snacks: ${gv('snacks')}
+Nutrition wins: ${gv('nutrition-wins')}
+Nutrition struggles: ${gv('nutrition-struggles')}
+Supplements update: ${gv('supplements-update')}
+Training day nutrition: ${gv('training-day-nutrition')}
+Pre/post-workout nutrition: ${gv('periworkout-nutrition')}
+
+WELLBEING:
+Energy: ${gv('energy-score')}/10 | Motivation: ${gv('motivation-score')}/10
+Sleep quality: ${gv('sleep-score')}/10 | Avg sleep: ${gv('sleep-hours')}
+Stress level: ${gv('stress-score')}/10
+Motivation drivers: ${gv('motivation-drivers')}
+Lifestyle changes: ${gv('lifestyle-changes')}
+Current challenges: ${gv('current-challenges')}
+Wins this month: ${gv('wins-list')}
+Other wins: ${gv('other-wins')}
+
+INBODY COMPARISON:
+Previous — Weight: ${gv('prev-weight')}lb, BMI: ${gv('prev-bmi')}, Body fat: ${gv('prev-fat')}lb, Lean: ${gv('prev-lean')}lb, Water: ${gv('prev-water')}lb, PBF: ${gv('prev-pbf')}%
+Current  — Weight: ${gv('now-weight')}lb, BMI: ${gv('now-bmi')}, Body fat: ${gv('now-fat')}lb, Lean: ${gv('now-lean')}lb, Water: ${gv('now-water')}lb, PBF: ${gv('now-pbf')}%
+Segmental (prev→now): LA ${gv('prev-seg-la')}%→${gv('now-seg-la')}% | RA ${gv('prev-seg-ra')}%→${gv('now-seg-ra')}% | Trunk ${gv('prev-seg-trunk')}%→${gv('now-seg-trunk')}% | LL ${gv('prev-seg-ll')}%→${gv('now-seg-ll')}% | RL ${gv('prev-seg-rl')}%→${gv('now-seg-rl')}%
+Advisor scan notes: ${gv('scan-notes')}
+---
+
+Write in clear, warm, professional prose addressed directly to the member. Use plain section headers. Be specific, data-driven, and genuinely encouraging.
+
+Then end with this member-facing progress summary — keep it positive, motivating, and forward-focused:
+
+════════════════════════════════════
+YOUR MONTHLY PROGRESS REPORT
+════════════════════════════════════
+
+THIS MONTH IN REVIEW
+[3-4 sentences written directly to the member. Highlight the most meaningful changes in their InBody data this month — fat lost, muscle gained, score improvements. Acknowledge their effort. Be specific with numbers.]
+
+WHAT'S WORKING
+[2-3 sentences about what habits or training approaches are clearly paying off based on the data and their self-reported scores. Reinforce the positive behaviors.]
+
+FOCUS FOR NEXT MONTH
+[3-4 short bullet points. One training adjustment, one nutrition focus, one lifestyle habit, and one metric to beat. Keep it simple — one thing at a time.]
+
+YOUR MOMENTUM
+[2 closing sentences that celebrate how far they've come and build excitement for next month. Reference a specific number or milestone from their data. End with energy — e.g. "You're building real momentum — next month we push further."]`;
+}
+
+async function generateAssessment(){
+  const apiKey=getCfg('apiKey'); if(!apiKey){openConfig();return;}
+  const btn=document.getElementById('gen-btn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>&nbsp; Generating assessment...';
+  setStatus('assess-status','info','<span class="spinner dark"></span>&nbsp; Analyzing check-in data and building monthly assessment...');
+  document.getElementById('assessment-box').style.display='none';
+  try{
+    const resp=await fetch(getApiUrl(),{method:'POST',headers: getApiHeaders(apiKey),
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:3000,messages:[{role:'user',content:buildPrompt()}]})});
+    const data=await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    assessmentText=data.content.map(b=>b.text||'').join('');
+    document.getElementById('assessment-box').textContent=assessmentText;
+    document.getElementById('assessment-box').style.display='block';
+    document.getElementById('next-date-panel').style.display='block';
+    setStatus('assess-status','','');
+  } catch(e){setStatus('assess-status','error','❌ Error: '+e.message);}
+  btn.disabled=false; btn.innerHTML='✨ Regenerate assessment';
+}
+
+// ═══════════════════════════
+// GOOGLE SHEETS SAVE
+// ═══════════════════════════
+
+async function ensureSheetHeaders(tab) {
+  var gKey = 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
+  var sheetId = getCfg('sheetId');
+  if (!gKey || !sheetId) return;
+  var headers = [['Date','Gender','Age','Name','Phone','Email','Goal / Program','Follow-Up Date','Outcome','Advisor Notes','Assessment Summary','Tool Link']];
+  var range = encodeURIComponent(tab + '!A1:L1');
+  var checkUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + range + '?key=' + gKey;
+  try {
+    var r = await fetch(checkUrl);
+    var d = await r.json();
+    if (!d.values || !d.values[0] || !d.values[0][0]) {
+      // Headers not set - write them
+      var writeUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + range + '?valueInputOption=USER_ENTERED&key=' + gKey;
+      await fetch(writeUrl, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({values: headers}) });
+    }
+  } catch(e) { /* silent fail */ }
+}
+
+async function appendToSheet(row){
+  const gKey='AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
+  const sheetId=getCfg('sheetId')||SHEET_ID_DEFAULT;
+  // gKey hardcoded
+  const range=encodeURIComponent('Sheet1!A1');
+  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:append?valueInputOption=USER_ENTERED&key=${gKey}`;
+  try{
+    const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
+    const data=await resp.json();
+    if(data.error){console.error('Sheets:',data.error.message);return false;}
+    return true;
+  } catch(e){console.error('Sheets write:',e);return false;}
+}
+
+function calcDeltaVal(prevId,nowId){
+  const p=parseFloat(document.getElementById(prevId).value);
+  const n=parseFloat(document.getElementById(nowId).value);
+  if(isNaN(p)||isNaN(n)) return '';
+  return (n-p).toFixed(1);
+}
+
+
+function addToCalendar(name, followUpDate, phone, email) {
+  var title = encodeURIComponent('Monthly Check-In: ' + name);
+  var details = encodeURIComponent('Phone: ' + (phone||'') + '\nEmail: ' + (email||''));
+  var date = (followUpDate||'').replace(/-/g,'');
+  if (!date) return;
+  var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + title + '&dates=' + date + '/' + date +
+    '&details=' + details + '&add=tedscholl%40gmail.com';
+  window.open(url, '_blank');
+}
+
+// ── Save to Check-In History tab ──
+async function saveToCheckinHistory(row) {
+  var gKey = getCfg('gKey') || 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
+  var sheetId = getCfg('ptSheetId') || '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
+  
+  // Ensure headers on Check-In History tab
+  var hResp = await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent('Check-In History!A1:N1') + '?key=' + gKey);
+  var hData = await hResp.json();
+  if (!hData.values || !hData.values[0]) {
+    await fetch('https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent('Check-In History!A1:N1') + '?valueInputOption=USER_ENTERED&key=' + gKey, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values: [['Date','Name','Gender','Age','Program','Sessions Done','Session Score','Diet Score','Sleep Score','Stress Score','BMI','PBF%','Lean Mass','Assessment Summary']] })
+    });
+  }
+  
+  var histRow = [
+    gv('checkin-date'), gv('name'), gv('gender')||'', gv('age')||'',
+    gv('training-freq')||'',
+    gv('sessions-done')||'', gv('session-score')||'',
+    gv('diet-score')||'', gv('sleep-score')||'', gv('stress-score')||'',
+    gv('now-bmi')||'', gv('now-pbf')||'', gv('now-lean')||'',
+    assessmentText ? assessmentText.substring(0,600) : ''
+  ];
+  
+  var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent('Check-In History!A:N') + ':append?valueInputOption=USER_ENTERED&key=' + gKey;
+  await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({values:[histRow]}) });
+}
+
+// ── Update Next Check-In date on Active Clients tab ──
+async function updateNextCheckin(memberName, nextDate) {
+  var gKey = getCfg('gKey') || 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
+  var sheetId = getCfg('ptSheetId') || '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
+  try {
+    // Find the row with this member name
+    var getUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent('Active Clients!A:M') + '?key=' + gKey;
+    var resp = await fetch(getUrl);
+    var data = await resp.json();
+    if (!data.values) return;
+    var rowIdx = -1;
+    data.values.forEach(function(row, i) {
+      if (row[1] && row[1].toString().toLowerCase().includes(memberName.toLowerCase())) rowIdx = i;
+    });
+    if (rowIdx < 0) return;
+    // Update column J (index 9) = Next Check-In
+    var updateUrl = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + encodeURIComponent('Active Clients!J' + (rowIdx+1)) + '?valueInputOption=USER_ENTERED&key=' + gKey;
+    await fetch(updateUrl, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({values:[[nextDate]]}) });
+  } catch(e) { console.log('Update next check-in failed:', e); }
+}
+
+// ── Add next month to calendar ──
+function addNextMonthCalendar(name, nextDate, phone, email, gender) {
+  var title = encodeURIComponent('Monthly PT Check-In: ' + name);
+  var details = encodeURIComponent('Phone: '+(phone||'')+' Email: '+(email||''));
+  var date = (nextDate||'').replace(/-/g,'');
+  if (!date) return;
+  var calEmail = (gender||'').toLowerCase().includes('female') ? 'healthylifewithdani1%40gmail.com' : 'tedscholl%40gmail.com';
+  window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text='+title+'&dates='+date+'/'+date+'&details='+details+'&add='+calEmail, '_blank');
+}
+
+async function saveCheckin(){
+  showLoading('Saving to progress tracker...');
+  const nextCheckin = gv('next-checkin');
+  const memberGender = gv('gender')||'';
+  const row=[
+    gv('checkin-date'),
+    gv('gender')||'',
+    gv('age')||'',
+    gv('name'),
+    gv('phone')||'',
+    gv('email')||'',
+    gv('training-freq')||'',
+    gv('next-checkin'),
+    'CHECKED IN',
+    '',
+    assessmentText ? assessmentText.substring(0,800)+(assessmentText.length>800?'...':'') : '',
+    '=HYPERLINK("https://coachted-retro.github.io/pt-tools/fitness-monthly-checkin.html","View Tool")'
+  ];
+
+  const ok=await appendToSheet(row);
+  await notifyTeam();
+  hideLoading();
+
+  const confirm=document.getElementById('confirm-save');
+  confirm.classList.add('show');
+  if(!ok) confirm.innerHTML='⚠️ Could not write to Google Sheets (check API key in Settings). Email sent. Try again or enter data manually.';
+  confirm.scrollIntoView({behavior:'smooth'});
+}
+
+async function notifyTeam(){
+  const apiKey=getCfg('apiKey'); if(!apiKey) return;
+  const emails=getCfg('emails')||NOTIFY_EMAILS;
+  await fetch(getApiUrl(),{method:'POST',headers: getApiHeaders(apiKey),
+    body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:80,
+      messages:[{role:'user',content:`Log monthly PT check-in for ${gv('name')} on ${gv('checkin-date')}. Next check-in: ${gv('next-checkin')}. Session score: ${gv('session-score')}/10. Diet: ${gv('diet-score')}/10. Notify: ${emails}. Reply "Logged."`}]})});
+}
+
+// ═══════════════════════════
+// LOADING
+// ═══════════════════════════
+function showLoading(msg){document.getElementById('loading-text').textContent=msg||'Saving...';document.getElementById('loading-overlay').classList.add('show');}
+function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
+
+// ═══════════════════════════
+// RESET
+// ═══════════════════════════
+function resetForm(){
+  if(!confirm('Start a new check-in? Current data will be cleared.')) return;
+  const advisor=gv('advisor-name');
+  document.querySelectorAll('input:not(#advisor-name), select, textarea').forEach(el=>{
+    if(el.readOnly) return;
+    el.tagName==='SELECT'?el.selectedIndex=0:el.value='';
+    el.classList.remove('auto');
+  });
+  document.querySelectorAll('.scale-btn,.win-tag').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('wins-list').value='';
+  ['session','recovery','diet','energy','motivation','sleep','stress'].forEach(s=>document.getElementById(s+'-score').value='');
+  assessmentText='';
+  uploadedFiles=[];
+  document.getElementById('file-list').innerHTML='';
+  document.getElementById('parse-btn').style.display='none';
+  document.getElementById('parsed-preview').style.display='none';
+  document.getElementById('assessment-box').style.display='none';
+  document.getElementById('confirm-save').classList.remove('show');
+  setStatus('upload-status','',''); setStatus('assess-status','','');
+  ['weight','bmi','fat','lean','water','pbf'].forEach(m=>{const el=document.getElementById('delta-'+m);if(el){el.textContent='';el.className='delta';}});
+  ['la','ra','trunk','ll','rl'].forEach(id=>{const el=document.getElementById('sp-'+id);if(el) el.textContent='Prev: —';});
+  document.getElementById('advisor-name').value=advisor;
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('checkin-date').value=today;
+  updateDates();
+  goPage(0);
+}
+</script>
+</body>
+</html>
