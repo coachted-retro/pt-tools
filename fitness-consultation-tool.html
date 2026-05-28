@@ -1335,9 +1335,9 @@ function getApiHeaders(apiKey) {
   return { 'Content-Type': 'application/json' };
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // CONFIG
-// ═══════════════════════════════════════════
+// ===========================================
 const SHEET_ID = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
 const NOTIFY_EMAIL = 'tedscholl@gmail.com, healthylifewithdani1@gmail.com';
 
@@ -1391,9 +1391,9 @@ window.addEventListener('load', () => {
   document.getElementById('consult-date').value = today;
 });
 
-// ═══════════════════════════════════════════
+// ===========================================
 // NAVIGATION
-// ═══════════════════════════════════════════
+// ===========================================
 let currentPage = 0;
 const pageLabels = ['Upload documents','Member info','Medical history','Diet & nutrition','InBody scan','Assessment'];
 
@@ -1415,9 +1415,9 @@ function goPage(n) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // GENDER
-// ═══════════════════════════════════════════
+// ===========================================
 function selectGender(val) {
   document.querySelectorAll('.gender-opt').forEach(o => o.classList.remove('selected'));
   document.querySelectorAll('.gender-opt').forEach(o => {
@@ -1428,9 +1428,9 @@ function selectGender(val) {
   document.getElementById('gender').value = val;
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // FILE UPLOAD & PDF PARSING
-// ═══════════════════════════════════════════
+// ===========================================
 let uploadedFiles = [];
 
 function handleDrag(e, over) {
@@ -1450,7 +1450,7 @@ function handleFiles(files) {
   const listEl = document.getElementById('file-list');
   listEl.innerHTML = uploadedFiles.map((f, i) => `
     <div class="file-chip" id="fchip-${i}">
-      <span style="font-size:20px">${f.type.includes('pdf') ? '📄' : '🖼️'}</span>
+      <span style="font-size:20px">${f.type.includes('pdf') ? '[PDF]' : '[IMG]'}</span>
       <span class="file-name">${f.name}</span>
       <span class="file-size">${(f.size/1024).toFixed(0)} KB</span>
       <span class="file-status" id="fstatus-${i}">Ready</span>
@@ -1497,11 +1497,11 @@ async function parseAllFiles() {
       } else {
         contentBlocks.push({ type:'image', source:{ type:'base64', media_type:mt, data:b64 } });
       }
-      document.getElementById('fstatus-'+i).textContent = '✓ Loaded';
+      document.getElementById('fstatus-'+i).textContent = 'v Loaded';
       document.getElementById('fstatus-'+i).style.color = 'var(--success)';
     }
 
-    contentBlocks.push({ type:'text', text: `Extract ALL information from these documents and return ONLY valid JSON (no markdown, no backticks, no explanation) with these exact keys — empty string "" if not found:
+    contentBlocks.push({ type:'text', text: `Extract ALL information from these documents and return ONLY valid JSON (no markdown, no backticks, no explanation) with these exact keys - empty string "" if not found:
 {"name":"","dob":"","phone":"","email":"","gender":"","age":"","height":"","goals":"","experience":"","timeframe":"","workout_status":"","days_per_week":"","workout_duration":"","medical":"","doctor_rec":"","doctor_notes":"","medications":"","supplements":"","meals_per_day":"","calorie_target":"","breakfast":"","lunch":"","dinner":"","snacks":"","tracks_macros":"","macro_protein":"","macro_carbfat":"","bmi":"","water_weight":"","lean_mass":"","fat_mass":"","pbf":"","seg_la":"","seg_ra":"","seg_trunk":"","seg_ll":"","seg_rl":""}
 
 CRITICAL INBODY EXTRACTION RULES:
@@ -1533,18 +1533,18 @@ CRITICAL INBODY EXTRACTION RULES:
     autoFill(parsed);
 
     const filled = Object.entries(parsed).filter(([k,v]) => v).length;
-    setStatus('upload-status','success',`✅ ${filled} fields auto-filled from your document. Review and edit as needed, then continue.`);
+    setStatus('upload-status','success',`[OK] ${filled} fields auto-filled from your document. Review and edit as needed, then continue.`);
 
     const preview = document.getElementById('parsed-preview');
     preview.style.display = 'block';
     preview.textContent = 'Extracted:\n' + Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>`  ${k}: ${v}`).join('\n');
 
-    btn.innerHTML = '🔄 Re-upload or add another file';
+    btn.innerHTML = '? Re-upload or add another file';
     btn.disabled = false;
 
   } catch(e) {
-    setStatus('upload-status','error', '❌ ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
-    btn.innerHTML = '🧠 Read documents & auto-fill form';
+    setStatus('upload-status','error', '? ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
+    btn.innerHTML = '? Read documents & auto-fill form';
     btn.disabled = false;
   }
 }
@@ -1579,9 +1579,9 @@ function autoFill(d) {
   if (d.gender) selectGender(d.gender);
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // ASSESSMENT GENERATION
-// ═══════════════════════════════════════════
+// ===========================================
 let assessmentText = '';
 
 
@@ -1600,7 +1600,7 @@ Evidence-based recommendations grounded in ACSM guidelines, exercise science, an
 - Supplement assessment (what's useful vs. unnecessary)
 - Key lifestyle factors to address first
 
-3. SUGGESTED NEXT STEPS — STRENGTH TRAINING PROGRAM
+3. SUGGESTED NEXT STEPS - STRENGTH TRAINING PROGRAM
 A concrete, specific training framework. Include:
 - Recommended training split and frequency (given their goals and schedule)
 - Priority movement patterns and muscle groups based on segmental lean analysis imbalances
@@ -1619,7 +1619,7 @@ Status: ${gv('workout-status')} | ${gv('days-per-week')} days/week | ${gv('worko
 
 MEDICAL:
 Conditions/injuries: ${gv('medical')}
-Doctor recommendation: ${gv('doctor-rec')} — ${gv('doctor-notes')}
+Doctor recommendation: ${gv('doctor-rec')} - ${gv('doctor-notes')}
 Medications: ${gv('medications')}
 Supplements: ${gv('supplements')}
 
@@ -1634,44 +1634,44 @@ Tracks MACROs: ${gv('tracks-macros')} | Protein: ${gv('macro-protein')}% | Carb/
 INBODY SCAN:
 Height: ${gv('height')} | BMI: ${gv('bmi')} | PBF: ${gv('pbf')}%
 Body water: ${gv('water-weight')} lb | Lean mass: ${gv('lean-mass')} lb | Body fat: ${gv('fat-mass')} lb
-Segmental lean — Left arm: ${gv('seg-la')}% | Right arm: ${gv('seg-ra')}% | Trunk: ${gv('seg-trunk')}% | Left leg: ${gv('seg-ll')}% | Right leg: ${gv('seg-rl')}%
+Segmental lean - Left arm: ${gv('seg-la')}% | Right arm: ${gv('seg-ra')}% | Trunk: ${gv('seg-trunk')}% | Left leg: ${gv('seg-ll')}% | Right leg: ${gv('seg-rl')}%
 ---
 
 Write the advisor section in clear professional prose with plain headers (no asterisks or markdown). Be specific and clinically grounded.
 
-Then end with this clearly separated member-facing section — this is what the advisor reads aloud with the member to close the sale:
+Then end with this clearly separated member-facing section - this is what the advisor reads aloud with the member to close the sale:
 
-════════════════════════════════════
+====================================
 YOUR PERSONAL FITNESS SNAPSHOT
-════════════════════════════════════
+====================================
 
 WHERE YOU ARE TODAY
-[Write 3-4 warm, honest sentences directly to the member. Reference their specific InBody numbers in plain language — not medical jargon. Acknowledge what they're already doing well. Be encouraging but real about where they are starting from.]
+[Write 3-4 warm, honest sentences directly to the member. Reference their specific InBody numbers in plain language - not medical jargon. Acknowledge what they're already doing well. Be encouraging but real about where they are starting from.]
 
 THE OPPORTUNITY IN FRONT OF YOU
-[Write 2-3 sentences about the specific transformation possible for THIS member based on their data and goals. Make it feel exciting and achievable. Reference their specific goal and a realistic timeframe — e.g. "In 12 weeks you could realistically lose X lbs of fat while adding X lbs of lean muscle."]
+[Write 2-3 sentences about the specific transformation possible for THIS member based on their data and goals. Make it feel exciting and achievable. Reference their specific goal and a realistic timeframe - e.g. "In 12 weeks you could realistically lose X lbs of fat while adding X lbs of lean muscle."]
 
 YOUR 90-DAY GAME PLAN
-[Write this as 4-5 short bullet points — simple, punchy, actionable. Each one should be one sentence. Cover: training approach, nutrition focus, key habit to build, what we'll track together, and what they'll feel/see at the 30/60/90-day marks.]
+[Write this as 4-5 short bullet points - simple, punchy, actionable. Each one should be one sentence. Cover: training approach, nutrition focus, key habit to build, what we'll track together, and what they'll feel/see at the 30/60/90-day marks.]
 
 WHY NOW
-[Write 2 sentences that create urgency and close — e.g. "Every week without a structured plan is a week of potential lost. The data we just looked at together tells us exactly what your body needs — and we have a program built for exactly this."]
+[Write 2 sentences that create urgency and close - e.g. "Every week without a structured plan is a week of potential lost. The data we just looked at together tells us exactly what your body needs - and we have a program built for exactly this."]
 
 Then add this clearly separated section at the very end:
 
 ---
 MEMBER SNAPSHOT
-(Written directly to the member in warm, plain language — no jargon)
+(Written directly to the member in warm, plain language - no jargon)
 
-Where You Are Now: [2-3 sentences describing their current condition, body composition, and key health factors — encouraging and honest]
+Where You Are Now: [2-3 sentences describing their current condition, body composition, and key health factors - encouraging and honest]
 
-What We're Focused On: [2-3 specific areas that need attention to reach their goal — framed positively]
+What We're Focused On: [2-3 specific areas that need attention to reach their goal - framed positively]
 
 Your Action Plan:
-• [Training: specific frequency, type, focus]
-• [Nutrition: key change or habit to build]
-• [Metric to track: what we'll measure together]
-• [First milestone: what success looks like in 4-6 weeks]`;
+- [Training: specific frequency, type, focus]
+- [Nutrition: key change or habit to build]
+- [Metric to track: what we'll measure together]
+- [First milestone: what success looks like in 4-6 weeks]`;
 }
 
 async function generateAssessment() {
@@ -1706,7 +1706,7 @@ async function generateAssessment() {
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
       window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,1500)),'_blank');
     } catch(_em) {}
-    // ── Email notification after assessment ──
+    // ?? Email notification after assessment ??
     try {
       var emailSubject = 'PT Assessment Ready: ' + (gv('name') || gv('fu-name') || '');
       var emailBody = 'Date: ' + (gv('consult-date')||gv('fu-date')||gv('checkin-date')||'') + '\n' +
@@ -1718,16 +1718,16 @@ async function generateAssessment() {
       window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su=' + encodeURIComponent(emailSubject) + '&body=' + encodeURIComponent(emailBody.substring(0,9000)), '_blank');
     } catch(e2) {}
   } catch(e) {
-    setStatus('assess-status','error','❌ ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
+    setStatus('assess-status','error','? ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
   }
 
   btn.disabled = false;
-  btn.innerHTML = '✨ Regenerate Personalized Assessment';
+  btn.innerHTML = '* Regenerate Personalized Assessment';
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // ACCEPT / DECLINE LOGIC
-// ═══════════════════════════════════════════
+// ===========================================
 let selectedFreq = '';
 let selectedLength = '';
 
@@ -1753,20 +1753,20 @@ function showDecline() {
   const listName = gender === 'Female' ? 'Female Follow-Ups' : 'Male Follow-Ups';
 
   document.getElementById('followup-details').innerHTML =
-    `Member: <strong>${gv('name')}</strong><br>` +
-    `Email: ${gv('email')} &nbsp;|&nbsp; Phone: ${gv('phone')}<br>` +
-    `Gender: ${gender} → will be added to <strong>${listName}</strong> sheet<br>` +
-    `Declined on: ${today.toLocaleDateString('en-US', opts)}<br>` +
-    `6-week follow-up date: <strong>${followDate.toLocaleDateString('en-US', opts)}</strong>`;
+    '<strong>' + gv('name') + '</strong><br>' +
+    'Email: ' + gv('email') + ' | Phone: ' + gv('phone') + '<br>' +
+    'Gender: ' + gender + ' - will be added to <strong>' + listName + '</strong> sheet<br>' +
+    'Declined on: ' + today.toLocaleDateString('en-US', opts) + '<br>' +
+    '6-week follow-up date: <strong>' + followDate.toLocaleDateString('en-US', opts) + '</strong>';
 
   document.getElementById('followup-panel').style.display = 'block';
   document.getElementById('terms-panel').style.display = 'none';
   document.getElementById('followup-panel').scrollIntoView({ behavior:'smooth' });
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // GOOGLE SHEETS
-// ═══════════════════════════════════════════
+// ===========================================
 
 async function ensureSheetHeaders(tab) {
   var gKey = 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
@@ -1846,7 +1846,7 @@ function buildIntakeRow(decision, freq, length, followUpDays) {
     d.setDate(d.getDate() + (followUpDays || 42));
     followUpDate = d.toISOString().split('T')[0];
   }
-  var outcome = decision + (freq ? ' — ' + freq + ', ' + length : '');
+  var outcome = decision + (freq ? ' - ' + freq + ', ' + length : '');
   return [
     consultDate,
     followUpDate,
@@ -1857,7 +1857,7 @@ function buildIntakeRow(decision, freq, length, followUpDays) {
     gv('phone'),
     gv('email'),
     gv('goals'),
-    outcome + (document.getElementById('decline-reason') && document.getElementById('decline-reason').value ? ' — ' + document.getElementById('decline-reason').value : ''),
+    outcome + (document.getElementById('decline-reason') && document.getElementById('decline-reason').value ? ' - ' + document.getElementById('decline-reason').value : ''),
     '',
     assessmentText.substring(0, 800) + (assessmentText.length > 800 ? '...' : ''),
     '=HYPERLINK("https://coachted-retro.github.io/pt-tools/fitness-consultation-tool.html","View Tool")'
@@ -1899,7 +1899,7 @@ function buildFollowUpRow(followDate) {
 }
 
 
-// ── Google Drive: Create client folder + intake doc ──
+// ?? Google Drive: Create client folder + intake doc ??
 async function createClientFolder(name, gKey, assessmentContent) {
   var parentName = 'PT Clients';
   var driveBase = 'https://www.googleapis.com/drive/v3';
@@ -1970,7 +1970,7 @@ async function createClientFolder(name, gKey, assessmentContent) {
   }
 }
 
-// ── Save to PT Member Progress Tracker ──
+// ?? Save to PT Member Progress Tracker ??
 async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   var gKey = getCfg('gKey') || 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
   var sheetId = getCfg('ptSheetId') || '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
@@ -2021,7 +2021,7 @@ async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   });
 }
 
-// ── Create recurring monthly Google Calendar event ──
+// ?? Create recurring monthly Google Calendar event ??
 function addRecurringCalendar(name, startDate, phone, email, gender) {
   var title = encodeURIComponent('Monthly PT Check-In: ' + name);
   var details = encodeURIComponent('Phone: ' + (phone||'') + '\nEmail: ' + (email||'') + '\nRecurring monthly PT progress check-in');
@@ -2123,7 +2123,7 @@ async function finalizeDecline() {
 
   await sendNotificationEmail('DECLINED', '', '');
 
-  // Auto-add 6-week follow-up to calendar — Ted for male, Dani for female
+  // Auto-add 6-week follow-up to calendar - Ted for male, Dani for female
   var followUpDate = intakeRow[1];
   var memberGender = gv('gender') || '';
   if (followUpDate) {
@@ -2137,14 +2137,14 @@ async function finalizeDecline() {
   const confirm = document.getElementById('confirm-decline');
   confirm.style.display = 'flex';
   if (!followOk) {
-    confirm.innerHTML = '⚠️ Could not write to ${tabName} (check that the tab exists in your Sheet and your API key is correct). Try adding the tab manually. Email sent.`;
+    confirm.innerHTML = '[!] Could not write to ${tabName} (check that the tab exists in your Sheet and your API key is correct). Try adding the tab manually. Email sent.`;
   }
   confirm.scrollIntoView({ behavior:'smooth' });
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // EMAIL NOTIFICATION (via Claude API log call)
-// ═══════════════════════════════════════════
+// ===========================================
 async function sendNotificationEmail(decision, freq, length) {
   const notifyEmails = 'tedscholl@gmail.com,healthylifewithdani1@gmail.com';
   const today = new Date();
@@ -2184,21 +2184,21 @@ Segmental: LA ${gv('seg-la')}% | RA ${gv('seg-ra')}% | Trunk ${gv('seg-trunk')}%
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         to: notifyEmails,
-        subject: `PT Consultation: ${gv('name')} — ${decision}`,
+        subject: 'PT Consultation: ' + gv('name') + ' - ' + decision,
         body: body
       })
     });
   } catch(e) {
     // Fallback: open mailto link
-    var subject = encodeURIComponent('PT Consultation: ' + gv('name') + ' — ' + decision);
+    var subject = encodeURIComponent('PT Consultation: ' + gv('name') + ' - ' + decision);
     var mailBody = encodeURIComponent(body.substring(0, 1800));
     window.open('mailto:' + notifyEmails + '?subject=' + subject + '&body=' + mailBody);
   }
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // LOADING OVERLAY
-// ═══════════════════════════════════════════
+// ===========================================
 function showLoading(msg) {
   document.getElementById('loading-text').textContent = msg || 'Processing...';
   document.getElementById('loading-overlay').classList.add('show');
@@ -2208,9 +2208,9 @@ function hideLoading() {
   document.getElementById('loading-overlay').classList.remove('show');
 }
 
-// ═══════════════════════════════════════════
+// ===========================================
 // RESET
-// ═══════════════════════════════════════════
+// ===========================================
 function resetForm() {
   if (!confirm('Start a new consultation? Current data will be cleared.')) return;
   const advisor = gv('advisor-name');

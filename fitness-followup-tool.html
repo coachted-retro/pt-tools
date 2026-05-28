@@ -1428,9 +1428,9 @@ function getApiHeaders(apiKey) {
   return { 'Content-Type': 'application/json' };
 }
 
-// ═══════════════════════════════════
+// ===================================
 // CONFIG
-// ═══════════════════════════════════
+// ===================================
 const NOTIFY_EMAILS = 'tedscholl@gmail.com, healthylifewithdani1@gmail.com';
 const SHEET_ID_DEFAULT = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
 
@@ -1476,9 +1476,9 @@ window.addEventListener('load',()=>{
 
 });
 
-// ═══════════════════════════════════
+// ===================================
 // NAVIGATION
-// ═══════════════════════════════════
+// ===================================
 let currentPage=0;
 const pageLabels=['Upload & pre-fill','Member check-in','Training progress','Obstacles & challenges','Mindset & motivation','InBody comparison','Summary & next steps'];
 
@@ -1497,27 +1497,27 @@ function goPage(n){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ═══════════════════════════════════
+// ===================================
 // SCALE RATINGS
-// ═══════════════════════════════════
+// ===================================
 function pickScale(el,group){
   document.getElementById('scale-'+group).querySelectorAll('.scale-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById(group+'-score').value=el.textContent.trim();
 }
 
-// ═══════════════════════════════════
+// ===================================
 // OBSTACLE TAGS
-// ═══════════════════════════════════
+// ===================================
 function toggleTag(el){
   el.classList.toggle('selected');
   const selected=Array.from(document.querySelectorAll('#obstacle-tags .tag.selected')).map(t=>t.textContent.trim());
   document.getElementById('obstacle-list').value=selected.join(', ');
 }
 
-// ═══════════════════════════════════
+// ===================================
 // INBODY DELTAS
-// ═══════════════════════════════════
+// ===================================
 function calcDelta(name,prevId,nowId,deltaId,lowerIsBetter){
   const prev=parseFloat(document.getElementById(prevId).value);
   const now=parseFloat(document.getElementById(nowId).value);
@@ -1534,15 +1534,15 @@ function refreshPrevSeg(){
   const ids=['la','ra','trunk','ll','rl'];
   ids.forEach(id=>{
     const val=document.getElementById('prev-seg-'+id).value;
-    document.getElementById('sp-'+id).textContent=val?val+'%':'—';
+    document.getElementById('sp-'+id).textContent=val?val+'%':'-';
   });
 }
 
 function updateSegPrev(){ refreshPrevSeg(); }
 
-// ═══════════════════════════════════
+// ===================================
 // NEXT FOLLOW-UP DATE CALC
-// ═══════════════════════════════════
+// ===================================
 function updateNextFuDate(){
   const weeksEl=document.getElementById('next-fu-weeks');
   if(!weeksEl) return;
@@ -1554,9 +1554,9 @@ function updateNextFuDate(){
 }
 document.addEventListener('change',e=>{ if(e.target.id==='next-fu-weeks') updateNextFuDate(); });
 
-// ═══════════════════════════════════
+// ===================================
 // FILE UPLOAD & AI PARSING
-// ═══════════════════════════════════
+// ===================================
 let uploadedFiles=[];
 
 function handleDrag(e,over){
@@ -1574,7 +1574,7 @@ function handleFiles(files){
   const listEl=document.getElementById('file-list');
   listEl.innerHTML=uploadedFiles.map((f,i)=>`
     <div class="file-chip" id="fchip-${i}">
-      <span style="font-size:18px">${f.type.includes('pdf')?'📄':'🖼️'}</span>
+      <span style="font-size:18px">${f.type.includes('pdf')?'[PDF]':'[IMG]'}</span>
       <span class="fn">${f.name}</span>
       <span class="fs">${(f.size/1024).toFixed(0)} KB</span>
       <span class="fst" id="fst-${i}">Ready</span>
@@ -1619,7 +1619,7 @@ async function parseAllFiles(){
       } else {
         blocks.push({type:'image',source:{type:'base64',media_type:mt,data:b64}});
       }
-      document.getElementById('fst-'+i).textContent='✓ Loaded';
+      document.getElementById('fst-'+i).textContent='v Loaded';
     }
 
     blocks.push({type:'text',text:`Extract all data from these documents and return ONLY valid JSON, no markdown, no explanation:
@@ -1646,15 +1646,15 @@ CRITICAL INBODY EXTRACTION RULES:
     const parsed=JSON.parse(raw);
     autoFill(parsed);
     const filled=Object.entries(parsed).filter(([k,v])=>v).length;
-    setStatus('upload-status','success',`✅ ${filled} fields auto-filled. Review and continue.`);
+    setStatus('upload-status','success',`[OK] ${filled} fields auto-filled. Review and continue.`);
     const preview=document.getElementById('parsed-preview');
     preview.style.display='block';
     preview.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>`  ${k}: ${v}`).join('\n');
-    btn.innerHTML='🔄 Re-upload or add more files';
+    btn.innerHTML='? Re-upload or add more files';
     btn.disabled=false;
   } catch(e){
-    setStatus('upload-status','error','❌ Could not parse: '+e.message+'. Fill fields manually.');
-    btn.innerHTML='🧠 Read documents & auto-fill';
+    setStatus('upload-status','error','? Could not parse: '+e.message+'. Fill fields manually.');
+    btn.innerHTML='? Read documents & auto-fill';
     btn.disabled=false;
   }
 }
@@ -1693,9 +1693,9 @@ function autoFill(d){
   });
 }
 
-// ═══════════════════════════════════
+// ===================================
 // ASSESSMENT GENERATION
-// ═══════════════════════════════════
+// ===================================
 let assessmentText='';
 
 
@@ -1707,19 +1707,19 @@ function buildPrompt(){
   const results=gv('results-score')||'not rated';
   const commitment=gv('commitment-score')||'not rated';
 
-  return `You are a professional fitness advisor and health consultant conducting a 6-week follow-up with a member. Generate a warm, honest, member-facing assessment in four clearly labeled sections. This will be read directly with the member — write as if speaking to them.
+  return `You are a professional fitness advisor and health consultant conducting a 6-week follow-up with a member. Generate a warm, honest, member-facing assessment in four clearly labeled sections. This will be read directly with the member - write as if speaking to them.
 
 1. PROGRESS SNAPSHOT
-Summarize what the member has accomplished over the past 6 weeks — their workout consistency, any physical changes, diet adjustments, and what their InBody scan comparison shows. Use specific numbers where available. Be honest, encouraging, and empathetic. Acknowledge both the effort they made and the areas where progress was slower than hoped.
+Summarize what the member has accomplished over the past 6 weeks - their workout consistency, any physical changes, diet adjustments, and what their InBody scan comparison shows. Use specific numbers where available. Be honest, encouraging, and empathetic. Acknowledge both the effort they made and the areas where progress was slower than hoped.
 
 2. CHALLENGES & WHAT THEY TELL US
 For each major challenge the member has encountered, provide a thoughtful, supportive response that validates their experience and explains what it reveals about what kind of support would serve them best. Frame challenges as useful information, not failures. Be specific and practical.
 
 3. MEMBER ASSESSMENT
-A warm, personalized narrative addressed directly to the member. Acknowledge their commitment to returning for this follow-up, recognize the effort they've put in, and give an honest picture of where they stand today based on all the data. Reference their InBody results in plain terms. Speak to their specific goals and what the path forward could look like with the right structure and support. Be genuine and encouraging — not generic.
+A warm, personalized narrative addressed directly to the member. Acknowledge their commitment to returning for this follow-up, recognize the effort they've put in, and give an honest picture of where they stand today based on all the data. Reference their InBody results in plain terms. Speak to their specific goals and what the path forward could look like with the right structure and support. Be genuine and encouraging - not generic.
 
 4. ADVISOR RECOMMENDATIONS & SUGGESTED NEXT STEPS
-Based on all the data from this follow-up — fitness activity, challenges, mindset, and InBody results — provide clear, evidence-based recommendations. Include:
+Based on all the data from this follow-up - fitness activity, challenges, mindset, and InBody results - provide clear, evidence-based recommendations. Include:
 - What type and frequency of training would best serve their goals and lifestyle
 - Specific areas to focus on based on their InBody segmental data and any imbalances
 - Nutritional guidance relevant to where they are now
@@ -1743,7 +1743,7 @@ Days/week: ${gv('actual-days')}
 Exercise type: ${gv('exercise-type')} | Duration: ${gv('workout-duration')}
 What workouts looked like: ${gv('workout-description')}
 Physical changes noticed: ${gv('physical-changes')}
-Diet changes: ${gv('diet-changes')} — ${gv('diet-change-detail')}
+Diet changes: ${gv('diet-changes')} - ${gv('diet-change-detail')}
 
 CHALLENGES ENCOUNTERED: ${obstacles}
 Biggest challenge in their own words: ${gv('biggest-obstacle')}
@@ -1761,22 +1761,22 @@ What reaching their goals would mean: ${gv('life-impact')}
 What staying on the same path would mean: ${gv('status-quo-impact')}
 
 INBODY COMPARISON:
-Previous — BMI: ${gv('prev-bmi')}, Body fat: ${gv('prev-fat')}lb, Lean mass: ${gv('prev-lean')}lb, Water: ${gv('prev-water')}lb, PBF: ${gv('prev-pbf')}%
-Current — BMI: ${gv('now-bmi')}, Body fat: ${gv('now-fat')}lb, Lean mass: ${gv('now-lean')}lb, Water: ${gv('now-water')}lb, PBF: ${gv('now-pbf')}%
-Segmental (prev → now): LA ${gv('prev-seg-la')}%→${gv('now-seg-la')}% | RA ${gv('prev-seg-ra')}%→${gv('now-seg-ra')}% | Trunk ${gv('prev-seg-trunk')}%→${gv('now-seg-trunk')}% | LL ${gv('prev-seg-ll')}%→${gv('now-seg-ll')}% | RL ${gv('prev-seg-rl')}%→${gv('now-seg-rl')}%
+Previous - BMI: ${gv('prev-bmi')}, Body fat: ${gv('prev-fat')}lb, Lean mass: ${gv('prev-lean')}lb, Water: ${gv('prev-water')}lb, PBF: ${gv('prev-pbf')}%
+Current - BMI: ${gv('now-bmi')}, Body fat: ${gv('now-fat')}lb, Lean mass: ${gv('now-lean')}lb, Water: ${gv('now-water')}lb, PBF: ${gv('now-pbf')}%
+Segmental (prev -> now): LA ${gv('prev-seg-la')}%->${gv('now-seg-la')}% | RA ${gv('prev-seg-ra')}%->${gv('now-seg-ra')}% | Trunk ${gv('prev-seg-trunk')}%->${gv('now-seg-trunk')}% | LL ${gv('prev-seg-ll')}%->${gv('now-seg-ll')}% | RL ${gv('prev-seg-rl')}%->${gv('now-seg-rl')}%
 Advisor scan notes: ${gv('scan-notes')}
 ---
 
 Write in clear, professional prose. Use plain section headers. Be warm, honest, specific, and genuinely helpful.
 
-Then end with this clearly separated member-facing section — read this with the member to re-close personal training:
+Then end with this clearly separated member-facing section - read this with the member to re-close personal training:
 
-════════════════════════════════════
+====================================
 YOUR COMEBACK SNAPSHOT
-════════════════════════════════════
+====================================
 
 WHERE YOU ARE NOW
-[3-4 sentences directly to the member. Compare their InBody numbers honestly — what changed, what stayed the same. Be encouraging about any progress, realistic about what the data shows. Reference the time since their initial consultation.]
+[3-4 sentences directly to the member. Compare their InBody numbers honestly - what changed, what stayed the same. Be encouraging about any progress, realistic about what the data shows. Reference the time since their initial consultation.]
 
 WHAT THE DATA IS TELLING US
 [2-3 sentences interpreting their results in plain language. What does their body composition tell us about what's been working or not working? Make it feel like a discovery, not a judgment.]
@@ -1785,7 +1785,7 @@ YOUR 60-DAY RESET PLAN
 [4-5 short punchy bullet points. Training approach, one nutrition win to focus on, the key metric we'll track, and what they'll feel at 30 and 60 days. Keep it simple and achievable.]
 
 THE MOMENT TO RESTART
-[2 strong closing sentences that re-open the conversation. Reference the gap between where they are now and where they said they wanted to be. Create motivation — not guilt. End with something like "The good news is your body is ready — the question is whether today is the day you say yes."]`;
+[2 strong closing sentences that re-open the conversation. Reference the gap between where they are now and where they said they wanted to be. Create motivation - not guilt. End with something like "The good news is your body is ready - the question is whether today is the day you say yes."]`;
 }
 
 async function generateAssessment(){
@@ -1818,15 +1818,15 @@ async function generateAssessment(){
       window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,1500)),'_blank');
     } catch(_em) {}
   } catch(e){
-    setStatus('assess-status','error','❌ Error: '+e.message);
+    setStatus('assess-status','error','? Error: '+e.message);
   }
   btn.disabled=false;
-  btn.innerHTML='✨ Regenerate Personalized Assessment';
+  btn.innerHTML='* Regenerate Personalized Assessment';
 }
 
-// ═══════════════════════════════════
+// ===================================
 // PILLS
-// ═══════════════════════════════════
+// ===================================
 let selectedFreq=''; let selectedLength='';
 
 function pickPill(el,group){
@@ -1836,9 +1836,9 @@ function pickPill(el,group){
   else selectedLength=el.textContent.trim();
 }
 
-// ═══════════════════════════════════
+// ===================================
 // OUTCOME PANELS
-// ═══════════════════════════════════
+// ===================================
 function showTerms(){
   document.getElementById('terms-panel').style.display='block';
   document.getElementById('another-fu-panel').style.display='none';
@@ -1862,9 +1862,9 @@ function showNotReady(){
   document.getElementById('not-ready-panel').scrollIntoView({behavior:'smooth'});
 }
 
-// ═══════════════════════════════════
+// ===================================
 // GOOGLE SHEETS
-// ═══════════════════════════════════
+// ===================================
 
 async function ensureSheetHeaders(tab) {
   var gKey = 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
@@ -1907,7 +1907,7 @@ function buildBaseRow(outcome, freq, length){
     d.setDate(d.getDate() + 42); // 6 weeks default
     nextDate = d.toISOString().split('T')[0];
   }
-  var outcomeStr = outcome + (freq ? ' — ' + freq + (length ? ', ' + length : '') : '');
+  var outcomeStr = outcome + (freq ? ' - ' + freq + (length ? ', ' + length : '') : '');
   return [
     fuDate,
     nextDate,
@@ -1939,7 +1939,7 @@ function addToCalendar(name, followUpDate, phone, email) {
 
 
 
-// ── Google Drive folder creation ──
+// ?? Google Drive folder creation ??
 async function createClientFolder(name, gKey, content) {
   try {
     var driveBase = 'https://www.googleapis.com/drive/v3';
@@ -1965,7 +1965,7 @@ async function createClientFolder(name, gKey, content) {
   } catch(e) { return null; }
 }
 
-// ── Save to PT Member Progress Tracker ──
+// ?? Save to PT Member Progress Tracker ??
 async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   var gKey = getCfg('gKey') || 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
   var sheetId = getCfg('ptSheetId') || '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
@@ -1979,7 +1979,7 @@ async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   await fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
 }
 
-// ── Recurring monthly calendar ──
+// ?? Recurring monthly calendar ??
 function addRecurringCalendar(name, startDate, phone, email, gender) {
   var title = encodeURIComponent('Monthly PT Check-In: ' + name);
   var details = encodeURIComponent('Phone: '+(phone||'')+' Email: '+(email||'')+' Recurring monthly PT check-in');
@@ -2114,7 +2114,7 @@ async function finalizeNotReady(){
   const tab=gender==='Female'?'Female Follow-Ups':'Male Follow-Ups';
   const row=buildBaseRow('CLOSED: '+gv('close-reason'),'','');
   await appendToSheet(tab,row);
-  await sendEmail('CLOSED — NOT INTERESTED: '+gv('close-reason'),'','');
+  await sendEmail('CLOSED - NOT INTERESTED: '+gv('close-reason'),'','');
   hideLoading();
   document.getElementById('confirm-not-ready').classList.add('show');
   document.getElementById('confirm-not-ready').scrollIntoView({behavior:'smooth'});
@@ -2128,22 +2128,22 @@ async function sendEmail(outcome, freq, length){
     method:'POST',
     headers: getApiHeaders(apiKey),
     body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:100,
-      messages:[{role:'user',content:'Log 6-week follow-up for ${gv('name')} — Outcome: ${outcome}. Notify: ${emails}. Commitment score: ${gv('commitment-score')}/10. Reply "Logged."`}]})
+      messages:[{role:'user',content:'Log 6-week follow-up for ${gv('name')} - Outcome: ${outcome}. Notify: ${emails}. Commitment score: ${gv('commitment-score')}/10. Reply "Logged."`}]})
   });
 }
 
-// ═══════════════════════════════════
+// ===================================
 // LOADING
-// ═══════════════════════════════════
+// ===================================
 function showLoading(msg){
   document.getElementById('loading-text').textContent=msg||'Processing...';
   document.getElementById('loading-overlay').classList.add('show');
 }
 function hideLoading(){ document.getElementById('loading-overlay').classList.remove('show'); }
 
-// ═══════════════════════════════════
+// ===================================
 // RESET
-// ═══════════════════════════════════
+// ===================================
 function resetForm(){
   if(!confirm('Start a new follow-up? Current data will be cleared.')) return;
   const advisor=gv('advisor-name');
@@ -2175,7 +2175,7 @@ function resetForm(){
     const el=document.getElementById(id); if(el){el.textContent='';el.className='delta';}
   });
   ['la','ra','trunk','ll','rl'].forEach(id=>{
-    const el=document.getElementById('sp-'+id); if(el) el.textContent='—';
+    const el=document.getElementById('sp-'+id); if(el) el.textContent='-';
   });
   goPage(0);
 }

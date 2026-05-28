@@ -987,9 +987,9 @@ function getApiHeaders(apiKey) {
   return { 'Content-Type': 'application/json' };
 }
 
-// ═══════════════════════════
+// ===========================
 // CONFIG
-// ═══════════════════════════
+// ===========================
 const SHEET_ID_DEFAULT = '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
 const NOTIFY_EMAILS = 'tedscholl@gmail.com, healthylifewithdani1@gmail.com';
 
@@ -1054,13 +1054,13 @@ function updateDates(){
     const months=Math.round((checkin-start)/(1000*60*60*24*30));
     document.getElementById('banner-month').textContent='Month '+(months+1);
   } else {
-    document.getElementById('banner-month').textContent='—';
+    document.getElementById('banner-month').textContent='-';
   }
 }
 
-// ═══════════════════════════
+// ===========================
 // NAVIGATION
-// ═══════════════════════════
+// ===========================
 let currentPage=0;
 const pageLabels=['Upload & pre-fill','Member details','Training review','Diet & nutrition','Wellbeing & lifestyle','InBody comparison','Assessment & save'];
 
@@ -1079,27 +1079,27 @@ function goPage(n){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-// ═══════════════════════════
+// ===========================
 // SCALES
-// ═══════════════════════════
+// ===========================
 function pickScale(el,group){
   document.getElementById('scale-'+group).querySelectorAll('.scale-btn').forEach(b=>b.classList.remove('selected'));
   el.classList.add('selected');
   document.getElementById(group+'-score').value=el.getAttribute('data-v');
 }
 
-// ═══════════════════════════
+// ===========================
 // WIN TAGS
-// ═══════════════════════════
+// ===========================
 function toggleWin(el){
   el.classList.toggle('selected');
   const wins=Array.from(document.querySelectorAll('#win-tags .win-tag.selected')).map(t=>t.textContent.trim());
   document.getElementById('wins-list').value=wins.join(', ');
 }
 
-// ═══════════════════════════
+// ===========================
 // INBODY DELTAS
-// ═══════════════════════════
+// ===========================
 function calcDelta(name,prevId,nowId,deltaId,lowerIsBetter){
   const prev=parseFloat(document.getElementById(prevId).value);
   const now=parseFloat(document.getElementById(nowId).value);
@@ -1115,13 +1115,13 @@ function calcDelta(name,prevId,nowId,deltaId,lowerIsBetter){
 function refreshSeg(){
   ['la','ra','trunk','ll','rl'].forEach(id=>{
     const v=document.getElementById('prev-seg-'+id).value;
-    document.getElementById('sp-'+id).textContent='Prev: '+(v?v+'%':'—');
+    document.getElementById('sp-'+id).textContent='Prev: '+(v?v+'%':'-');
   });
 }
 
-// ═══════════════════════════
+// ===========================
 // FILE UPLOAD
-// ═══════════════════════════
+// ===========================
 let uploadedFiles=[];
 
 function handleDrag(e,over){e.preventDefault();document.getElementById('upload-zone').classList.toggle('dragover',over);}
@@ -1133,7 +1133,7 @@ function handleFiles(files){
   const listEl=document.getElementById('file-list');
   listEl.innerHTML=uploadedFiles.map((f,i)=>`
     <div class="file-chip" id="fchip-${i}">
-      <span style="font-size:18px">${f.type.includes('pdf')?'📄':'🖼️'}</span>
+      <span style="font-size:18px">${f.type.includes('pdf')?'[PDF]':'[IMG]'}</span>
       <span class="fn">${f.name}</span>
       <span class="fs">${(f.size/1024).toFixed(0)} KB</span>
       <span class="fst" id="fst-${i}">Ready</span>
@@ -1170,7 +1170,7 @@ async function parseAllFiles(){
       const b64=await toBase64(f);
       const mt=f.type==='application/pdf'?'application/pdf':(f.type||'image/jpeg');
       blocks.push(mt==='application/pdf'?{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}}:{type:'image',source:{type:'base64',media_type:mt,data:b64}});
-      document.getElementById('fst-'+i).textContent='✓ Loaded';
+      document.getElementById('fst-'+i).textContent='v Loaded';
     }
     blocks.push({type:'text',text:`Extract all data from these documents and return ONLY valid JSON with these exact keys (empty string if not found):
 {"name":"","phone":"","email":"","gender":"","age":"","prev_height":"","prev_weight":"","prev_bmi":"","prev_fat":"","prev_lean":"","prev_water":"","prev_pbf":"","now_height":"","now_weight":"","now_bmi":"","now_fat":"","now_lean":"","now_water":"","now_pbf":"","prev_seg_la":"","prev_seg_ra":"","prev_seg_trunk":"","prev_seg_ll":"","prev_seg_rl":"","now_seg_la":"","now_seg_ra":"","now_seg_trunk":"","now_seg_ll":"","now_seg_rl":""}
@@ -1197,14 +1197,14 @@ CRITICAL INBODY EXTRACTION RULES:
     const parsed=JSON.parse(data.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim());
     autoFill(parsed);
     const n=Object.entries(parsed).filter(([k,v])=>v).length;
-    setStatus('upload-status','success',`✅ ${n} fields auto-filled. Review and continue.`);
+    setStatus('upload-status','success',`[OK] ${n} fields auto-filled. Review and continue.`);
     const pv=document.getElementById('parsed-preview');
     pv.style.display='block';
     pv.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>`  ${k}: ${v}`).join('\n');
-    btn.innerHTML='🔄 Re-upload or add more'; btn.disabled=false;
+    btn.innerHTML='? Re-upload or add more'; btn.disabled=false;
   } catch(e){
-    setStatus('upload-status','error','❌ API connection failed. Please set up your Cloudflare Worker proxy — see the hub Settings.');
-    btn.innerHTML='🧠 Read documents & auto-fill'; btn.disabled=false;
+    setStatus('upload-status','error','? API connection failed. Please set up your Cloudflare Worker proxy - see the hub Settings.');
+    btn.innerHTML='? Read documents & auto-fill'; btn.disabled=false;
   }
 }
 
@@ -1229,9 +1229,9 @@ function autoFill(d){
   ['bmi','fat','lean','water','pbf','weight'].forEach(m=>calcDelta(m,'prev-'+m,'now-'+m,'delta-'+m,m==='lean'?false:true));
 }
 
-// ═══════════════════════════
+// ===========================
 // ASSESSMENT
-// ═══════════════════════════
+// ===========================
 let assessmentText='';
 
 function gv(id){return (document.getElementById(id)||{}).value||'';}
@@ -1240,13 +1240,13 @@ function buildPrompt(){
   return `You are a professional personal training advisor conducting a monthly check-in with an active client. Generate a warm, thorough, member-facing monthly progress assessment in four clearly labeled sections. Address the member directly throughout.
 
 1. THIS MONTH'S PROGRESS
-Summarize the member's training performance, consistency, and physical results this month. Reference their session completion rate, performance improvements, and InBody scan changes with specific numbers. Acknowledge their effort honestly — celebrate what went well and note where there is room to grow, without judgment.
+Summarize the member's training performance, consistency, and physical results this month. Reference their session completion rate, performance improvements, and InBody scan changes with specific numbers. Acknowledge their effort honestly - celebrate what went well and note where there is room to grow, without judgment.
 
 2. NUTRITION & RECOVERY CHECK-IN
 Review how their diet and lifestyle habits have supported or limited their progress this month. Comment on their nutrition adherence score, protein and calorie tracking, hydration, sleep quality, and stress levels. Connect these directly to the physical results and how they've been feeling in sessions. Offer practical, specific guidance for the coming month.
 
 3. WINS & HIGHLIGHTS
-Celebrate this month's victories — both measurable and personal. Reference the wins they selected and any standout moments from the check-in. Make this section feel genuinely affirming and specific to them, not generic.
+Celebrate this month's victories - both measurable and personal. Reference the wins they selected and any standout moments from the check-in. Make this section feel genuinely affirming and specific to them, not generic.
 
 4. FOCUS AREAS FOR NEXT MONTH
 Based on everything from this check-in, provide clear advisor recommendations for the coming month. Include:
@@ -1295,31 +1295,31 @@ Wins this month: ${gv('wins-list')}
 Other wins: ${gv('other-wins')}
 
 INBODY COMPARISON:
-Previous — Weight: ${gv('prev-weight')}lb, BMI: ${gv('prev-bmi')}, Body fat: ${gv('prev-fat')}lb, Lean: ${gv('prev-lean')}lb, Water: ${gv('prev-water')}lb, PBF: ${gv('prev-pbf')}%
-Current  — Weight: ${gv('now-weight')}lb, BMI: ${gv('now-bmi')}, Body fat: ${gv('now-fat')}lb, Lean: ${gv('now-lean')}lb, Water: ${gv('now-water')}lb, PBF: ${gv('now-pbf')}%
-Segmental (prev→now): LA ${gv('prev-seg-la')}%→${gv('now-seg-la')}% | RA ${gv('prev-seg-ra')}%→${gv('now-seg-ra')}% | Trunk ${gv('prev-seg-trunk')}%→${gv('now-seg-trunk')}% | LL ${gv('prev-seg-ll')}%→${gv('now-seg-ll')}% | RL ${gv('prev-seg-rl')}%→${gv('now-seg-rl')}%
+Previous - Weight: ${gv('prev-weight')}lb, BMI: ${gv('prev-bmi')}, Body fat: ${gv('prev-fat')}lb, Lean: ${gv('prev-lean')}lb, Water: ${gv('prev-water')}lb, PBF: ${gv('prev-pbf')}%
+Current  - Weight: ${gv('now-weight')}lb, BMI: ${gv('now-bmi')}, Body fat: ${gv('now-fat')}lb, Lean: ${gv('now-lean')}lb, Water: ${gv('now-water')}lb, PBF: ${gv('now-pbf')}%
+Segmental (prev->now): LA ${gv('prev-seg-la')}%->${gv('now-seg-la')}% | RA ${gv('prev-seg-ra')}%->${gv('now-seg-ra')}% | Trunk ${gv('prev-seg-trunk')}%->${gv('now-seg-trunk')}% | LL ${gv('prev-seg-ll')}%->${gv('now-seg-ll')}% | RL ${gv('prev-seg-rl')}%->${gv('now-seg-rl')}%
 Advisor scan notes: ${gv('scan-notes')}
 ---
 
 Write in clear, warm, professional prose addressed directly to the member. Use plain section headers. Be specific, data-driven, and genuinely encouraging.
 
-Then end with this member-facing progress summary — keep it positive, motivating, and forward-focused:
+Then end with this member-facing progress summary - keep it positive, motivating, and forward-focused:
 
-════════════════════════════════════
+====================================
 YOUR MONTHLY PROGRESS REPORT
-════════════════════════════════════
+====================================
 
 THIS MONTH IN REVIEW
-[3-4 sentences written directly to the member. Highlight the most meaningful changes in their InBody data this month — fat lost, muscle gained, score improvements. Acknowledge their effort. Be specific with numbers.]
+[3-4 sentences written directly to the member. Highlight the most meaningful changes in their InBody data this month - fat lost, muscle gained, score improvements. Acknowledge their effort. Be specific with numbers.]
 
 WHAT'S WORKING
 [2-3 sentences about what habits or training approaches are clearly paying off based on the data and their self-reported scores. Reinforce the positive behaviors.]
 
 FOCUS FOR NEXT MONTH
-[3-4 short bullet points. One training adjustment, one nutrition focus, one lifestyle habit, and one metric to beat. Keep it simple — one thing at a time.]
+[3-4 short bullet points. One training adjustment, one nutrition focus, one lifestyle habit, and one metric to beat. Keep it simple - one thing at a time.]
 
 YOUR MOMENTUM
-[2 closing sentences that celebrate how far they've come and build excitement for next month. Reference a specific number or milestone from their data. End with energy — e.g. "You're building real momentum — next month we push further."]`;
+[2 closing sentences that celebrate how far they've come and build excitement for next month. Reference a specific number or milestone from their data. End with energy - e.g. "You're building real momentum - next month we push further."]`;
 }
 
 async function generateAssessment(){
@@ -1344,13 +1344,13 @@ async function generateAssessment(){
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
       window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,1500)),'_blank');
     } catch(_em) {}
-  } catch(e){setStatus('assess-status','error','❌ Error: '+e.message);}
-  btn.disabled=false; btn.innerHTML='✨ Regenerate Personalized Assessment';
+  } catch(e){setStatus('assess-status','error','? Error: '+e.message);}
+  btn.disabled=false; btn.innerHTML='* Regenerate Personalized Assessment';
 }
 
-// ═══════════════════════════
+// ===========================
 // GOOGLE SHEETS SAVE
-// ═══════════════════════════
+// ===========================
 
 async function ensureSheetHeaders(tab) {
   var gKey = 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
@@ -1403,7 +1403,7 @@ function addToCalendar(name, followUpDate, phone, email) {
   window.open(url, '_blank');
 }
 
-// ── Save to Check-In History tab ──
+// ?? Save to Check-In History tab ??
 async function saveToCheckinHistory(row) {
   var gKey = getCfg('gKey') || 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
   var sheetId = getCfg('ptSheetId') || '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
@@ -1432,7 +1432,7 @@ async function saveToCheckinHistory(row) {
   await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({values:[histRow]}) });
 }
 
-// ── Update Next Check-In date on Active Clients tab ──
+// ?? Update Next Check-In date on Active Clients tab ??
 async function updateNextCheckin(memberName, nextDate) {
   var gKey = getCfg('gKey') || 'AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
   var sheetId = getCfg('ptSheetId') || '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
@@ -1453,7 +1453,7 @@ async function updateNextCheckin(memberName, nextDate) {
   } catch(e) { console.log('Update next check-in failed:', e); }
 }
 
-// ── Add next month to calendar ──
+// ?? Add next month to calendar ??
 function addNextMonthCalendar(name, nextDate, phone, email, gender) {
   var title = encodeURIComponent('Monthly PT Check-In: ' + name);
   var details = encodeURIComponent('Phone: '+(phone||'')+' Email: '+(email||''));
@@ -1488,7 +1488,7 @@ async function saveCheckin(){
 
   const confirm=document.getElementById('confirm-save');
   confirm.classList.add('show');
-  if(!ok) confirm.innerHTML='⚠️ Could not write to Google Sheets (check API key in Settings). Email sent. Try again or enter data manually.';
+  if(!ok) confirm.innerHTML='[!] Could not write to Google Sheets (check API key in Settings). Email sent. Try again or enter data manually.';
   confirm.scrollIntoView({behavior:'smooth'});
 }
 
@@ -1500,15 +1500,15 @@ async function notifyTeam(){
       messages:[{role:'user',content:'Log monthly PT check-in for ${gv('name')} on ${gv('checkin-date')}. Next check-in: ${gv('next-checkin')}. Session score: ${gv('session-score')}/10. Diet: ${gv('diet-score')}/10. Notify: ${emails}. Reply "Logged."`}]})});
 }
 
-// ═══════════════════════════
+// ===========================
 // LOADING
-// ═══════════════════════════
+// ===========================
 function showLoading(msg){document.getElementById('loading-text').textContent=msg||'Saving...';document.getElementById('loading-overlay').classList.add('show');}
 function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
 
-// ═══════════════════════════
+// ===========================
 // RESET
-// ═══════════════════════════
+// ===========================
 function resetForm(){
   if(!confirm('Start a new check-in? Current data will be cleared.')) return;
   const advisor=gv('advisor-name');
@@ -1529,7 +1529,7 @@ function resetForm(){
   document.getElementById('confirm-save').classList.remove('show');
   setStatus('upload-status','',''); setStatus('assess-status','','');
   ['weight','bmi','fat','lean','water','pbf'].forEach(m=>{const el=document.getElementById('delta-'+m);if(el){el.textContent='';el.className='delta';}});
-  ['la','ra','trunk','ll','rl'].forEach(id=>{const el=document.getElementById('sp-'+id);if(el) el.textContent='Prev: —';});
+  ['la','ra','trunk','ll','rl'].forEach(id=>{const el=document.getElementById('sp-'+id);if(el) el.textContent='Prev: -';});
   document.getElementById('advisor-name').value=advisor;
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('checkin-date').value=today;
