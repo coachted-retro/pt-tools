@@ -1450,7 +1450,7 @@ function saveConfig(){
 }
 
 function openConfig(){
-  document.getElementById('config-overlay').style.display='flex';
+  /* config overlay suppressed - keys hardcoded */
   if(getCfg('apiKey')) document.getElementById('cfg-api-key').value=getCfg('apiKey');
   if(getCfg('sheetId')) document.getElementById('cfg-sheet-id').value=getCfg('sheetId');
   if('AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ') document.getElementById('cfg-gkey').value='AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
@@ -1460,15 +1460,17 @@ function openConfig(){
 function openSheet(){ window.open('https://docs.google.com/spreadsheets/d/'+(getCfg('sheetId')||SHEET_ID_DEFAULT)+'/edit','_blank'); }
 
 window.addEventListener('load',()=>{
+
   localStorage.setItem('fct_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
   localStorage.setItem('ffu_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
   localStorage.setItem('ptci_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
-  if(!getCfg('configured')){ document.getElementById('config-overlay').style.display='flex'; }
+  // config handled by hub
   else { document.getElementById('config-overlay').style.display='none'; }
   const adv=getCfg('advisor'); if(adv) document.getElementById('advisor-name').value=adv;
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('fu-date').value=today;
   updateNextFuDate();
+
 });
 
 // ═══════════════════════════════════
@@ -1869,27 +1871,28 @@ async function appendToSheet(tab,row){
 }
 
 function buildBaseRow(outcome, freq, length){
-  // Next follow-up: 4 weeks out
+  // Calculate next follow-up date
   var fuDate = gv('fu-date');
-  var nextFollowUp = '';
+  var nextDate = '';
   if (fuDate) {
     var d = new Date(fuDate + 'T12:00:00');
-    d.setDate(d.getDate() + 28);
-    nextFollowUp = d.toISOString().split('T')[0];
+    d.setDate(d.getDate() + 42); // 6 weeks default
+    nextDate = d.toISOString().split('T')[0];
   }
-  var outcomeStr = outcome + (freq ? ' — ' + freq + ', ' + length : '');
+  var outcomeStr = outcome + (freq ? ' — ' + freq + (length ? ', ' + length : '') : '');
   return [
     fuDate,
+    nextDate,
+    getCfg('advisor'),
     gv('gender'),
     gv('age'),
     gv('name'),
     gv('phone'),
     gv('email'),
     gv('orig-goals'),
-    nextFollowUp,
     outcomeStr,
     '',
-    assessmentText.substring(0,800)+(assessmentText.length>800?'...':''),
+    assessmentText ? assessmentText.substring(0,800)+(assessmentText.length>800?'...':'') : '',
     '=HYPERLINK("https://coachted-retro.github.io/pt-tools/fitness-followup-tool.html","View Tool")'
   ];
 }

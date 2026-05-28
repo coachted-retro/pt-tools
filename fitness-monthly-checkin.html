@@ -1009,7 +1009,7 @@ function saveConfig(){
 }
 
 function openConfig(){
-  document.getElementById('config-overlay').style.display='flex';
+  /* config overlay suppressed - keys hardcoded */
   if(getCfg('apiKey')) document.getElementById('cfg-api-key').value=getCfg('apiKey');
   if(getCfg('sheetId')) document.getElementById('cfg-sheet-id').value=getCfg('sheetId');
   if('AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ') document.getElementById('cfg-gkey').value='AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
@@ -1019,14 +1019,16 @@ function openConfig(){
 function openSheet(){ window.open('https://docs.google.com/spreadsheets/d/'+(getCfg('sheetId')||SHEET_ID_DEFAULT)+'/edit','_blank'); }
 
 window.addEventListener('load',()=>{
+
   localStorage.setItem('fct_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
   localStorage.setItem('ffu_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
   localStorage.setItem('ptci_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
-  var k=localStorage.getItem('fct_gKey')||localStorage.getItem('ffu_gKey')||localStorage.getItem('ptci_gKey'); if(!k){ document.getElementById('config-overlay').style.display='flex'; }
+  var k=localStorage.getItem('fct_gKey')||localStorage.getItem('ffu_gKey')||localStorage.getItem('ptci_gKey'); if(!k){ /* config overlay suppressed - keys hardcoded */ }
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('checkin-date').value=today;
   updateDates();
   const adv=getCfg('advisor'); if(adv){ const el=document.getElementById('advisor-name'); if(el&&!el.value) el.value=adv; }
+
 });
 
 function updateDates(){
