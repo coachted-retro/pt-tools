@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monthly PT Check-In  v1780001753v1779999954 v1779999982 v1780000324 v1780000816 v1780000828 v1780001686 v1780001837</title>
+<title>Monthly PT Check-In  v1780001753v1779999954 v1779999982 v1780000324 v1780000816 v1780000828 v1780001686 v1780001837 v1780002271</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1342,7 +1342,7 @@ async function generateAssessment(){
     try {
       var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,800)),'_blank');
+      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,500)),'_blank');
     } catch(_em) {}
   } catch(e){setStatus('assess-status','error','? Error: '+e.message);}
   btn.disabled=false; btn.innerHTML='* Regenerate Personalized Assessment';
@@ -1357,7 +1357,7 @@ async function ensureSheetHeaders(tab) {
   var sheetId = getCfg('sheetId');
   if (!gKey || !sheetId) return;
   var headers = [['Date','Gender','Age','Name','Phone','Email','Goal / Program','Follow-Up Date','Outcome','Advisor Notes','Assessment Summary','Tool Link']];
-  var range = encodeURIComponent(tab + '!A1:L1');
+  var range = tab.replace(/ /g,'%20') + '!A1:L1';
   var checkUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?key=' + gKey;';
   try {
     var r = await fetch(checkUrl);
@@ -1374,7 +1374,7 @@ async function appendToSheet(row){
   const gKey='AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
   const sheetId=getCfg('sheetId')||SHEET_ID_DEFAULT;
   // gKey hardcoded
-  const range=encodeURIComponent('Sheet1!A1');
+  const range='Sheet1!A1';
   const url='https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED';
   try{
     const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
