@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monthly PT Check-In</title>
+<title>Monthly PT Check-In v1779999954 v1779999982</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1197,10 +1197,10 @@ CRITICAL INBODY EXTRACTION RULES:
     const parsed=JSON.parse(data.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim());
     autoFill(parsed);
     const n=Object.entries(parsed).filter(([k,v])=>v).length;
-    setStatus('upload-status','success',`[OK] ${n} fields auto-filled. Review and continue.`);
+    setStatus('upload-status','success',('[OK] ' + n + ' fields auto-filled. Review and continue.'));
     const pv=document.getElementById('parsed-preview');
     pv.style.display='block';
-    pv.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>`  ${k}: ${v}`).join('\n');
+    pv.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>('  '+k+': '+v)).join('\n');
     btn.innerHTML='? Re-upload or add more'; btn.disabled=false;
   } catch(e){
     setStatus('upload-status','error','? API connection failed. Please set up your Cloudflare Worker proxy - see the hub Settings.');
@@ -1497,7 +1497,7 @@ async function notifyTeam(){
   const emails=getCfg('emails')||NOTIFY_EMAILS;
   await fetch(getApiUrl(),{method:'POST',headers: getApiHeaders(apiKey),
     body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:80,
-      messages:[{role:'user',content:'Log monthly PT check-in for ' + gv('name') + ' on ' + gv('checkin-date') + '. Next check-in: ' + gv('next-checkin') + '. Session score: ' + gv('session-score') + '/10. Diet: ${gv('diet-score')}/10. Notify: ${emails}. Reply "Logged."`}]})});
+      messages:[{role:'user',content:'Log monthly PT check-in for ' + gv('name') + ' on ' + gv('checkin-date') + '. Next check-in: ' + gv('next-checkin') + '. Session score: ' + gv('session-score') + '/10. Diet: ' + gv('diet-score') + '/10.'}]})});
 }
 
 // ===========================

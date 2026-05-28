@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>6-Week Follow-Up — Fitness Consultation</title>
+<title>6-Week Follow-Up — Fitness Consultation v1779999954 v1779999982</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1646,10 +1646,10 @@ CRITICAL INBODY EXTRACTION RULES:
     const parsed=JSON.parse(raw);
     autoFill(parsed);
     const filled=Object.entries(parsed).filter(([k,v])=>v).length;
-    setStatus('upload-status','success',`[OK] ${filled} fields auto-filled. Review and continue.`);
+    setStatus('upload-status','success',('[OK] ' + filled + ' fields auto-filled. Review and continue.'));
     const preview=document.getElementById('parsed-preview');
     preview.style.display='block';
-    preview.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>`  ${k}: ${v}`).join('\n');
+    preview.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>('  '+k+': '+v)).join('\n');
     btn.innerHTML='? Re-upload or add more files';
     btn.disabled=false;
   } catch(e){
@@ -1888,7 +1888,7 @@ async function appendToSheet(tab,row){
   const gKey='AQ.Ab8RN6JHuXU8Z9WyD8F58ohEPxZX5M8hn_XxAzD_bIZEb1vReQ';
   const sheetId=getCfg('sheetId')||SHEET_ID_DEFAULT;
   // gKey hardcoded
-  const range=encodeURIComponent(`${tab}!A1`);
+  const range=encodeURIComponent(tab+'!A1');
   const url='https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED
   try{
     const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
@@ -2128,7 +2128,7 @@ async function sendEmail(outcome, freq, length){
     method:'POST',
     headers: getApiHeaders(apiKey),
     body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:100,
-      messages:[{role:'user',content:'Log 6-week follow-up for ' + gv('name') + ' - Outcome: ' + outcome + '. Notify: ' + emails + '. Commitment score: ${gv('commitment-score')}/10. Reply "Logged."`}]})
+      messages:[{role:'user',content:'Log 6-week follow-up for ' + gv('name') + ' - Outcome: ' + outcome + '. Notify: ' + emails + '. Commitment score: ' + gv('commitment-score') + '/10.'}]})
   });
 }
 
