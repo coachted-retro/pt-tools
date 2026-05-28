@@ -1427,8 +1427,7 @@ async function updateNextCheckin(memberName, nextDate) {
 // ── Add next month to calendar ──
 function addNextMonthCalendar(name, nextDate, phone, email, gender) {
   var title = encodeURIComponent('Monthly PT Check-In: ' + name);
-  var details = encodeURIComponent('Phone: '+(phone||'')+'
-Email: '+(email||''));
+  var details = encodeURIComponent('Phone: '+(phone||'')+' Email: '+(email||''));
   var date = (nextDate||'').replace(/-/g,'');
   if (!date) return;
   var calEmail = (gender||'').toLowerCase().includes('female') ? 'healthylifewithdani1%40gmail.com' : 'tedscholl%40gmail.com';

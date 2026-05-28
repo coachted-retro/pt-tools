@@ -1465,7 +1465,6 @@ window.addEventListener('load',()=>{
   localStorage.setItem('ffu_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
   localStorage.setItem('ptci_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
   // config handled by hub
-  else { document.getElementById('config-overlay').style.display='none'; }
   const adv=getCfg('advisor'); if(adv) document.getElementById('advisor-name').value=adv;
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('fu-date').value=today;
@@ -1931,15 +1930,7 @@ async function createClientFolder(name, gKey, content) {
     await fetch(uploadBase + '/files?uploadType=multipart&key=' + gKey, {
       method:'POST',
       headers:{'Content-Type':'multipart/related; boundary=b123'},
-      body:'--b123
-Content-Type: application/json
-
-' + JSON.stringify({name:'6-Week Follow-Up - '+new Date().toISOString().split("T")[0]+'.txt',parents:[clientFolderId]}) + '
---b123
-Content-Type: text/plain
-
-' + content + '
---b123--'
+      body:'--b123\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify({name:'6-Week Follow-Up - '+new Date().toISOString().split('T')[0]+'.txt',parents:[clientFolderId]}) + '\r\n--b123\r\nContent-Type: text/plain\r\n\r\n' + content + '\r\n--b123--'
     });
     return { folderId: clientFolderId, folderUrl: 'https://drive.google.com/drive/folders/' + clientFolderId };
   } catch(e) { return null; }
@@ -1962,9 +1953,7 @@ async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
 // ── Recurring monthly calendar ──
 function addRecurringCalendar(name, startDate, phone, email, gender) {
   var title = encodeURIComponent('Monthly PT Check-In: ' + name);
-  var details = encodeURIComponent('Phone: '+(phone||'')+'
-Email: '+(email||'')+'
-Recurring monthly PT check-in');
+  var details = encodeURIComponent('Phone: '+(phone||'')+' Email: '+(email||'')+' Recurring monthly PT check-in');
   var date = (startDate||'').replace(/-/g,'');
   if (!date) return;
   var calEmail = (gender||'').toLowerCase().includes('female') ? 'healthylifewithdani1%40gmail.com' : 'tedscholl%40gmail.com';
