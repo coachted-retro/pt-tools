@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>6-Week Follow-Up — Fitness Consultation  v1780001753v1779999954 v1779999982 v1780000324 v1780000816 v1780000828 v1780001686 v1780001837 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352</title>
+<title>6-Week Follow-Up — Fitness Consultation  v1780001753v1779999954 v1779999982 v1780000324 v1780000816 v1780000828 v1780001686 v1780001837 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009975 v1780009998</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -820,7 +820,7 @@
         </div>
         <div class="nav-row">
           <div></div>
-          <button class="btn btn-outline" onclick="goPage(1)">Skip — fill manually →</button>
+          <button class="btn btn-outline" onclick="goPage(1)">Skip or Next →</button>
         </div>
       </div>
 
@@ -1815,7 +1815,7 @@ async function generateAssessment(){
     try {
       var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      // email logged
+      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,800)),'_blank');
     } catch(_em) {}
   } catch(e){
     setStatus('assess-status','error','? Error: '+e.message);
@@ -1893,7 +1893,7 @@ async function appendToSheet(tab,row){
   try{
     const resp=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
     const data=await resp.json();
-    if(data.error){console.error('Sheets:',data.error.message);return false;}
+    console.log('Sheets response:',JSON.stringify(data).substring(0,200)); if(data.error){console.error('Sheets error:',JSON.stringify(data.error));return false;}
     return true;
   } catch(e){console.error('Sheets write failed:',e);return false;}
 }
