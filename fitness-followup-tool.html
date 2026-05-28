@@ -704,7 +704,7 @@
 <div class="config-overlay" id="config-overlay">
   <div class="config-modal">
     <h3>⚙️ Setup</h3>
-    <p>Enter your credentials to connect to the AI assessment engine and Google Sheets database. Saved locally in this browser.</p>
+    <p>Enter your credentials to connect to the Personalized Assessment engine and Google Sheets database. Saved locally in this browser.</p>
     <div class="cfg-field">
       <label>Anthropic API Key</label>
       <input type="password" id="cfg-api-key" placeholder="sk-ant-api03-...">
@@ -1291,7 +1291,7 @@
           <div class="card-title"><span class="pip"></span> Generate member assessment</div>
           <p style="font-size:13px; color:var(--text2); margin-bottom:16px;">The AI will synthesize everything from this follow-up — their progress, challenges, InBody comparison, and goals — into a personalized member-facing assessment and advisor recommendations.</p>
           <button class="btn btn-primary btn-lg btn-full" id="gen-btn" onclick="generateAssessment()">
-            ✨ Generate assessment
+            ✨ Generate Personalized Assessment
           </button>
           <div id="assess-status" class="status-bar" style="margin-top:12px;"></div>
           <div id="assessment-box" class="assessment-box"></div>
@@ -1815,13 +1815,13 @@ async function generateAssessment(){
     try {
       var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,9000)),'_blank');
+      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,1500)),'_blank');
     } catch(_em) {}
   } catch(e){
     setStatus('assess-status','error','❌ Error: '+e.message);
   }
   btn.disabled=false;
-  btn.innerHTML='✨ Regenerate assessment';
+  btn.innerHTML='✨ Regenerate Personalized Assessment';
 }
 
 // ═══════════════════════════════════

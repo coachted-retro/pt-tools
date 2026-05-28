@@ -1237,7 +1237,7 @@
       <!-- ══ PAGE 5: ASSESSMENT ══ -->
       <div class="page" id="page-5">
         <div class="page-header">
-          <h2>AI assessment</h2>
+          <h2>Personalized Assessment</h2>
           <p>Generate a full member-facing assessment, advisor recommendations, and strength training program based on all intake data.</p>
         </div>
 
@@ -1245,7 +1245,7 @@
           <div class="card-title"><span class="dot"></span> Generate assessment</div>
           <p style="font-size:13px; color:var(--text2); margin-bottom:16px;">All data entered across the previous steps will be analyzed. Review the output with the member before accepting or declining.</p>
           <button class="btn btn-primary btn-lg btn-full" id="gen-btn" onclick="generateAssessment()">
-            ✨ Generate AI assessment
+            ✨ Generate Personalized Assessment
           </button>
           <div id="assess-status" class="status-bar" style="margin-top:12px;"></div>
           <div id="assessment-box" class="assessment-box"></div>
@@ -1701,7 +1701,7 @@ async function generateAssessment() {
     try {
       var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,9000)),'_blank');
+      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,1500)),'_blank');
     } catch(_em) {}
     // ── Email notification after assessment ──
     try {
@@ -1719,7 +1719,7 @@ async function generateAssessment() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '✨ Regenerate assessment';
+  btn.innerHTML = '✨ Regenerate Personalized Assessment';
 }
 
 // ═══════════════════════════════════════════

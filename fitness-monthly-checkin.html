@@ -1342,10 +1342,10 @@ async function generateAssessment(){
     try {
       var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
       var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,9000)),'_blank');
+      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,1500)),'_blank');
     } catch(_em) {}
   } catch(e){setStatus('assess-status','error','❌ Error: '+e.message);}
-  btn.disabled=false; btn.innerHTML='✨ Regenerate assessment';
+  btn.disabled=false; btn.innerHTML='✨ Regenerate Personalized Assessment';
 }
 
 // ═══════════════════════════
