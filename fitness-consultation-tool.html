@@ -6,7 +6,7 @@
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Consultation Tool  v1780001753v1779999736 v1780001686 v1780001837 v1780001850 v1780001860 v1780001877 v1780001888 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009934 v1780009975 v1780009998 v1780012121 v1780013415 v1780013435 v1780014791 v1780015809 v1780015837 v1780015855 v1780015871 v1780016415 v1780016648 v1780016732</title>
+<title>Fitness Consultation Tool  v1780001753v1779999736 v1780001686 v1780001837 v1780001850 v1780001860 v1780001877 v1780001888 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009934 v1780009975 v1780009998 v1780012121 v1780013415 v1780013435 v1780014791 v1780015809 v1780015837 v1780015855 v1780015871 v1780016415 v1780016648 v1780016732 v1780017503 v1780018114</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1608,70 +1608,25 @@ A concrete, specific training framework. Include:
 - Any exercise contraindications or modifications based on medical history
 - Short-term (30-day) focus areas
 
---- MEMBER DATA ---
-Name: ${gv('name')} | DOB: ' + gv('dob') + ' | Age: ' + gv('age') + ' | Gender: ${gv('gender')}
-Consultation date: ${gv('consult-date')} | Advisor: ${gv('advisor-name')||getCfg('advisor')}
+Keep the full advisor notes concise. Then end with this member-facing close section — this is what gets shown on screen and read with the member:
 
-GOALS & ACTIVITY:
-Fitness goals: ${gv('goals')}
-Experience: ${gv('experience')} | Timeframe: ${gv('timeframe')}
-Status: ${gv('workout-status')} | ' + gv('days-per-week') + ' days/week | ${gv('workout-duration')}
+---MEMBER CLOSE---
 
-MEDICAL:
-Conditions/injuries: ${gv('medical')}
-Doctor recommendation: ${gv('doctor-rec')} - ${gv('doctor-notes')}
-Medications: ${gv('medications')}
-Supplements: ${gv('supplements')}
+YOUR SNAPSHOT
+[2 sentences max. Their biggest body composition finding in plain language. Honest and encouraging.]
 
-DIET:
-Meals/day: ${gv('meals-per-day')} | Calorie target: ${gv('calorie-target')||'unknown'}
-Breakfast: ${gv('breakfast')}
-Lunch: ${gv('lunch')}
-Dinner: ${gv('dinner')}
-Snacks: ${gv('snacks')}
-Tracks MACROs: ${gv('tracks-macros')} | Protein: ' + gv('macro-protein') + '% | Carb/Fat: ${gv('macro-carbfat')}
+YOUR OPPORTUNITY  
+[1-2 sentences. Specific result they can realistically achieve in 90 days based on their data and goal.]
 
-INBODY SCAN:
-Height: ${gv('height')} | BMI: ' + gv('bmi') + ' | PBF: ${gv('pbf')}%
-Body water: ${gv('water-weight')} lb | Lean mass: ' + gv('lean-mass') + ' lb | Body fat: ${gv('fat-mass')} lb
-Segmental lean - Left arm: ${gv('seg-la')}% | Right arm: ' + gv('seg-ra') + '% | Trunk: ' + gv('seg-trunk') + '% | Left leg: ' + gv('seg-ll') + '% | Right leg: ${gv('seg-rl')}%
----
+YOUR PLAN
+- [Training: one specific action]
+- [Nutrition: one specific change]
+- [What we track together]
 
-Write the advisor section in clear professional prose with plain headers (no asterisks or markdown). Be specific and clinically grounded.
+THE DECISION
+[One powerful closing sentence that creates urgency without pressure. Make it feel like today is the right day.]
 
-Then end with this clearly separated member-facing section - this is what the advisor reads aloud with the member to close the sale:
-
-====================================
-YOUR PERSONAL FITNESS SNAPSHOT
-====================================
-
-WHERE YOU ARE TODAY
-[Write 3-4 warm, honest sentences directly to the member. Reference their specific InBody numbers in plain language - not medical jargon. Acknowledge what they're already doing well. Be encouraging but real about where they are starting from.]
-
-THE OPPORTUNITY IN FRONT OF YOU
-[Write 2-3 sentences about the specific transformation possible for THIS member based on their data and goals. Make it feel exciting and achievable. Reference their specific goal and a realistic timeframe - e.g. "In 12 weeks you could realistically lose X lbs of fat while adding X lbs of lean muscle."]
-
-YOUR 90-DAY GAME PLAN
-[Write this as 4-5 short bullet points - simple, punchy, actionable. Each one should be one sentence. Cover: training approach, nutrition focus, key habit to build, what we'll track together, and what they'll feel/see at the 30/60/90-day marks.]
-
-WHY NOW
-[Write 2 sentences that create urgency and close - e.g. "Every week without a structured plan is a week of potential lost. The data we just looked at together tells us exactly what your body needs - and we have a program built for exactly this."]
-
-Then add this clearly separated section at the very end:
-
----
-MEMBER SNAPSHOT
-(Written directly to the member in warm, plain language - no jargon)
-
-Where You Are Now: [2-3 sentences describing their current condition, body composition, and key health factors - encouraging and honest]
-
-What We're Focused On: [2-3 specific areas that need attention to reach their goal - framed positively]
-
-Your Action Plan:
-- [Training: specific frequency, type, focus]
-- [Nutrition: key change or habit to build]
-- [Metric to track: what we'll measure together]
-- [First milestone: what success looks like in 4-6 weeks]`;
+---END CLOSE---`;
 }
 
 async function generateAssessment() {
@@ -1760,10 +1715,9 @@ function showDecline() {
 async function ensureSheetHeaders() { /* simplified */ }
 
 async function appendToSheet(tabName, rowValues) {
-  const gKey = 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
   const sheetId = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
   const range = encodeURIComponent(tabName) + '!A1';
-  const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED&key=' + gKey;
+  const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED';
   try {
     const resp = await fetch(url, {
       method: 'POST',
@@ -1771,10 +1725,7 @@ async function appendToSheet(tabName, rowValues) {
       body: JSON.stringify({values: [rowValues]})
     });
     const text = await resp.text();
-    if (!resp.ok) {
-      console.error('Sheets error:', resp.status, text.substring(0, 200));
-      return false;
-    }
+    if (!resp.ok) { console.error('Sheets error:', resp.status, text.substring(0,200)); return false; }
     const data = JSON.parse(text);
     if (data.error) { console.error('Sheets API error:', data.error.message); return false; }
     return true;
