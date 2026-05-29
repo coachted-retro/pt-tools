@@ -6,7 +6,7 @@
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Consultation Tool  v1780019041</title>
+<title>Fitness Consultation Tool  v1780019624</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1715,9 +1715,10 @@ function showDecline() {
 async function ensureSheetHeaders() { /* simplified */ }
 
 async function appendToSheet(tabName, rowValues) {
+  const gKey = 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
   const sheetId = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
   const range = encodeURIComponent(tabName) + '!A1';
-  const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED';
+  const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED&key=' + gKey;
   try {
     const resp = await fetch(url, {
       method: 'POST',
@@ -1725,9 +1726,10 @@ async function appendToSheet(tabName, rowValues) {
       body: JSON.stringify({values: [rowValues]})
     });
     const text = await resp.text();
-    if (!resp.ok) { console.error('Sheets error:', resp.status, text.substring(0,200)); return false; }
+    if (!resp.ok) { console.error('Sheets error:', resp.status, text.substring(0,300)); return false; }
     const data = JSON.parse(text);
     if (data.error) { console.error('Sheets API error:', data.error.message); return false; }
+    console.log('Sheets write OK:', tabName);
     return true;
   } catch(e) { console.error('Sheets write failed:', e.message); return false; }
 }
