@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monthly PT Check-In v1780075190</title>
+<title>Monthly PT Check-In v1780078195</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1391,33 +1391,51 @@ function addToCalendar(name, followUpDate, phone, email) {
 // ?? Save to Check-In History tab ??
 async function saveToCheckinHistory() { /* simplified */ }
 
-async function saveCheckin(){
+async function saveCheckin() {
   showLoading('Saving to progress tracker...');
   const nextCheckin = gv('next-checkin');
   const memberGender = gv('gender')||'';
-  const row=[
+  const row = [
     gv('checkin-date'),
-    gv('gender')||'',
-    gv('age')||'',
+    gv('advisor-name') || getCfg('advisor'),
+    nextCheckin,
     gv('name'),
-    gv('phone')||'',
-    gv('email')||'',
-    gv('training-freq')||'',
-    gv('next-checkin'),
-    'CHECKED IN',
-    '',
+    gv('email'),
+    memberGender,
+    gv('age'),
+    gv('session-score'),
+    gv('diet-score'),
+    gv('energy-score'),
+    gv('sleep-score'),
+    gv('stress-score'),
+    gv('now-weight'),
+    gv('now-lean'),
+    gv('now-pbf'),
     assessmentText ? assessmentText.substring(0,800)+(assessmentText.length>800?'...':'') : '',
-    '=HYPERLINK("https://coachted-retro.github.io/pt-tools/fitness-monthly-checkin.html","View Tool")'
+    gv('advisor-notes'),
+    gv('prev-weight'),
+    gv('prev-lean'),
+    gv('prev-pbf'),
+    gv('prev-fat'),
+    gv('prev-bmi'),
+    gv('now-fat'),
+    gv('now-bmi'),
+    gv('training-freq'),
+    gv('phone')
   ];
 
-  const ok=await appendToSheet('Check-In History', row);
+  const ok = await appendToSheet('Check-In History', row);
   await notifyTeam();
   hideLoading();
 
-  const confirm=document.getElementById('confirm-save');
+  const confirm = document.getElementById('confirm-save');
   confirm.classList.add('show');
-  if(!ok) confirm.innerHTML='[!] Could not write to Google Sheets (check API key in Settings). Email sent. Try again or enter data manually.';
-  confirm.scrollIntoView({behavior:'smooth'});
+  if (!ok) confirm.innerHTML = '[!] Could not write to Google Sheets. Check connection.';
+  else confirm.innerHTML = 'Saved to Check-In History. Next check-in: ' + nextCheckin;
+
+  if (nextCheckin) {
+    setTimeout(function() { addToCalendar(gv('name'), nextCheckin, memberGender); }, 800);
+  }
 }
 
 async function notifyTeam(){
