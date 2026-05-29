@@ -6,7 +6,7 @@
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Consultation Tool  v1780019929</title>
+<title>Fitness Consultation Tool  v1780055304</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1715,18 +1715,19 @@ function showDecline() {
 async function ensureSheetHeaders() { /* simplified */ }
 
 async function appendToSheet(tabName, rowValues) {
-  const sheetId = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
-  const range = encodeURIComponent(tabName) + '!A1';
-  const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED';
+  const url = 'https://script.google.com/macros/s/AKfycbxLeN6YU0_5SwoGc8Py8qOSb7C5pMT02xxu5R52l2JNDO6iFYQpNavmQoNl4ekEi5VaxA/exec';
   try {
-    const resp = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({values:[rowValues]})});
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({tab: tabName, row: rowValues})
+    });
     const text = await resp.text();
-    if (!resp.ok) { console.error('Sheets error:', resp.status, text.substring(0,200)); return false; }
     const data = JSON.parse(text);
-    if (data.error) { console.error('Sheets API error:', data.error.message); return false; }
-    console.log('Sheets write OK:', tabName);
+    if (!data.ok) { console.error('Sheet error:', data.error); return false; }
+    console.log('Sheet write OK:', tabName);
     return true;
-  } catch(e) { console.error('Sheets failed:', e.message); return false; }
+  } catch(e) { console.error('Sheet failed:', e.message); return false; }
 }
 
 async function ensureSheetTabs() {
