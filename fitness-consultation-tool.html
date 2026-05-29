@@ -6,7 +6,7 @@
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Consultation Tool  v1780001753v1779999736 v1780001686 v1780001837 v1780001850 v1780001860 v1780001877 v1780001888 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009934 v1780009975 v1780009998 v1780012121 v1780013415 v1780013435 v1780014791 v1780015809 v1780015837 v1780015855 v1780015871</title>
+<title>Fitness Consultation Tool  v1780001753v1779999736 v1780001686 v1780001837 v1780001850 v1780001860 v1780001877 v1780001888 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009934 v1780009975 v1780009998 v1780012121 v1780013415 v1780013435 v1780014791 v1780015809 v1780015837 v1780015855 v1780015871 v1780016415</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1761,10 +1761,10 @@ async function ensureSheetHeaders() { /* simplified */ }
 
 async function appendToSheet(tabName, rowValues) {
   const gKey = 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
-  const sheetId = getCfg('sheetId') || SHEET_ID;
+  const sheetId = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
   if (!gKey) { console.warn('No Google Sheets API key'); return false; }
 
-  const range = tabName.replace(/ /g,'%20') + '!A1';
+  const range = encodeURIComponent(tabName) + '!A1';
   const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + ':append?valueInputOption=USER_ENTERED';
 
   try {
@@ -1788,7 +1788,7 @@ async function ensureSheetTabs() {
   // We just ensure the tabs exist by writing headers if empty
   const gKey = 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
   if (!gKey) return;
-  const sheetId = getCfg('sheetId') || SHEET_ID;
+  const sheetId = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
 
   const followHeaders = ['Follow-Up Date','Consultation Date','Member Name','Email','Phone','Age','Gender','Goals','Advisor','Status','Assessment Notes'];
 
