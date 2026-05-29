@@ -6,7 +6,7 @@
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Consultation Tool  v1780001753v1779999736 v1780001686 v1780001837 v1780001850 v1780001860 v1780001877 v1780001888 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009934 v1780009975 v1780009998 v1780012121 v1780013415 v1780013435 v1780014791 v1780015809 v1780015837 v1780015855 v1780015871 v1780016415 v1780016648 v1780016732 v1780017503 v1780018114</title>
+<title>Fitness Consultation Tool  v1780001753v1779999736 v1780001686 v1780001837 v1780001850 v1780001860 v1780001877 v1780001888 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009934 v1780009975 v1780009998 v1780012121 v1780013415 v1780013435 v1780014791 v1780015809 v1780015837 v1780015855 v1780015871 v1780016415 v1780016648 v1780016732 v1780017503 v1780018114 v1780018564</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1924,7 +1924,7 @@ async function finalizeAccept() {
 
   // 3. Save to Consultation Database
   const row = buildIntakeRow('ACCEPTED', selectedFreq, selectedLength, 30);
-  await appendToSheet('Sheet1', row);
+  await appendToSheet('All Intakes', row);
 
   // 4. Save to PT Member Progress Tracker (Active Clients tab)
   await saveToPTTracker(memberName, folderResult ? folderResult.folderUrl : '', selectedFreq, selectedLength, nextCheckin);
@@ -1959,7 +1959,7 @@ async function finalizeDecline() {
 
   // Write to All Intakes
   const intakeRow = buildIntakeRow('DECLINED', '', '');
-  await appendToSheet('Sheet1', intakeRow);
+  await appendToSheet('All Intakes', intakeRow);
 
   // Write to gender-specific follow-up tab
   const followRow = buildFollowUpRow(followDateStr);
