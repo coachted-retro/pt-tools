@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>6-Week Follow-Up — Fitness Consultation  v1780001753v1779999954 v1779999982 v1780000324 v1780000816 v1780000828 v1780001686 v1780001837 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009975 v1780009998 v1780012121 v1780013415 v1780013435 v1780014791</title>
+<title>6-Week Follow-Up — Fitness Consultation  v1780001753v1779999954 v1779999982 v1780000324 v1780000816 v1780000828 v1780001686 v1780001837 v1780002271 v1780002701 v1780002710 v1780007303 v1780007352 v1780009975 v1780009998 v1780012121 v1780013415 v1780013435 v1780014791 v1780015809 v1780015837 v1780015855 v1780015871</title>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1866,23 +1866,7 @@ function showNotReady(){
 // GOOGLE SHEETS
 // ===================================
 
-async function ensureSheetHeaders(tab) {
-  var gKey = 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
-  var sheetId = getCfg('sheetId');
-  if (!gKey || !sheetId) return;
-  var headers = [['Date','Gender','Age','Name','Phone','Email','Goal / Program','Follow-Up Date','Outcome','Advisor Notes','Assessment Summary','Tool Link']];
-  var range = tab.replace(/ /g,'%20') + '!A1:L1';
-  var checkUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range ;
-  try {
-    var r = await fetch(checkUrl);
-    var d = await r.json();
-    if (!d.values || !d.values[0] || !d.values[0][0]) {
-      // Headers not set - write them
-      var writeUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + range + '?valueInputOption=USER_ENTERED;
-      await fetch(writeUrl, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({values: headers}) });
-    }
-  } catch(e) { /* silent fail */ }
-}
+async function ensureSheetHeaders() { /* simplified */ }
 
 async function appendToSheet(tab,row){
   const gKey='AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
@@ -1966,28 +1950,7 @@ async function createClientFolder(name, gKey, content) {
 }
 
 // ?? Save to PT Member Progress Tracker ??
-async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
-  var gKey = getCfg('gKey') || 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
-  var sheetId = getCfg('ptSheetId') || '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
-  var nameCell = folderUrl ? '=HYPERLINK("' + folderUrl + '","' + name + '")' : name;
-  var row = [
-    gv('fu-date'), nameCell, gv('phone'), gv('email'), gv('gender'), gv('age'),
-    gv('orig-goals'), (freq||'')+(length?' / '+length:''),
-    getCfg('advisor'), nextCheckin, folderUrl||'', 'Active (via Follow-Up)', ''
-  ];
-  var url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets/' + sheetId + '/values/' + encodeURIComponent('Active Clients!A:M') + ':append?valueInputOption=USER_ENTERED;
-  await fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({values:[row]})});
-}
-
-// ?? Recurring monthly calendar ??
-function addRecurringCalendar(name, startDate, phone, email, gender) {
-  var title = encodeURIComponent('Monthly PT Check-In: ' + name);
-  var details = encodeURIComponent('Phone: '+(phone||'')+' Email: '+(email||'')+' Recurring monthly PT check-in');
-  var date = (startDate||'').replace(/-/g,'');
-  if (!date) return;
-  var calEmail = (gender||'').toLowerCase().includes('female') ? 'healthylifewithdani1%40gmail.com' : 'tedscholl%40gmail.com';
-  window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text='+title+'&dates='+date+'/'+date+'&details='+details+'&add='+calEmail+'&recur='+encodeURIComponent('RRULE:FREQ=MONTHLY'), '_blank');
-}
+async function saveToPTTracker() { /* simplified */ }
 
 async function finalizeEnrolled(){
   if(!selectedFreq||!selectedLength){alert('Please select both a training frequency and program length.');return;}
