@@ -1,0 +1,353 @@
+<!--
+  ════════════════════════════════════════════════════════
+  RETRO FITNESS PT TOOLS HUB — RECENT ASSESSMENTS FIX
+  ════════════════════════════════════════════════════════
+  
+  INSTRUCTIONS:
+  1. In your index.html, find the "RECENT ASSESSMENTS" section (the div that says
+     "Loading assessment history...") and replace the entire block with the HTML below.
+  2. Find the <script> block at the bottom of index.html and replace the
+     loadRecentAssessments() function (or add the entire <script> block below
+     if none exists).
+  3. Upload intake-viewer.html to your repo alongside index.html.
+  4. In your Google Apps Script (Code.gs), add the getIntakes and getIntakeByRow
+     handlers shown at the bottom of this file.
+  ════════════════════════════════════════════════════════
+-->
+
+<!-- ── STEP 1: Paste this HTML where your "Recent Assessments" section is ── -->
+
+<section class="recent-section">
+  <div class="section-label">Recent Assessments</div>
+  <div id="recent-assessments" class="assessments-grid">
+    <div class="assessment-loading">
+      <div class="loading-spinner"></div>
+      <span>Loading assessment history…</span>
+    </div>
+  </div>
+</section>
+
+<!-- Add this CSS inside your <style> tag (or alongside existing styles) -->
+<style id="recent-assessments-styles">
+.recent-section {
+  margin: 32px 0;
+}
+.assessments-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.assessment-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 36px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  color: #666;
+  font-size: 0.85rem;
+}
+.assessment-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: background 0.2s, border-color 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+.assessment-card:hover {
+  background: rgba(224,32,32,0.07);
+  border-color: rgba(224,32,32,0.25);
+}
+.assessment-card-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(224,32,32,0.15);
+  border: 1px solid rgba(224,32,32,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e02020;
+  font-family: 'Barlow Condensed', sans-serif;
+  flex-shrink: 0;
+}
+.assessment-card-info { flex: 1; min-width: 0; }
+.assessment-card-name {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.assessment-card-meta {
+  display: flex;
+  gap: 14px;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: #666;
+  flex-wrap: wrap;
+}
+.assessment-card-meta span { display: flex; align-items: center; gap: 4px; }
+.assessment-card-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.assessment-tag {
+  background: rgba(224,32,32,0.1);
+  border: 1px solid rgba(224,32,32,0.2);
+  color: #f87171;
+  border-radius: 3px;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.assessment-card-arrow {
+  color: #444;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  transition: color 0.2s, transform 0.2s;
+}
+.assessment-card:hover .assessment-card-arrow {
+  color: #e02020;
+  transform: translateX(3px);
+}
+.assessments-empty {
+  text-align: center;
+  padding: 36px;
+  color: #555;
+  font-size: 0.85rem;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.07);
+  border-radius: 8px;
+}
+.assessments-error {
+  padding: 20px;
+  background: rgba(224,32,32,0.07);
+  border: 1px solid rgba(224,32,32,0.2);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 0.82rem;
+  text-align: center;
+}
+</style>
+
+<!-- ── STEP 2: Replace / add this JS block in your index.html <script> ── -->
+<script id="recent-assessments-script">
+(function() {
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTwCBhjV6jScnXtOKEdYSqnf6h5z9iq4y2im4nnK08EYKYUDmumYxo7OOw2iG26jd6/exec';
+
+  function initials(name) {
+    if (!name) return '?';
+    return name.trim().split(/\s+/).map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  }
+
+  function timeAgo(ts) {
+    if (!ts) return 'Unknown date';
+    const d = new Date(ts);
+    if (isNaN(d)) return ts;
+    const diff = Date.now() - d.getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function goalTags(goalsStr) {
+    if (!goalsStr) return '';
+    return goalsStr
+      .split(/[,;|\n]+/)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .slice(0, 3)
+      .map(g => `<span class="assessment-tag">${g}</span>`)
+      .join('');
+  }
+
+  function renderCards(intakes) {
+    const container = document.getElementById('recent-assessments');
+    if (!container) return;
+
+    if (!intakes || intakes.length === 0) {
+      container.innerHTML = `<div class="assessments-empty">No assessments yet. Complete an initial consultation to see them here.</div>`;
+      return;
+    }
+
+    container.innerHTML = intakes.map((intake, i) => {
+      // Support both flat and nested data from Apps Script
+      const name   = intake.fullName || intake['Full Name'] || intake.name || 'Unknown';
+      const ts     = intake.timestamp || intake.Timestamp || intake.date || '';
+      const weight = intake.weight || intake.Weight || intake.currentWeight || '';
+      const goals  = intake.fitnessGoals || intake['Fitness Goals'] || intake.goals || '';
+      const rowNum = intake.rowNumber || intake.row || (i + 2); // +2 because row 1 = headers
+
+      const viewerUrl = `intake-viewer.html?row=${rowNum}`;
+
+      return `
+        <a class="assessment-card" href="${viewerUrl}">
+          <div class="assessment-card-avatar">${initials(name)}</div>
+          <div class="assessment-card-info">
+            <div class="assessment-card-name">${name}</div>
+            <div class="assessment-card-meta">
+              <span>🕐 ${timeAgo(ts)}</span>
+              ${weight ? `<span>⚖️ ${weight}</span>` : ''}
+            </div>
+            ${goals ? `<div class="assessment-card-tags" style="margin-top:6px;">${goalTags(goals)}</div>` : ''}
+          </div>
+          <div class="assessment-card-arrow">→</div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  async function loadRecentAssessments() {
+    const container = document.getElementById('recent-assessments');
+    if (!container) return;
+
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=getIntakes&limit=10`);
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      const json = await res.json();
+
+      if (json.success && Array.isArray(json.data)) {
+        renderCards(json.data);
+      } else if (Array.isArray(json)) {
+        // Some Apps Script versions return array directly
+        renderCards(json);
+      } else {
+        throw new Error(json.error || 'Unexpected response format');
+      }
+    } catch (e) {
+      console.error('Recent assessments error:', e);
+      if (container) {
+        container.innerHTML = `<div class="assessments-error">
+          Could not load assessments: ${e.message}<br>
+          <small style="opacity:0.6;margin-top:4px;display:block;">Check that your Apps Script has a <code>getIntakes</code> action and is deployed as "Anyone".</small>
+        </div>`;
+      }
+    }
+  }
+
+  // Run on load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadRecentAssessments);
+  } else {
+    loadRecentAssessments();
+  }
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════
+  STEP 3: ADD THESE HANDLERS TO YOUR GOOGLE APPS SCRIPT (Code.gs)
+  ══════════════════════════════════════════════════════════════════
+  
+  Add the functions below to your existing Code.gs doGet() handler.
+  Your doGet() likely has a switch(action) or if/else — add cases for
+  'getIntakes' and 'getIntakeByRow'.
+
+  Example Code.gs additions:
+  ─────────────────────────────────────────────────────────────────── 
+
+function doGet(e) {
+  const action = e.parameter.action;
+  
+  if (action === 'getIntakes') {
+    return handleGetIntakes(e);
+  }
+  if (action === 'getIntakeByRow') {
+    return handleGetIntakeByRow(e);
+  }
+  // ... your existing handlers ...
+}
+
+function handleGetIntakes(e) {
+  try {
+    const limit = parseInt(e.parameter.limit) || 10;
+    const ss = SpreadsheetApp.openById('1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g');
+    const sheet = ss.getSheetByName('All Intakes');
+    
+    if (!sheet) throw new Error('Sheet "All Intakes" not found');
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return jsonResponse({ success: true, data: [] });
+    }
+    
+    const headers = data[0];
+    const rows = data.slice(1); // skip header row
+    
+    // Return most recent N intakes (last rows = most recent if appended)
+    const recent = rows
+      .slice(-limit)           // last N rows
+      .reverse()               // newest first
+      .map((row, i) => {
+        const obj = {};
+        headers.forEach((h, j) => { obj[h] = row[j]; });
+        // Attach the actual sheet row number (1-indexed, +1 for header, +1 for 1-based)
+        obj.rowNumber = data.length - i;  // row in sheet (1-based)
+        return obj;
+      });
+    
+    return jsonResponse({ success: true, data: recent });
+  } catch(err) {
+    return jsonResponse({ success: false, error: err.message });
+  }
+}
+
+function handleGetIntakeByRow(e) {
+  try {
+    const rowNum = parseInt(e.parameter.row);
+    const ss = SpreadsheetApp.openById('1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g');
+    const sheet = ss.getSheetByName('All Intakes');
+    
+    if (!sheet) throw new Error('Sheet "All Intakes" not found');
+    if (!rowNum || rowNum < 2) throw new Error('Invalid row number');
+    
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const rowData = sheet.getRange(rowNum, 1, 1, sheet.getLastColumn()).getValues()[0];
+    
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = rowData[i]; });
+    obj.rowNumber = rowNum;
+    
+    return jsonResponse({ success: true, data: obj });
+  } catch(err) {
+    return jsonResponse({ success: false, error: err.message });
+  }
+}
+
+// Helper — add this if you don't have it already
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+─────────────────────────────────────────────────────────────────── 
+  After adding the functions:
+  1. Save the script (Ctrl+S)
+  2. Click "Deploy" → "Manage deployments"
+  3. Click the edit pencil on your current deployment
+  4. Change version to "New version"
+  5. Click "Deploy"
+  ══════════════════════════════════════════════════════════════════ -->

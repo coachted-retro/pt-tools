@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Intake Summary | Retro Fitness PT</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface2: #181818;
+      --border: #222222;
+      --red: #e02020;
+      --red-dim: rgba(224,32,32,0.12);
+      --text: #f0f0f0;
+      --muted: #888;
+      --label: #555;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .topbar-logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 1.1rem;
+      letter-spacing: 0.12em;
+      color: var(--red);
+      text-transform: uppercase;
+    }
+    .topbar-sep { color: var(--border); font-size: 1.2rem; }
+    .topbar-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .back-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      padding: 6px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .back-btn:hover { border-color: var(--red); color: var(--text); }
+
+    /* ── LOADING / ERROR ── */
+    .state-center {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 60vh; gap: 14px;
+      color: var(--muted);
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MAIN LAYOUT ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    /* ── HERO HEADER ── */
+    .hero {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid var(--red);
+      border-radius: 8px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .hero-main { flex: 1; min-width: 220px; }
+    .hero-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900;
+      font-size: 2.4rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .hero-date {
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .hero-date span { color: var(--red); font-weight: 600; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .meta-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .meta-pill b { color: var(--text); font-weight: 600; }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      min-width: 260px;
+    }
+    .stat-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+    .stat-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-lbl {
+      font-size: 0.68rem;
+      color: var(--label);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    /* ── SECTION CARD ── */
+    .section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .section-hdr {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-hdr-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      flex-shrink: 0;
+    }
+    .section-hdr-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .section-body { padding: 20px; }
+
+    /* ── FIELD GRID ── */
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--label);
+      font-weight: 600;
+    }
+    .field-value {
+      font-size: 0.95rem;
+      color: var(--text);
+      font-weight: 400;
+      line-height: 1.4;
+    }
+    .field-value.empty { color: var(--label); font-style: italic; }
+
+    /* ── GOAL TAG ── */
+    .goal-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .goal-tag {
+      background: var(--red-dim);
+      border: 1px solid rgba(224,32,32,0.3);
+      color: #f87171;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── AI NOTES ── */
+    .ai-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--red);
+      border-radius: 6px;
+      padding: 16px 18px;
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: #ccc;
+      white-space: pre-wrap;
+    }
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--red-dim);
+      border: 1px solid rgba(224,32,32,0.25);
+      color: #f87171;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 3px;
+      margin-bottom: 10px;
+    }
+    .ai-badge::before {
+      content: '✦';
+      font-size: 0.6rem;
+    }
+
+    /* ── HEALTH FLAGS ── */
+    .flag-list { display: flex; flex-direction: column; gap: 8px; }
+    .flag-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 0.88rem; line-height: 1.5;
+    }
+    .flag-icon { font-size: 0.9rem; flex-shrink: 0; margin-top: 2px; }
+    .flag-text { color: #ccc; }
+
+    /* ── FOOTER ACTIONS ── */
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 20px;
+      border-radius: 5px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-primary { background: var(--red); color: #fff; }
+    .btn-ghost { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+    .btn-ghost:hover { color: var(--text); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .hero { flex-direction: column; }
+      .hero-stats { grid-template-columns: repeat(3, 1fr); }
+      .hero-name { font-size: 1.8rem; }
+      .field-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">Retro Fitness</span>
+  <span class="topbar-sep">|</span>
+  <span class="topbar-title">Intake Summary</span>
+  <a href="index.html" class="back-btn">← Hub</a>
+</div>
+
+<div id="loading" class="state-center">
+  <div class="spinner"></div>
+  <p>Loading intake record…</p>
+</div>
+
+<div id="error" class="state-center" style="display:none;">
+  <p style="font-size:2rem;">⚠️</p>
+  <p id="error-msg">Could not load intake.</p>
+  <a href="index.html" class="btn btn-ghost" style="margin-top:8px;">Back to Hub</a>
+</div>
+
+<div id="app" class="container" style="display:none;"></div>
+
+<script>
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxTwCBhjV6jScnXtOKEdYSqnf6h5z9iq4y2im4nnK08EYKYUDmumYxo7OOw2iG26jd6/exec';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g/edit';
+
+function getParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
+
+function val(v) {
+  if (!v || String(v).trim() === '') return '<span class="empty">—</span>';
+  return String(v).trim();
+}
+
+function goals(v) {
+  if (!v) return '<span class="empty">Not specified</span>';
+  const parts = String(v).split(/[,;|\n]+/).map(s => s.trim()).filter(Boolean);
+  if (!parts.length) return '<span class="empty">Not specified</span>';
+  return `<div class="goal-tags">${parts.map(p => `<span class="goal-tag">${p}</span>`).join('')}</div>`;
+}
+
+function healthFlags(data) {
+  const flags = [];
+  const checks = [
+    { key: 'injuries', label: 'Injuries / Limitations', icon: '🩹' },
+    { key: 'healthConditions', label: 'Health Conditions', icon: '❤️' },
+    { key: 'medications', label: 'Medications', icon: '💊' },
+    { key: 'surgeries', label: 'Surgeries', icon: '🏥' },
+    { key: 'physicalLimitations', label: 'Physical Limitations', icon: '⚠️' },
+  ];
+  for (const c of checks) {
+    const v = data[c.key];
+    if (v && String(v).trim() && String(v).trim().toLowerCase() !== 'none' && String(v).trim().toLowerCase() !== 'no') {
+      flags.push(`<div class="flag-item"><span class="flag-icon">${c.icon}</span><div class="flag-text"><b>${c.label}:</b> ${v}</div></div>`);
+    }
+  }
+  return flags.length
+    ? `<div class="flag-list">${flags.join('')}</div>`
+    : `<p style="color:var(--muted);font-size:.9rem;">No flags noted ✓</p>`;
+}
+
+function render(data) {
+  // Fallback column name variants
+  function g(...keys) {
+    for (const k of keys) {
+      const v = data[k] || data[k.toLowerCase()] || data[k.replace(/([A-Z])/g, ' $1').trim()];
+      if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+    }
+    return '';
+  }
+
+  const name = g('fullName','Full Name','name','Name') || 'Unknown';
+  const date = g('timestamp','Timestamp','date','Date','submittedAt');
+  const formattedDate = date ? new Date(date).toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) : 'Unknown date';
+
+  const age    = g('age','Age');
+  const gender = g('gender','Gender','sex');
+  const email  = g('email','Email');
+  const phone  = g('phone','Phone');
+  const height = g('height','Height');
+  const weight = g('weight','Weight','currentWeight','Current Weight');
+  const bmi    = g('bmi','BMI');
+  const bf     = g('bodyFat','Body Fat','bodyFatPct','bodyFatPercent');
+
+  const fitnessGoals = g('fitnessGoals','Fitness Goals','goals','Goals','primaryGoal','Primary Goal');
+  const activityLevel = g('activityLevel','Activity Level','currentActivity');
+  const workoutFreq = g('workoutFrequency','Workout Frequency','daysPerWeek','workoutsPerWeek');
+  const experience  = g('fitnessExperience','Fitness Experience','experience','Experience Level');
+  const preferredTime = g('preferredTime','Preferred Time','trainingTime');
+  const motivation = g('motivation','Motivation','motivationLevel');
+
+  const diet = g('currentDiet','Diet','nutritionHabits','nutrition');
+  const meals = g('mealsPerDay','Meals Per Day','dailyMeals');
+  const water = g('waterIntake','Water Intake','hydration');
+  const sleep = g('sleepHours','Sleep','sleepPerNight');
+
+  const aiNotes = g('aiSummary','AI Summary','coachNotes','Coach Notes','notes','Notes','summary');
+
+  const rowNum = getParam('row') || '';
+  const sheetLink = rowNum
+    ? `${SHEET_URL}#gid=0&range=A${rowNum}`
+    : SHEET_URL;
+
+  document.getElementById('app').innerHTML = `
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-main">
+        <div class="hero-name">${name}</div>
+        <div class="hero-date">Initial Consultation · <span>${formattedDate}</span></div>
+        <div class="hero-meta">
+          ${age    ? `<span class="meta-pill">Age <b>${age}</b></span>` : ''}
+          ${gender ? `<span class="meta-pill"><b>${gender}</b></span>` : ''}
+          ${email  ? `<span class="meta-pill">${email}</span>` : ''}
+          ${phone  ? `<span class="meta-pill">${phone}</span>` : ''}
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-box">
+          <div class="stat-val">${weight || '—'}</div>
+          <div class="stat-lbl">Weight</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">${height || '—'}</div>
+          <div class="stat-lbl">Height</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">${bmi || bf || '—'}</div>
+          <div class="stat-lbl">${bmi ? 'BMI' : 'Body Fat'}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-hdr-dot"></div>
+        <div class="section-hdr-title">Fitness Goals</div>
+      </div>
+      <div class="section-body">
+        ${goals(fitnessGoals)}
+      </div>
+    </div>
+
+    <!-- TRAINING -->
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-hdr-dot"></div>
+        <div class="section-hdr-title">Training Profile</div>
+      </div>
+      <div class="section-body">
+        <div class="field-grid">
+          <div class="field"><div class="field-label">Activity Level</div><div class="field-value">${val(activityLevel)}</div></div>
+          <div class="field"><div class="field-label">Workout Frequency</div><div class="field-value">${val(workoutFreq)}</div></div>
+          <div class="field"><div class="field-label">Experience</div><div class="field-value">${val(experience)}</div></div>
+          <div class="field"><div class="field-label">Preferred Time</div><div class="field-value">${val(preferredTime)}</div></div>
+          <div class="field"><div class="field-label">Motivation</div><div class="field-value">${val(motivation)}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NUTRITION & LIFESTYLE -->
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-hdr-dot"></div>
+        <div class="section-hdr-title">Nutrition & Lifestyle</div>
+      </div>
+      <div class="section-body">
+        <div class="field-grid">
+          <div class="field"><div class="field-label">Current Diet</div><div class="field-value">${val(diet)}</div></div>
+          <div class="field"><div class="field-label">Meals per Day</div><div class="field-value">${val(meals)}</div></div>
+          <div class="field"><div class="field-label">Water Intake</div><div class="field-value">${val(water)}</div></div>
+          <div class="field"><div class="field-label">Sleep (hrs/night)</div><div class="field-value">${val(sleep)}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEALTH FLAGS -->
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-hdr-dot"></div>
+        <div class="section-hdr-title">Health & Medical Flags</div>
+      </div>
+      <div class="section-body">
+        ${healthFlags(data)}
+      </div>
+    </div>
+
+    <!-- AI SUMMARY -->
+    ${aiNotes ? `
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-hdr-dot"></div>
+        <div class="section-hdr-title">Coach / AI Summary</div>
+      </div>
+      <div class="section-body">
+        <div class="ai-badge">AI Generated Summary</div>
+        <div class="ai-box">${aiNotes}</div>
+      </div>
+    </div>` : ''}
+
+    <!-- ACTIONS -->
+    <div class="actions">
+      <a href="${sheetLink}" target="_blank" class="btn btn-primary">📊 View in Sheet</a>
+      <a href="fitness-consultation-tool.html" class="btn btn-ghost">+ New Assessment</a>
+      <a href="index.html" class="btn btn-ghost">← Back to Hub</a>
+    </div>
+  `;
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+async function load() {
+  const row = getParam('row');
+  const ts  = getParam('ts');   // fallback: match by timestamp
+
+  if (!row && !ts) {
+    // No identifier — try to load latest
+    document.getElementById('error-msg').textContent = 'No intake ID provided. Please open from the Hub.';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'flex';
+    return;
+  }
+
+  try {
+    const params = new URLSearchParams({ action: 'getIntakeByRow' });
+    if (row) params.set('row', row);
+    if (ts)  params.set('ts', ts);
+
+    const res  = await fetch(`${APPS_SCRIPT_URL}?${params}`);
+    const json = await res.json();
+
+    if (json.success && json.data) {
+      render(json.data);
+    } else {
+      throw new Error(json.error || 'Empty response');
+    }
+  } catch (e) {
+    document.getElementById('error-msg').textContent = `Failed to load intake: ${e.message}`;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = 'flex';
+  }
+}
+
+load();
+</script>
+</body>
+</html>
