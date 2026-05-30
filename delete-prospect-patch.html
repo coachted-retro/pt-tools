@@ -1,0 +1,380 @@
+<!--
+  ════════════════════════════════════════════════════════════════════
+  DELETE PROSPECT PATCH  —  prospect-tracker.html
+  ════════════════════════════════════════════════════════════════════
+
+  HOW TO APPLY:
+  1. Add the <style> block → inside your existing <style> tag (any location)
+  2. Add the modal HTML → just before </body>
+  3. Replace the renderProspects() function (or merge the change described below)
+  4. Add the three new functions anywhere in your <script> block
+  5. Add deleteProspect to your Apps Script (Apps Script section at bottom)
+  ════════════════════════════════════════════════════════════════════
+-->
+
+
+<!-- ═══════════════════════════════════════════════
+     1. CSS  —  add inside your existing <style>
+     ═══════════════════════════════════════════════ -->
+<style>
+/* ── Delete button on each prospect row ── */
+.prospect-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn-delete {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: .3px;
+}
+.btn-delete:hover {
+  border-color: var(--hot);
+  color: var(--hot);
+  background: rgba(255,68,68,.07);
+}
+
+/* ── Confirm-delete modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 32px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+  animation: modalIn .18s ease;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(-12px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.modal-icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255,68,68,.12);
+  border: 1px solid rgba(255,68,68,.3);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+  font-size: 20px;
+}
+.modal-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.modal-body {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.55;
+  margin-bottom: 6px;
+}
+.modal-name {
+  font-weight: 700;
+  color: var(--hot);
+}
+.modal-warning {
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(255,68,68,.07);
+  border: 1px solid rgba(255,68,68,.18);
+  border-radius: 7px;
+  padding: 8px 12px;
+  margin: 14px 0 20px;
+  letter-spacing: .2px;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.btn-cancel-modal {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-family: 'Barlow', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-cancel-modal:hover { border-color: var(--accent); color: var(--accent); }
+
+.btn-confirm-delete {
+  background: var(--hot);
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-confirm-delete:hover { background: #e03333; transform: translateY(-1px); }
+.btn-confirm-delete:disabled {
+  opacity: .6; cursor: not-allowed; transform: none;
+}
+
+.delete-spinner {
+  display: none;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toast notification ── */
+.toast {
+  position: fixed;
+  bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  color: var(--text);
+  z-index: 600;
+  transition: transform .3s ease, opacity .3s ease;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.toast.toast-success { border-color: var(--accent); color: var(--accent); }
+.toast.toast-error   { border-color: var(--hot);    color: var(--hot); }
+</style>
+
+
+<!-- ═══════════════════════════════════════════════
+     2. MODAL HTML  —  paste just before </body>
+     ═══════════════════════════════════════════════ -->
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <div class="modal-icon">🗑️</div>
+    <div class="modal-title">Delete Prospect?</div>
+    <div class="modal-body">
+      You're about to permanently delete
+      <span class="modal-name" id="deleteModalName"></span>
+      and all of their touchpoints.
+    </div>
+    <div class="modal-warning">
+      ⚠️ This cannot be undone. The prospect row and every touchpoint linked to this entry will be removed from the sheet.
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel-modal" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn-confirm-delete" id="confirmDeleteBtn" onclick="confirmDelete()">
+        <span class="delete-spinner" id="deleteSpinner"></span>
+        <span id="confirmDeleteLabel">Delete Permanently</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+<!-- ═══════════════════════════════════════════════
+     3. JAVASCRIPT  —  add inside your <script> block
+     ═══════════════════════════════════════════════ -->
+<script>
+// ── State for pending delete ──────────────────────────────────────────
+let pendingDeleteRow = null;
+let pendingDeleteName = '';
+
+// ── Open the confirm modal ────────────────────────────────────────────
+function openDeleteModal(rowIndex, fullName) {
+  pendingDeleteRow = rowIndex;
+  pendingDeleteName = fullName;
+  document.getElementById('deleteModalName').textContent = fullName;
+  document.getElementById('confirmDeleteBtn').disabled = false;
+  document.getElementById('deleteSpinner').style.display = 'none';
+  document.getElementById('confirmDeleteLabel').textContent = 'Delete Permanently';
+  document.getElementById('deleteModal').classList.add('active');
+}
+
+// ── Close without acting ──────────────────────────────────────────────
+function closeDeleteModal() {
+  document.getElementById('deleteModal').classList.remove('active');
+  pendingDeleteRow = null;
+  pendingDeleteName = '';
+}
+
+// ── Close if user clicks overlay backdrop ─────────────────────────────
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteModal();
+});
+
+// ── Execute delete ────────────────────────────────────────────────────
+async function confirmDelete() {
+  if (pendingDeleteRow === null) return;
+
+  const btn = document.getElementById('confirmDeleteBtn');
+  const spinner = document.getElementById('deleteSpinner');
+  const label = document.getElementById('confirmDeleteLabel');
+
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  label.textContent = 'Deleting…';
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'deleteProspect',
+        rowIndex: pendingDeleteRow
+      })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      closeDeleteModal();
+      showToast(`✓ ${pendingDeleteName} deleted`, 'success');
+      // Re-fetch the prospect list to refresh the UI
+      await loadProspects();          // call your existing load function
+    } else {
+      showToast('Delete failed: ' + (data.error || 'unknown error'), 'error');
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      label.textContent = 'Delete Permanently';
+    }
+  } catch (err) {
+    showToast('Network error — try again', 'error');
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    label.textContent = 'Delete Permanently';
+  }
+}
+
+// ── Toast helper ──────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  setTimeout(() => { t.className = 'toast'; }, 3200);
+}
+</script>
+
+
+<!-- ═══════════════════════════════════════════════
+     4. RENDER CHANGE
+     In your renderProspects() (or wherever you build
+     prospect list rows), add a delete button.
+
+     Find the element where you render each prospect card/row.
+     Add this button alongside your existing View/Edit buttons:
+     ═══════════════════════════════════════════════ -->
+
+<!--
+  EXAMPLE — adapt to match your actual row HTML:
+
+  BEFORE (somewhere inside your prospect row render loop):
+    <button class="btn-outline" onclick="viewProspect(${p.rowIndex})">View</button>
+
+  AFTER:
+    <div class="prospect-actions">
+      <button class="btn-outline" onclick="viewProspect(${p.rowIndex})">View</button>
+      <button class="btn-delete" onclick="openDeleteModal(${p.rowIndex}, '${escapeAttr(p.firstName + ' ' + p.lastName)}')">Delete</button>
+    </div>
+
+  Also add this helper if you don't already have it:
+    function escapeAttr(s) { return String(s).replace(/'/g, "\\'"); }
+-->
+
+
+<!-- ═══════════════════════════════════════════════
+     5. APPS SCRIPT  —  add to your doPost() handler
+     ═══════════════════════════════════════════════
+
+  In your Google Apps Script (the canonical v9 script), inside
+  the section that handles action routing, add:
+
+  ────────────────────────────────────────────────
+
+  else if (action === 'deleteProspect') {
+    return deleteProspect(payload);
+  }
+
+  ────────────────────────────────────────────────
+
+  Then add this function anywhere in the script:
+
+  function deleteProspect(payload) {
+    try {
+      var rowIndex = parseInt(payload.rowIndex);
+      if (!rowIndex || rowIndex < 2) {
+        return ContentService.createTextOutput(
+          JSON.stringify({ success: false, error: 'Invalid row index' })
+        ).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      // ── Delete from Retro Fitness Database (All Intakes tab) ──
+      var intakeSheet = SpreadsheetApp.openById('1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g')
+                          .getSheetByName('All Intakes');
+      intakeSheet.deleteRow(rowIndex);
+
+      // ── Delete linked touchpoints from Touchpoints tab ──
+      // (Touchpoints must have a column that stores the prospect's rowIndex or a unique ID)
+      // Adjust column index (colIdx) to match your sheet structure:
+      var touchpointSheet = SpreadsheetApp.openById('1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g')
+                              .getSheetByName('Touchpoints');
+      var tpData = touchpointSheet.getDataRange().getValues();
+      var rowsToDelete = [];
+      for (var i = tpData.length - 1; i >= 1; i--) {
+        // Column index where prospect rowIndex is stored (0-based); adjust as needed:
+        var PROSPECT_REF_COL = 0;
+        if (parseInt(tpData[i][PROSPECT_REF_COL]) === rowIndex) {
+          rowsToDelete.push(i + 1); // 1-based for deleteRow
+        }
+      }
+      rowsToDelete.forEach(function(r) { touchpointSheet.deleteRow(r); });
+
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: true, deletedTouchpoints: rowsToDelete.length })
+      ).setMimeType(ContentService.MimeType.JSON);
+
+    } catch (e) {
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: false, error: e.message })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  ────────────────────────────────────────────────
+  NOTE: After adding this function, re-deploy the Apps Script
+  as a new version (Deploy → Manage deployments → New version).
+  ═══════════════════════════════════════════════ -->
