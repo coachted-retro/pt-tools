@@ -1588,44 +1588,72 @@ let assessmentText = '';
 function gv(id) { return (document.getElementById(id)||{}).value || ''; }
 
 function buildPrompt() {
-  return `You are a professional fitness advisor and certified health consultant. Generate a formal member consultation summary in three clearly labeled sections based on the data below.
+  return `You are a professional fitness advisor. Generate a complete member consultation summary using the ACTUAL DATA below. Do not use placeholders like [X] — use the real numbers provided.
 
-1. MEMBER-FACING ASSESSMENT
-A warm, personalized overview of the member's current fitness and health situation. Summarize their starting point, acknowledge their goals, and explain what their InBody scan data means in plain terms. Mention body composition numbers in context (e.g. what their PBF% means for their goals). Use an encouraging, professional tone.
+MEMBER DATA:
+Name: ${gv('name')} | Age: ${gv('age')} | Gender: ${gv('gender')} | DOB: ${gv('dob')}
+Phone: ${gv('phone')} | Email: ${gv('email')}
+Advisor: ${gv('advisor-name')}
+Consultation Date: ${gv('consult-date')}
 
-2. ADVISOR RECOMMENDATIONS
-Evidence-based recommendations grounded in ACSM guidelines, exercise science, and nutritional research. Cover:
-- How their medical conditions, injuries, or medications should shape their program
-- Diet quality assessment and specific macro/calorie recommendations based on their stats
-- Supplement assessment (what's useful vs. unnecessary)
-- Key lifestyle factors to address first
+INBODY SCAN:
+Height: ${gv('height')} | BMI: ${gv('bmi')}
+Body Fat Mass: ${gv('fat-mass')} lb | Percent Body Fat: ${gv('pbf')}%
+Lean Body Mass: ${gv('lean-mass')} lb | Body Water: ${gv('water-weight')} lb
+Segmental Lean: Left Arm ${gv('seg-la')}% | Right Arm ${gv('seg-ra')}% | Trunk ${gv('seg-trunk')}% | Left Leg ${gv('seg-ll')}% | Right Leg ${gv('seg-rl')}%
 
-3. SUGGESTED NEXT STEPS - STRENGTH TRAINING PROGRAM
-A concrete, specific training framework. Include:
-- Recommended training split and frequency (given their goals and schedule)
-- Priority movement patterns and muscle groups based on segmental lean analysis imbalances
-- Intensity and volume guidelines appropriate to their experience level
-- Any exercise contraindications or modifications based on medical history
-- Short-term (30-day) focus areas
+FITNESS GOALS & ACTIVITY:
+Primary Goals: ${gv('goals')}
+Experience: ${gv('experience')} | Timeframe: ${gv('timeframe')}
+Current Status: ${gv('workout-status')} | Days/week: ${gv('days-per-week')} | Duration: ${gv('workout-duration')}
 
-Keep the full advisor notes concise. Then end with this member-facing close section — this is what gets shown on screen and read with the member:
+MEDICAL HISTORY:
+Conditions/Injuries: ${gv('medical')}
+Doctor Recommendation: ${gv('doctor-rec')} | Notes: ${gv('doctor-notes')}
+Medications: ${gv('medications')}
+Supplements: ${gv('supplements')}
+
+NUTRITION:
+Meals/day: ${gv('meals-per-day')} | Calorie target: ${gv('calorie-target')}
+Breakfast: ${gv('breakfast')}
+Lunch: ${gv('lunch')}
+Dinner: ${gv('dinner')}
+Snacks: ${gv('snacks')}
+Tracks macros: ${gv('tracks-macros')} | Protein: ${gv('macro-protein')}% | Carb/Fat: ${gv('macro-carbfat')}
+
+Generate the assessment in three sections:
+
+## 1. MEMBER-FACING ASSESSMENT
+Warm, personalized overview using their ACTUAL numbers. Reference their real BMI, PBF%, lean mass, segmental data. Use encouraging professional tone.
+
+## 2. ADVISOR RECOMMENDATIONS
+Evidence-based recommendations covering:
+- Medical considerations and program modifications based on their specific conditions
+- Nutrition: calculate actual TDEE from their stats, specific macro targets in grams
+- Supplement recommendations based on what they're already taking
+- Lifestyle factors
+
+## 3. SUGGESTED NEXT STEPS — STRENGTH TRAINING PROGRAM
+Specific training framework based on their actual segmental lean data and schedule:
+- Training split and frequency matching their available days
+- Priority muscle groups based on their segmental imbalances
+- Intensity guidelines for their experience level
+- Exercise modifications for any medical conditions
 
 ---MEMBER CLOSE---
-
 YOUR SNAPSHOT
-[2 sentences max. Their biggest body composition finding in plain language. Honest and encouraging.]
+[2 sentences using their REAL body composition numbers]
 
-YOUR OPPORTUNITY  
-[1-2 sentences. Specific result they can realistically achieve in 90 days based on their data and goal.]
+YOUR OPPORTUNITY
+[Specific realistic result in 90 days based on their actual data and goal]
 
 YOUR PLAN
-- [Training: one specific action]
-- [Nutrition: one specific change]
-- [What we track together]
+- Training: [one specific action]
+- Nutrition: [one specific change]
+- What we track together
 
 THE DECISION
-[One powerful closing sentence that creates urgency without pressure. Make it feel like today is the right day.]
-
+[One powerful closing sentence creating urgency without pressure]
 ---END CLOSE---`;
 }
 
