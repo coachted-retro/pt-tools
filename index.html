@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>PT Tools Hub — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;
+  --surface:#111;
+  --surface2:#181818;
+  --border:#222;
+  --red:#e02020;
+  --red-dim:rgba(224,32,32,0.10);
+  --text:#f0f0f0;
+  --muted:#888;
+  --label:#555;
+}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-mark{width:34px;height:34px;background:var(--red);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:0.12em;color:var(--red);text-transform:uppercase}
+.brand-sub{font-size:0.72rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.advisor-wrap{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:999px;padding:6px 14px 6px 8px}
+.advisor-avatar{width:26px;height:26px;border-radius:50%;background:#4a8c5c;border:1px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:500}
+.advisor-wrap input{background:none;border:none;outline:none;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text);width:130px}
+.advisor-wrap input::placeholder{color:rgba(255,255,255,0.3)}
+.cfg-btn{background:none;border:1px solid rgba(255,255,255,0.15);border-radius:7px;padding:7px 12px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer;transition:all .15s}
+.cfg-btn:hover{border-color:rgba(255,255,255,0.3);color:var(--text);background:rgba(255,255,255,0.05)}
+
+/* HERO */
+.hero{text-align:center;padding:52px 48px 40px;max-width:760px;margin:0 auto}
+.logo-wrap{margin-bottom:28px}
+.logo-wrap img{max-width:380px;width:80%;height:auto}
+.eyebrow{font-size:11px;color:#4a8c5c;font-weight:500;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px}
+.eyebrow::before,.eyebrow::after{content:'';display:block;width:32px;height:1px;background:#4a8c5c;opacity:.5}
+.hero h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(38px,5vw,58px);font-weight:300;line-height:1.1;margin-bottom:18px;color:#ffffff}
+.hero h1 em{font-style:italic;color:#6ab87e}
+.hero p{font-size:16px;color:rgba(255,255,255,0.5);line-height:1.75;max-width:520px;margin:0 auto}
+
+/* TOOLS SECTION */
+.tools-section{padding:0 48px 56px;max-width:1100px;margin:0 auto;width:100%}
+.section-label{font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.section-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07)}
+
+/* TOOL GRID */
+.tool-grid{display:flex;flex-direction:row;gap:16px;margin-bottom:40px}
+.tool-card{flex:1;background:#161a16;border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:28px 26px 24px;cursor:pointer;display:flex;flex-direction:column;transition:border-color .2s,background .2s,transform .15s;text-decoration:none;overflow:hidden;position:relative}
+.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;opacity:0;transition:opacity .2s;border-radius:16px 16px 0 0}
+.tool-card.green::before{background:linear-gradient(90deg,#2d5a3d,#6ab87e)}
+.tool-card.amber::before{background:linear-gradient(90deg,#8a6a1e,#d4a850)}
+.tool-card.blue::before{background:linear-gradient(90deg,#1a4472,#4a8cbe)}
+.tool-card.before{background:linear-gradient(90deg,#4a1a72,#8c4abe)}
+.tool-card:hover{background:#1a1f1a;border-color:rgba(255,255,255,0.14);transform:translateY(-2px)}
+.tool-card:hover::before{opacity:1}
+.tool-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:16px;flex-shrink:0}
+.tool-card.green .tool-icon{background:rgba(45,90,61,0.3);border:1px solid rgba(45,90,61,0.5)}
+.tool-card.amber .tool-icon{background:rgba(138,106,30,0.3);border:1px solid rgba(138,106,30,0.5)}
+.tool-card.blue .tool-icon{background:rgba(26,68,114,0.3);border:1px solid rgba(26,68,114,0.5)}
+.tool-card.purple .tool-icon{background:rgba(74,26,114,0.3);border:1px solid rgba(74,26,114,0.5)}
+.tool-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.05rem;letter-spacing:0.04em;text-transform:uppercase;color:var(--text);margin-bottom:6px}
+.tool-desc{font-size:12px;color:rgba(255,255,255,0.4);line-height:1.55;flex:1}
+.tool-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.tag{font-size:10px;font-weight:500;letter-spacing:.04em;padding:3px 9px;border-radius:999px;border:1px solid;opacity:.7}
+.tool-card.green .tag{background:rgba(45,90,61,0.2);border-color:rgba(45,90,61,0.4);color:#6ab87e}
+.tool-card.amber .tag{background:rgba(138,106,30,0.2);border-color:rgba(138,106,30,0.4);color:#d4a850}
+.tool-card.blue .tag{background:rgba(26,68,114,0.2);border-color:rgba(26,68,114,0.4);color:#4a8cbe}
+.tool-card.purple .tag{background:rgba(74,26,114,0.2);border-color:rgba(74,26,114,0.4);color:#8c4abe}
+.tool-arrow{margin-top:14px;font-size:1rem;color:rgba(255,255,255,0.2);transition:color .2s,transform .2s}
+.tool-card:hover .tool-arrow{color:rgba(255,255,255,0.6);transform:translateX(4px)}
+
+/* RECENT ASSESSMENTS */
+.assessment-loading{display:flex;align-items:center;justify-content:center;gap:12px;padding:36px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;color:#666;font-size:.85rem}
+.assessment-card{display:flex;align-items:center;gap:16px;padding:14px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:10px;text-decoration:none;color:inherit;transition:background .2s,border-color .2s}
+.assessment-card:hover{background:rgba(224,32,32,0.07);border-color:rgba(224,32,32,0.25)}
+.assessment-avatar{width:40px;height:40px;border-radius:50%;background:rgba(164,75,75,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;color:#e05555;flex-shrink:0;font-family:'Barlow Condensed',sans-serif;font-size:1rem}
+.assessment-info{flex:1;min-width:0}
+.assessment-name{font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.04em;font-family:'Barlow Condensed',sans-serif}
+.assessment-meta{font-size:.75rem;color:#666;margin-top:3px}
+.assessment-arrow{color:#444;transition:color .2s,transform .2s}
+.assessment-card:hover .assessment-arrow{color:var(--red);transform:translateX(3px)}
+.assessments-empty{text-align:center;padding:36px;color:#555;font-size:.85rem;background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.07);border-radius:8px}
+.assessments-error{padding:20px;color:#f87171;font-size:.82rem;text-align:center;background:rgba(224,32,32,0.07);border:1px solid rgba(224,32,32,0.2);border-radius:8px}
+
+/* DATABASES */
+.db-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.db-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;transition:border-color .2s,background .2s}
+.db-card:hover{border-color:rgba(255,255,255,0.18);background:var(--surface2)}
+.db-icon{font-size:1.4rem;flex-shrink:0}
+.db-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:0.95rem;letter-spacing:0.04em;text-transform:uppercase;color:var(--text)}
+.db-desc{font-size:0.72rem;color:var(--muted);margin-top:2px}
+.db-arrow{margin-left:auto;color:#444;font-size:0.9rem}
+
+/* FOOTER */
+footer{text-align:center;padding:32px 20px;color:rgba(255,255,255,0.15);font-size:11px;letter-spacing:0.06em;border-top:1px solid var(--border);margin-top:24px}
+
+@media(max-width:768px){
+  .tool-grid{flex-direction:column}
+  .topbar{padding:0 16px}
+  .tools-section{padding:0 20px 40px}
+  .hero{padding:36px 20px 28px}
+  .db-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">💪</div>
+    <div>
+      <div class="brand-name">Retro Fitness</div>
+      <div class="brand-sub">PT Tools Hub</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="advisor-wrap">
+      <div class="advisor-avatar" id="advisor-avatar">T</div>
+      <input type="text" id="advisor-name" placeholder="Your name" oninput="updateAdvisor(this.value)">
+    </div>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="eyebrow">Personal Training Tools</div>
+  <h1>Your <em>complete</em> PT toolkit</h1>
+  <p>Streamlined tools for consultations, follow-ups, and member progress — all connected to your database.</p>
+</div>
+
+<div class="tools-section">
+
+  <!-- MEMBER MANAGEMENT -->
+  <div class="section-label">Member Management</div>
+  <div class="tool-grid">
+
+    <a class="tool-card green" href="fitness-consultation-tool.html">
+      <div class="tool-icon">📋</div>
+      <div class="tool-name">Initial Consultation</div>
+      <div class="tool-desc">Full intake form with InBody data capture, AI-generated assessment, and automatic database logging.</div>
+      <div class="tool-tags">
+        <span class="tag">Intake</span>
+        <span class="tag">InBody</span>
+        <span class="tag">AI Assessment</span>
+      </div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card amber" href="fitness-followup-tool.html">
+      <div class="tool-icon">📞</div>
+      <div class="tool-name">Follow-Up Call</div>
+      <div class="tool-desc">Structured follow-up tool for prospects who declined. Track objections, schedule callbacks, and re-engage.</div>
+      <div class="tool-tags">
+        <span class="tag">Leads</span>
+        <span class="tag">Follow-Up</span>
+        <span class="tag">Pipeline</span>
+      </div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card blue" href="fitness-monthly-checkin.html">
+      <div class="tool-icon">📊</div>
+      <div class="tool-name">Monthly Check-In</div>
+      <div class="tool-desc">Progress tracking for active PT members — body stats, InBody comparison, goal review, and monthly reports.</div>
+      <div class="tool-tags">
+        <span class="tag">InBody Compare</span>
+        <span class="tag">Obstacles</span>
+      </div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+    <a class="tool-card purple" href="prospect-tracker.html">
+      <div class="tool-icon">🎯</div>
+      <div class="tool-name">Prospect Tracker</div>
+      <div class="tool-desc">Pipeline overview of all prospects, follow-up dates, and conversion status across your entire book of business.</div>
+      <div class="tool-tags">
+        <span class="tag">Monthly</span>
+        <span class="tag">Progress</span>
+        <span class="tag">Auto-Schedule</span>
+      </div>
+      <div class="tool-arrow">→</div>
+    </a>
+
+  </div>
+
+  <!-- RECENT ASSESSMENTS -->
+  <div class="section-label">Recent Assessments</div>
+  <div id="recent-assessments">
+    <div class="assessment-loading">
+      <div style="width:18px;height:18px;border:2px solid #333;border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>
+      Loading assessment history…
+    </div>
+  </div>
+
+  <div style="margin-top:40px"></div>
+
+  <!-- DATABASES -->
+  <div class="section-label">Databases</div>
+  <div class="db-grid">
+    <a class="db-card" href="https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g/edit" target="_blank">
+      <div class="db-icon">📋</div>
+      <div>
+        <div class="db-name">Retro Fitness Database</div>
+        <div class="db-desc">All Intakes · Male Follow-Ups · Female Follow-Ups · Prospects</div>
+      </div>
+      <div class="db-arrow">↗</div>
+    </a>
+    <a class="db-card" href="https://docs.google.com/spreadsheets/d/1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs/edit" target="_blank">
+      <div class="db-icon">📈</div>
+      <div>
+        <div class="db-name">PT Member Progress Tracker</div>
+        <div class="db-desc">Active Clients · Check-In History</div>
+      </div>
+      <div class="db-arrow">↗</div>
+    </a>
+  </div>
+
+</div>
+
+<footer>RETRO FITNESS &nbsp;·&nbsp; PT TOOLS HUB &nbsp;·&nbsp; COACH TED SCHOLL</footer>
+
+<style>
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+
+<script>
+// ADVISOR
+function updateAdvisor(val) {
+  localStorage.setItem('pttools_advisor', val);
+  var av = document.getElementById('advisor-avatar');
+  if (av && val) av.textContent = val.trim()[0].toUpperCase();
+}
+window.addEventListener('load', function() {
+  var saved = localStorage.getItem('pttools_advisor') || localStorage.getItem('fct_advisor') || '';
+  if (saved) {
+    document.getElementById('advisor-name').value = saved;
+    var av = document.getElementById('advisor-avatar');
+    if (av) av.textContent = saved.trim()[0].toUpperCase();
+  }
+});
+
+// RECENT ASSESSMENTS
+(function() {
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
+
+  function timeAgo(ts) {
+    if (!ts) return '';
+    var d = new Date(ts);
+    if (isNaN(d)) return ts;
+    var diff = Date.now() - d.getTime();
+    var mins = Math.floor(diff / 60000);
+    if (mins < 60) return mins + 'm ago';
+    var hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    var days = Math.floor(hrs / 24);
+    if (days < 7) return days + 'd ago';
+    return d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  }
+
+  function outcomeColor(outcome) {
+    if (!outcome) return '#888';
+    var o = outcome.toLowerCase();
+    if (o.includes('declin')) return '#f87171';
+    if (o.includes('accept') || o.includes('sign') || o.includes('yes') || o.includes('sold')) return '#4ade80';
+    return '#fb923c';
+  }
+
+  async function loadRecentAssessments() {
+    var container = document.getElementById('recent-assessments');
+    if (!container) return;
+    try {
+      var res = await fetch(APPS_SCRIPT_URL + '?action=getIntakes&limit=10');
+      var json = await res.json();
+      var intakes = (json.success && Array.isArray(json.data)) ? json.data : [];
+
+      if (!intakes.length) {
+        container.innerHTML = '<div class="assessments-empty">No assessments yet. Complete an initial consultation to see them here.</div>';
+        return;
+      }
+
+      container.innerHTML = intakes.map(function(intake, i) {
+        var name    = intake['Name'] || 'Unknown';
+        var date    = intake['Date'] ? timeAgo(intake['Date']) : '';
+        var goal    = (intake['Goal'] || '').substring(0, 55);
+        var outcome = intake['Outcome'] || '';
+        var row     = intake.rowNumber || (i + 2);
+        var initials = name.trim().split(/\s+/).map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+        var oColor  = outcomeColor(outcome);
+
+        return '<a class="assessment-card" href="intake-viewer.html?row=' + row + '">' +
+          '<div class="assessment-avatar">' + initials + '</div>' +
+          '<div class="assessment-info">' +
+            '<div class="assessment-name">' + name + '</div>' +
+            '<div class="assessment-meta">' + (date ? '🕐 ' + date : '') + (goal ? ' &nbsp;·&nbsp; ' + goal : '') + '</div>' +
+          '</div>' +
+          (outcome ? '<span style="font-size:.75rem;font-weight:700;color:' + oColor + ';white-space:nowrap;margin-right:8px;">' + outcome + '</span>' : '') +
+          '<div class="assessment-arrow">→</div>' +
+        '</a>';
+      }).join('');
+
+    } catch(e) {
+      container.innerHTML = '<div class="assessments-error">Could not load assessments: ' + e.message + '</div>';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadRecentAssessments);
+})();
+</script>
+
+</body>
+</html>
