@@ -38,5 +38,44 @@
   document.addEventListener('DOMContentLoaded', loadRecentAssessments);
 })();
 </script>
+
 <script>
+(function() {
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
+  async function loadRecentAssessments() {
+    const container = document.getElementById('recent-assessments');
+    if (!container) return;
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=getIntakes&limit=10`);
+      const json = await res.json();
+      const intakes = json.success && Array.isArray(json.data) ? json.data : [];
+      if (!intakes.length) {
+        container.innerHTML = '<div style="text-align:center;padding:36px;color:#555;font-size:.85rem;">No assessments yet.</div>';
+        return;
+      }
+      container.innerHTML = intakes.map((intake, i) => {
+        const name = intake['Name'] || 'Unknown';
+        const date = intake['Date'] ? new Date(intake['Date']).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+        const goal = intake['Goal'] || '';
+        const outcome = intake['Outcome'] || '';
+        const row = intake.rowNumber || (i + 2);
+        const oColor = outcome.toLowerCase().includes('declin') ? '#f87171' : outcome.toLowerCase().includes('accept') || outcome.toLowerCase().includes('sign') ? '#4ade80' : '#fb923c';
+        return `<a href="intake-viewer.html?row=${row}" style="display:flex;align-items:center;gap:16px;padding:14px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;margin-bottom:10px;text-decoration:none;color:inherit;transition:background .2s;">
+          <div style="width:40px;height:40px;border-radius:50%;background:rgba(164,75,75,0.2);display:flex;align-items:center;justify-content:center;font-weight:700;color:#e05555;flex-shrink:0;">${name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.04em;">${name}</div>
+            <div style="font-size:.75rem;color:#666;margin-top:3px;">${date}${goal ? ' · ' + goal.substring(0,50) : ''}</div>
+          </div>
+          ${outcome ? `<span style="font-size:.75rem;font-weight:700;color:${oColor};white-space:nowrap;">${outcome}</span>` : ''}
+          <span style="color:#444;">→</span>
+        </a>`;
+      }).join('');
+    } catch(e) {
+      container.innerHTML = `<div style="padding:20px;color:#f87171;font-size:.82rem;text-align:center;">Could not load: ${e.message}</div>`;
+    }
+  }
+  document.addEventListener('DOMContentLoaded', loadRecentAssessments);
+})();
+</script>
+
 </body>
