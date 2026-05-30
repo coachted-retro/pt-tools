@@ -1588,73 +1588,59 @@ let assessmentText = '';
 function gv(id) { return (document.getElementById(id)||{}).value || ''; }
 
 function buildPrompt() {
-  return `You are a professional fitness advisor. Generate a complete member consultation summary using the ACTUAL DATA below. Do not use placeholders like [X] — use the real numbers provided.
+  const name = gv('name') || 'Member';
+  const age = gv('age'); const gender = gv('gender');
+  const height = gv('height'); const bmi = gv('bmi');
+  const pbf = gv('pbf'); const leanMass = gv('lean-mass');
+  const fatMass = gv('fat-mass'); const water = gv('water-weight');
+  const segLA = gv('seg-la'); const segRA = gv('seg-ra');
+  const segTrunk = gv('seg-trunk'); const segLL = gv('seg-ll'); const segRL = gv('seg-rl');
+  const goals = gv('goals'); const experience = gv('experience');
+  const daysPerWeek = gv('days-per-week'); const duration = gv('workout-duration');
+  const workoutStatus = gv('workout-status');
+  const medical = gv('medical'); const medications = gv('medications');
+  const supplements = gv('supplements');
+  const mealsPerDay = gv('meals-per-day'); const calories = gv('calorie-target');
+  const breakfast = gv('breakfast'); const lunch = gv('lunch');
+  const dinner = gv('dinner'); const snacks = gv('snacks');
+  const tracksMacros = gv('tracks-macros');
 
-MEMBER DATA:
-Name: ${gv('name')} | Age: ${gv('age')} | Gender: ${gv('gender')} | DOB: ${gv('dob')}
-Phone: ${gv('phone')} | Email: ${gv('email')}
-Advisor: ${gv('advisor-name')}
-Consultation Date: ${gv('consult-date')}
+  return `You are a Retro Fitness personal training advisor. Generate a SHORT, scannable consultation summary using ONLY the real data provided below. No placeholders. No long paragraphs. This will be reviewed on screen with the member in under 2 minutes.
 
-INBODY SCAN:
-Height: ${gv('height')} | BMI: ${gv('bmi')}
-Body Fat Mass: ${gv('fat-mass')} lb | Percent Body Fat: ${gv('pbf')}%
-Lean Body Mass: ${gv('lean-mass')} lb | Body Water: ${gv('water-weight')} lb
-Segmental Lean: Left Arm ${gv('seg-la')}% | Right Arm ${gv('seg-ra')}% | Trunk ${gv('seg-trunk')}% | Left Leg ${gv('seg-ll')}% | Right Leg ${gv('seg-rl')}%
+MEMBER: ${name} | Age: ${age} | Gender: ${gender} | Height: ${height}
+INBODY: BMI ${bmi} | Body Fat ${pbf}% (${fatMass} lb) | Lean Mass ${leanMass} lb | Body Water ${water} lb
+SEGMENTAL: L.Arm ${segLA}% | R.Arm ${segRA}% | Trunk ${segTrunk}% | L.Leg ${segLL}% | R.Leg ${segRL}%
+GOALS: ${goals}
+EXPERIENCE: ${experience} | Training: ${workoutStatus}, ${daysPerWeek}x/week, ${duration}
+MEDICAL: ${medical || 'None'} | Meds: ${medications || 'None'} | Supplements: ${supplements || 'None'}
+NUTRITION: ${mealsPerDay} meals/day | Calories: ${calories || 'Not tracked'} | Tracks macros: ${tracksMacros}
+Breakfast: ${breakfast} | Lunch: ${lunch} | Dinner: ${dinner} | Snacks: ${snacks}
 
-FITNESS GOALS & ACTIVITY:
-Primary Goals: ${gv('goals')}
-Experience: ${gv('experience')} | Timeframe: ${gv('timeframe')}
-Current Status: ${gv('workout-status')} | Days/week: ${gv('days-per-week')} | Duration: ${gv('workout-duration')}
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS — short bullets only, no long paragraphs:
 
-MEDICAL HISTORY:
-Conditions/Injuries: ${gv('medical')}
-Doctor Recommendation: ${gv('doctor-rec')} | Notes: ${gv('doctor-notes')}
-Medications: ${gv('medications')}
-Supplements: ${gv('supplements')}
+📊 WHERE YOU ARE NOW
+- Weight & Composition: [1 sentence using their actual BMI, body fat %, lean mass numbers]
+- Body Fat: [their actual PBF% and what category that puts them in — athletic/fit/acceptable/obese]
+- Lean Mass: [their actual lean mass and what it means for their goal]
+- Key Finding: [the most important thing from their segmental data — e.g. which body part is lagging]
 
-NUTRITION:
-Meals/day: ${gv('meals-per-day')} | Calorie target: ${gv('calorie-target')}
-Breakfast: ${gv('breakfast')}
-Lunch: ${gv('lunch')}
-Dinner: ${gv('dinner')}
-Snacks: ${gv('snacks')}
-Tracks macros: ${gv('tracks-macros')} | Protein: ${gv('macro-protein')}% | Carb/Fat: ${gv('macro-carbfat')}
+🏋️ WORKOUT — NEXT STEPS
+- [Specific training frequency recommendation based on their schedule and goal]
+- [Priority focus area based on their segmental imbalances]
+- [One key exercise type or movement pattern to prioritize]
+- [Any modification needed for their medical history if applicable]
 
-Generate the assessment in three sections:
+🥗 NUTRITION — CORRECTIVE ACTIONS
+- [Estimated daily calorie target based on their stats and goal]
+- [Protein target in grams based on their lean mass]
+- [One specific change to their current eating habits]
+- [One supplement recommendation or adjustment]
 
-## 1. MEMBER-FACING ASSESSMENT
-Warm, personalized overview using their ACTUAL numbers. Reference their real BMI, PBF%, lean mass, segmental data. Use encouraging professional tone.
-
-## 2. ADVISOR RECOMMENDATIONS
-Evidence-based recommendations covering:
-- Medical considerations and program modifications based on their specific conditions
-- Nutrition: calculate actual TDEE from their stats, specific macro targets in grams
-- Supplement recommendations based on what they're already taking
-- Lifestyle factors
-
-## 3. SUGGESTED NEXT STEPS — STRENGTH TRAINING PROGRAM
-Specific training framework based on their actual segmental lean data and schedule:
-- Training split and frequency matching their available days
-- Priority muscle groups based on their segmental imbalances
-- Intensity guidelines for their experience level
-- Exercise modifications for any medical conditions
-
----MEMBER CLOSE---
-YOUR SNAPSHOT
-[2 sentences using their REAL body composition numbers]
-
-YOUR OPPORTUNITY
-[Specific realistic result in 90 days based on their actual data and goal]
-
-YOUR PLAN
-- Training: [one specific action]
-- Nutrition: [one specific change]
-- What we track together
+✅ 90-DAY TARGET
+- [One specific, measurable outcome they can realistically achieve in 90 days based on their actual data]
 
 THE DECISION
-[One powerful closing sentence creating urgency without pressure]
----END CLOSE---`;
+[One sentence — make today feel like the right time to start. No pressure, just truth.]`;
 }
 
 async function generateAssessment() {
