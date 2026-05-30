@@ -401,12 +401,9 @@
     return dt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // Truncate summary to ~2 sentences for the abbreviated view
+  // Show full summary — no abbreviation
   function abbreviateSummary(text) {
-    if (!text) return null;
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-    if (sentences.length <= 2) return text;
-    return sentences.slice(0, 2).join(' ').trim() + '…';
+    return text || null;
   }
 
   function render(data) {
@@ -538,16 +535,7 @@
         <div class="section-body">
           <div class="ai-label">✦ AI Generated</div>
           <div class="summary-block">${shortSummary}</div>
-          ${fullSummary !== shortSummary ? `
-          <div id="full-summary" style="display:none;">
-            <div class="summary-block" style="margin-top:10px;">${fullSummary}</div>
-          </div>
-          <button onclick="toggleFull()" id="expand-btn"
-            style="margin-top:12px;background:none;border:1px solid var(--border);color:var(--muted);
-            font-family:'Barlow Condensed',sans-serif;font-size:0.78rem;font-weight:700;
-            letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;border-radius:4px;cursor:pointer;">
-            Read Full Summary ↓
-          </button>` : ''}
+
         </div>
       </div>` : ''}
 
@@ -562,14 +550,7 @@
     document.getElementById('app').style.display = 'block';
   }
 
-  function toggleFull() {
-    const full = document.getElementById('full-summary');
-    const btn  = document.getElementById('expand-btn');
-    if (!full) return;
-    const expanded = full.style.display === 'block';
-    full.style.display = expanded ? 'none' : 'block';
-    btn.textContent = expanded ? 'Read Full Summary ↓' : 'Collapse ↑';
-  }
+
 
   async function load() {
     const row = getParam('row');
