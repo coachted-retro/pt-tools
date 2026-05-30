@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prospect Tracker — Retro Fitness v1780075190</title>
+<title>Prospect Tracker — Retro Fitness v1780152347</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -458,6 +458,20 @@ async function addTouchpoint() {
   renderTouchpoints(selectedId);
 }
 
+
+function deleteProspect(id) {
+  if (!confirm('Delete this prospect and all their touchpoints?')) return;
+  prospects = prospects.filter(function(p) { return p.id !== id; });
+  touchpoints = touchpoints.filter(function(t) { return t.prospectId !== id; });
+  saveLocal();
+  if (selectedId === id) {
+    selectedId = null;
+    document.getElementById('empty-detail').style.display = 'flex';
+    document.getElementById('detail-view').style.display = 'none';
+  }
+  renderList();
+  updateStats();
+}
 function renderList(filter='') {
   const el = document.getElementById('prospect-list');
   const fl = filter.toLowerCase();
