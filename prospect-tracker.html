@@ -327,7 +327,7 @@
   if(!p) return;
   if(confirm('Delete ' + p.name + ' and ALL their touchpoints? This cannot be undone.')) {
     fetch('https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec?action=deleteProspect&name='+encodeURIComponent(p.name)+'&phone='+encodeURIComponent(p.phone))
-    .then(r=>r.json()).then(d=>{ if(d.success){ selectedId=null; document.getElementById('detail-view').style.display='none'; document.getElementById('empty-detail').style.display='flex'; loadProspects(); } else alert('Failed: '+d.error); })
+    .then(r=>r.json()).then(d=>{ if(d.success){ selectedId=null; document.getElementById('detail-view').style.display='none'; document.getElementById('empty-detail').style.display='flex'; loadLocal(); renderList(); updateStats(); } else alert('Failed: '+d.error); })
     .catch(e=>alert('Error: '+e.message));
   }
 ">🗑 Delete Prospect</button>     
