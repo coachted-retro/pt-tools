@@ -1701,93 +1701,102 @@ let assessmentText='';
 
 function gv(id){ return (document.getElementById(id)||{}).value||''; }
 
-function buildPrompt(){
-  const obstacles=gv('obstacle-list')||'(none selected)';
-  const energy=gv('energy-score')||'not rated';
-  const results=gv('results-score')||'not rated';
-  const commitment=gv('commitment-score')||'not rated';
-
-  return `You are a professional fitness advisor and health consultant conducting a 6-week follow-up with a member. Generate a warm, honest, member-facing assessment in four clearly labeled sections. This will be read directly with the member - write as if speaking to them.
-
-1. PROGRESS SNAPSHOT
-Summarize what the member has accomplished over the past 6 weeks - their workout consistency, any physical changes, diet adjustments, and what their InBody scan comparison shows. Use specific numbers where available. Be honest, encouraging, and empathetic. Acknowledge both the effort they made and the areas where progress was slower than hoped.
-
-2. CHALLENGES & WHAT THEY TELL US
-For each major challenge the member has encountered, provide a thoughtful, supportive response that validates their experience and explains what it reveals about what kind of support would serve them best. Frame challenges as useful information, not failures. Be specific and practical.
-
-3. MEMBER ASSESSMENT
-A warm, personalized narrative addressed directly to the member. Acknowledge their commitment to returning for this follow-up, recognize the effort they've put in, and give an honest picture of where they stand today based on all the data. Reference their InBody results in plain terms. Speak to their specific goals and what the path forward could look like with the right structure and support. Be genuine and encouraging - not generic.
-
-4. ADVISOR RECOMMENDATIONS & SUGGESTED NEXT STEPS
-Based on all the data from this follow-up - fitness activity, challenges, mindset, and InBody results - provide clear, evidence-based recommendations. Include:
-- What type and frequency of training would best serve their goals and lifestyle
-- Specific areas to focus on based on their InBody segmental data and any imbalances
-- Nutritional guidance relevant to where they are now
-- How to address the challenges they've encountered going forward
-- A realistic 30-day focus to build momentum
-
---- FOLLOW-UP DATA ---
-Member: ${gv('name')} | Age: ' + gv('age') + ' | Gender: ${gv('gender')}
-Advisor: ${gv('advisor-name')||getCfg('advisor')} | Date: ${gv('fu-date')}
-Original goals: ${gv('orig-goals')}
-Reason for not starting a program 6 weeks ago: ${gv('decline-reason')}
-
-WELLBEING SCORES:
-Energy & wellbeing today: ${energy}/10
-Satisfaction with own progress: ${results}/10
-Readiness to commit to a program: ${commitment}/10
-
-TRAINING ACTIVITY (past 6 weeks):
-Been working out: ${gv('been-working-out')}
-Days/week: ${gv('actual-days')}
-Exercise type: ${gv('exercise-type')} | Duration: ${gv('workout-duration')}
-What workouts looked like: ${gv('workout-description')}
-Physical changes noticed: ${gv('physical-changes')}
-Diet changes: ${gv('diet-changes')} - ${gv('diet-change-detail')}
-
-CHALLENGES ENCOUNTERED: ${obstacles}
-Biggest challenge in their own words: ${gv('biggest-obstacle')}
-What they tried to overcome it: ${gv('tried-to-overcome')}
-New medical or injury issues: ${gv('new-medical')}
-New medications or supplements: ${gv('new-meds')}
-
+function buildPrompt() {
+  const name = gv('name') || 'Member';
+  const age = gv('age'); const gender = gv('gender');
+  const originalGoals = gv('long-goal');
+  const declineReason = gv('decline-reason');
+  const energyScore = gv('energy-score') || 'not rated';
+  const resultsScore = gv('results-score') || 'not rated';
+  const commitment = gv('commitment') || 'not rated';
+  const beenWorkingOut = gv('been-working-out');
+  const workoutDays = gv('workout-days');
+  const exerciseType = gv('exercise-type');
+  const workoutDuration = gv('workout-duration');
+  const workoutDescription = gv('workout-description');
+  const physicalChanges = gv('physical-changes');
+  const dietChanges = gv('diet-changes');
+  const dietChangeDetail = gv('diet-change-detail');
+  const biggestObstacle = gv('biggest-obstacle');
+  const overcomeAttempts = gv('tried-to-overcome');
+  const obstacles = gv('obstacles');
+  const medical = gv('medical');
+  const newMeds = gv('new-meds');
+  const newGoals = gv('new-goals');
+  const upcomingEvent = gv('upcoming-event');
+  const homeSupport = gv('home-support');
+  const trainerPerception = gv('trainer-perception');
+  const goalsDifferent = gv('goals-different');
+  const staysSame = gv('stays-same');
+  const prevBMI = gv('prev-bmi'); const nowBMI = gv('now-bmi');
+  const prevFat = gv('prev-fat'); const nowFat = gv('now-fat');
+  const prevLean = gv('prev-lean'); const nowLean = gv('now-lean');
+  const prevWater = gv('prev-water'); const nowWater = gv('now-water');
+  const prevPBF = gv('prev-pbf'); const nowPBF = gv('now-pbf');
+  const prevSegLA = gv('prev-seg-la'); const nowSegLA = gv('now-seg-la');
+  const prevSegRA = gv('prev-seg-ra'); const nowSegRA = gv('now-seg-ra');
+  const prevSegTrunk = gv('prev-seg-trunk'); const nowSegTrunk = gv('now-seg-trunk');
+  const prevSegLL = gv('prev-seg-ll'); const nowSegLL = gv('now-seg-ll');
+  const prevSegRL = gv('prev-seg-rl'); const nowSegRL = gv('now-seg-rl');
+  const scanNotes = gv('scan-notes');
+ 
+  return `You are a Retro Fitness personal training advisor conducting a 6-week follow-up re-engagement consultation. Generate a SHORT, scannable member summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 3 minutes.
+ 
+MEMBER: ${name} | Age: ${age} | Gender: ${gender}
+ORIGINAL GOALS: ${originalGoals}
+ORIGINAL DECLINE REASON: ${declineReason || 'Not recorded'}
+ 
+WELLBEING TODAY: Energy/Wellbeing ${energyScore}/10 | Satisfaction with progress ${resultsScore}/10 | Commitment to change ${commitment}/10
+ 
+TRAINING (past 6 weeks): Working out: ${beenWorkingOut} | ${workoutDays}/week | ${exerciseType} | ${workoutDuration}
+What workouts looked like: ${workoutDescription}
+Physical changes noticed: ${physicalChanges}
+Diet changes: ${dietChanges} | ${dietChangeDetail}
+ 
+CHALLENGES/OBSTACLES: ${obstacles}
+Biggest obstacle in their words: ${biggestObstacle}
+What they tried to overcome it: ${overcomeAttempts}
+Medical/physical updates: ${medical || 'None'} | New meds: ${newMeds || 'None'}
+ 
 GOALS & MINDSET:
-Goals status: ${gv('goals-shifted')}
-Updated or new goals: ${gv('new-goals')}
-Upcoming events or timeline: ${gv('urgency-event')}
-Support at home: ${gv('home-support')}
-Thoughts on working with a trainer: ${gv('trainer-perception')}
-What reaching their goals would mean: ${gv('life-impact')}
-What staying on the same path would mean: ${gv('status-quo-impact')}
-
+Goals status: ${newGoals} | Upcoming event/deadline: ${upcomingEvent || 'None'}
+Support at home: ${homeSupport} | Thoughts on trainer: ${trainerPerception}
+What reaching goals would mean: ${goalsDifferent}
+What staying the same path means: ${staysSame}
+ 
 INBODY COMPARISON:
-Previous - BMI: ${gv('prev-bmi')}, Body fat: ' + gv('prev-fat') + 'lb, Lean mass: ' + gv('prev-lean') + 'lb, Water: ' + gv('prev-water') + 'lb, PBF: ${gv('prev-pbf')}%
-Current - BMI: ${gv('now-bmi')}, Body fat: ' + gv('now-fat') + 'lb, Lean mass: ' + gv('now-lean') + 'lb, Water: ' + gv('now-water') + 'lb, PBF: ${gv('now-pbf')}%
-Segmental (prev -> now): LA ${gv('prev-seg-la')}%->' + gv('now-seg-la') + '% | RA ' + gv('prev-seg-ra') + '%->' + gv('now-seg-ra') + '% | Trunk ' + gv('prev-seg-trunk') + '%->' + gv('now-seg-trunk') + '% | LL ' + gv('prev-seg-ll') + '%->' + gv('now-seg-ll') + '% | RL ' + gv('prev-seg-rl') + '%->${gv('now-seg-rl')}%
-Advisor scan notes: ${gv('scan-notes')}
----
-
-Write in clear, professional prose. Use plain section headers. Be warm, honest, specific, and genuinely helpful.
-
-Keep advisor notes brief. Then end with this member-facing close:
-
----MEMBER CLOSE---
-
-WHERE YOU ARE
-[1-2 sentences. Honest comparison to where they started. What the data shows.]
-
-THE RESET
-[1 sentence. What changes if they start today vs waiting longer.]
-
-YOUR PLAN
-- [One training focus]
-- [One nutrition win]
-- [First milestone]
-
+Previous: BMI ${prevBMI} | Body fat ${prevFat}lb | Lean mass ${prevLean}lb | Water ${prevWater}lb | PBF ${prevPBF}%
+Current:  BMI ${nowBMI} | Body fat ${nowFat}lb | Lean mass ${nowLean}lb | Water ${nowWater}lb | PBF ${nowPBF}%
+Segmental (prev → now): LA ${prevSegLA}%→${nowSegLA}% | RA ${prevSegRA}%→${nowSegRA}% | Trunk ${prevSegTrunk}%→${nowSegTrunk}% | LL ${prevSegLL}%→${nowSegLL}% | RL ${prevSegRL}%→${nowSegRL}%
+Advisor scan notes: ${scanNotes || 'None'}
+ 
+FORMAT YOUR RESPONSE EXACTLY LIKE THIS — short bullets only, no long paragraphs:
+ 
+📊 PROGRESS SNAPSHOT
+• Body Composition: [fat lbs lost/gained, lean lbs gained/lost with real numbers vs 6 weeks ago]
+• Body Fat %: [previous PBF% → current PBF% — honest assessment of where they stand]
+• Key InBody Finding: [most significant segmental change or ongoing imbalance to address]
+ 
+🏋️ WHAT THEY'VE BEEN DOING
+• Activity: [honest assessment of their consistency over 6 weeks]
+• Results vs Effort: [do their physical changes match their activity level — why or why not]
+• Diet: [what changed or didn't, and how it affected their results]
+ 
+🚧 WHAT'S BEEN IN THE WAY
+• Main obstacle: [their biggest challenge and what it's really costing them]
+• What they've tried: [acknowledge their effort, then reframe what's missing]
+${medical ? '• Physical consideration: [any medical or injury factor to account for in programming]' : ''}
+ 
+🎯 ADVISOR RECOMMENDATIONS & NEXT STEPS
+• Training focus: [one specific program recommendation based on their data and obstacles]
+• Nutrition priority: [one specific nutrition action they can start this week]
+• Accountability: [what structure or support would make the biggest difference for this person]
+ 
+🔥 THE OPPORTUNITY
+• [2 sentences max — connect their original goal to what the data shows is possible. What changes if they start today vs. wait another 6 weeks?]
+ 
 START TODAY
-[One closing sentence that reopens the conversation and invites a yes.]
-
----END CLOSE---`;
+[One closing sentence that reopens the conversation and invites a yes.]`;
 }
 
 async function generateAssessment(){
