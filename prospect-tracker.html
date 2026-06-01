@@ -607,23 +607,23 @@ async function doDeleteProspect() {
   const btn = document.getElementById('modalConfirmBtn');
   btn.textContent = 'Deleting...';
   btn.disabled = true;
+  // Always remove locally first
+  closeModal();
+  prospects = prospects.filter(x => x.id !== p.id);
+  touchpoints = touchpoints.filter(t => t.prospectId !== p.id);
+  saveLocal();
+  selectedId = null;
+  document.getElementById('detail-view').style.display = 'none';
+  document.getElementById('empty-detail').style.display = 'flex';
+  renderList();
+  updateStats();
+  // Fire sheet delete in background (best effort)
   try {
     const params = new URLSearchParams({ action: 'deleteProspect', name: p.name, phone: p.phone });
-    const res = await fetch(APPS_SCRIPT + '?' + params);
-    const data = await res.json();
-    if (data.success) {
-      closeModal();
-      prospects = prospects.filter(x => x.id !== p.id);
-      touchpoints = touchpoints.filter(t => t.prospectId !== p.id);
-      saveLocal();
-      selectedId = null;
-      document.getElementById('detail-view').style.display = 'none';
-      document.getElementById('empty-detail').style.display = 'flex';
-      renderList();
-      updateStats();
-    } else { throw new Error(data.error || 'Failed'); }
-  } catch(e) { alert('Delete failed: ' + e.message); }
-  finally { btn.textContent = 'Yes, Delete Everything'; btn.disabled = false; }
+    await fetch(APPS_SCRIPT + '?' + params);
+  } catch(e) { console.warn('Sheet delete failed:', e); }
+  btn.textContent = 'Yes, Delete Everything';
+  btn.disabled = false;
 }
 
 function closeModal() {
