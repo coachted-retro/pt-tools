@@ -432,6 +432,36 @@ function loadLocal() {
 async function addProspect() {
   const first = gv('f-first'), last = gv('f-last'), phone = gv('f-phone');
   if (!first || !last || !phone) { setStatus('add-status','error','Name and phone are required.'); return; }
+  const fullName = (first + ' ' + last).trim();
+  // Duplicate check — match by name (case-insensitive) or phone
+  const dupByName = prospects.find(p => p.name.toLowerCase() === fullName.toLowerCase());
+  const dupByPhone = prospects.find(p => p.phone.replace(/\D/g,'') === phone.replace(/\D/g,''));
+  if (dupByName || dupByPhone) {
+    const dupLabel = dupByName ? dupByName.name : dupByPhone.name;
+    const reason = dupByName ? 'same name' : 'same phone number';
+    showDuplicateWarning(dupLabel, reason);
+    return;
+  }
+  await saveProspect(first, last, phone);
+}
+
+function showDuplicateWarning(existingName, reason) {
+  document.getElementById('dupModalName').textContent = existingName;
+  document.getElementById('dupModalReason').textContent = reason;
+  document.getElementById('dupModal').style.display = 'flex';
+}
+
+function closeDupModal() {
+  document.getElementById('dupModal').style.display = 'none';
+}
+
+async function proceedDespiteDuplicate() {
+  closeDupModal();
+  const first = gv('f-first'), last = gv('f-last'), phone = gv('f-phone');
+  await saveProspect(first, last, phone);
+}
+
+async function saveProspect(first, last, phone) {
   const prospect = {
     id: genId(),
     name: first + ' ' + last,
@@ -575,6 +605,18 @@ setInterest('Warm');
 document.getElementById('tp-date').value = new Date().toISOString().split('T')[0];
 </script>
 <a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#2d5a3d;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
+<div id="dupModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:420px;width:90%;text-align:center;">
+    <div style="font-size:40px;margin-bottom:14px">⚠️</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#ffb830;margin-bottom:8px">Possible Duplicate</div>
+    <div style="font-size:14px;color:#6b6b85;line-height:1.6;margin-bottom:22px">A prospect with the <strong style="color:#e8e8f0" id="dupModalReason"></strong> already exists:<br><strong style="color:#e8e8f0" id="dupModalName"></strong><br><br>Do you want to add them anyway?</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button onclick="closeDupModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px;">Cancel</button>
+      <button onclick="proceedDespiteDuplicate()" style="background:#ffb830;color:#000;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;">Add Anyway</button>
+    </div>
+  </div>
+</div>
+
 <div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;">
   <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:420px;width:90%;text-align:center;">
     <div style="font-size:40px;margin-bottom:14px">🗑️</div>
