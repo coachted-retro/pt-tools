@@ -1604,41 +1604,41 @@ function buildPrompt() {
   const breakfast = gv('breakfast'); const lunch = gv('lunch');
   const dinner = gv('dinner'); const snacks = gv('snacks');
   const tracksMacros = gv('tracks-macros');
-
-  return `You are a Retro Fitness personal training advisor. Generate a SHORT, scannable consultation summary using ONLY the real data provided below. No placeholders. No long paragraphs. This will be reviewed on screen with the member in under 2 minutes.
-
+ 
+  return `You are a Retro Fitness personal training advisor conducting an initial consultation. Generate a SHORT, scannable assessment using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 3 minutes.
+ 
 MEMBER: ${name} | Age: ${age} | Gender: ${gender} | Height: ${height}
-INBODY: BMI ${bmi} | Body Fat ${pbf}% (${fatMass} lb) | Lean Mass ${leanMass} lb | Body Water ${water} lb
+INBODY: BMI ${bmi} | Body Fat ${fatMass}lb (${pbf}%) | Lean Mass ${leanMass}lb | Water ${water}lb
 SEGMENTAL: L.Arm ${segLA}% | R.Arm ${segRA}% | Trunk ${segTrunk}% | L.Leg ${segLL}% | R.Leg ${segRL}%
 GOALS: ${goals}
-EXPERIENCE: ${experience} | Training: ${workoutStatus}, ${daysPerWeek}x/week, ${duration}
+EXPERIENCE: ${experience} | Workout status: ${workoutStatus} | Training: ${daysPerWeek}/week, ${duration}
 MEDICAL: ${medical || 'None'} | Meds: ${medications || 'None'} | Supplements: ${supplements || 'None'}
 NUTRITION: ${mealsPerDay} meals/day | Calories: ${calories || 'Not tracked'} | Tracks macros: ${tracksMacros}
 Breakfast: ${breakfast} | Lunch: ${lunch} | Dinner: ${dinner} | Snacks: ${snacks}
-
+ 
 FORMAT YOUR RESPONSE EXACTLY LIKE THIS — short bullets only, no long paragraphs:
-
+ 
 📊 WHERE YOU ARE NOW
-- Weight & Composition: [1 sentence using their actual BMI, body fat %, lean mass numbers]
-- Body Fat: [their actual PBF% and what category that puts them in — athletic/fit/acceptable/obese]
-- Lean Mass: [their actual lean mass and what it means for their goal]
-- Key Finding: [the most important thing from their segmental data — e.g. which body part is lagging]
-
+• Weight & Composition: [1 sentence using their actual BMI, body fat %, lean mass numbers]
+• Body Fat: [their actual PBF% and what category that puts them in — athletic/fit/acceptable/obese]
+• Lean Mass: [their actual lean mass and what it means for their goal]
+• Key Finding: [the most important thing from their segmental data — e.g. which body part is lagging]
+ 
 🏋️ WORKOUT — NEXT STEPS
-- [Specific training frequency recommendation based on their schedule and goal]
-- [Priority focus area based on their segmental imbalances]
-- [One key exercise type or movement pattern to prioritize]
-- [Any modification needed for their medical history if applicable]
-
+• [Specific training frequency recommendation based on their schedule and goal]
+• [Priority focus area based on their segmental imbalances]
+• [One key exercise type or movement pattern to prioritize]
+• [Any modification needed for their medical history if applicable]
+ 
 🥗 NUTRITION — CORRECTIVE ACTIONS
-- [Estimated daily calorie target based on their stats and goal]
-- [Protein target in grams based on their lean mass]
-- [One specific change to their current eating habits]
-- [One supplement recommendation or adjustment]
-
+• [Estimated daily calorie target based on their stats and goal]
+• [Protein target in grams based on their lean mass]
+• [One specific change to their current eating habits]
+• [One supplement recommendation or adjustment]
+ 
 ✅ 90-DAY TARGET
-- [One specific, measurable outcome they can realistically achieve in 90 days based on their actual data]
-
+• [One specific, measurable outcome they can realistically achieve in 90 days based on their actual data]
+ 
 THE DECISION
 [One sentence — make today feel like the right time to start. No pressure, just truth.]`;
 }
