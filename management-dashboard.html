@@ -20,6 +20,7 @@
     --success: #2d7a4f;
     --warning: #c87a2b;
     --danger: #c8392b;
+    --purple: #7c3aed;
     --shadow: 0 2px 12px rgba(26,22,18,.08);
     --shadow-lg: 0 8px 32px rgba(26,22,18,.12);
   }
@@ -28,10 +29,11 @@
 
   /* HEADER */
   .header {
-    background: var(--text);
+    background: #000;
+    border-bottom: 3px solid var(--accent);
     padding: 0 32px;
     display: flex; align-items: center; justify-content: space-between;
-    height: 64px; position: sticky; top: 0; z-index: 100;
+    height: 68px; position: sticky; top: 0; z-index: 100;
   }
   .header-left { display: flex; align-items: center; gap: 20px; }
   .back-btn {
@@ -40,17 +42,17 @@
     font-family: 'DM Sans', sans-serif; transition: all .2s; letter-spacing: .5px;
   }
   .back-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .logo { display: flex; align-items: center; gap: 12px; }
-  .logo-mark { width: 32px; height: 32px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .logo-text { font-family: 'DM Serif Display', serif; font-size: 18px; color: #fff; letter-spacing: .5px; }
-  .logo-sub { font-size: 11px; color: rgba(255,255,255,.4); letter-spacing: 2px; text-transform: uppercase; }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo img { height: 46px; width: auto; display: block; }
+  .logo-sub { font-size: 11px; color: rgba(255,255,255,.35); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .logo-label { font-family: 'DM Sans', sans-serif; font-size: 13px; color: rgba(255,255,255,.5); letter-spacing: 1px; text-transform: uppercase; }
   .header-right { display: flex; align-items: center; gap: 16px; }
   .month-selector {
     background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
     color: #fff; padding: 7px 14px; border-radius: 7px; font-family: 'DM Sans', sans-serif;
     font-size: 13px; cursor: pointer; outline: none;
   }
-  .month-selector option { background: var(--text); }
+  .month-selector option { background: #1a1612; }
   .refresh-btn {
     background: var(--accent); color: #fff; border: none; padding: 8px 18px;
     border-radius: 7px; font-family: 'DM Sans', sans-serif; font-weight: 600;
@@ -68,7 +70,7 @@
   .last-updated { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
   /* KPI GRID */
-  .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 28px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; margin-bottom: 28px; }
   .kpi-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 20px 18px; box-shadow: var(--shadow); position: relative; overflow: hidden;
@@ -81,13 +83,10 @@
   .kpi-card.gold::before { background: var(--gold); }
   .kpi-card.green::before { background: var(--success); }
   .kpi-card.warning::before { background: var(--warning); }
+  .kpi-card.purple::before { background: var(--purple); }
   .kpi-label { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
   .kpi-value { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--text); line-height: 1; margin-bottom: 6px; }
   .kpi-sub { font-size: 12px; color: var(--muted); }
-  .kpi-trend { font-size: 11px; font-weight: 600; margin-top: 6px; }
-  .trend-up { color: var(--success); }
-  .trend-down { color: var(--danger); }
-  .trend-neutral { color: var(--muted); }
 
   /* CHART GRID */
   .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
@@ -102,9 +101,7 @@
 
   /* FUNNEL */
   .funnel { display: flex; flex-direction: column; gap: 8px; }
-  .funnel-step {
-    display: flex; align-items: center; gap: 12px;
-  }
+  .funnel-step { display: flex; align-items: center; gap: 12px; }
   .funnel-bar-wrap { flex: 1; background: var(--surface2); border-radius: 6px; height: 40px; overflow: hidden; position: relative; }
   .funnel-bar { height: 100%; border-radius: 6px; display: flex; align-items: center; padding: 0 14px; transition: width .8s ease; }
   .funnel-label { font-size: 12px; font-weight: 600; color: #fff; white-space: nowrap; }
@@ -158,6 +155,11 @@
   .badge-hot { background: rgba(200,57,43,.12); color: var(--danger); }
   .badge-warm { background: rgba(212,168,67,.15); color: var(--warning); }
   .badge-cold { background: rgba(43,76,140,.1); color: var(--accent2); }
+  .badge-booked { background: rgba(124,58,237,.12); color: var(--purple); }
+  .badge-confirmed { background: rgba(45,122,79,.12); color: var(--success); }
+  .badge-show { background: rgba(45,122,79,.2); color: #16a34a; }
+  .badge-noshow { background: rgba(200,57,43,.12); color: var(--danger); }
+  .badge-canceled { background: rgba(122,112,102,.12); color: var(--muted); }
 
   /* LOADING */
   .loading-overlay { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--muted); gap: 12px; }
@@ -183,8 +185,26 @@
   .status-below { background: rgba(200,57,43,.12); color: var(--danger); }
   .status-at { background: rgba(212,168,67,.12); color: var(--warning); }
 
+  /* UPCOMING APPOINTMENTS */
+  .appt-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .appt-item:last-child { border-bottom: none; }
+  .appt-date-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; text-align: center;
+    min-width: 52px; flex-shrink: 0;
+  }
+  .appt-day { font-family: 'DM Serif Display', serif; font-size: 20px; line-height: 1; color: var(--text); }
+  .appt-mon { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .appt-info { flex: 1; }
+  .appt-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .appt-time { font-size: 12px; color: var(--muted); }
+  .appt-by { font-size: 11px; color: var(--muted); }
+
   @media (max-width: 1100px) {
-    .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+    .kpi-grid { grid-template-columns: repeat(4, 1fr); }
     .chart-grid { grid-template-columns: 1fr; }
     .chart-grid-3 { grid-template-columns: 1fr 1fr; }
     .ai-grid { grid-template-columns: 1fr; }
@@ -198,10 +218,9 @@
   <div class="header-left">
     <button class="back-btn" onclick="window.location.href='index.html'">← Hub</button>
     <div class="logo">
-      <div class="logo-mark">📊</div>
+      <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills">
       <div>
-        <div class="logo-text">Management Dashboard</div>
-        <div class="logo-sub">Retro Fitness — Fairless Hills</div>
+        <div class="logo-label">Management Dashboard</div>
       </div>
     </div>
   </div>
@@ -216,16 +235,17 @@
 <div class="container">
   <div class="page-title">
     <h1>Personal Training Overview</h1>
-    <p>Consultations, conversion rates, pipeline health, and AI-powered growth recommendations</p>
+    <p>Consultations, conversion rates, pipeline health, booked consultations, and AI-powered growth recommendations</p>
     <div class="last-updated" id="lastUpdated">Loading data...</div>
   </div>
 
-  <!-- KPI CARDS -->
+  <!-- KPI CARDS (7 cards) -->
   <div class="kpi-grid" id="kpiGrid">
     <div class="kpi-card"><div class="kpi-label">Total Consultations</div><div class="kpi-value" id="kpiConsultations">—</div><div class="kpi-sub">This period</div></div>
     <div class="kpi-card blue"><div class="kpi-label">Conversion Rate</div><div class="kpi-value" id="kpiConversion">—</div><div class="kpi-sub" id="kpiConversionSub">Accepted / Total</div></div>
     <div class="kpi-card green"><div class="kpi-label">PT Sign-Ups</div><div class="kpi-value" id="kpiSignups">—</div><div class="kpi-sub">Accepted this period</div></div>
     <div class="kpi-card"><div class="kpi-label">Declines</div><div class="kpi-value" id="kpiDeclines">—</div><div class="kpi-sub">Not yet converted</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">Booked Consults</div><div class="kpi-value" id="kpiBooked">—</div><div class="kpi-sub" id="kpiBookedSub">Upcoming appts</div></div>
     <div class="kpi-card gold"><div class="kpi-label">Hot Prospects</div><div class="kpi-value" id="kpiHot">—</div><div class="kpi-sub">Ready to close</div></div>
     <div class="kpi-card warning"><div class="kpi-label">Pipeline Total</div><div class="kpi-value" id="kpiPipeline">—</div><div class="kpi-sub">Active prospects</div></div>
   </div>
@@ -243,6 +263,24 @@
       <div class="chart-title">Conversion Funnel</div>
       <div class="chart-sub">From consultation to signed client</div>
       <div class="funnel" id="funnelChart" style="margin-top:16px">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOOKED CONSULTATIONS SECTION -->
+  <div class="prospects-grid">
+    <div class="chart-card">
+      <div class="chart-title">📅 Upcoming Appointments</div>
+      <div class="chart-sub">Booked &amp; confirmed consultations</div>
+      <div id="upcomingAppts" style="margin-top:12px">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">🔁 BC Follow-Ups Needed</div>
+      <div class="chart-sub">No-shows &amp; cancels awaiting rebook</div>
+      <div id="fuList" style="margin-top:12px">
         <div class="loading-overlay"><div class="spinner"></div></div>
       </div>
     </div>
@@ -339,14 +377,15 @@ const SHEET_ID = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
 
 let allIntakes = [];
 let allProspects = [];
-let allTouchpoints = [];
+let allBC = [];
+let allFU = [];
 let charts = {};
 
 // ── INIT ─────────────────────────────────────────────────────
 async function loadDashboard() {
   document.getElementById('lastUpdated').textContent = 'Loading...';
   try {
-    await Promise.all([loadIntakes(), loadProspects()]);
+    await Promise.all([loadIntakes(), loadProspects(), loadBC(), loadFU()]);
     populateMonthSelector();
     renderDashboard();
     document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString('en-US', {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
@@ -365,6 +404,41 @@ async function loadProspects() {
   const res = await fetch(`${APPS_SCRIPT}?action=getProspects`);
   const data = await res.json();
   allProspects = data.prospects || [];
+}
+
+async function loadBC() {
+  try {
+    const res = await fetch(`${APPS_SCRIPT}?action=getBookedConsultations`);
+    const data = await res.json();
+    // rows[0] is headers, rest are data rows
+    const rows = data.rows || [];
+    if (rows.length < 2) { allBC = []; return; }
+    const headers = rows[0];
+    allBC = rows.slice(1)
+      .filter(r => r.some(c => c !== ''))
+      .map(r => {
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = r[i]; });
+        return obj;
+      });
+  } catch(e) { allBC = []; }
+}
+
+async function loadFU() {
+  try {
+    const res = await fetch(`${APPS_SCRIPT}?action=getBCFollowUps`);
+    const data = await res.json();
+    const rows = data.rows || [];
+    if (rows.length < 2) { allFU = []; return; }
+    const headers = rows[0];
+    allFU = rows.slice(1)
+      .filter(r => r.some(c => c !== ''))
+      .map(r => {
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = r[i]; });
+        return obj;
+      });
+  } catch(e) { allFU = []; }
 }
 
 // ── MONTH SELECTOR ───────────────────────────────────────────
@@ -405,12 +479,18 @@ function renderDashboard() {
   const declined = intakes.filter(r => (r.Outcome||'').toUpperCase().includes('DECLINED') || (r.Outcome||'').toUpperCase().includes('NO'));
   const convRate = intakes.length > 0 ? Math.round((accepted.length / intakes.length) * 100) : 0;
 
+  // BC stats
+  const upcoming = allBC.filter(b => b.Status === 'Booked' || b.Status === 'Confirmed');
+  const fuNeeded = allFU.filter(f => f.Status !== 'Rebooked');
+
   // KPIs
   document.getElementById('kpiConsultations').textContent = intakes.length;
   document.getElementById('kpiConversion').textContent = convRate + '%';
   document.getElementById('kpiConversionSub').textContent = `${accepted.length} accepted / ${intakes.length} total`;
   document.getElementById('kpiSignups').textContent = accepted.length;
   document.getElementById('kpiDeclines').textContent = declined.length;
+  document.getElementById('kpiBooked').textContent = upcoming.length;
+  document.getElementById('kpiBookedSub').textContent = `${allBC.filter(b=>b.Status==='Confirmed').length} confirmed`;
   document.getElementById('kpiHot').textContent = allProspects.filter(p => p.Interest === 'Hot').length;
   document.getElementById('kpiPipeline').textContent = allProspects.length;
 
@@ -421,6 +501,64 @@ function renderDashboard() {
   renderBenchmarks(convRate, intakes.length);
   renderHotProspects();
   renderRecentTable(intakes);
+  renderUpcomingAppts(upcoming);
+  renderFUList(fuNeeded);
+}
+
+// ── UPCOMING APPOINTMENTS ─────────────────────────────────────
+function renderUpcomingAppts(upcoming) {
+  const el = document.getElementById('upcomingAppts');
+  if (!upcoming.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div>No upcoming appointments</div></div>';
+    return;
+  }
+  // Sort by appt date
+  const sorted = [...upcoming].sort((a,b) => {
+    const da = new Date(a['Appt Date'] || '9999'), db = new Date(b['Appt Date'] || '9999');
+    return da - db;
+  }).slice(0, 8);
+
+  el.innerHTML = sorted.map(b => {
+    const d = new Date(b['Appt Date']);
+    const day = isNaN(d) ? '?' : d.getDate();
+    const mon = isNaN(d) ? '—' : d.toLocaleString('en-US',{month:'short'});
+    const time = b['Appt Time'] || '';
+    const [h,m] = time.split(':');
+    const fmtTime = h ? (parseInt(h)%12||12)+':'+(m||'00')+' '+(parseInt(h)<12?'AM':'PM') : '—';
+    const statusCls = 'badge-' + (b.Status||'booked').toLowerCase().replace(/[\s-]/g,'');
+    return `<div class="appt-item">
+      <div class="appt-date-box">
+        <div class="appt-day">${day}</div>
+        <div class="appt-mon">${mon}</div>
+      </div>
+      <div class="appt-info">
+        <div class="appt-name">${b.Name||'—'}</div>
+        <div class="appt-time">${fmtTime} &nbsp;·&nbsp; ${b.Phone||''}</div>
+        <div class="appt-by">Booked by ${b['Booked By']||'—'}</div>
+      </div>
+      <span class="badge ${statusCls}">${b.Status||'Booked'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── FU LIST ───────────────────────────────────────────────────
+function renderFUList(fuNeeded) {
+  const el = document.getElementById('fuList');
+  if (!fuNeeded.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div>No follow-ups needed</div></div>';
+    return;
+  }
+  el.innerHTML = `<table class="data-table">
+    <thead><tr><th>Name</th><th>Reason</th><th>Was Scheduled</th><th>Status</th></tr></thead>
+    <tbody>${fuNeeded.slice(0,8).map(f => `
+      <tr>
+        <td><strong>${f.Name||'—'}</strong><br><span style="font-size:11px;color:var(--muted)">${f.Phone||''}</span></td>
+        <td><span class="badge badge-noshow">${f.Reason||'—'}</span></td>
+        <td style="font-size:12px">${f['Appt Date Was']||'—'}</td>
+        <td><span class="badge badge-warm">${f.Status||'—'}</span></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
 }
 
 // ── CONSULTATIONS OVER TIME ───────────────────────────────────
@@ -441,7 +579,6 @@ function renderConsultationsChart(intakes) {
   });
   const totals = Object.keys(monthData).sort().map(k => monthData[k].total);
   const accepteds = Object.keys(monthData).sort().map(k => monthData[k].accepted);
-
   if (charts.consultations) charts.consultations.destroy();
   charts.consultations = new Chart(document.getElementById('consultationsChart'), {
     type: 'bar',
@@ -469,6 +606,7 @@ function renderFunnel(intakes, accepted, declined) {
   const steps = [
     { label: 'Consultations', count: intakes.length, color: '#2b4c8c' },
     { label: 'Have Follow-Up', count: followups.length, color: '#d4a843' },
+    { label: 'Booked Consults', count: allBC.filter(b=>b.Status==='Booked'||b.Status==='Confirmed').length, color: '#7c3aed' },
     { label: 'Signed Up', count: accepted.length, color: '#2d7a4f' }
   ];
   const max = Math.max(...steps.map(s => s.count), 1);
@@ -616,6 +754,8 @@ async function generateAIAnalysis() {
   const hot = allProspects.filter(p=>p.Interest==='Hot').length;
   const warm = allProspects.filter(p=>p.Interest==='Warm').length;
   const cold = allProspects.filter(p=>p.Interest==='Cold').length;
+  const upcoming = allBC.filter(b=>b.Status==='Booked'||b.Status==='Confirmed').length;
+  const fuCount = allFU.filter(f=>f.Status!=='Rebooked').length;
 
   const prompt = `You are a fitness business consultant specializing in personal training sales for commercial gyms. Analyze this data for Retro Fitness Fairless Hills and provide specific, actionable recommendations.
 
@@ -627,6 +767,8 @@ CURRENT PERFORMANCE DATA:
 - Industry average conversion rate: 25-35%
 - Top decline reasons: ${topDeclineReasons || 'Not enough data yet'}
 - Prospect pipeline: ${allProspects.length} total (${hot} hot, ${warm} warm, ${cold} cold)
+- Upcoming booked consultations: ${upcoming}
+- BC follow-ups needed: ${fuCount}
 
 INDUSTRY BENCHMARKS:
 - Top PT studios close 40-50% of consultations
@@ -637,19 +779,19 @@ INDUSTRY BENCHMARKS:
 Provide a SHORT, specific analysis with these exact sections:
 
 🔍 CONVERSION ANALYSIS
-[2-3 bullets analyzing their specific conversion rate vs benchmarks — be direct and honest]
+[2-3 bullets analyzing their specific conversion rate vs benchmarks]
 
 🚨 TOP SALES BARRIERS
-[2-3 bullets on their specific decline reasons and what they reveal about objection patterns]
+[2-3 bullets on their specific decline reasons and objection patterns]
 
 ⚡ IMMEDIATE ACTION ITEMS (next 7 days)
 [3 specific, actionable things they can do THIS WEEK to close more sales]
 
 📈 30-DAY GROWTH STRATEGY
-[3 specific strategies to grow consultation volume and improve conversion over 30 days]
+[3 specific strategies to grow consultation volume and improve conversion]
 
 🎯 PIPELINE PRIORITY
-[Specific advice on how to work their current ${allProspects.length} prospects — who to call first and what to say]
+[Specific advice on how to work their current ${allProspects.length} prospects and ${upcoming} booked consultations]
 
 Keep each bullet to 1-2 sentences max. Be specific to their numbers, not generic advice.`;
 
@@ -665,11 +807,8 @@ Keep each bullet to 1-2 sentences max. Be specific to their numbers, not generic
     });
     const data = await response.json();
     const text = data.content?.[0]?.text || 'Unable to generate analysis.';
-
     document.getElementById('aiOutputText').textContent = text;
     document.getElementById('aiOutput').classList.add('visible');
-
-    // Update focus area card
     const lines = text.split('\n').filter(l => l.trim().startsWith('⚡'));
     if (lines.length) {
       document.getElementById('focusArea').textContent = 'See "Immediate Action Items" below for your personalized next steps.';
