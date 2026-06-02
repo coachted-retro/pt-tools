@@ -321,6 +321,7 @@
     </div>
   </div>
   <div class="header-right">
+    <button class="btn-outline" onclick="runDiagnostic()" style="border-color:#ffb830;color:#ffb830">🔧 Test Writes</button>
     <button class="btn-outline" onclick="openSheet()">View Sheet</button>
   </div>
 </div>
@@ -1749,6 +1750,48 @@ async function doDeleteFU() {
 }
 
 
+
+
+// ══════════════════════════════════════════════════
+// DIAGNOSTIC
+// ══════════════════════════════════════════════════
+async function runDiagnostic() {
+  const results = [];
+
+  // Test 1: Cloudflare Worker (Prospects)
+  try {
+    const r = await fetch(WORKER, {
+      method: 'POST', headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({tab: 'Prospects', row: ['TEST-DATE','TEST NAME','0000000000','test@test.com','Test','Warm','ASAP','','Diagnostic','Diagnostic test - delete me']})
+    });
+    const d = JSON.parse(await r.text());
+    results.push('✅ Prospects (Worker): ' + JSON.stringify(d));
+  } catch(e) { results.push('❌ Prospects (Worker): ' + e.message); }
+
+  // Test 2: Cloudflare Worker (Touchpoints)
+  try {
+    const r = await fetch(WORKER, {
+      method: 'POST', headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({tab: 'Touchpoints', row: ['TEST-DATE','TEST NAME','Interested','Diagnostic test - delete me','Advisor']})
+    });
+    const d = JSON.parse(await r.text());
+    results.push('✅ Touchpoints (Worker): ' + JSON.stringify(d));
+  } catch(e) { results.push('❌ Touchpoints (Worker): ' + e.message); }
+
+  // Test 3: Apps Script (Booked Consultations)
+  try {
+    const d = await callAppsScript({action:'addBookedConsultation',dateBooked:'TEST',name:'TEST NAME',phone:'0000000000',email:'',apptDate:'2026-01-01',apptTime:'10:00',bookedBy:'Diagnostic',status:'Booked',notes:'Diagnostic test - delete me',originalProspectDate:''});
+    results.push('✅ Booked Consultations (AppsScript): ' + JSON.stringify(d));
+  } catch(e) { results.push('❌ Booked Consultations (AppsScript): ' + e.message); }
+
+  // Test 4: Apps Script (BC Follow-Ups)
+  try {
+    const d = await callAppsScript({action:'addBCFollowUp',dateAdded:'TEST',name:'TEST NAME',phone:'0000000000',email:'',reason:'No-Show',apptDateWas:'2026-01-01',bookedBy:'Diagnostic',status:'Needs Rebook',notes:'Diagnostic test - delete me'});
+    results.push('✅ BC Follow-Ups (AppsScript): ' + JSON.stringify(d));
+  } catch(e) { results.push('❌ BC Follow-Ups (AppsScript): ' + e.message); }
+
+  alert('DIAGNOSTIC RESULTS:\n\n' + results.join('\n\n'));
+}
 
 // ══════════════════════════════════════════════════
 // EDIT BOOKING
