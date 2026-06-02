@@ -203,6 +203,44 @@
   .appt-time { font-size: 12px; color: var(--muted); }
   .appt-by { font-size: 11px; color: var(--muted); }
 
+
+  /* ADVISOR BREAKDOWN */
+  .advisor-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .advisor-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 22px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .advisor-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--purple); }
+  .advisor-card.ted::before { background: #2b4c8c; }
+  .advisor-card.dani::before { background: #c87a2b; }
+  .advisor-card.both::before { background: var(--purple); }
+  .advisor-name {
+    font-family: "DM Serif Display", serif; font-size: 18px; color: var(--text);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .advisor-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .adv-stat { text-align: center; background: var(--surface2); border-radius: 8px; padding: 10px 6px; }
+  .adv-stat-num { font-family: "DM Serif Display", serif; font-size: 22px; line-height: 1; margin-bottom: 3px; }
+  .adv-stat-label { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+  .adv-stat-num.booked { color: var(--purple); }
+  .adv-stat-num.confirmed { color: var(--success); }
+  .adv-stat-num.show { color: #16a34a; }
+  .adv-stat-num.noshow { color: var(--danger); }
+  .adv-stat-num.canceled { color: var(--muted); }
+  .adv-stat-num.rescheduled { color: var(--warning); }
+
+  /* APPT FILTER BAR */
+  .appt-filter-bar { display: flex; gap: 8px; margin-bottom: 14px; }
+  .appt-filter-btn {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+    padding: 5px 14px; border-radius: 20px; font-family: "DM Sans", sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; letter-spacing: .3px;
+  }
+  .appt-filter-btn:hover { border-color: var(--purple); color: var(--purple); }
+  .appt-filter-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+  .appt-filter-btn.ted.active { background: #2b4c8c; border-color: #2b4c8c; }
+  .appt-filter-btn.dani.active { background: var(--warning); border-color: var(--warning); }
+
   @media (max-width: 1100px) {
     .kpi-grid { grid-template-columns: repeat(4, 1fr); }
     .chart-grid { grid-template-columns: 1fr; }
@@ -268,12 +306,42 @@
     </div>
   </div>
 
+  <!-- ADVISOR BREAKDOWN -->
+  <div class="advisor-grid" id="advisorGrid">
+    <!-- Ted -->
+    <div class="advisor-card ted">
+      <div class="advisor-name">🔵 Ted</div>
+      <div class="advisor-stats" id="advisor-ted">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <!-- Dani -->
+    <div class="advisor-card dani">
+      <div class="advisor-name">🟠 Dani</div>
+      <div class="advisor-stats" id="advisor-dani">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+    <!-- Combined -->
+    <div class="advisor-card both">
+      <div class="advisor-name">📊 Combined</div>
+      <div class="advisor-stats" id="advisor-both">
+        <div class="loading-overlay"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- BOOKED CONSULTATIONS SECTION -->
   <div class="prospects-grid">
     <div class="chart-card">
       <div class="chart-title">📅 Upcoming Appointments</div>
       <div class="chart-sub">Booked &amp; confirmed consultations</div>
-      <div id="upcomingAppts" style="margin-top:12px">
+      <div class="appt-filter-bar">
+        <button class="appt-filter-btn active" onclick="filterAppts(this, 'all')">All</button>
+        <button class="appt-filter-btn ted" onclick="filterAppts(this, 'ted')">Ted</button>
+        <button class="appt-filter-btn dani" onclick="filterAppts(this, 'dani')">Dani</button>
+      </div>
+      <div id="upcomingAppts" style="margin-top:4px">
         <div class="loading-overlay"><div class="spinner"></div></div>
       </div>
     </div>
@@ -379,6 +447,7 @@ let allIntakes = [];
 let allProspects = [];
 let allBC = [];
 let allFU = [];
+let apptFilter = 'all';
 let charts = {};
 
 // ── INIT ─────────────────────────────────────────────────────
@@ -503,17 +572,67 @@ function renderDashboard() {
   renderRecentTable(intakes);
   renderUpcomingAppts(upcoming);
   renderFUList(fuNeeded);
+  renderAdvisorBreakdown();
+}
+
+
+// ── ADVISOR BREAKDOWN ─────────────────────────────────────────
+function advisorStats(advisor) {
+  const name = advisor.toLowerCase();
+  const filtered = name === 'both'
+    ? allBC
+    : allBC.filter(b => (b['Booked By']||'').toLowerCase().includes(name));
+  return {
+    booked:      filtered.filter(b => b.Status === 'Booked').length,
+    confirmed:   filtered.filter(b => b.Status === 'Confirmed').length,
+    show:        filtered.filter(b => b.Status === 'Show').length,
+    noshow:      filtered.filter(b => b.Status === 'No-Show').length,
+    canceled:    filtered.filter(b => b.Status === 'Canceled').length,
+    rescheduled: filtered.filter(b => b.Status === 'Rescheduled').length,
+  };
+}
+
+function renderAdvisorCard(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const advisor = elId.replace('advisor-', '');
+  const s = advisorStats(advisor);
+  el.innerHTML = `
+    <div class="adv-stat"><div class="adv-stat-num booked">${s.booked}</div><div class="adv-stat-label">Booked</div></div>
+    <div class="adv-stat"><div class="adv-stat-num confirmed">${s.confirmed}</div><div class="adv-stat-label">Confirmed</div></div>
+    <div class="adv-stat"><div class="adv-stat-num show">${s.show}</div><div class="adv-stat-label">Showed</div></div>
+    <div class="adv-stat"><div class="adv-stat-num noshow">${s.noshow}</div><div class="adv-stat-label">No-Show</div></div>
+    <div class="adv-stat"><div class="adv-stat-num canceled">${s.canceled}</div><div class="adv-stat-label">Canceled</div></div>
+    <div class="adv-stat"><div class="adv-stat-num rescheduled">${s.rescheduled}</div><div class="adv-stat-label">Rescheduled</div></div>
+  `;
+}
+
+function renderAdvisorBreakdown() {
+  renderAdvisorCard('advisor-ted');
+  renderAdvisorCard('advisor-dani');
+  renderAdvisorCard('advisor-both');
+}
+
+function filterAppts(btn, filter) {
+  apptFilter = filter;
+  document.querySelectorAll('.appt-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const upcoming = allBC.filter(b => b.Status === 'Booked' || b.Status === 'Confirmed');
+  renderUpcomingAppts(upcoming);
 }
 
 // ── UPCOMING APPOINTMENTS ─────────────────────────────────────
 function renderUpcomingAppts(upcoming) {
   const el = document.getElementById('upcomingAppts');
-  if (!upcoming.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div>No upcoming appointments</div></div>';
+  // Apply advisor filter
+  let filtered = upcoming;
+  if (apptFilter === 'ted') filtered = upcoming.filter(b => (b['Booked By']||'').toLowerCase().includes('ted'));
+  else if (apptFilter === 'dani') filtered = upcoming.filter(b => (b['Booked By']||'').toLowerCase().includes('dani'));
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div>No upcoming appointments' + (apptFilter !== 'all' ? ' for ' + apptFilter.charAt(0).toUpperCase() + apptFilter.slice(1) : '') + '</div></div>';
     return;
   }
-  // Sort by appt date
-  const sorted = [...upcoming].sort((a,b) => {
+  const sorted = [...filtered].sort((a,b) => {
     const da = new Date(a['Appt Date'] || '9999'), db = new Date(b['Appt Date'] || '9999');
     return da - db;
   }).slice(0, 8);
