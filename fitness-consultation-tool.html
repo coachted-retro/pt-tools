@@ -1921,6 +1921,44 @@ async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   } catch(e) { console.error('PT Tracker failed:', e.message); return false; }
 }
 
+
+// ===========================================
+// FINALIZE ACCEPT
+// ===========================================
+async function finalizeAccept() {
+  if (!selectedFreq)   { alert('Please select a training frequency.'); return; }
+  if (!selectedLength) { alert('Please select a program length.'); return; }
+
+  showLoading('Saving enrollment to database...');
+
+  const intakeRow = buildIntakeRow('ACCEPTED', selectedFreq, selectedLength, 42);
+  const ok = await appendToSheet('All Intakes', intakeRow);
+
+  // Also write to Active Clients tab in PT Progress Tracker sheet
+  try {
+    await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write', {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({
+        tab: 'Active Clients',
+        row: [gv('name'), gv('phone'), gv('email'), gv('gender'), gv('age'), selectedFreq, selectedLength, gv('consult-date'), gv('advisor-name') || getCfg('advisor')],
+        sheetId: '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs'
+      })
+    });
+  } catch(e) { console.warn('Active Clients write failed:', e); }
+
+  await sendNotificationEmail('ACCEPTED', selectedFreq, selectedLength);
+
+  hideLoading();
+
+  const confirm = document.getElementById('confirm-accept');
+  confirm.style.display = 'flex';
+  if (!ok) {
+    confirm.textContent = '[!] Sheet write may have failed — check your database. Email sent.';
+  }
+  confirm.scrollIntoView({ behavior: 'smooth' });
+}
+
 async function finalizeDecline() {
   var reason = document.getElementById('decline-reason') ? document.getElementById('decline-reason').value : '';
   if (!reason) { alert('Please select a reason for the decline.'); return; }
