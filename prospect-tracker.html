@@ -553,6 +553,7 @@
               <button class="btn-danger" id="bc-btn-noshow" onclick="bcUpdateStatus('No-Show')" style="display:none">❌ No-Show</button>
               <button class="btn-warm" id="bc-btn-cancel" onclick="bcUpdateStatus('Canceled')" style="display:none">🚫 Cancel</button>
               <button class="btn-warn" id="bc-btn-reschedule" onclick="bcUpdateStatus('Rescheduled')" style="display:none;background:none;border:1px solid var(--warm-c);color:var(--warm-c);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px">♻️ Reschedule</button>
+              <button onclick="openEditBookingModal()" style="background:none;border:1px solid #4488ff;color:#4488ff;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px">✏️ Edit</button>
               <button class="btn-danger" onclick="confirmDeleteBC()">🗑</button>
             </div>
           </div>
@@ -852,6 +853,67 @@
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button onclick="closeNewBookingModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
       <button onclick="confirmNewBooking()" style="background:#a855f7;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Book It</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Edit Booking Modal -->
+<div id="editBookingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#4488ff;margin-bottom:20px">✏️ Edit Booking</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">First Name *</label>
+        <input id="eb-first" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Last Name *</label>
+        <input id="eb-last" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Phone</label>
+        <input id="eb-phone" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Email</label>
+        <input id="eb-email" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Appt Date *</label>
+        <input type="date" id="eb-appt-date" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Appt Time</label>
+        <input type="time" id="eb-appt-time" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Booked By (MEA)</label>
+        <input id="eb-booked-by" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Advisor Assigned</label>
+        <select id="eb-advisor" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+          <option value="">— Select —</option>
+          <option value="Ted">Ted</option>
+          <option value="Dani">Dani</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Notes</label>
+      <textarea id="eb-notes" rows="2" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px;resize:vertical"></textarea>
+    </div>
+    <div id="eb-status" style="font-size:13px;color:#ff4444;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeEditBookingModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
+      <button onclick="confirmEditBooking()" style="background:#4488ff;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Save Changes</button>
     </div>
   </div>
 </div>
@@ -1686,6 +1748,60 @@ async function doDeleteFU() {
   } catch(e) { console.warn('Sheet delete failed:', e); }
 }
 
+
+
+// ══════════════════════════════════════════════════
+// EDIT BOOKING
+// ══════════════════════════════════════════════════
+function openEditBookingModal() {
+  const b = bcBookings.find(x => x.id === selectedBCId);
+  if (!b) return;
+  const nameParts = b.name.split(' ');
+  document.getElementById('eb-first').value = nameParts[0] || '';
+  document.getElementById('eb-last').value = nameParts.slice(1).join(' ') || '';
+  document.getElementById('eb-phone').value = b.phone || '';
+  document.getElementById('eb-email').value = b.email || '';
+  document.getElementById('eb-appt-date').value = b.apptDate || '';
+  document.getElementById('eb-appt-time').value = b.apptTime || '';
+  document.getElementById('eb-booked-by').value = b.bookedBy || '';
+  document.getElementById('eb-advisor').value = b.advisor || '';
+  document.getElementById('eb-notes').value = b.notes || '';
+  document.getElementById('eb-status').textContent = '';
+  document.getElementById('editBookingModal').style.display = 'flex';
+}
+
+function closeEditBookingModal() { document.getElementById('editBookingModal').style.display = 'none'; }
+
+async function confirmEditBooking() {
+  const b = bcBookings.find(x => x.id === selectedBCId);
+  if (!b) return;
+  const first = document.getElementById('eb-first').value.trim();
+  const last = document.getElementById('eb-last').value.trim();
+  const apptDate = document.getElementById('eb-appt-date').value;
+  if (!first || !last) { document.getElementById('eb-status').textContent = 'Name is required.'; return; }
+  if (!apptDate) { document.getElementById('eb-status').textContent = 'Appointment date is required.'; return; }
+
+  b.name = first + ' ' + last;
+  b.phone = document.getElementById('eb-phone').value.trim();
+  b.email = document.getElementById('eb-email').value.trim();
+  b.apptDate = apptDate;
+  b.apptTime = document.getElementById('eb-appt-time').value;
+  b.bookedBy = document.getElementById('eb-booked-by').value.trim();
+  b.advisor = document.getElementById('eb-advisor').value;
+  b.notes = document.getElementById('eb-notes').value.trim();
+  saveLocal();
+  closeEditBookingModal();
+
+  try {
+    await callAppsScript({
+      action: 'updateBookedConsultation',
+      name: b.name, phone: b.phone, status: b.status
+    });
+  } catch(e) { console.warn('Sheet update failed:', e); }
+
+  renderBC(); renderCalendar();
+  selectBC(selectedBCId);
+}
 
 // ══════════════════════════════════════════════════
 // NEW BOOKING MODAL (standalone)
