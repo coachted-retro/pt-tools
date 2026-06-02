@@ -919,21 +919,37 @@ Keep each bullet to 1-2 sentences max. Be specific to their numbers, not generic
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       })
     });
-    const data = await response.json();
-    const text = data.content?.[0]?.text || 'Unable to generate analysis.';
+    const rawText = await response.text();
+    let text = '';
+    try {
+      const data = JSON.parse(rawText);
+      if (data.content && data.content[0] && data.content[0].text) {
+        text = data.content[0].text;
+      } else if (data.text) {
+        text = data.text;
+      } else if (data.completion) {
+        text = data.completion;
+      } else if (data.error) {
+        text = 'API error: ' + (data.error.message || JSON.stringify(data.error));
+      } else {
+        text = 'Unexpected response: ' + rawText.substring(0, 300);
+      }
+    } catch(parseErr) {
+      text = rawText ? rawText.substring(0, 500) : 'Could not parse response.';
+    }
     document.getElementById('aiOutputText').textContent = text;
     document.getElementById('aiOutput').classList.add('visible');
-    const lines = text.split('\n').filter(l => l.trim().startsWith('⚡'));
-    if (lines.length) {
+    const aiLines = text.split('\n').filter(l => l.trim().startsWith('⚡'));
+    if (aiLines.length) {
       document.getElementById('focusArea').textContent = 'See "Immediate Action Items" below for your personalized next steps.';
     }
   } catch(e) {
-    document.getElementById('aiOutputText').textContent = 'Error generating analysis. Please try again.';
+    document.getElementById('aiOutputText').textContent = 'Network error: ' + e.message;
     document.getElementById('aiOutput').classList.add('visible');
   }
 
