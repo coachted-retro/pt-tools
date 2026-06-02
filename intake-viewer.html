@@ -30,22 +30,19 @@
 
     /* TOP BAR */
     .topbar {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 28px;
+      background: #000;
+      border-bottom: 3px solid var(--red);
+      padding: 10px 28px;
       display: flex;
       align-items: center;
       gap: 16px;
     }
-    .topbar-logo {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 900;
-      font-size: 1.1rem;
-      letter-spacing: 0.12em;
-      color: var(--red);
-      text-transform: uppercase;
+    .topbar-logo img {
+      height: 44px;
+      width: auto;
+      display: block;
     }
-    .topbar-sep { color: var(--border); font-size: 1.2rem; }
+    .topbar-sep { color: #333; font-size: 1.4rem; margin: 0 4px; }
     .topbar-title {
       font-family: 'Barlow Condensed', sans-serif;
       font-weight: 600;
@@ -88,7 +85,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* LAYOUT */
-    .container { max-width: 860px; margin: 0 auto; padding: 32px 24px 80px; }
+    .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 80px; }
 
     /* HERO */
     .hero {
@@ -121,59 +118,35 @@
       margin-bottom: 14px;
     }
     .hero-date span { color: var(--red); font-weight: 600; }
-    .hero-contacts {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .hero-contacts { display: flex; flex-direction: column; gap: 6px; }
     .hero-contact {
-      font-size: 0.85rem;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      font-size: 0.85rem; color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
     }
     .hero-contact b { color: var(--text); font-weight: 500; }
-
     .hero-right {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-width: 160px;
-      align-items: flex-end;
+      display: flex; flex-direction: column;
+      gap: 10px; min-width: 160px; align-items: flex-end;
     }
 
     /* OUTCOME BADGE */
     .outcome-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border-radius: 5px;
-      padding: 8px 16px;
+      display: inline-flex; align-items: center; gap: 6px;
+      border-radius: 5px; padding: 8px 16px;
       font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700;
-      font-size: 0.95rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      font-weight: 700; font-size: 0.95rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
     }
     .outcome-accepted  { background: rgba(34,197,94,0.12);  border: 1px solid rgba(34,197,94,0.3);  color: #4ade80; }
     .outcome-declined  { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);  color: #f87171; }
     .outcome-followup  { background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.3); color: #fb923c; }
     .outcome-default   { background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: var(--muted); }
 
-    .meta-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      justify-content: flex-end;
-    }
+    .meta-pills { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
     .meta-pill {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 12px;
-      font-size: 0.75rem;
-      color: var(--muted);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 4px 12px;
+      font-size: 0.75rem; color: var(--muted);
     }
     .meta-pill b { color: var(--text); }
 
@@ -189,23 +162,16 @@
       background: var(--surface2);
       border-bottom: 1px solid var(--border);
       padding: 11px 20px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      display: flex; align-items: center; gap: 10px;
     }
     .section-dot {
       width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--red);
-      flex-shrink: 0;
+      border-radius: 50%; background: var(--red); flex-shrink: 0;
     }
     .section-title {
       font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700;
-      font-size: 0.8rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
+      font-weight: 700; font-size: 0.8rem;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
     }
     .section-body { padding: 20px 24px; }
 
@@ -217,54 +183,46 @@
     }
     .field { display: flex; flex-direction: column; gap: 5px; }
     .field-label {
-      font-size: 0.68rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--label);
-      font-weight: 600;
+      font-size: 0.68rem; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--label); font-weight: 600;
     }
-    .field-value {
-      font-size: 0.92rem;
-      color: var(--text);
-      line-height: 1.4;
-    }
+    .field-value { font-size: 0.92rem; color: var(--text); line-height: 1.4; }
     .field-value.empty { color: var(--label); font-style: italic; }
 
     /* GOAL */
-    .goal-block {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
+    .goal-block { display: flex; align-items: flex-start; gap: 14px; }
+    .goal-icon { font-size: 1.6rem; flex-shrink: 0; margin-top: 2px; }
+    .goal-text { font-size: 1.05rem; color: var(--text); font-weight: 500; line-height: 1.5; }
+
+    /* ASSESSMENT DETAILS — side by side layout */
+    .assessment-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
     }
-    .goal-icon {
-      font-size: 1.6rem;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-    .goal-text {
-      font-size: 1.05rem;
-      color: var(--text);
-      font-weight: 500;
-      line-height: 1.5;
+    .assessment-col-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 10px;
     }
 
     /* NOTES */
     .notes-block {
-      font-size: 0.9rem;
-      color: #ccc;
-      line-height: 1.75;
+      font-size: 0.9rem; color: #ccc; line-height: 1.75;
       white-space: pre-wrap;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 16px 18px;
+      border-radius: 6px; padding: 16px 18px;
+      height: 100%;
     }
 
     /* SUMMARY */
     .summary-block {
-      font-size: 0.9rem;
-      color: #ccc;
-      line-height: 1.75;
+      font-size: 0.9rem; color: #ccc; line-height: 1.75;
       background: var(--surface2);
       border-left: 3px solid var(--red);
       border-radius: 0 6px 6px 0;
@@ -273,53 +231,34 @@
     .summary-block p { margin-bottom: 10px; }
     .summary-block p:last-child { margin-bottom: 0; }
     .ai-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: var(--red-dim);
-      border: 1px solid rgba(224,32,32,0.2);
-      color: #f87171;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 3px;
-      margin-bottom: 12px;
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--red-dim); border: 1px solid rgba(224,32,32,0.2);
+      color: #f87171; font-size: 0.65rem; font-weight: 700;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 3px; margin-bottom: 12px;
     }
 
     /* DECLINE REASON */
     .decline-box {
       background: rgba(239,68,68,0.07);
       border: 1px solid rgba(239,68,68,0.2);
-      border-radius: 6px;
-      padding: 14px 18px;
-      font-size: 0.88rem;
-      color: #fca5a5;
-      line-height: 1.5;
+      border-radius: 6px; padding: 14px 18px;
+      font-size: 0.88rem; color: #fca5a5; line-height: 1.5;
     }
 
     /* ACTIONS */
     .actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 28px;
-      padding-top: 24px;
+      display: flex; gap: 12px; flex-wrap: wrap;
+      margin-top: 28px; padding-top: 24px;
       border-top: 1px solid var(--border);
     }
     .btn {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 11px 20px;
-      border-radius: 5px;
+      padding: 11px 20px; border-radius: 5px;
       font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700;
-      font-size: 0.85rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
+      font-weight: 700; font-size: 0.85rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      text-decoration: none; cursor: pointer; border: none;
       transition: opacity 0.15s, transform 0.1s;
     }
     .btn:hover { opacity: 0.85; transform: translateY(-1px); }
@@ -333,13 +272,16 @@
       .meta-pills { justify-content: flex-start; }
       .hero-name { font-size: 1.8rem; }
       .field-grid { grid-template-columns: 1fr 1fr; }
+      .assessment-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
 <div class="topbar">
-  <span class="topbar-logo">Retro Fitness</span>
+  <div class="topbar-logo">
+    <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills">
+  </div>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">Intake Summary</span>
   <a href="index.html" class="back-btn">← Hub</a>
@@ -359,23 +301,19 @@
 <div id="app" class="container" style="display:none;"></div>
 
 <script>
-  // ── UPDATE THIS TO YOUR CORRECT APPS SCRIPT URL ──
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
   const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g/edit';
 
   function getParam(key) {
     return new URLSearchParams(window.location.search).get(key);
   }
-
   function val(v) {
     const s = String(v || '').trim();
     return s || null;
   }
-
   function display(v) {
     return val(v) || '<span class="empty">—</span>';
   }
-
   function outcomeClass(outcome) {
     if (!outcome) return 'outcome-default';
     const o = outcome.toLowerCase();
@@ -384,7 +322,6 @@
     if (o.includes('follow') || o.includes('maybe') || o.includes('think')) return 'outcome-followup';
     return 'outcome-default';
   }
-
   function outcomeIcon(outcome) {
     if (!outcome) return '●';
     const o = outcome.toLowerCase();
@@ -393,7 +330,6 @@
     if (o.includes('follow') || o.includes('maybe') || o.includes('think')) return '↻';
     return '●';
   }
-
   function formatDate(d) {
     if (!d) return null;
     const dt = new Date(d);
@@ -401,14 +337,8 @@
     return dt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   }
 
-  // Show full summary — no abbreviation
-  function abbreviateSummary(text) {
-    return text || null;
-  }
-
   function render(data) {
-    // Map exact column headers from your sheet
-    const name         = val(data['Name'])               || 'Unknown';
+    const name         = val(data['Name'])         || 'Unknown';
     const date         = val(data['Date']);
     const followUpDate = val(data['Follow-Up Date']);
     const advisor      = val(data['Advisor']);
@@ -423,13 +353,11 @@
     const frequency    = val(data['Frequency']);
     const notes        = val(data['Notes']);
     const fullSummary  = val(data['Assessment Summary']);
-    const shortSummary = abbreviateSummary(fullSummary);
 
     const rowNum   = getParam('row') || '';
     const sheetRow = rowNum ? `#gid=0&range=A${rowNum}` : '';
-
-    const oClass = outcomeClass(outcome);
-    const oIcon  = outcomeIcon(outcome);
+    const oClass   = outcomeClass(outcome);
+    const oIcon    = outcomeIcon(outcome);
 
     document.getElementById('app').innerHTML = `
 
@@ -441,16 +369,13 @@
             Initial Consultation · <span>${formatDate(date) || 'Unknown Date'}</span>
           </div>
           <div class="hero-contacts">
-            ${phone ? `<div class="hero-contact">📞 <b>${phone}</b></div>` : ''}
-            ${email ? `<div class="hero-contact">✉️ <b>${email}</b></div>` : ''}
+            ${phone   ? `<div class="hero-contact">📞 <b>${phone}</b></div>` : ''}
+            ${email   ? `<div class="hero-contact">✉️ <b>${email}</b></div>` : ''}
             ${advisor ? `<div class="hero-contact">👤 Advisor: <b>${advisor}</b></div>` : ''}
           </div>
         </div>
         <div class="hero-right">
-          ${outcome ? `
-            <div class="outcome-badge ${oClass}">
-              <span>${oIcon}</span> ${outcome}
-            </div>` : ''}
+          ${outcome ? `<div class="outcome-badge ${oClass}"><span>${oIcon}</span> ${outcome}</div>` : ''}
           <div class="meta-pills">
             ${gender ? `<span class="meta-pill"><b>${gender}</b></span>` : ''}
             ${age    ? `<span class="meta-pill">Age <b>${age}</b></span>` : ''}
@@ -501,7 +426,7 @@
         </div>
       </div>
 
-      <!-- OUTCOME / DECLINE -->
+      <!-- DECLINE REASON -->
       ${declineReason ? `
       <div class="section">
         <div class="section-hdr">
@@ -513,29 +438,27 @@
         </div>
       </div>` : ''}
 
-      <!-- NOTES -->
-      ${notes ? `
+      <!-- ASSESSMENT DETAILS (summary + notes side by side) -->
+      ${(fullSummary || notes) ? `
       <div class="section">
         <div class="section-hdr">
           <div class="section-dot"></div>
-          <div class="section-title">Coach Notes</div>
+          <div class="section-title">Assessment Details</div>
         </div>
         <div class="section-body">
-          <div class="notes-block">${notes}</div>
-        </div>
-      </div>` : ''}
-
-      <!-- ASSESSMENT SUMMARY (abbreviated) -->
-      ${shortSummary ? `
-      <div class="section">
-        <div class="section-hdr">
-          <div class="section-dot"></div>
-          <div class="section-title">Assessment Summary</div>
-        </div>
-        <div class="section-body">
-          <div class="ai-label">✦ AI Generated</div>
-          <div class="summary-block">${shortSummary}</div>
-
+          <div class="assessment-grid">
+            ${fullSummary ? `
+            <div>
+              <div class="assessment-col-title">✦ Assessment Summary</div>
+              <div class="ai-label">✦ AI Generated</div>
+              <div class="summary-block">${fullSummary}</div>
+            </div>` : '<div></div>'}
+            ${notes ? `
+            <div>
+              <div class="assessment-col-title">📝 Coach Notes</div>
+              <div class="notes-block">${notes}</div>
+            </div>` : ''}
+          </div>
         </div>
       </div>` : ''}
 
@@ -550,8 +473,6 @@
     document.getElementById('app').style.display = 'block';
   }
 
-
-
   async function load() {
     const row = getParam('row');
     if (!row) {
@@ -560,7 +481,6 @@
       document.getElementById('error').style.display = 'flex';
       return;
     }
-
     try {
       const res  = await fetch(`${APPS_SCRIPT_URL}?action=getIntakeByRow&row=${row}`);
       const json = await res.json();
