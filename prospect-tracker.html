@@ -315,9 +315,9 @@
 <div class="header">
   <div class="header-left">
     <button class="back-btn" onclick="window.location.href='index.html'">← Hub</button>
+    <img src="Retro_FH_Logo.jpg" alt="Retro Fitness" style="height:44px;width:auto;display:block;">
     <div>
       <div class="logo-text">PROSPECT TRACKER</div>
-      <div class="logo-sub">Retro Fitness of Fairless Hills</div>
     </div>
   </div>
   <div class="header-right">
@@ -504,7 +504,10 @@
     <div class="panel">
       <div class="panel-header">
         <span class="panel-title panel-title-purple">Booked Consultations</span>
-        <span id="bc-list-count" style="font-size:12px;color:var(--muted)">0</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="bc-list-count" style="font-size:12px;color:var(--muted)">0</span>
+          <button onclick="openNewBookingModal()" style="background:var(--purple);color:#fff;border:none;padding:6px 14px;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">+ New Booking</button>
+        </div>
       </div>
       <div class="search-bar">
         <input id="bc-search" placeholder="Search by name..." oninput="filterBC()">
@@ -742,6 +745,113 @@
     <div style="display:flex;gap:10px;justify-content:center;">
       <button onclick="closeModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
       <button id="modalConfirmBtn" style="background:#ff4444;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Delete</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Reason Modal (No-Show / Cancel) -->
+<div id="reasonModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:440px;width:90%;">
+    <div id="reason-modal-title" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#ff4444;margin-bottom:16px"></div>
+    <input type="hidden" id="reason-modal-status">
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Reason *</label>
+      <select id="reason-modal-select" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px"></select>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Additional Notes</label>
+      <textarea id="reason-modal-notes" rows="2" placeholder="Optional notes..." style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px;resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeReasonModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
+      <button onclick="confirmReasonModal()" style="background:#ff4444;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reschedule Modal -->
+<div id="rescheduleModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:440px;width:90%;">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#ffb830;margin-bottom:8px">♻️ Reschedule</div>
+    <div id="reschedule-name" style="font-size:15px;font-weight:600;color:#e8e8f0;margin-bottom:16px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">New Date *</label>
+        <input type="date" id="reschedule-date" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">New Time</label>
+        <input type="time" id="reschedule-time" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeRescheduleModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
+      <button onclick="confirmReschedule()" style="background:#ffb830;color:#000;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Reschedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Booking Modal (standalone — no prospect required) -->
+<div id="newBookingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#a855f7;margin-bottom:20px">📅 New Booked Consultation</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">First Name *</label>
+        <input id="nb-first" placeholder="First" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Last Name *</label>
+        <input id="nb-last" placeholder="Last" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Phone *</label>
+        <input id="nb-phone" placeholder="(215) 555-0000" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Email</label>
+        <input id="nb-email" placeholder="email@example.com" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Date Booked</label>
+        <input type="date" id="nb-date-booked" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">MEA Who Booked</label>
+        <input id="nb-mea" placeholder="MEA name" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Appointment Date *</label>
+        <input type="date" id="nb-appt-date" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Appointment Time</label>
+        <input type="time" id="nb-appt-time" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Advisor Assigned</label>
+      <select id="nb-advisor" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <option value="">— Select advisor —</option>
+        <option value="Ted">Ted</option>
+        <option value="Dani">Dani</option>
+      </select>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Notes</label>
+      <textarea id="nb-notes" rows="2" placeholder="Any notes about this booking..." style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px;resize:vertical"></textarea>
+    </div>
+    <div id="nb-status" style="margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button onclick="closeNewBookingModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
+      <button onclick="confirmNewBooking()" style="background:#a855f7;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Book It</button>
     </div>
   </div>
 </div>
@@ -1194,32 +1304,84 @@ function renderBCTouchpoints(id) {
   }).join('');
 }
 
-async function bcUpdateStatus(newStatus) {
+function bcUpdateStatus(newStatus) {
+  const b = bcBookings.find(x => x.id === selectedBCId);
+  if (!b) return;
+  if (newStatus === 'No-Show' || newStatus === 'Canceled') {
+    openReasonModal(newStatus);
+    return;
+  }
+  if (newStatus === 'Rescheduled') {
+    openRescheduleModal();
+    return;
+  }
+  applyBCStatus(newStatus, '');
+}
+
+function openReasonModal(statusType) {
+  const reasons = statusType === 'No-Show'
+    ? ['Did not show up','Could not reach','Forgot appointment','Emergency','Other']
+    : ['Cost — too expensive','Schedule conflict','Changed mind','Not ready to commit','Other'];
+  const modal = document.getElementById('reasonModal');
+  document.getElementById('reason-modal-title').textContent = statusType === 'No-Show' ? '❌ No-Show Reason' : '🚫 Cancel Reason';
+  document.getElementById('reason-modal-status').value = statusType;
+  const sel = document.getElementById('reason-modal-select');
+  sel.innerHTML = '<option value="">— Select reason —</option>' + reasons.map(r => '<option value="'+r+'">'+r+'</option>').join('');
+  modal.style.display = 'flex';
+}
+
+function closeReasonModal() { document.getElementById('reasonModal').style.display = 'none'; }
+
+async function confirmReasonModal() {
+  const status = document.getElementById('reason-modal-status').value;
+  const reason = document.getElementById('reason-modal-select').value;
+  const notes = document.getElementById('reason-modal-notes').value;
+  if (!reason) { alert('Please select a reason.'); return; }
+  closeReasonModal();
+  await applyBCStatus(status, reason + (notes ? ' — ' + notes : ''));
+}
+
+function openRescheduleModal() {
+  const b = bcBookings.find(x => x.id === selectedBCId);
+  if (!b) return;
+  document.getElementById('reschedule-name').textContent = b.name;
+  document.getElementById('reschedule-date').value = '';
+  document.getElementById('reschedule-time').value = b.apptTime || '';
+  document.getElementById('rescheduleModal').style.display = 'flex';
+}
+function closeRescheduleModal() { document.getElementById('rescheduleModal').style.display = 'none'; }
+
+async function confirmReschedule() {
+  const newDate = document.getElementById('reschedule-date').value;
+  const newTime = document.getElementById('reschedule-time').value;
+  if (!newDate) { alert('Please select a new date.'); return; }
+  const b = bcBookings.find(x => x.id === selectedBCId);
+  if (!b) return;
+  b.apptDate = newDate;
+  if (newTime) b.apptTime = newTime;
+  closeRescheduleModal();
+  await applyBCStatus('Rescheduled', 'Rescheduled to ' + newDate + (newTime ? ' @ ' + formatTime(newTime) : ''));
+}
+
+async function applyBCStatus(newStatus, reasonNote) {
   const b = bcBookings.find(x => x.id === selectedBCId);
   if (!b) return;
   const old = b.status;
   b.status = newStatus;
   if (!b.history) b.history = [];
-  b.history.push({ from: old, to: newStatus, date: new Date().toLocaleDateString('en-US') });
+  b.history.push({ from: old, to: newStatus, date: new Date().toLocaleDateString('en-US'), note: reasonNote });
   saveLocal();
 
-  // Update sheet via Apps Script
   try {
     await callAppsScript({ action: 'updateBookedConsultation', name: b.name, phone: b.phone, status: newStatus });
   } catch(e) { console.warn('Sheet update failed:', e); }
 
-  // If No-Show or Canceled → move to Follow-Ups
   if (newStatus === 'No-Show' || newStatus === 'Canceled') {
     const fuItem = {
-      id: genId(),
-      bcId: b.id,
-      name: b.name,
-      phone: b.phone,
-      email: b.email,
-      reason: newStatus,
+      id: genId(), bcId: b.id, name: b.name, phone: b.phone, email: b.email,
+      reason: newStatus + (reasonNote ? ': ' + reasonNote : ''),
       apptDateWas: b.apptDate + ' @ ' + formatTime(b.apptTime),
-      bookedBy: b.bookedBy,
-      status: 'Needs Rebook',
+      bookedBy: b.bookedBy, status: 'Needs Rebook',
       dateAdded: new Date().toLocaleDateString('en-US'),
       bcHistory: b.history || []
     };
@@ -1227,30 +1389,23 @@ async function bcUpdateStatus(newStatus) {
     saveLocal();
     try {
       await callAppsScript({
-        action: 'addBCFollowUp',
-        dateAdded: fuItem.dateAdded,
-        name: fuItem.name,
-        phone: fuItem.phone,
-        email: fuItem.email,
-        reason: fuItem.reason,
-        apptDateWas: fuItem.apptDateWas,
-        bookedBy: fuItem.bookedBy,
-        status: fuItem.status,
-        notes: ''
+        action: 'addBCFollowUp', dateAdded: fuItem.dateAdded,
+        name: fuItem.name, phone: fuItem.phone, email: fuItem.email,
+        reason: fuItem.reason, apptDateWas: fuItem.apptDateWas,
+        bookedBy: fuItem.bookedBy, status: fuItem.status, notes: ''
       });
     } catch(e) { console.warn('FU sheet write failed:', e); }
     updateTabCounts();
     alert(b.name + ' moved to BC Follow-Ups tab.');
   }
 
-  // If Show → open fitness-consultation-tool pre-filled
   if (newStatus === 'Show') {
     const params = new URLSearchParams({ name: b.name, phone: b.phone, email: b.email || '' });
     window.open('fitness-consultation-tool.html?' + params.toString(), '_blank');
   }
 
   renderBC(); renderCalendar(); updateTabCounts();
-  selectBC(selectedBCId); // refresh detail
+  selectBC(selectedBCId);
 }
 
 async function addBCTouchpoint() {
@@ -1529,6 +1684,75 @@ async function doDeleteFU() {
   try {
     await callAppsScript({ action: 'deleteBCFollowUp', name: f.name, phone: f.phone });
   } catch(e) { console.warn('Sheet delete failed:', e); }
+}
+
+
+// ══════════════════════════════════════════════════
+// NEW BOOKING MODAL (standalone)
+// ══════════════════════════════════════════════════
+function openNewBookingModal() {
+  document.getElementById('nb-first').value = '';
+  document.getElementById('nb-last').value = '';
+  document.getElementById('nb-phone').value = '';
+  document.getElementById('nb-email').value = '';
+  document.getElementById('nb-date-booked').value = new Date().toISOString().split('T')[0];
+  document.getElementById('nb-appt-date').value = '';
+  document.getElementById('nb-appt-time').value = '';
+  document.getElementById('nb-mea').value = '';
+  document.getElementById('nb-advisor').value = '';
+  document.getElementById('nb-notes').value = '';
+  document.getElementById('nb-status').textContent = '';
+  document.getElementById('newBookingModal').style.display = 'flex';
+}
+function closeNewBookingModal() { document.getElementById('newBookingModal').style.display = 'none'; }
+
+async function confirmNewBooking() {
+  const first = document.getElementById('nb-first').value.trim();
+  const last = document.getElementById('nb-last').value.trim();
+  const phone = document.getElementById('nb-phone').value.trim();
+  const apptDate = document.getElementById('nb-appt-date').value;
+  if (!first || !last || !phone) { document.getElementById('nb-status').textContent = 'Name and phone are required.'; return; }
+  if (!apptDate) { document.getElementById('nb-status').textContent = 'Appointment date is required.'; return; }
+
+  const booking = {
+    id: genId(),
+    name: first + ' ' + last,
+    phone,
+    email: document.getElementById('nb-email').value.trim(),
+    apptDate,
+    apptTime: document.getElementById('nb-appt-time').value,
+    bookedBy: document.getElementById('nb-mea').value.trim(),
+    advisor: document.getElementById('nb-advisor').value,
+    status: 'Booked',
+    notes: document.getElementById('nb-notes').value.trim(),
+    dateBooked: document.getElementById('nb-date-booked').value || new Date().toLocaleDateString('en-US'),
+    originalProspectDate: '',
+    history: []
+  };
+
+  bcBookings.unshift(booking);
+  saveLocal();
+  closeNewBookingModal();
+
+  try {
+    await callAppsScript({
+      action: 'addBookedConsultation',
+      dateBooked: booking.dateBooked,
+      name: booking.name,
+      phone: booking.phone,
+      email: booking.email,
+      apptDate: booking.apptDate,
+      apptTime: booking.apptTime,
+      bookedBy: booking.bookedBy + (booking.advisor ? ' → ' + booking.advisor : ''),
+      status: booking.status,
+      notes: booking.notes,
+      originalProspectDate: ''
+    });
+  } catch(e) { console.warn('Sheet write failed:', e); }
+
+  updateTabCounts();
+  renderBC();
+  renderCalendar();
 }
 
 // ══════════════════════════════════════════════════
