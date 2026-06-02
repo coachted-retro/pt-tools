@@ -1941,7 +1941,20 @@ async function finalizeAccept() {
       headers: {'Content-Type': 'text/plain'},
       body: JSON.stringify({
         tab: 'Active Clients',
-        row: [gv('name'), gv('phone'), gv('email'), gv('gender'), gv('age'), selectedFreq, selectedLength, gv('consult-date'), gv('advisor-name') || getCfg('advisor')],
+        row: [
+          gv('consult-date'),                              // A: Start Date
+          gv('name'),                                      // B: Name
+          gv('email'),                                     // C: Email
+          gv('phone'),                                     // D: Phone
+          gv('gender'),                                    // E: Gender
+          gv('age'),                                       // F: Age
+          gv('goals'),                                     // G: Goal
+          selectedLength,                                  // H: Program
+          selectedFreq,                                    // I: Frequency
+          gv('advisor-name') || getCfg('advisor'),         // J: Advisor
+          (function(){ var d = new Date((gv('consult-date')||new Date().toISOString().split('T')[0])+'T12:00:00'); d.setMonth(d.getMonth()+1); return d.toISOString().split('T')[0]; })(), // K: Next Check-In
+          assessmentText ? assessmentText.substring(0,500) : ''  // L: Assessment Summary
+        ],
         sheetId: '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs'
       })
     });
