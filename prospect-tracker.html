@@ -507,6 +507,7 @@
         <span class="panel-title panel-title-purple">Booked Consultations</span>
         <div style="display:flex;gap:8px;align-items:center">
           <span id="bc-list-count" style="font-size:12px;color:var(--muted)">0</span>
+          <button onclick="syncBCToSheet()" id="sync-btn" style="background:none;border:1px solid var(--accent);color:var(--accent);padding:6px 12px;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;cursor:pointer;">↑ Sync Sheet</button>
           <button onclick="openNewBookingModal()" style="background:var(--purple);color:#fff;border:none;padding:6px 14px;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">+ New Booking</button>
         </div>
       </div>
@@ -1271,6 +1272,7 @@ async function confirmBook() {
       apptDate: booking.apptDate,
       apptTime: booking.apptTime,
       bookedBy: booking.bookedBy,
+      advisor: booking.advisor || '',
       status: booking.status,
       notes: booking.notes,
       originalProspectDate: booking.originalProspectDate
@@ -1751,6 +1753,55 @@ async function doDeleteFU() {
 
 
 
+
+
+// ══════════════════════════════════════════════════
+// SYNC BC TO SHEET
+// ══════════════════════════════════════════════════
+async function syncBCToSheet() {
+  const btn = document.getElementById('sync-btn');
+  btn.textContent = '↑ Syncing...';
+  btn.disabled = true;
+  let count = 0;
+  for (const b of bcBookings) {
+    try {
+      await callAppsScript({
+        action: 'addBookedConsultation',
+        dateBooked: b.dateBooked || '',
+        name: b.name || '',
+        phone: b.phone || '',
+        email: b.email || '',
+        apptDate: b.apptDate || '',
+        apptTime: b.apptTime || '',
+        bookedBy: b.bookedBy || '',
+        advisor: b.advisor || '',
+        status: b.status || 'Booked',
+        notes: b.notes || '',
+        originalProspectDate: b.originalProspectDate || ''
+      });
+      count++;
+    } catch(e) { console.warn('Sync failed for', b.name, e); }
+  }
+  for (const f of fuItems) {
+    try {
+      await callAppsScript({
+        action: 'addBCFollowUp',
+        dateAdded: f.dateAdded || '',
+        name: f.name || '',
+        phone: f.phone || '',
+        email: f.email || '',
+        reason: f.reason || '',
+        apptDateWas: f.apptDateWas || '',
+        bookedBy: f.bookedBy || '',
+        status: f.status || '',
+        notes: ''
+      });
+    } catch(e) { console.warn('FU sync failed for', f.name, e); }
+  }
+  btn.textContent = '✅ Synced ' + count;
+  btn.disabled = false;
+  setTimeout(() => { btn.textContent = '↑ Sync Sheet'; }, 3000);
+}
 
 // ══════════════════════════════════════════════════
 // DIAGNOSTIC
