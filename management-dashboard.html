@@ -915,7 +915,7 @@ Provide a SHORT, specific analysis with these exact sections:
 Keep each bullet to 1-2 sentences max. Be specific to their numbers, not generic advice.`;
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
