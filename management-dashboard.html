@@ -478,15 +478,11 @@ async function loadProspects() {
 async function loadBC() {
   try {
     const res = await fetch(`${APPS_SCRIPT}?action=getBookedConsultations`);
-    const raw = await res.text();
-    console.log('BC raw response:', raw.substring(0, 500));
-    let data;
-    try { data = JSON.parse(raw); } catch(e) { console.error('BC JSON parse error:', e); allBC = []; return; }
-    console.log('BC data keys:', Object.keys(data), 'rows:', data.rows ? data.rows.length : 'none');
+    const data = await res.json();
+    // rows[0] is headers, rest are data rows
     const rows = data.rows || [];
-    if (rows.length < 2) { console.warn('BC: not enough rows', rows.length); allBC = []; return; }
-    const headers = rows[0].map(h => String(h).trim());
-    console.log('BC headers:', headers);
+    if (rows.length < 2) { allBC = []; return; }
+    const headers = rows[0];
     allBC = rows.slice(1)
       .filter(r => r.some(c => c !== ''))
       .map(r => {
@@ -494,20 +490,16 @@ async function loadBC() {
         headers.forEach((h, i) => { obj[h] = r[i]; });
         return obj;
       });
-    console.log('BC loaded:', allBC.length, 'bookings', allBC[0]);
-  } catch(e) { console.error('loadBC error:', e); allBC = []; }
+  } catch(e) { allBC = []; }
 }
 
 async function loadFU() {
   try {
     const res = await fetch(`${APPS_SCRIPT}?action=getBCFollowUps`);
-    const raw = await res.text();
-    console.log('FU raw response:', raw.substring(0, 300));
-    let data;
-    try { data = JSON.parse(raw); } catch(e) { allFU = []; return; }
+    const data = await res.json();
     const rows = data.rows || [];
     if (rows.length < 2) { allFU = []; return; }
-    const headers = rows[0].map(h => String(h).trim());
+    const headers = rows[0];
     allFU = rows.slice(1)
       .filter(r => r.some(c => c !== ''))
       .map(r => {
@@ -515,7 +507,6 @@ async function loadFU() {
         headers.forEach((h, i) => { obj[h] = r[i]; });
         return obj;
       });
-    console.log('FU loaded:', allFU.length);
   } catch(e) { allFU = []; }
 }
 
@@ -558,7 +549,7 @@ function renderDashboard() {
   const convRate = intakes.length > 0 ? Math.round((accepted.length / intakes.length) * 100) : 0;
 
   // BC stats
-  const upcoming = allBC.filter(b => b.Status === 'Booked' || b.Status === 'Confirmed');
+  const upcoming = allBC.filter(b => b['Status'] === 'Booked' || b['Status'] === 'Confirmed' || b.Status === 'Booked' || b.Status === 'Confirmed');
   const fuNeeded = allFU.filter(f => f.Status !== 'Rebooked');
 
   // KPIs
@@ -567,7 +558,13 @@ function renderDashboard() {
   document.getElementById('kpiConversionSub').textContent = `${accepted.length} accepted / ${intakes.length} total`;
   document.getElementById('kpiSignups').textContent = accepted.length;
   document.getElementById('kpiDeclines').textContent = declined.length;
-  document.getElementById('kpiBooked').textContent = upcoming.length;
+  // BC stats using bracket notation for sheet-sourced data
+  const bcTotal = allBC.length;
+  const bcConfirmed = allBC.filter(b => (b['Status']||b.Status||'') === 'Confirmed').length;
+  const bcShowed = allBC.filter(b => (b['Status']||b.Status||'') === 'Show').length;
+  const bcNoShow = allBC.filter(b => ['No-Show','Canceled'].includes(b['Status']||b.Status||'')).length;
+  document.getElementById('kpiBooked').textContent = bcTotal;
+  document.getElementById('kpiBookedSub').textContent = bcConfirmed + ' confirmed';
   document.getElementById('kpiBookedSub').textContent = `${allBC.filter(b=>b.Status==='Confirmed').length} confirmed`;
   document.getElementById('kpiHot').textContent = allProspects.filter(p => p.Interest === 'Hot').length;
   document.getElementById('kpiPipeline').textContent = allProspects.length;
@@ -590,14 +587,19 @@ function advisorStats(advisor) {
   const name = advisor.toLowerCase();
   const filtered = name === 'both'
     ? allBC
-    : allBC.filter(b => (b['Booked By']||'').toLowerCase().includes(name));
+    : allBC.filter(b => {
+        const adv = (b['Advisor']||b['advisor']||'').toLowerCase();
+        const by = (b['Booked By']||b['bookedBy']||'').toLowerCase();
+        return adv === name || adv.includes(name) || by.includes(name);
+      });
+  const st = b => (b['Status'] || b.Status || '');
   return {
-    booked:      filtered.filter(b => b.Status === 'Booked').length,
-    confirmed:   filtered.filter(b => b.Status === 'Confirmed').length,
-    show:        filtered.filter(b => b.Status === 'Show').length,
-    noshow:      filtered.filter(b => b.Status === 'No-Show').length,
-    canceled:    filtered.filter(b => b.Status === 'Canceled').length,
-    rescheduled: filtered.filter(b => b.Status === 'Rescheduled').length,
+    booked:      filtered.filter(b => st(b) === 'Booked').length,
+    confirmed:   filtered.filter(b => st(b) === 'Confirmed').length,
+    show:        filtered.filter(b => st(b) === 'Show').length,
+    noshow:      filtered.filter(b => st(b) === 'No-Show').length,
+    canceled:    filtered.filter(b => st(b) === 'Canceled').length,
+    rescheduled: filtered.filter(b => st(b) === 'Rescheduled').length,
   };
 }
 
@@ -626,7 +628,7 @@ function filterAppts(btn, filter) {
   apptFilter = filter;
   document.querySelectorAll('.appt-filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const upcoming = allBC.filter(b => b.Status === 'Booked' || b.Status === 'Confirmed');
+  const upcoming = allBC.filter(b => b['Status'] === 'Booked' || b['Status'] === 'Confirmed' || b.Status === 'Booked' || b.Status === 'Confirmed');
   renderUpcomingAppts(upcoming);
 }
 
