@@ -479,12 +479,14 @@ async function loadBC() {
   try {
     const res = await fetch(`${APPS_SCRIPT}?action=getBookedConsultations`);
     const raw = await res.text();
+    console.log('BC raw response:', raw.substring(0, 500));
     let data;
-    try { data = JSON.parse(raw); } catch(e) { console.warn('BC parse error:', raw.substring(0,200)); allBC = []; return; }
+    try { data = JSON.parse(raw); } catch(e) { console.error('BC JSON parse error:', e); allBC = []; return; }
+    console.log('BC data keys:', Object.keys(data), 'rows:', data.rows ? data.rows.length : 'none');
     const rows = data.rows || [];
-    console.log('BC rows from sheet:', rows.length);
-    if (rows.length < 2) { allBC = []; return; }
+    if (rows.length < 2) { console.warn('BC: not enough rows', rows.length); allBC = []; return; }
     const headers = rows[0].map(h => String(h).trim());
+    console.log('BC headers:', headers);
     allBC = rows.slice(1)
       .filter(r => r.some(c => c !== ''))
       .map(r => {
@@ -492,7 +494,7 @@ async function loadBC() {
         headers.forEach((h, i) => { obj[h] = r[i]; });
         return obj;
       });
-    console.log('Loaded BC bookings:', allBC.length, allBC[0] ? Object.keys(allBC[0]) : 'none');
+    console.log('BC loaded:', allBC.length, 'bookings', allBC[0]);
   } catch(e) { console.error('loadBC error:', e); allBC = []; }
 }
 
@@ -500,6 +502,7 @@ async function loadFU() {
   try {
     const res = await fetch(`${APPS_SCRIPT}?action=getBCFollowUps`);
     const raw = await res.text();
+    console.log('FU raw response:', raw.substring(0, 300));
     let data;
     try { data = JSON.parse(raw); } catch(e) { allFU = []; return; }
     const rows = data.rows || [];
@@ -512,6 +515,7 @@ async function loadFU() {
         headers.forEach((h, i) => { obj[h] = r[i]; });
         return obj;
       });
+    console.log('FU loaded:', allFU.length);
   } catch(e) { allFU = []; }
 }
 
@@ -586,12 +590,7 @@ function advisorStats(advisor) {
   const name = advisor.toLowerCase();
   const filtered = name === 'both'
     ? allBC
-    : allBC.filter(b => {
-        const bookedBy = (b['Booked By'] || b['bookedBy'] || '').toLowerCase();
-        const advisorField = (b['Advisor'] || b['advisor'] || '').toLowerCase();
-        // Match "→ ted", "ted", "assigned to ted", field contains advisor name
-        return bookedBy.includes(name) || advisorField.includes(name);
-      });
+    : allBC.filter(b => (b['Booked By']||'').toLowerCase().includes(name));
   return {
     booked:      filtered.filter(b => b.Status === 'Booked').length,
     confirmed:   filtered.filter(b => b.Status === 'Confirmed').length,
@@ -636,9 +635,8 @@ function renderUpcomingAppts(upcoming) {
   const el = document.getElementById('upcomingAppts');
   // Apply advisor filter
   let filtered = upcoming;
-  const matchAdv = (b,n) => { const by=(b['Booked By']||b['bookedBy']||'').toLowerCase(); const adv=(b['Advisor']||b['advisor']||'').toLowerCase(); return by.includes(n)||adv.includes(n); };
-  if (apptFilter === 'ted') filtered = upcoming.filter(b => matchAdv(b,'ted'));
-  else if (apptFilter === 'dani') filtered = upcoming.filter(b => matchAdv(b,'dani'));
+  if (apptFilter === 'ted') filtered = upcoming.filter(b => (b['Booked By']||'').toLowerCase().includes('ted'));
+  else if (apptFilter === 'dani') filtered = upcoming.filter(b => (b['Booked By']||'').toLowerCase().includes('dani'));
   if (!filtered.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div>No upcoming appointments' + (apptFilter !== 'all' ? ' for ' + apptFilter.charAt(0).toUpperCase() + apptFilter.slice(1) : '') + '</div></div>';
     return;
