@@ -555,6 +555,7 @@
               <button class="btn-danger" id="bc-btn-noshow" onclick="bcUpdateStatus('No-Show')" style="display:none">❌ No-Show</button>
               <button class="btn-warm" id="bc-btn-cancel" onclick="bcUpdateStatus('Canceled')" style="display:none">🚫 Cancel</button>
               <button class="btn-warn" id="bc-btn-reschedule" onclick="bcUpdateStatus('Rescheduled')" style="display:none;background:none;border:1px solid var(--warm-c);color:var(--warm-c);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px">♻️ Reschedule</button>
+              <button id="bc-btn-reset" onclick="bcUpdateStatus('Booked')" style="display:none;background:none;border:1px solid var(--accent);color:var(--accent);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px">↩ Reset to Booked</button>
               <button onclick="openEditBookingModal()" style="background:none;border:1px solid #4488ff;color:#4488ff;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px">✏️ Edit</button>
               <button class="btn-danger" onclick="confirmDeleteBC()">🗑</button>
             </div>
@@ -1351,6 +1352,7 @@ function selectBC(id) {
   document.getElementById('bc-btn-cancel').style.display = isActive ? 'block' : 'none';
   document.getElementById('bc-btn-reschedule').style.display = isActive ? 'block' : 'none';
 
+  document.getElementById('bc-btn-reset').style.display = b.status==='Rescheduled' ? 'block' : 'none';
   document.getElementById('bc-tp-date').value = new Date().toISOString().split('T')[0];
   renderBCTouchpoints(id);
   renderBC(document.getElementById('bc-search').value);
