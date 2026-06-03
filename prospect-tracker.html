@@ -968,21 +968,22 @@ async function syncFromSheet() {
     const bcResp = await fetch(APPS_SCRIPT + '?action=getBookedConsultations');
     const bcData = await bcResp.json();
     if (bcData.rows && Array.isArray(bcData.rows) && bcData.rows.length > 1) {
-      const headers = bcData.rows[0];
       const sheetBC = bcData.rows.slice(1)
-        .filter(r => r[1]) // must have a name
+        .filter(r => r[1])
         .map(r => {
           const key = (String(r[1]) + String(r[2])).toLowerCase().replace(/\D/g,'');
           const existing = bcBookings.find(b =>
             (b.name + b.phone).toLowerCase().replace(/\D/g,'') === key
           );
           if (existing) return existing;
+          const rawDate = String(r[4] || '');
+          const apptDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
           return {
             id: genId(),
             name: String(r[1] || ''),
             phone: String(r[2] || ''),
             email: String(r[3] || ''),
-            apptDate: String(r[4] || ''),
+            apptDate,
             apptTime: String(r[5] || ''),
             bookedBy: String(r[6] || ''),
             advisor: String(r[7] || ''),
