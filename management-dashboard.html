@@ -588,9 +588,8 @@ function advisorStats(advisor) {
   const filtered = name === 'both'
     ? allBC
     : allBC.filter(b => {
-        const adv = (b['Advisor']||b['advisor']||'').toLowerCase();
-        const by = (b['Booked By']||b['bookedBy']||'').toLowerCase();
-        return adv === name || adv.includes(name) || by.includes(name);
+        const adv = (b['Advisor']||b['advisor']||'').toLowerCase().trim();
+        return adv === name || adv.includes(name);
       });
   const st = b => (b['Status'] || b.Status || '');
   return {
@@ -637,8 +636,9 @@ function renderUpcomingAppts(upcoming) {
   const el = document.getElementById('upcomingAppts');
   // Apply advisor filter
   let filtered = upcoming;
-  if (apptFilter === 'ted') filtered = upcoming.filter(b => (b['Booked By']||'').toLowerCase().includes('ted'));
-  else if (apptFilter === 'dani') filtered = upcoming.filter(b => (b['Booked By']||'').toLowerCase().includes('dani'));
+  const matchAdv = (b,n) => { const adv=(b['Advisor']||b['advisor']||'').toLowerCase().trim(); return adv===n||adv.includes(n); };
+  if (apptFilter === 'ted') filtered = upcoming.filter(b => matchAdv(b,'ted'));
+  else if (apptFilter === 'dani') filtered = upcoming.filter(b => matchAdv(b,'dani'));
   if (!filtered.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div>No upcoming appointments' + (apptFilter !== 'all' ? ' for ' + apptFilter.charAt(0).toUpperCase() + apptFilter.slice(1) : '') + '</div></div>';
     return;
