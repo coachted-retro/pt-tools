@@ -91,7 +91,7 @@
   .tab-btn:hover { color: var(--text); }
   .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
   .tab-btn.tab-bc.active { color: var(--purple); border-bottom-color: var(--purple); }
-  .tab-btn.tab-fu.active { color: var(--warm-c); border-bottom-color: var(--warm-c); }
+
   .tab-count {
     display: inline-block; background: var(--surface2); border: 1px solid var(--border);
     color: var(--muted); font-size: 10px; padding: 1px 6px; border-radius: 10px;
@@ -122,7 +122,6 @@
   .stat-booked .stat-num { color: var(--purple); }
   .stat-showed .stat-num { color: var(--accent); }
   .stat-noshow .stat-num { color: var(--hot); }
-  .stat-fu .stat-num { color: var(--warm-c); }
 
   /* MAIN GRID */
   .main-grid { display: grid; grid-template-columns: 380px 1fr; gap: 20px; }
@@ -294,15 +293,6 @@
   .cal-event.ev-noshow { background: rgba(255,68,68,.2); color: var(--hot); }
   .cal-event.ev-canceled { background: rgba(107,107,133,.2); color: var(--muted); }
 
-  /* Follow-Up tab list */
-  .fu-item {
-    border-bottom: 1px solid var(--border); padding: 14px 20px; cursor: pointer;
-    transition: background .15s; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start;
-  }
-  .fu-item:hover { background: var(--surface2); }
-  .fu-item.active { background: rgba(255,184,48,.07); border-left: 3px solid var(--warm-c); }
-  .fu-reason { font-size: 11px; color: var(--accent2); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-
   @media (max-width: 900px) {
     .main-grid { grid-template-columns: 1fr; }
     .bc-grid { grid-template-columns: 1fr; }
@@ -333,9 +323,6 @@
   </button>
   <button class="tab-btn tab-bc" onclick="switchTab('bc')">
     📅 Booked Consultations <span class="tab-count" id="tc-bc">0</span>
-  </button>
-  <button class="tab-btn tab-fu" onclick="switchTab('fu')">
-    🔁 BC Follow-Ups <span class="tab-count" id="tc-fu">0</span>
   </button>
 </div>
 
@@ -601,91 +588,6 @@
 </div>
 </div><!-- end tab-bc -->
 
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- TAB 3: BC FOLLOW-UPS -->
-<!-- ═══════════════════════════════════════════════════════════════ -->
-<div id="tab-fu" class="tab-panel">
-<div class="container">
-  <!-- FU Stats -->
-  <div class="stats-bar">
-    <div class="stat-card stat-fu"><div class="stat-num" id="fu-stat-total">0</div><div class="stat-label">Total Follow-Ups</div></div>
-    <div class="stat-card stat-noshow"><div class="stat-num" id="fu-stat-noshow">0</div><div class="stat-label">No-Shows</div></div>
-    <div class="stat-card stat-fu"><div class="stat-num" id="fu-stat-canceled">0</div><div class="stat-label">Canceled</div></div>
-    <div class="stat-card stat-showed"><div class="stat-num" id="fu-stat-rebooked">0</div><div class="stat-label">Re-Booked</div></div>
-  </div>
-
-  <div class="main-grid">
-    <!-- LEFT: FU List -->
-    <div class="panel">
-      <div class="panel-header">
-        <span class="panel-title panel-title-warm">BC Follow-Ups</span>
-        <span id="fu-list-count" style="font-size:12px;color:var(--muted)">0</span>
-      </div>
-      <div class="search-bar">
-        <input id="fu-search" placeholder="Search by name..." oninput="filterFU()">
-      </div>
-      <div class="bc-list" id="fu-list">
-        <div class="empty-state"><div class="empty-icon">🔁</div><div>No follow-ups needed</div></div>
-      </div>
-    </div>
-
-    <!-- RIGHT: FU Detail -->
-    <div class="panel">
-      <div id="fu-empty-detail" class="empty-state" style="height:400px">
-        <div class="empty-icon">👆</div>
-        <div>Select a follow-up to view details</div>
-      </div>
-      <div id="fu-detail-view" style="display:none">
-        <div class="detail-header">
-          <div>
-            <div class="detail-name" id="fu-d-name"></div>
-            <div class="detail-meta" id="fu-d-meta"></div>
-          </div>
-          <div class="detail-actions">
-            <span class="status-badge" id="fu-d-badge"></span>
-            <button class="btn-purple" onclick="reBookFromFU()">📅 Re-Book</button>
-            <button class="btn-danger" onclick="confirmDeleteFU()">🗑</button>
-          </div>
-        </div>
-        <div class="info-grid">
-          <div class="info-item"><label>Phone</label><div class="info-value" id="fu-d-phone"></div></div>
-          <div class="info-item"><label>Email</label><div class="info-value" id="fu-d-email"></div></div>
-          <div class="info-item"><label>Reason</label><div class="info-value" id="fu-d-reason"></div></div>
-          <div class="info-item"><label>Was Scheduled</label><div class="info-value" id="fu-d-apptdate"></div></div>
-          <div class="info-item"><label>Booked By</label><div class="info-value" id="fu-d-bookedby"></div></div>
-          <div class="info-item"><label>Added to FU</label><div class="info-value" id="fu-d-dateadded"></div></div>
-        </div>
-        <div class="touchpoint-section">
-          <h3>Follow-Up Log</h3>
-          <div class="add-touchpoint">
-            <div class="tp-row">
-              <div><label>Date</label><input type="date" id="fu-tp-date"></div>
-              <div>
-                <label>Outcome</label>
-                <select id="fu-tp-outcome">
-                  <option value="Called">Called</option>
-                  <option value="Texted">Texted</option>
-                  <option value="LeftMessage">Left Message</option>
-                  <option value="Interested">Interested in Rebooking</option>
-                  <option value="NotInterested">Not Interested</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div style="padding-top:18px"><button class="btn-add-tp" onclick="addFUTouchpoint()" style="background:var(--warm-c);color:#000">+ Log</button></div>
-            </div>
-            <div class="form-row">
-              <div><label>Your Name</label><input id="fu-tp-advisor" placeholder="Advisor name"></div>
-            </div>
-            <div><label>Notes</label><textarea id="fu-tp-notes" placeholder="What happened?" rows="2"></textarea></div>
-            <div class="status-msg" id="fu-tp-status"></div>
-          </div>
-          <div class="tp-history" id="fu-tp-history"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-</div><!-- end tab-fu -->
 
 <!-- ═══════════════════ MODALS ═══════════════════ -->
 
@@ -708,25 +610,6 @@
   </div>
 </div>
 
-<!-- Re-Book from FU Modal -->
-<div id="rebookModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:480px;width:90%;">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--purple);margin-bottom:20px">🔁 Re-Book Consultation</div>
-    <div id="rebook-name" style="font-size:16px;font-weight:600;margin-bottom:8px;color:var(--text)"></div>
-    <div id="rebook-history-note" style="font-size:12px;color:var(--warm-c);margin-bottom:16px"></div>
-    <div class="form-row" style="margin-bottom:12px">
-      <div class="form-group"><label>New Appointment Date *</label><input type="date" id="rebook-date"></div>
-      <div class="form-group"><label>New Appointment Time *</label><input type="time" id="rebook-time"></div>
-    </div>
-    <div class="form-group"><label>Booked By *</label><input id="rebook-advisor" placeholder="Your name"></div>
-    <div class="form-group"><label>Notes</label><textarea id="rebook-notes" placeholder="Notes about re-booking..." rows="2"></textarea></div>
-    <div class="status-msg" id="rebook-status"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
-      <button onclick="closeRebookModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
-      <button onclick="confirmRebook()" style="background:var(--purple);color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Re-Book</button>
-    </div>
-  </div>
-</div>
 
 <!-- Duplicate Warning Modal -->
 <div id="dupModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;">
@@ -934,7 +817,6 @@ const SHEET_LINK = 'https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXg
 const PROSPECT_TAB = 'Prospects';
 const TOUCHPOINT_TAB = 'Touchpoints';
 const BC_TAB = 'Booked Consultations';
-const FU_TAB = 'BC Follow-Ups';
 
 // ══════════════════════════════════════════════════
 // STATE
@@ -948,9 +830,6 @@ let bcBookings = [];          // Booked Consultations
 let bcTouchpoints = [];       // touchpoints keyed to bcId
 let selectedBCId = null;
 
-let fuItems = [];             // BC Follow-Ups
-let fuTouchpoints = [];       // touchpoints keyed to fuId
-let selectedFUId = null;
 
 let calYear, calMonth;
 
@@ -961,10 +840,9 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  const idx = ['prospects','bc','fu'].indexOf(tab);
+  const idx = ['prospects','bc'].indexOf(tab);
   document.querySelectorAll('.tab-btn')[idx].classList.add('active');
   if (tab === 'bc') { renderBC(); renderCalendar(); }
-  if (tab === 'fu') renderFU();
 }
 
 // ══════════════════════════════════════════════════
@@ -1086,6 +964,42 @@ async function syncFromSheet() {
       touchpoints = [...touchpoints, ...newTPs];
     }
 
+    // --- Booked Consultations ---
+    const bcResp = await fetch(APPS_SCRIPT + '?action=getBookedConsultations');
+    const bcData = await bcResp.json();
+    if (bcData.rows && Array.isArray(bcData.rows) && bcData.rows.length > 1) {
+      const headers = bcData.rows[0];
+      const sheetBC = bcData.rows.slice(1)
+        .filter(r => r[1]) // must have a name
+        .map(r => {
+          const key = (String(r[1]) + String(r[2])).toLowerCase().replace(/\D/g,'');
+          const existing = bcBookings.find(b =>
+            (b.name + b.phone).toLowerCase().replace(/\D/g,'') === key
+          );
+          if (existing) return existing;
+          return {
+            id: genId(),
+            name: String(r[1] || ''),
+            phone: String(r[2] || ''),
+            email: String(r[3] || ''),
+            apptDate: String(r[4] || ''),
+            apptTime: String(r[5] || ''),
+            bookedBy: String(r[6] || ''),
+            advisor: String(r[7] || ''),
+            status: String(r[8] || 'Booked'),
+            notes: String(r[9] || ''),
+            dateBooked: String(r[0] || ''),
+            originalProspectDate: String(r[10] || ''),
+            history: []
+          };
+        });
+      const sheetBCKeys = sheetBC.map(b => (b.name + b.phone).toLowerCase().replace(/\D/g,''));
+      const localOnlyBC = bcBookings.filter(b =>
+        !sheetBCKeys.includes((b.name + b.phone).toLowerCase().replace(/\D/g,''))
+      );
+      bcBookings = [...sheetBC, ...localOnlyBC];
+    }
+
     saveLocal();
     renderList(); updateStats(); updateTabCounts();
     if (indicator) { indicator.textContent = '✓ Synced'; setTimeout(() => { indicator.style.display = 'none'; }, 2500); }
@@ -1103,8 +1017,6 @@ function saveLocal() {
   localStorage.setItem('pt_touchpoints', JSON.stringify(touchpoints));
   localStorage.setItem('pt_bc', JSON.stringify(bcBookings));
   localStorage.setItem('pt_bc_tp', JSON.stringify(bcTouchpoints));
-  localStorage.setItem('pt_fu', JSON.stringify(fuItems));
-  localStorage.setItem('pt_fu_tp', JSON.stringify(fuTouchpoints));
 }
 
 function loadLocal() {
@@ -1112,8 +1024,6 @@ function loadLocal() {
   try { touchpoints = JSON.parse(localStorage.getItem('pt_touchpoints') || '[]'); } catch(e) { touchpoints = []; }
   try { bcBookings = JSON.parse(localStorage.getItem('pt_bc') || '[]'); } catch(e) { bcBookings = []; }
   try { bcTouchpoints = JSON.parse(localStorage.getItem('pt_bc_tp') || '[]'); } catch(e) { bcTouchpoints = []; }
-  try { fuItems = JSON.parse(localStorage.getItem('pt_fu') || '[]'); } catch(e) { fuItems = []; }
-  try { fuTouchpoints = JSON.parse(localStorage.getItem('pt_fu_tp') || '[]'); } catch(e) { fuTouchpoints = []; }
 }
 
 // ══════════════════════════════════════════════════
@@ -1122,7 +1032,6 @@ function loadLocal() {
 function updateTabCounts() {
   document.getElementById('tc-prospects').textContent = prospects.length;
   document.getElementById('tc-bc').textContent = bcBookings.length;
-  document.getElementById('tc-fu').textContent = fuItems.length;
 }
 
 // ══════════════════════════════════════════════════
@@ -1527,29 +1436,6 @@ async function applyBCStatus(newStatus, reasonNote) {
     await callAppsScript({ action: 'updateBookedConsultation', name: b.name, phone: b.phone, status: newStatus });
   } catch(e) { console.warn('Sheet update failed:', e); }
 
-  if (newStatus === 'No-Show' || newStatus === 'Canceled') {
-    const fuItem = {
-      id: genId(), bcId: b.id, name: b.name, phone: b.phone, email: b.email,
-      reason: newStatus + (reasonNote ? ': ' + reasonNote : ''),
-      apptDateWas: b.apptDate + ' @ ' + formatTime(b.apptTime),
-      bookedBy: b.bookedBy, status: 'Needs Rebook',
-      dateAdded: new Date().toLocaleDateString('en-US'),
-      bcHistory: b.history || []
-    };
-    fuItems.unshift(fuItem);
-    saveLocal();
-    try {
-      await callAppsScript({
-        action: 'addBCFollowUp', dateAdded: fuItem.dateAdded,
-        name: fuItem.name, phone: fuItem.phone, email: fuItem.email,
-        reason: fuItem.reason, apptDateWas: fuItem.apptDateWas,
-        bookedBy: fuItem.bookedBy, status: fuItem.status, notes: ''
-      });
-    } catch(e) { console.warn('FU sheet write failed:', e); }
-    updateTabCounts();
-    alert(b.name + ' moved to BC Follow-Ups tab.');
-  }
-
   if (newStatus === 'Show') {
     const params = new URLSearchParams({ name: b.name, phone: b.phone, email: b.email || '' });
     window.open('fitness-consultation-tool.html?' + params.toString(), '_blank');
@@ -1656,192 +1542,6 @@ function renderCalendar() {
   grid.innerHTML = html;
 }
 
-// ══════════════════════════════════════════════════
-// BC FOLLOW-UPS TAB
-// ══════════════════════════════════════════════════
-function renderFU(filter='') {
-  const el = document.getElementById('fu-list');
-  const fl = filter.toLowerCase();
-  const filtered = fuItems.filter(f => !fl || f.name.toLowerCase().includes(fl));
-  document.getElementById('fu-list-count').textContent = filtered.length;
-
-  // Stats
-  document.getElementById('fu-stat-total').textContent = fuItems.length;
-  document.getElementById('fu-stat-noshow').textContent = fuItems.filter(f=>f.reason==='No-Show').length;
-  document.getElementById('fu-stat-canceled').textContent = fuItems.filter(f=>f.reason==='Canceled').length;
-  document.getElementById('fu-stat-rebooked').textContent = fuItems.filter(f=>f.status==='Rebooked').length;
-
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔁</div><div>No follow-ups needed!</div></div>';
-    return;
-  }
-  el.innerHTML = filtered.map(f => {
-    return '<div class="fu-item' + (f.id===selectedFUId?' active':'') + '" onclick="selectFU(\'' + f.id + '\')">' +
-      '<div>' +
-        '<div class="prospect-name">' + f.name + '</div>' +
-        '<div class="prospect-meta">' + f.phone + '</div>' +
-        '<div class="fu-reason">' + f.reason + ' · Was: ' + f.apptDateWas + '</div>' +
-      '</div>' +
-      '<div><span class="status-badge status-' + f.status.toLowerCase().replace(/[\s-]/g,'') + '">' + f.status + '</span></div>' +
-    '</div>';
-  }).join('');
-}
-
-function selectFU(id) {
-  selectedFUId = id;
-  const f = fuItems.find(x => x.id === id);
-  if (!f) return;
-  document.getElementById('fu-empty-detail').style.display = 'none';
-  document.getElementById('fu-detail-view').style.display = 'block';
-  document.getElementById('fu-d-name').textContent = f.name;
-  document.getElementById('fu-d-meta').textContent = 'Added to FU: ' + f.dateAdded;
-  document.getElementById('fu-d-phone').textContent = f.phone || '—';
-  document.getElementById('fu-d-email').textContent = f.email || '—';
-  document.getElementById('fu-d-reason').textContent = f.reason || '—';
-  document.getElementById('fu-d-apptdate').textContent = f.apptDateWas || '—';
-  document.getElementById('fu-d-bookedby').textContent = f.bookedBy || '—';
-  document.getElementById('fu-d-dateadded').textContent = f.dateAdded || '—';
-  const badge = document.getElementById('fu-d-badge');
-  badge.textContent = f.status;
-  badge.className = 'status-badge status-' + f.status.toLowerCase().replace(/[\s-]/g,'');
-
-  document.getElementById('fu-tp-date').value = new Date().toISOString().split('T')[0];
-  renderFUTouchpoints(id);
-  renderFU(document.getElementById('fu-search').value);
-}
-
-function renderFUTouchpoints(id) {
-  const tps = fuTouchpoints.filter(t => t.fuId === id);
-  const el = document.getElementById('fu-tp-history');
-  if (!tps.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No follow-up log yet.</div>'; return; }
-  el.innerHTML = tps.map(t => {
-    return '<div class="tp-entry">' +
-      '<div class="tp-meta"><span class="tp-date">' + t.date + '</span><span class="tp-advisor">' + (t.advisor||'') + '</span></div>' +
-      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><span class="tp-outcome outcome-callback">' + t.outcome + '</span></div>' +
-      '<div class="tp-notes">' + t.notes + '</div>' +
-    '</div>';
-  }).join('');
-}
-
-async function addFUTouchpoint() {
-  if (!selectedFUId) return;
-  const date = gv('fu-tp-date') || new Date().toLocaleDateString('en-US');
-  const notes = gv('fu-tp-notes'), outcome = gv('fu-tp-outcome'), advisor = gv('fu-tp-advisor');
-  if (!notes) { setStatus('fu-tp-status','error','Please add notes.'); return; }
-  const tp = { id: genId(), fuId: selectedFUId, date, outcome, notes, advisor };
-  fuTouchpoints.unshift(tp);
-  saveLocal();
-  setStatus('fu-tp-status','success','Logged!');
-  document.getElementById('fu-tp-notes').value = '';
-  renderFUTouchpoints(selectedFUId);
-}
-
-function filterFU() { renderFU(document.getElementById('fu-search').value); }
-
-// Re-Book from Follow-Up
-function reBookFromFU() {
-  if (!selectedFUId) return;
-  const f = fuItems.find(x => x.id === selectedFUId);
-  if (!f) return;
-  document.getElementById('rebook-name').textContent = f.name;
-  document.getElementById('rebook-history-note').textContent =
-    '📋 History: ' + f.reason + ' on ' + f.apptDateWas;
-  document.getElementById('rebook-date').value = '';
-  document.getElementById('rebook-time').value = '';
-  document.getElementById('rebook-advisor').value = f.bookedBy || '';
-  document.getElementById('rebook-notes').value = '';
-  document.getElementById('rebookModal').style.display = 'flex';
-}
-function closeRebookModal() { document.getElementById('rebookModal').style.display = 'none'; }
-
-async function confirmRebook() {
-  const f = fuItems.find(x => x.id === selectedFUId);
-  if (!f) return;
-  const apptDate = gv('rebook-date');
-  const apptTime = gv('rebook-time');
-  const advisor = gv('rebook-advisor');
-  if (!apptDate || !apptTime || !advisor) { setStatus('rebook-status','error','Date, time, and advisor required.'); return; }
-
-  // Create new BC booking with history preserved
-  const booking = {
-    id: genId(),
-    fuId: f.id,
-    name: f.name,
-    phone: f.phone,
-    email: f.email,
-    apptDate,
-    apptTime,
-    bookedBy: advisor,
-    status: 'Booked',
-    notes: gv('rebook-notes'),
-    dateBooked: new Date().toLocaleDateString('en-US'),
-    originalProspectDate: '',
-    history: [...(f.bcHistory||[]), { from: f.reason, to: 'Rebooked', date: new Date().toLocaleDateString('en-US') }],
-    isRebook: true,
-    previousReason: f.reason
-  };
-
-  bcBookings.unshift(booking);
-
-  // Mark FU as rebooked
-  f.status = 'Rebooked';
-  saveLocal();
-  closeRebookModal();
-
-  // Write to Apps Script
-  try {
-    await callAppsScript({
-      action: 'addBookedConsultation',
-      dateBooked: booking.dateBooked,
-      name: booking.name,
-      phone: booking.phone,
-      email: booking.email,
-      apptDate: booking.apptDate,
-      apptTime: booking.apptTime,
-      bookedBy: booking.bookedBy,
-      status: booking.status,
-      notes: '[REBOOK from ' + f.reason + '] ' + (booking.notes || ''),
-      originalProspectDate: ''
-    });
-    await callAppsScript({ action: 'updateBCFollowUp', name: f.name, phone: f.phone, status: 'Rebooked' });
-  } catch(e) { console.warn('Sheet write failed:', e); }
-
-  updateTabCounts(); renderFU(); renderBC(); renderCalendar();
-  alert('✅ ' + f.name + ' re-booked for ' + apptDate + ' at ' + formatTime(apptTime) + '!\n\nHistory preserved in Booked Consultations tab.');
-  switchTab('bc');
-}
-
-function confirmDeleteFU() {
-  if (!selectedFUId) return;
-  const f = fuItems.find(x => x.id === selectedFUId);
-  if (!f) return;
-  document.getElementById('modalTitle').textContent = 'Delete Follow-Up?';
-  document.getElementById('modalBody').innerHTML = 'Remove <strong style="color:#e8e8f0">' + f.name + '</strong> from follow-ups?';
-  document.getElementById('modalConfirmBtn').textContent = 'Delete';
-  document.getElementById('confirmModal').style.display = 'flex';
-  document.getElementById('modalConfirmBtn').onclick = doDeleteFU;
-}
-
-async function doDeleteFU() {
-  const f = fuItems.find(x => x.id === selectedFUId);
-  if (!f) return;
-  closeModal();
-  fuItems = fuItems.filter(x => x.id !== f.id);
-  fuTouchpoints = fuTouchpoints.filter(t => t.fuId !== f.id);
-  saveLocal(); selectedFUId = null;
-  document.getElementById('fu-detail-view').style.display = 'none';
-  document.getElementById('fu-empty-detail').style.display = 'flex';
-  renderFU(); updateTabCounts();
-  try {
-    await callAppsScript({ action: 'deleteBCFollowUp', name: f.name, phone: f.phone });
-  } catch(e) { console.warn('Sheet delete failed:', e); }
-}
-
-
-
-
-
-// ══════════════════════════════════════════════════
 // SYNC BC TO SHEET
 // ══════════════════════════════════════════════════
 async function syncBCToSheet() {
@@ -1867,22 +1567,6 @@ async function syncBCToSheet() {
       });
       count++;
     } catch(e) { console.warn('Sync failed for', b.name, e); }
-  }
-  for (const f of fuItems) {
-    try {
-      await callAppsScript({
-        action: 'addBCFollowUp',
-        dateAdded: f.dateAdded || '',
-        name: f.name || '',
-        phone: f.phone || '',
-        email: f.email || '',
-        reason: f.reason || '',
-        apptDateWas: f.apptDateWas || '',
-        bookedBy: f.bookedBy || '',
-        status: f.status || '',
-        notes: ''
-      });
-    } catch(e) { console.warn('FU sync failed for', f.name, e); }
   }
   btn.textContent = '✅ Synced ' + count;
   btn.disabled = false;
@@ -1920,12 +1604,6 @@ async function runDiagnostic() {
     const d = await callAppsScript({action:'addBookedConsultation',dateBooked:'TEST',name:'TEST NAME',phone:'0000000000',email:'',apptDate:'2026-01-01',apptTime:'10:00',bookedBy:'Diagnostic',status:'Booked',notes:'Diagnostic test - delete me',originalProspectDate:''});
     results.push('✅ Booked Consultations (AppsScript): ' + JSON.stringify(d));
   } catch(e) { results.push('❌ Booked Consultations (AppsScript): ' + e.message); }
-
-  // Test 4: Apps Script (BC Follow-Ups)
-  try {
-    const d = await callAppsScript({action:'addBCFollowUp',dateAdded:'TEST',name:'TEST NAME',phone:'0000000000',email:'',reason:'No-Show',apptDateWas:'2026-01-01',bookedBy:'Diagnostic',status:'Needs Rebook',notes:'Diagnostic test - delete me'});
-    results.push('✅ BC Follow-Ups (AppsScript): ' + JSON.stringify(d));
-  } catch(e) { results.push('❌ BC Follow-Ups (AppsScript): ' + e.message); }
 
   alert('DIAGNOSTIC RESULTS:\n\n' + results.join('\n\n'));
 }
