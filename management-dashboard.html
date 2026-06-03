@@ -549,7 +549,7 @@ function renderDashboard() {
   const convRate = intakes.length > 0 ? Math.round((accepted.length / intakes.length) * 100) : 0;
 
   // BC stats
-  const upcoming = allBC.filter(b => b['Status'] === 'Booked' || b['Status'] === 'Confirmed' || b.Status === 'Booked' || b.Status === 'Confirmed');
+  const upcoming = allBC.filter(b => { const s = String(b['Status']||b.Status||''); return s==='Booked'||s==='Confirmed'||s==='Rescheduled'; });
   const fuNeeded = allFU.filter(f => f.Status !== 'Rebooked');
 
   // KPIs
@@ -627,7 +627,7 @@ function filterAppts(btn, filter) {
   apptFilter = filter;
   document.querySelectorAll('.appt-filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const upcoming = allBC.filter(b => b['Status'] === 'Booked' || b['Status'] === 'Confirmed' || b.Status === 'Booked' || b.Status === 'Confirmed');
+  const upcoming = allBC.filter(b => { const s = String(b['Status']||b.Status||''); return s==='Booked'||s==='Confirmed'||s==='Rescheduled'; });
   renderUpcomingAppts(upcoming);
 }
 
@@ -884,7 +884,7 @@ async function generateAIAnalysis() {
   const hot = allProspects.filter(p=>p.Interest==='Hot').length;
   const warm = allProspects.filter(p=>p.Interest==='Warm').length;
   const cold = allProspects.filter(p=>p.Interest==='Cold').length;
-  const upcoming = allBC.filter(b=>b.Status==='Booked'||b.Status==='Confirmed').length;
+  const upcoming = allBC.filter(b=>{ const s=String(b['Status']||b.Status||''); return s==='Booked'||s==='Confirmed'||s==='Rescheduled'; }).length;
   const fuCount = allFU.filter(f=>f.Status!=='Rebooked').length;
 
   const prompt = `You are a fitness business consultant specializing in personal training sales for commercial gyms. Analyze this data for Retro Fitness Fairless Hills and provide specific, actionable recommendations.
