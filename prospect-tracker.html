@@ -1733,6 +1733,12 @@ async function confirmNewBooking() {
 // ══════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════
+// Cache bust — bump CACHE_VERSION any time a clean re-sync is needed
+const CACHE_VERSION = 'v2';
+if (localStorage.getItem('pt_cache_version') !== CACHE_VERSION) {
+  localStorage.clear();
+  localStorage.setItem('pt_cache_version', CACHE_VERSION);
+}
 loadLocal();
 renderList();
 updateStats();
