@@ -1438,7 +1438,12 @@ async function applyBCStatus(newStatus, reasonNote) {
   } catch(e) { console.warn('Sheet update failed:', e); }
 
   if (newStatus === 'Show') {
-    const params = new URLSearchParams({ name: b.name, phone: b.phone, email: b.email || '' });
+    const params = new URLSearchParams({
+      name: b.name,
+      phone: b.phone,
+      email: b.email || '',
+      advisor: b.bookedBy || b.advisor || ''
+    });
     window.open('fitness-consultation-tool.html?' + params.toString(), '_blank');
   }
 

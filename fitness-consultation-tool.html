@@ -1389,6 +1389,29 @@ window.addEventListener('load', () => {
   // Set today's date
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('consult-date').value = today;
+
+  // Auto-populate contact info from Prospect Tracker (passed via URL params on Show)
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('name')) {
+    document.getElementById('name').value = params.get('name');
+    document.getElementById('phone').value = params.get('phone') || '';
+    document.getElementById('email').value = params.get('email') || '';
+    // Advisor from URL takes priority over saved config
+    if (params.get('advisor')) {
+      document.getElementById('advisor-name').value = params.get('advisor');
+    }
+    // Scroll to top so the pre-filled fields are visible
+    window.scrollTo(0, 0);
+    // Brief highlight so Ted knows the fields were auto-filled
+    ['name','phone','email'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.value) {
+        el.style.transition = 'background 0.5s';
+        el.style.background = 'rgba(0,229,160,0.18)';
+        setTimeout(() => { el.style.background = ''; }, 2500);
+      }
+    });
+  }
 });
 
 // ===========================================
