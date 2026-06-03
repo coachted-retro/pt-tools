@@ -1344,7 +1344,7 @@ function selectBC(id) {
   badge.className = 'status-badge status-' + b.status.toLowerCase().replace(/[\s-]/g,'');
 
   // Show relevant action buttons
-  const isActive = ['Booked','Confirmed'].includes(b.status);
+  const isActive = ['Booked','Confirmed','Rescheduled'].includes(b.status);
   document.getElementById('bc-btn-show').style.display = isActive ? 'block' : 'none';
   document.getElementById('bc-btn-confirm').style.display = b.status==='Booked' ? 'block' : 'none';
   document.getElementById('bc-btn-noshow').style.display = isActive ? 'block' : 'none';
