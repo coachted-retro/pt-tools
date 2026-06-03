@@ -332,25 +332,16 @@
   </div>
 
   <!-- BOOKED CONSULTATIONS SECTION -->
-  <div class="prospects-grid">
-    <div class="chart-card">
-      <div class="chart-title">📅 Upcoming Appointments</div>
-      <div class="chart-sub">Booked &amp; confirmed consultations</div>
-      <div class="appt-filter-bar">
-        <button class="appt-filter-btn active" onclick="filterAppts(this, 'all')">All</button>
-        <button class="appt-filter-btn ted" onclick="filterAppts(this, 'ted')">Ted</button>
-        <button class="appt-filter-btn dani" onclick="filterAppts(this, 'dani')">Dani</button>
-      </div>
-      <div id="upcomingAppts" style="margin-top:4px">
-        <div class="loading-overlay"><div class="spinner"></div></div>
-      </div>
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="chart-title">📅 Upcoming Appointments</div>
+    <div class="chart-sub">Booked &amp; confirmed consultations</div>
+    <div class="appt-filter-bar">
+      <button class="appt-filter-btn active" onclick="filterAppts(this, 'all')">All</button>
+      <button class="appt-filter-btn ted" onclick="filterAppts(this, 'ted')">Ted</button>
+      <button class="appt-filter-btn dani" onclick="filterAppts(this, 'dani')">Dani</button>
     </div>
-    <div class="chart-card">
-      <div class="chart-title">🔁 BC Follow-Ups Needed</div>
-      <div class="chart-sub">No-shows &amp; cancels awaiting rebook</div>
-      <div id="fuList" style="margin-top:12px">
-        <div class="loading-overlay"><div class="spinner"></div></div>
-      </div>
+    <div id="upcomingAppts" style="margin-top:4px">
+      <div class="loading-overlay"><div class="spinner"></div></div>
     </div>
   </div>
 
@@ -446,7 +437,6 @@ const SHEET_ID = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
 let allIntakes = [];
 let allProspects = [];
 let allBC = [];
-let allFU = [];
 let apptFilter = 'all';
 let charts = {};
 
@@ -454,7 +444,7 @@ let charts = {};
 async function loadDashboard() {
   document.getElementById('lastUpdated').textContent = 'Loading...';
   try {
-    await Promise.all([loadIntakes(), loadProspects(), loadBC(), loadFU()]);
+    await Promise.all([loadIntakes(), loadProspects(), loadBC()]);
     populateMonthSelector();
     renderDashboard();
     document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString('en-US', {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
@@ -493,22 +483,7 @@ async function loadBC() {
   } catch(e) { allBC = []; }
 }
 
-async function loadFU() {
-  try {
-    const res = await fetch(`${APPS_SCRIPT}?action=getBCFollowUps`);
-    const data = await res.json();
-    const rows = data.rows || [];
-    if (rows.length < 2) { allFU = []; return; }
-    const headers = rows[0];
-    allFU = rows.slice(1)
-      .filter(r => r.some(c => c !== ''))
-      .map(r => {
-        const obj = {};
-        headers.forEach((h, i) => { obj[h] = r[i]; });
-        return obj;
-      });
-  } catch(e) { allFU = []; }
-}
+
 
 // ── MONTH SELECTOR ───────────────────────────────────────────
 function populateMonthSelector() {
@@ -550,8 +525,6 @@ function renderDashboard() {
 
   // BC stats
   const upcoming = allBC.filter(b => { const s = String(b['Status']||b.Status||''); return s==='Booked'||s==='Confirmed'||s==='Rescheduled'; });
-  const fuNeeded = allFU.filter(f => f.Status !== 'Rebooked');
-
   // KPIs
   document.getElementById('kpiConsultations').textContent = intakes.length;
   document.getElementById('kpiConversion').textContent = convRate + '%';
@@ -577,7 +550,6 @@ function renderDashboard() {
   renderHotProspects();
   renderRecentTable(intakes);
   renderUpcomingAppts(upcoming);
-  renderFUList(fuNeeded);
   renderAdvisorBreakdown();
 }
 
@@ -671,25 +643,7 @@ function renderUpcomingAppts(upcoming) {
   }).join('');
 }
 
-// ── FU LIST ───────────────────────────────────────────────────
-function renderFUList(fuNeeded) {
-  const el = document.getElementById('fuList');
-  if (!fuNeeded.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div>No follow-ups needed</div></div>';
-    return;
-  }
-  el.innerHTML = `<table class="data-table">
-    <thead><tr><th>Name</th><th>Reason</th><th>Was Scheduled</th><th>Status</th></tr></thead>
-    <tbody>${fuNeeded.slice(0,8).map(f => `
-      <tr>
-        <td><strong>${f.Name||'—'}</strong><br><span style="font-size:11px;color:var(--muted)">${f.Phone||''}</span></td>
-        <td><span class="badge badge-noshow">${f.Reason||'—'}</span></td>
-        <td style="font-size:12px">${f['Appt Date Was']||'—'}</td>
-        <td><span class="badge badge-warm">${f.Status||'—'}</span></td>
-      </tr>`).join('')}
-    </tbody>
-  </table>`;
-}
+
 
 // ── CONSULTATIONS OVER TIME ───────────────────────────────────
 function renderConsultationsChart(intakes) {
@@ -885,7 +839,6 @@ async function generateAIAnalysis() {
   const warm = allProspects.filter(p=>p.Interest==='Warm').length;
   const cold = allProspects.filter(p=>p.Interest==='Cold').length;
   const upcoming = allBC.filter(b=>{ const s=String(b['Status']||b.Status||''); return s==='Booked'||s==='Confirmed'||s==='Rescheduled'; }).length;
-  const fuCount = allFU.filter(f=>f.Status!=='Rebooked').length;
 
   const prompt = `You are a fitness business consultant specializing in personal training sales for commercial gyms. Analyze this data for Retro Fitness Fairless Hills and provide specific, actionable recommendations.
 
@@ -898,7 +851,6 @@ CURRENT PERFORMANCE DATA:
 - Top decline reasons: ${topDeclineReasons || 'Not enough data yet'}
 - Prospect pipeline: ${allProspects.length} total (${hot} hot, ${warm} warm, ${cold} cold)
 - Upcoming booked consultations: ${upcoming}
-- BC follow-ups needed: ${fuCount}
 
 INDUSTRY BENCHMARKS:
 - Top PT studios close 40-50% of consultations
