@@ -331,21 +331,21 @@
   <div class="advisor-grid" id="advisorGrid">
     <!-- Ted -->
     <div class="advisor-card ted">
-      <div class="advisor-name">🔵 Ted</div>
+      <div class="advisor-name" style="display:flex;align-items:center;justify-content:space-between">🔵 Ted <a href="https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g/edit?usp=sharing" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:3px 10px;border-radius:5px;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">📊 Sheet</a></div>
       <div class="advisor-stats" id="advisor-ted">
         <div class="loading-overlay"><div class="spinner"></div></div>
       </div>
     </div>
     <!-- Dani -->
     <div class="advisor-card dani">
-      <div class="advisor-name">🟠 Dani</div>
+      <div class="advisor-name" style="display:flex;align-items:center;justify-content:space-between">🟠 Dani <a href="https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g/edit?usp=sharing" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:3px 10px;border-radius:5px;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">📊 Sheet</a></div>
       <div class="advisor-stats" id="advisor-dani">
         <div class="loading-overlay"><div class="spinner"></div></div>
       </div>
     </div>
     <!-- Combined -->
     <div class="advisor-card both">
-      <div class="advisor-name">📊 Combined</div>
+      <div class="advisor-name" style="display:flex;align-items:center;justify-content:space-between">📊 Combined <a href="https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g/edit?usp=sharing" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:3px 10px;border-radius:5px;font-family:'DM Sans',sans-serif;transition:all .2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">📊 Sheet</a></div>
       <div class="advisor-stats" id="advisor-both">
         <div class="loading-overlay"><div class="spinner"></div></div>
       </div>
@@ -415,7 +415,7 @@
 
   <!-- CHECK-IN PROGRESS SECTION -->
   <div class="chart-card" style="margin-bottom:20px">
-    <div class="chart-title">📈 Member Progress Trends</div>
+    <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between">📈 PT Client Progress Trends <a href="https://docs.google.com/spreadsheets/d/1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs/edit?usp=sharing" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:3px 10px;border-radius:5px;font-family:'DM Sans',sans-serif">📊 Sheet</a></div>
     <div class="chart-sub">Body composition & performance trends from monthly check-ins</div>
     <div class="ci-tabs" style="margin-top:14px">
       <button class="ci-tab-btn active" onclick="switchCITab('all',this)">All Clients</button>
@@ -546,7 +546,7 @@ let charts = {};
 async function loadDashboard() {
   document.getElementById('lastUpdated').textContent = 'Loading...';
   try {
-    await Promise.all([loadIntakes(), loadProspects(), loadBC(), loadCheckins()]);
+    await Promise.all([loadIntakes(), loadProspects(), loadBC()]);
     populateMonthSelector();
     renderDashboard();
     document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleString('en-US', {month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
