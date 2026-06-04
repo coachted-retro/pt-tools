@@ -957,17 +957,21 @@ async function saveCheckin(){
     gv('checkin-date'),gv('advisor-name')||getCfg('advisor'),nextCheckin,
     gv('name'),gv('email'),gv('gender'),gv('age'),
     gv('session-score'),gv('diet-score'),gv('energy-score'),gv('sleep-score'),gv('stress-score'),
-    gv('now-weight'),gv('now-lean'),gv('now-pbf'),
-    assessmentText?assessmentText.substring(0,800)+(assessmentText.length>800?'...':''):'',
-    gv('advisor-notes'),gv('prev-weight'),gv('prev-lean'),gv('prev-pbf'),
-    gv('prev-fat'),gv('prev-bmi'),gv('now-fat'),gv('now-bmi'),gv('training-freq'),gv('phone')
+    gv('prev-weight'),gv('prev-lean'),gv('prev-pbf'),gv('prev-fat'),gv('prev-bmi'),
+    gv('now-weight'),gv('now-lean'),gv('now-pbf'),gv('now-fat'),
+    gv('training-freq'),gv('advisor-notes'),
+    assessmentText?assessmentText.substring(0,800)+(assessmentText.length>800?'...'):''
   ];
-  const ok=await appendToSheet('Check-In History',row);
+  const gender=gv('gender')||'';
+  const genderTab=gender.toLowerCase().includes('female')||gender.toLowerCase()==='f'?'Women\'s Check-Ins':gender.toLowerCase().includes('male')||gender.toLowerCase()==='m'?'Men\'s Check-Ins':null;
+  const ok=await appendToSheet('All Check-In History',row);
+  if(genderTab) await appendToSheet(genderTab,row);
+  
   hideLoading();
   const confirm=document.getElementById('confirm-save');
   confirm.classList.add('show');
   if(!ok) confirm.innerHTML='[!] Could not write to Google Sheets.';
-  else confirm.innerHTML='✅ Saved to Check-In History. Next check-in: '+nextCheckin;
+  else confirm.innerHTML='✅ Saved to All Check-In History'+(genderTab?' & '+genderTab:'')+'. Next check-in: '+nextCheckin;
   if(nextCheckin){ setTimeout(()=>addToCalendar(gv('name'),nextCheckin),800); }
 }
 
