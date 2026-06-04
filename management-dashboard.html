@@ -241,6 +241,27 @@
   .appt-filter-btn.ted.active { background: #2b4c8c; border-color: #2b4c8c; }
   .appt-filter-btn.dani.active { background: var(--warning); border-color: var(--warning); }
 
+
+  /* CHECK-IN PROGRESS SECTION */
+  .ci-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+  .ci-tab-btn {
+    background: none; border: none; color: var(--muted); padding: 12px 20px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s;
+    letter-spacing: .3px;
+  }
+  .ci-tab-btn:hover { color: var(--text); }
+  .ci-tab-btn.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+  .ci-tab-btn.men.active { color: #2b4c8c; border-bottom-color: #2b4c8c; }
+  .ci-tab-btn.women.active { color: #c87a2b; border-bottom-color: #c87a2b; }
+  .ci-tab-panel { display: none; }
+  .ci-tab-panel.active { display: block; }
+  .ci-chart-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .ci-stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
+  .ci-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+  .ci-stat-val { font-family: 'DM Serif Display', serif; font-size: 24px; color: var(--text); margin-bottom: 2px; }
+  .ci-stat-lbl { font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
   @media (max-width: 1100px) {
     .kpi-grid { grid-template-columns: repeat(4, 1fr); }
     .chart-grid { grid-template-columns: 1fr; }
@@ -387,6 +408,87 @@
           <thead><tr><th>Name</th><th>Date</th><th>Goal</th><th>Outcome</th></tr></thead>
           <tbody id="recentTableBody"><tr><td colspan="4"><div class="loading-overlay"><div class="spinner"></div></div></td></tr></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CHECK-IN PROGRESS SECTION -->
+  <div class="chart-card" style="margin-bottom:20px">
+    <div class="chart-title">📈 Member Progress Trends</div>
+    <div class="chart-sub">Body composition & performance trends from monthly check-ins</div>
+    <div class="ci-tabs" style="margin-top:14px">
+      <button class="ci-tab-btn active" onclick="switchCITab('all',this)">All Clients</button>
+      <button class="ci-tab-btn men" onclick="switchCITab('men',this)">Men's Program</button>
+      <button class="ci-tab-btn women" onclick="switchCITab('women',this)">Women's Program</button>
+    </div>
+
+    <div id="ci-tab-all" class="ci-tab-panel active">
+      <div class="ci-stat-row" id="ci-all-stats">
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-all-clients">—</div><div class="ci-stat-lbl">Total Check-Ins</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-all-avgbf">—</div><div class="ci-stat-lbl">Avg BF% This Month</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-all-avglean">—</div><div class="ci-stat-lbl">Avg Lean Mass</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-all-avgsession">—</div><div class="ci-stat-lbl">Avg Session Score</div></div>
+      </div>
+      <div class="ci-chart-grid">
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Body Fat % Trend</div>
+          <div style="height:160px"><canvas id="ci-all-bf-chart"></canvas></div>
+        </div>
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Lean Mass Trend</div>
+          <div style="height:160px"><canvas id="ci-all-lean-chart"></canvas></div>
+        </div>
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Session Score Trend</div>
+          <div style="height:160px"><canvas id="ci-all-session-chart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ci-tab-men" class="ci-tab-panel">
+      <div class="ci-stat-row">
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-men-clients">—</div><div class="ci-stat-lbl">Male Check-Ins</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-men-avgbf">—</div><div class="ci-stat-lbl">Avg BF% This Month</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-men-avglean">—</div><div class="ci-stat-lbl">Avg Lean Mass</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-men-avgsession">—</div><div class="ci-stat-lbl">Avg Session Score</div></div>
+      </div>
+      <div class="ci-chart-grid">
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Body Fat % Trend</div>
+          <div style="height:160px"><canvas id="ci-men-bf-chart"></canvas></div>
+        </div>
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Lean Mass Trend</div>
+          <div style="height:160px"><canvas id="ci-men-lean-chart"></canvas></div>
+        </div>
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Session Score Trend</div>
+          <div style="height:160px"><canvas id="ci-men-session-chart"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ci-tab-women" class="ci-tab-panel">
+      <div class="ci-stat-row">
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-women-clients">—</div><div class="ci-stat-lbl">Female Check-Ins</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-women-avgbf">—</div><div class="ci-stat-lbl">Avg BF% This Month</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-women-avglean">—</div><div class="ci-stat-lbl">Avg Lean Mass</div></div>
+        <div class="ci-stat"><div class="ci-stat-val" id="ci-women-avgsession">—</div><div class="ci-stat-lbl">Avg Session Score</div></div>
+      </div>
+      <div class="ci-chart-grid">
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Body Fat % Trend</div>
+          <div style="height:160px"><canvas id="ci-women-bf-chart"></canvas></div>
+        </div>
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Lean Mass Trend</div>
+          <div style="height:160px"><canvas id="ci-women-lean-chart"></canvas></div>
+        </div>
+        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Session Score Trend</div>
+          <div style="height:160px"><canvas id="ci-women-session-chart"></canvas></div>
+        </div>
       </div>
     </div>
   </div>
@@ -551,6 +653,7 @@ function renderDashboard() {
   renderRecentTable(intakes);
   renderUpcomingAppts(upcoming);
   renderAdvisorBreakdown();
+  renderCheckinCharts();
 }
 
 
@@ -918,6 +1021,131 @@ Keep each bullet to 1-2 sentences max. Be specific to their numbers, not generic
 
   btn.disabled = false;
   btn.innerHTML = '✦ Regenerate Analysis';
+}
+
+
+// ── CHECK-IN DATA ─────────────────────────────────────────────
+let allCheckins = [];
+let menCheckins = [];
+let womenCheckins = [];
+
+async function loadCheckins() {
+  try {
+    // Column map (0-indexed): 
+    // 0:Date, 1:Advisor, 2:NextCI, 3:Name, 4:Email, 5:Gender, 6:Age
+    // 7:Session, 8:Diet, 9:Energy, 10:Sleep, 11:Stress
+    // 12:PrevWeight, 13:PrevLean, 14:PrevBF, 15:PrevFat, 16:PrevBMI
+    // 17:Weight, 18:Lean, 19:BF, 20:Fat, 21:TrainingFreq
+    // 22:AdvisorNotes, 23:Summary
+    const res = await fetch(`${APPS_SCRIPT}?action=getCheckIns&tab=All Check-In History`);
+    const raw = await res.text();
+    let data;
+    try { data = JSON.parse(raw); } catch(e) { allCheckins=[]; return; }
+    const rows = data.rows || [];
+    if (rows.length < 2) { allCheckins=[]; return; }
+    const headers = rows[0].map(h => String(h).trim());
+    const parsed = rows.slice(1).filter(r => r.some(c => c !== '')).map(r => {
+      const obj = {};
+      headers.forEach((h,i) => { obj[h] = r[i]; });
+      return obj;
+    });
+    allCheckins = parsed;
+    menCheckins = parsed.filter(r => {
+      const g = String(r['Gender']||'').toLowerCase();
+      return g === 'male' || g === 'm' || g === 'man';
+    });
+    womenCheckins = parsed.filter(r => {
+      const g = String(r['Gender']||'').toLowerCase();
+      return g === 'female' || g === 'f' || g === 'woman';
+    });
+    console.log('Check-ins loaded:', allCheckins.length, 'M:', menCheckins.length, 'F:', womenCheckins.length);
+  } catch(e) { console.error('loadCheckins error:', e); allCheckins=[]; }
+}
+
+function switchCITab(tab, btn) {
+  document.querySelectorAll('.ci-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.ci-tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('ci-tab-' + tab).classList.add('active');
+}
+
+function renderCheckinCharts() {
+  renderCIGroup('all', allCheckins, '#c8392b');
+  renderCIGroup('men', menCheckins, '#2b4c8c');
+  renderCIGroup('women', womenCheckins, '#c87a2b');
+}
+
+function renderCIGroup(group, data, color) {
+  if (!data.length) {
+    document.getElementById('ci-' + group + '-clients').textContent = '0';
+    return;
+  }
+
+  // Stats
+  const bfVals = data.map(r => parseFloat(r['BF%']||r['Body Fat %']||0)).filter(v => v > 0);
+  const leanVals = data.map(r => parseFloat(r['Lean Mass']||0)).filter(v => v > 0);
+  const sessionVals = data.map(r => parseFloat(r['Session Score']||0)).filter(v => v > 0);
+
+  document.getElementById('ci-' + group + '-clients').textContent = data.length;
+  document.getElementById('ci-' + group + '-avgbf').textContent = bfVals.length ? (bfVals.reduce((a,b)=>a+b,0)/bfVals.length).toFixed(1)+'%' : '—';
+  document.getElementById('ci-' + group + '-avglean').textContent = leanVals.length ? (leanVals.reduce((a,b)=>a+b,0)/leanVals.length).toFixed(1)+'lb' : '—';
+  document.getElementById('ci-' + group + '-avgsession').textContent = sessionVals.length ? (sessionVals.reduce((a,b)=>a+b,0)/sessionVals.length).toFixed(1)+'/10' : '—';
+
+  // Build monthly trend labels
+  const byMonth = {};
+  data.forEach(r => {
+    const d = new Date(r['Check-In Date']||r['CheckInDate']||'');
+    if (isNaN(d)) return;
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    if (!byMonth[key]) byMonth[key] = { bf:[], lean:[], session:[] };
+    const bf = parseFloat(r['BF%']||r['Body Fat %']||0);
+    const lean = parseFloat(r['Lean Mass']||0);
+    const sess = parseFloat(r['Session Score']||0);
+    if (bf > 0) byMonth[key].bf.push(bf);
+    if (lean > 0) byMonth[key].lean.push(lean);
+    if (sess > 0) byMonth[key].session.push(sess);
+  });
+
+  const sortedKeys = Object.keys(byMonth).sort();
+  const labels = sortedKeys.map(k => {
+    const [y,m] = k.split('-');
+    return new Date(y,m-1).toLocaleString('en-US',{month:'short',year:'2-digit'});
+  });
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+  const bfTrend = sortedKeys.map(k => avg(byMonth[k].bf));
+  const leanTrend = sortedKeys.map(k => avg(byMonth[k].lean));
+  const sessionTrend = sortedKeys.map(k => avg(byMonth[k].session));
+
+  const chartOpts = (label, data, color, yLabel) => ({
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label, data,
+        borderColor: color, backgroundColor: color + '22',
+        borderWidth: 2, pointRadius: 4, pointBackgroundColor: color,
+        fill: true, tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#7a7066' } },
+        y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { font: { size: 10 }, color: '#7a7066' } }
+      }
+    }
+  });
+
+  const mkChart = (id, label, trend, c) => {
+    if (charts[id]) charts[id].destroy();
+    const el = document.getElementById(id);
+    if (el) charts[id] = new Chart(el, chartOpts(label, trend, c, label));
+  };
+
+  mkChart('ci-'+group+'-bf-chart', 'Avg BF%', bfTrend, color);
+  mkChart('ci-'+group+'-lean-chart', 'Avg Lean Mass', leanTrend, color);
+  mkChart('ci-'+group+'-session-chart', 'Avg Session Score', sessionTrend, color);
 }
 
 // ── START ─────────────────────────────────────────────────────
