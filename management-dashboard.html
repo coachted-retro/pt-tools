@@ -1037,29 +1037,16 @@ async function loadCheckins() {
     // 12:PrevWeight, 13:PrevLean, 14:PrevBF, 15:PrevFat, 16:PrevBMI
     // 17:Weight, 18:Lean, 19:BF, 20:Fat, 21:TrainingFreq
     // 22:AdvisorNotes, 23:Summary
-    // Read from PT Member Progress Tracker via Cloudflare Worker
-    const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write';
-    const PT_SHEET = '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
-    const res = await fetch(WORKER, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({action: 'read', tab: 'All Check-In History', sheetId: PT_SHEET})
-    });
+    const PT_AS = 'https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
+    const res = await fetch(PT_AS + '?action=getCheckIns&tab=All%20Check-In%20History');
     const raw = await res.text();
     let data;
     try { data = JSON.parse(raw); } catch(e) { console.error('CI parse error:', raw.substring(0,200)); allCheckins=[]; return; }
-    // Worker read returns {ok:true, rows:[...]} without header row (rows.shift() already called)
-    const rawRows = data.rows || [];
-    console.log('CI raw rows from worker:', rawRows.length);
-    // Build with manual headers since worker strips header row
-    const HEADERS = ['Check-In Date','Advisor','Next Check-In','Name','Email','Gender','Age',
-      'Session Score','Diet Score','Energy Score','Sleep Score','Stress Score',
-      'Prev Weight','Prev Lean Mass','Prev BF%','Prev Fat Mass','Prev BMI',
-      'Weight','Lean Mass','BF%','Fat Mass','Training Freq','Advisor Notes','Summary'];
-    const rows = rawRows;
-    if (!rows.length) { allCheckins=[]; return; }
-    const headers = HEADERS;
-    const parsed = rows.filter(r => r.some(c => c !== '')).map(r => {
+    const rows = data.rows || [];
+    console.log('CI rows from Apps Script:', rows.length, rows[0]);
+    if (rows.length < 2) { allCheckins=[]; return; }
+    const headers = rows[0].map(h => String(h).trim());
+    const parsed = rows.slice(1).filter(r => r.some(c => c !== '')).map(r => {
       const obj = {};
       headers.forEach((h,i) => { obj[h] = r[i]; });
       return obj;
