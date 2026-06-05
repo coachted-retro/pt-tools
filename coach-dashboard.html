@@ -1121,23 +1121,31 @@ function emailChecklist() {
   const done = CHECKLIST_ITEMS.filter(i => saved[i.id]);
   const notDone = CHECKLIST_ITEMS.filter(i => !saved[i.id]);
   const weekOf = getWeekKey();
-  
-  let body = `Weekly Coach Checklist Submission%0D%0A`;
-  body += `Coach: ${coachName}%0D%0A`;
-  body += `Week of: ${weekOf}%0D%0A`;
-  body += `Completed: ${done.length} / ${CHECKLIST_ITEMS.length}%0D%0A%0D%0A`;
-  body += `✅ COMPLETED:%0D%0A`;
-  done.forEach(i => { body += `  • ${i.label}%0D%0A`; });
-  if (notDone.length) {
-    body += `%0D%0A❌ NOT COMPLETED:%0D%0A`;
-    notDone.forEach(i => { body += `  • ${i.label}%0D%0A`; });
-  }
-  body += `%0D%0ASubmitted: ${new Date().toLocaleString('en-US')}`;
 
-  const subject = `Weekly Checklist — ${coachName} — Week of ${weekOf}`;
-  const mailto = `mailto:tedscholl@gmail.com,healthylifewithdani1@gmail.com?subject=${encodeURIComponent(subject)}&body=${body}`;
-  window.location.href = mailto;
+  const lines = [];
+  lines.push('Weekly Coach Checklist Submission');
+  lines.push('Coach: ' + coachName);
+  lines.push('Week of: ' + weekOf);
+  lines.push('Completed: ' + done.length + ' / ' + CHECKLIST_ITEMS.length);
+  lines.push('');
+  lines.push('COMPLETED:');
+  done.forEach(i => lines.push('  - ' + i.label));
+  if (notDone.length) {
+    lines.push('');
+    lines.push('NOT COMPLETED:');
+    notDone.forEach(i => lines.push('  - ' + i.label));
+  }
+  lines.push('');
+  lines.push('Submitted: ' + new Date().toLocaleString('en-US'));
+
+  const subject = 'Weekly Checklist - ' + coachName + ' - Week of ' + weekOf;
+  const body = lines.join('\r\n');
+  const mailto = 'mailto:tedscholl@gmail.com,healthylifewithdani1@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  const a = document.createElement('a');
+  a.href = mailto;
+  a.click();
 }
+
 
 function updateChecklistProgress() {
   const weekKey = 'checklist_' + getWeekKey();
