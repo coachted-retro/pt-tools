@@ -1143,7 +1143,10 @@ function emailChecklist() {
   const mailto = 'mailto:tedscholl@gmail.com,healthylifewithdani1@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
   const a = document.createElement('a');
   a.href = mailto;
+  a.target = '_blank';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
 }
 
 
