@@ -6,7 +6,7 @@
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Consultation Tool v1780660978</title>
+<title>Fitness Consultation Tool v1780661666</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1648,6 +1648,7 @@ THE DECISION
 }
 
 async function generateAssessment() {
+  saveDraftSilent(); // auto-save when assessment is generated
   const apiKey = 'worker';
   // API key handled by proxy worker
 
@@ -1668,6 +1669,7 @@ async function generateAssessment() {
     if (data.error) throw new Error(data.error.message);
 
     assessmentText = data.content.map(b => b.text||'').join('');
+  saveDraftSilent(); // re-save with assessment text included
     const box = document.getElementById('assessment-box');
     box.textContent = assessmentText;
     box.style.display = 'block';
