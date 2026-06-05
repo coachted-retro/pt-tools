@@ -378,12 +378,18 @@
               <select id="gender"><option value="">Select...</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
             </div>
           </div>
-          <div class="grid3">
+         <div class="grid2">
             <div class="field"><label>Age</label><input type="number" id="age" placeholder="e.g. 34"></div>
+            <div class="field"><label>Assigned Coach / Trainer</label>
+              <input type="text" id="client-coach" placeholder="e.g. Coach Ted">
+            </div>
+          </div>
+          <div class="grid2">
             <div class="field"><label>Training frequency</label>
               <select id="training-freq"><option value="">Select...</option><option>1x per week</option><option>2x per week</option><option>3x per week</option><option>4x per week</option><option>1x every other week</option></select>
             </div>
             <div class="field"><label>Next check-in date</label><input type="date" id="next-checkin" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600"></div>
+          </div>
           </div>
         </div>
         <div class="nav-row">
@@ -852,7 +858,9 @@ function buildPrompt(){
   return `You are a Retro Fitness personal training advisor doing a monthly check-in. Generate a SHORT, scannable monthly summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 2 minutes.
 
 MEMBER: ${gv('name')} | Age: ${gv('age')} | Gender: ${gv('gender')}
-ADVISOR: ${gv('advisor-name')||getCfg('advisor')} | Date: ${gv('checkin-date')}
+ADVISOR: ${gv('advisor-name')||getCfg('advisor'),                 // B: Advisor
+    gv('client-coach'),                                    // C: Assigned Coach
+    nextCheckin,                                           // D: Next Check-In} | Date: ${gv('checkin-date')}
 FREQUENCY: ${gv('training-freq')} | Program start: ${gv('program-start')}
 
 SCORES: Session quality ${gv('session-score')}/10 | Recovery ${gv('recovery-score')}/10 | Diet adherence ${gv('diet-score')}/10 | Energy ${gv('energy-score')}/10 | Motivation ${gv('motivation-score')}/10 | Sleep ${gv('sleep-score')}/10 | Stress ${gv('stress-score')}/10
