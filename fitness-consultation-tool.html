@@ -1255,9 +1255,9 @@
           <div id="assess-status" class="status-bar" style="margin-top:12px;"></div>
           <div id="assessment-box" class="assessment-box"></div>
           <div id="body-comp-chart-wrap" style="display:none;margin-top:24px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:24px 28px">
-            <div style="font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:4px">Body Composition Projection</div>
+            <div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:4px">Body Composition Projection</div>
             <div style="font-size:12px;color:var(--text3);margin-bottom:20px">Current InBody results vs. 12-month aggressive training &amp; nutrition target</div>
-            <canvas id="body-comp-canvas" height="220"></canvas>
+            <div id="body-comp-bars"></div>
             <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px" id="body-comp-stats"></div>
             <div style="margin-top:14px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);padding-top:12px">
               ⚡ Projections based on aggressive progressive overload + structured nutrition. Individual results vary. Tracked monthly via InBody scan.
@@ -1776,15 +1776,12 @@ function renderBodyCompChart() {
     </div>
   \`;
 
-  const canvas = document.getElementById('body-comp-canvas');
-  if (canvas) {
-    canvas.style.display = 'none'; // hide the canvas, use our HTML chart instead
-    const chartDiv = document.createElement('div');
-    chartDiv.innerHTML =
-      barRow('💪 Lean Mass',   lean,        projLean,   'rgba(90,142,200,0.8)',  'rgba(76,175,125,0.9)') +
-      barRow('🔥 Body Fat',    fat,         projFat,    'rgba(212,168,67,0.8)',  'rgba(76,175,125,0.6)') +
+  const barsEl = document.getElementById('body-comp-bars');
+  if (barsEl) {
+    barsEl.innerHTML =
+      barRow('💪 Lean Mass',    lean,        projLean,   'rgba(90,142,200,0.8)',  'rgba(76,175,125,0.9)') +
+      barRow('🔥 Body Fat',     fat,         projFat,    'rgba(212,168,67,0.8)',  'rgba(76,175,125,0.6)') +
       barRow('⚖️ Total Weight', totalWeight, projWeight, 'rgba(155,111,212,0.7)', 'rgba(76,175,125,0.7)');
-    canvas.parentNode.insertBefore(chartDiv, canvas);
   }
 
   const stats = document.getElementById('body-comp-stats');
