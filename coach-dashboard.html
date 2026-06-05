@@ -1144,7 +1144,17 @@ function emailChecklist() {
     + '&to=' + encodeURIComponent('tedscholl@gmail.com,healthylifewithdani1@gmail.com')
     + '&su=' + encodeURIComponent(subject)
     + '&body=' + encodeURIComponent(body);
-  window.open(gmailUrl, '_blank');
+
+  // Show a clickable link so browser popup blocker doesn't interfere
+  const existing = document.getElementById('gmail-send-link');
+  if (existing) existing.remove();
+  const linkWrap = document.createElement('div');
+  linkWrap.id = 'gmail-send-link';
+  linkWrap.style.cssText = 'margin-top:12px;padding:14px 16px;background:rgba(76,175,125,0.12);border:1px solid rgba(76,175,125,0.3);border-radius:10px;text-align:center';
+  linkWrap.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">✅ Checklist ready — click below to open Gmail compose:</div>'
+    + '<a href="' + gmailUrl + '" target="_blank" style="display:inline-block;background:var(--green);color:#000;font-weight:700;font-size:14px;padding:10px 24px;border-radius:8px;text-decoration:none;font-family:var(--condensed);letter-spacing:.04em">📧 Open Gmail to Send →</a>';
+  const btn = document.getElementById('submit-btn') || document.querySelector('.submit-btn');
+  if (btn && btn.parentNode) btn.parentNode.insertBefore(linkWrap, btn.nextSibling);
 }
 
 
