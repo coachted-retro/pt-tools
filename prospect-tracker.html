@@ -975,16 +975,25 @@ async function syncFromSheet() {
           const existing = bcBookings.find(b =>
             (b.name + b.phone).toLowerCase().replace(/\D/g,'') === key
           );
-          if (existing) return existing;
+          if (existing) {
+            // Keep local edits but accept sheet status if sheet has a newer/different status
+            const sheetStatus = String(r[8] || 'Booked');
+            if (sheetStatus !== 'Booked' && existing.status === 'Booked') {
+              existing.status = sheetStatus; // only update status if sheet advanced it
+            }
+            return existing; // preserve all local edits (time, date, notes etc.)
+          }
           const rawDate = String(r[4] || '');
           const apptDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+          // Convert 12hr time back to 24hr for internal storage if needed
+          const rawTime = String(r[5] || '');
           return {
             id: genId(),
             name: String(r[1] || ''),
             phone: String(r[2] || ''),
             email: String(r[3] || ''),
             apptDate,
-            apptTime: String(r[5] || ''),
+            apptTime: rawTime,
             bookedBy: String(r[6] || ''),
             advisor: String(r[7] || ''),
             status: String(r[8] || 'Booked'),
@@ -1433,8 +1442,20 @@ async function applyBCStatus(newStatus, reasonNote) {
   b.history.push({ from: old, to: newStatus, date: new Date().toLocaleDateString('en-US'), note: reasonNote });
   saveLocal();
 
+  const timeForSheet = b.apptTime ? formatTime(b.apptTime) : '';
   try {
-    await callAppsScript({ action: 'updateBookedConsultation', name: b.name, phone: b.phone, status: newStatus });
+    await callAppsScript({
+      action: 'updateBookedConsultation',
+      name: b.name,
+      phone: b.phone,
+      status: newStatus,
+      apptDate: b.apptDate || '',
+      apptTime: timeForSheet,
+      bookedBy: b.bookedBy || '',
+      advisor: b.advisor || '',
+      notes: b.notes || '',
+      email: b.email || ''
+    });
   } catch(e) { console.warn('Sheet update failed:', e); }
 
   if (newStatus === 'Show') {
@@ -1557,19 +1578,18 @@ async function syncBCToSheet() {
   let count = 0;
   for (const b of bcBookings) {
     try {
+      const timeForSheet = b.apptTime ? formatTime(b.apptTime) : '';
       await callAppsScript({
-        action: 'addBookedConsultation',
-        dateBooked: b.dateBooked || '',
+        action: 'updateBookedConsultation',
         name: b.name || '',
         phone: b.phone || '',
-        email: b.email || '',
+        status: b.status || 'Booked',
         apptDate: b.apptDate || '',
-        apptTime: b.apptTime || '',
+        apptTime: timeForSheet,
         bookedBy: b.bookedBy || '',
         advisor: b.advisor || '',
-        status: b.status || 'Booked',
         notes: b.notes || '',
-        originalProspectDate: b.originalProspectDate || ''
+        email: b.email || ''
       });
       count++;
     } catch(e) { console.warn('Sync failed for', b.name, e); }
@@ -1636,7 +1656,7 @@ function openEditBookingModal() {
 
 function closeEditBookingModal() { document.getElementById('editBookingModal').style.display = 'none'; }
 
-async function confirmEditBooking() {
+async async function confirmEditBooking() {
   const b = bcBookings.find(x => x.id === selectedBCId);
   if (!b) return;
   const first = document.getElementById('eb-first').value.trim();
@@ -1653,13 +1673,23 @@ async function confirmEditBooking() {
   b.bookedBy = document.getElementById('eb-booked-by').value.trim();
   b.advisor = document.getElementById('eb-advisor').value;
   b.notes = document.getElementById('eb-notes').value.trim();
+  // Format time as 12hr for sheet
+  const timeForSheet = b.apptTime ? formatTime(b.apptTime) : '';
   saveLocal();
   closeEditBookingModal();
 
   try {
     await callAppsScript({
       action: 'updateBookedConsultation',
-      name: b.name, phone: b.phone, status: b.status
+      name: b.name,
+      phone: b.phone,
+      status: b.status,
+      apptDate: b.apptDate,
+      apptTime: timeForSheet,
+      bookedBy: b.bookedBy,
+      advisor: b.advisor,
+      notes: b.notes,
+      email: b.email
     });
   } catch(e) { console.warn('Sheet update failed:', e); }
 
