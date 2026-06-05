@@ -293,8 +293,12 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
     <div class="section-label" style="margin-top:32px">Saved Intakes (Drafts)</div>
     <div id="drafts-panel" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06)">
+        <input type="text" id="drafts-search" placeholder="🔍  Search by name..." oninput="filterDrafts(this.value)" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 12px;font-size:13px;color:#f0ede6;outline:none;font-family:'DM Sans',sans-serif">
+      </div>
       <div id="drafts-loading" style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,0.35)">Loading drafts...</div>
       <div id="drafts-list"></div>
+      <div id="drafts-count" style="padding:8px 20px;font-size:11px;color:rgba(255,255,255,0.25);border-top:1px solid rgba(255,255,255,0.06);display:none"></div>
       <div id="drafts-empty" style="display:none;padding:20px;font-size:13px;color:rgba(255,255,255,0.3);text-align:center">No saved intakes. Use the consultation tool and click Save Draft.</div>
     </div>
     <div class="section-label" style="margin-top:32px">Recent assessments</div>
@@ -632,42 +636,84 @@ function testAPI() {
 }
 
 
+var _allDrafts = [];
+
 function loadHubDrafts() {
   var loadingEl = document.getElementById('drafts-loading');
   var listEl = document.getElementById('drafts-list');
   var emptyEl = document.getElementById('drafts-empty');
   try {
-    var drafts = JSON.parse(localStorage.getItem('fct_drafts') || '[]');
+    _allDrafts = JSON.parse(localStorage.getItem('fct_drafts') || '[]');
+    // Sort newest first
+    _allDrafts.sort(function(a,b){ return new Date(b._savedAt||0) - new Date(a._savedAt||0); });
     if (loadingEl) loadingEl.style.display = 'none';
-    if (!drafts.length) { if (emptyEl) emptyEl.style.display = 'block'; return; }
-    if (!listEl) return;
-    listEl.innerHTML = '';
-    drafts.forEach(function(d) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.06)';
-      var info = document.createElement('div');
-      var nameEl = document.createElement('div');
-      nameEl.style.cssText = 'font-weight:600;color:#f0ede6;font-size:14px';
-      nameEl.textContent = d._name || 'Unnamed';
-      var meta = document.createElement('div');
-      meta.style.cssText = 'font-size:12px;color:#888;margin-top:2px';
-      meta.textContent = 'Consult: ' + (d['consult-date']||'—') + ' · Saved: ' + (d._savedAt ? new Date(d._savedAt).toLocaleDateString('en-US') : '—');
-      info.appendChild(nameEl);
-      info.appendChild(meta);
-      var openBtn = document.createElement('button');
-      openBtn.textContent = 'Open Intake';
-      openBtn.style.cssText = 'background:#00e5a0;color:#000;border:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700';
-      openBtn.onclick = (function(id) {
-        return function() {
-          window.open('fitness-consultation-tool.html#draft=' + id, '_blank');
-        };
-      })(d._id);
-      row.appendChild(info);
-      row.appendChild(openBtn);
-      listEl.appendChild(row);
-    });
+    if (!_allDrafts.length) { if (emptyEl) emptyEl.style.display = 'block'; return; }
+    renderDrafts(_allDrafts, '');
   } catch(e) {
     if (loadingEl) loadingEl.textContent = 'Could not load drafts.';
+  }
+}
+
+function filterDrafts(query) {
+  renderDrafts(_allDrafts, query.toLowerCase().trim());
+}
+
+function renderDrafts(drafts, query) {
+  var listEl = document.getElementById('drafts-list');
+  var emptyEl = document.getElementById('drafts-empty');
+  var countEl = document.getElementById('drafts-count');
+  if (!listEl) return;
+
+  var filtered = query
+    ? drafts.filter(function(d){ return (d._name||'').toLowerCase().includes(query); })
+    : drafts;
+
+  var visible = query ? filtered : filtered.slice(0, 6);
+  var hidden = (!query && filtered.length > 6) ? filtered.length - 6 : 0;
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div style="padding:16px 20px;font-size:13px;color:rgba(255,255,255,0.3);text-align:center">No drafts match "' + query + '"</div>';
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (countEl) countEl.style.display = 'none';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  visible.forEach(function(d) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.06)';
+    var info = document.createElement('div');
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-weight:600;color:#f0ede6;font-size:14px';
+    nameEl.textContent = d._name || 'Unnamed';
+    var meta = document.createElement('div');
+    meta.style.cssText = 'font-size:12px;color:#888;margin-top:2px';
+    meta.textContent = 'Consult: ' + (d['consult-date']||'—') + ' · Saved: ' + (d._savedAt ? new Date(d._savedAt).toLocaleDateString('en-US') : '—');
+    info.appendChild(nameEl);
+    info.appendChild(meta);
+    var openBtn = document.createElement('button');
+    openBtn.textContent = 'Open Intake';
+    openBtn.style.cssText = 'background:#00e5a0;color:#000;border:none;padding:7px 14px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700';
+    openBtn.onclick = (function(id) {
+      return function() { window.open('fitness-consultation-tool.html#draft=' + id, '_blank'); };
+    })(d._id);
+    row.appendChild(info);
+    row.appendChild(openBtn);
+    listEl.appendChild(row);
+  });
+
+  if (countEl) {
+    if (hidden > 0) {
+      countEl.style.display = 'block';
+      countEl.textContent = 'Showing 6 of ' + filtered.length + ' drafts — search above to find older ones';
+    } else if (query && filtered.length) {
+      countEl.style.display = 'block';
+      countEl.textContent = filtered.length + ' result' + (filtered.length !== 1 ? 's' : '') + ' for "' + query + '"';
+    } else {
+      countEl.style.display = 'none';
+    }
   }
 }
 window.addEventListener('load', function() {
