@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Coach &amp; Manager Dashboard · Retro Fitness</title>
+<title>PT Dashboard · Retro Fitness</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -362,6 +362,7 @@
     <select class="month-selector" id="monthSelect" onchange="renderAll()">
       <option value="all">All Time</option>
     </select>
+    <a href="session-log.html" target="_blank" style="font-family:var(--font);font-size:12px;color:#000;background:var(--green);border:none;border-radius:8px;padding:7px 14px;cursor:pointer;text-decoration:none;font-weight:600">+ Log Session</a>
     <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
     <div class="last-updated" id="lastUpdated">Loading...</div>
   </div>
@@ -635,6 +636,53 @@
       </table>
     </div>
   </div>
+
+  <!-- ROW 6: Coach Communication Snapshot -->
+  <div class="section-hdr" style="margin-top:28px"><div class="section-title">📲 Coach Communication Snapshot</div><div class="section-line"></div><a href="session-log.html" target="_blank" style="font-size:12px;color:var(--green);text-decoration:none;white-space:nowrap;flex-shrink:0">→ Open Session Log</a></div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Coach Activity This Week</span>
+      <span style="font-size:11px;font-weight:400;color:var(--text3);font-family:var(--mono)" id="snapshot-week-label"></span>
+    </div>
+    <div class="card-sub">Sessions logged, touchpoints made, and client coverage — pulled from the Session Log tool</div>
+    <div id="m-coach-snapshot">
+      <div class="empty-state">No session log data yet. <a href="session-log.html" target="_blank" style="color:var(--green)">Open Session Log →</a></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:20px">
+    <div class="card">
+      <div class="card-title">⚑ Open Follow-Ups</div>
+      <div class="card-sub">Flagged by coaches — needs management awareness</div>
+      <div id="m-open-followups" class="scroll-list" style="max-height:280px">
+        <div class="empty-state">No open follow-ups.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🟢 Client Coverage This Week</div>
+      <div class="card-sub">Which clients have been touched by their coach</div>
+      <div id="m-client-coverage" class="scroll-list" style="max-height:280px">
+        <div class="empty-state">No session log data yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">📋 Recent Session & Touchpoint Log</div>
+    <div class="card-sub">Last 20 entries across all coaches</div>
+    <div class="scroll-list">
+      <table class="data-table" id="m-session-log-table">
+        <thead><tr>
+          <th>Date</th><th>Type</th><th>Coach</th><th>Client</th>
+          <th>Method / Focus</th><th>Score</th><th>Notes</th><th>Follow-Up</th>
+        </tr></thead>
+        <tbody id="m-session-log-body">
+          <tr><td colspan="8" class="empty-state">No entries yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 
 </div>
 </div>
@@ -1071,6 +1119,144 @@ function updateChecklistProgress() {
 // ══════════════════════════════════════════════════════════════
 // MANAGER VIEW
 // ══════════════════════════════════════════════════════════════
+
+// ── COACH COMMUNICATION SNAPSHOT (from session-log localStorage) ──────────────
+function renderCoachSnapshot() {
+  let entries = [];
+  try { entries = JSON.parse(localStorage.getItem('session_log_entries') || '[]'); } catch(e) {}
+
+  const weekStart = getWeekStart();
+  const weekEntries = entries.filter(e => e.date >= weekStart);
+
+  // Week label
+  const wl = document.getElementById('snapshot-week-label');
+  if (wl) wl.textContent = 'Week of ' + weekStart;
+
+  // Coach breakdown table
+  const coaches = [...new Set(entries.map(e=>e.coach).filter(Boolean))];
+  const snapshotEl = document.getElementById('m-coach-snapshot');
+  if (snapshotEl) {
+    if (!coaches.length) {
+      snapshotEl.innerHTML = '<div class="empty-state">No session log data yet. <a href="session-log.html" target="_blank" style="color:var(--green)">Open Session Log →</a></div>';
+    } else {
+      const weekClients = new Set(weekEntries.map(e=>e.client));
+      const totalClients = new Set(entries.map(e=>e.client)).size;
+      snapshotEl.innerHTML = `
+        <div style="display:grid;grid-template-columns:180px repeat(6,1fr);border-bottom:1px solid var(--border2);margin-bottom:4px">
+          ${['Coach','Sessions','Touchpoints','Clients Covered','Avg Score','Follow-Ups','Last Active'].map(h =>
+            `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:8px 12px">${h}</div>`
+          ).join('')}
+        </div>
+        ${coaches.map(coach => {
+          const ce = entries.filter(e=>e.coach===coach);
+          const cw = weekEntries.filter(e=>e.coach===coach);
+          const cs = cw.filter(e=>e.type==='session');
+          const ct = cw.filter(e=>e.type==='touchpoint');
+          const clientsCovered = new Set(cw.map(e=>e.client)).size;
+          const totalCoachClients = new Set(ce.map(e=>e.client)).size;
+          const scores = cs.filter(e=>e.sessionScore>0).map(e=>e.sessionScore);
+          const avgScore = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
+          const openFU = ce.filter(e=>e.followUp).length;
+          const lastEntry = ce.sort((a,b)=>b.date.localeCompare(a.date))[0];
+          const lastDate = lastEntry ? lastEntry.date : '—';
+          const coveragePct = totalCoachClients > 0 ? Math.round((clientsCovered/totalCoachClients)*100) : 0;
+          const coverageColor = coveragePct >= 80 ? 'var(--green)' : coveragePct >= 50 ? 'var(--gold)' : 'var(--red)';
+          return `<div style="display:grid;grid-template-columns:180px repeat(6,1fr);border-bottom:1px solid var(--border);align-items:center">
+            <div style="padding:14px 12px">
+              <div style="font-weight:600;font-size:14px">${coach}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">${totalCoachClients} total clients</div>
+            </div>
+            <div style="padding:14px 12px;font-family:var(--condensed);font-size:24px;font-weight:800;color:var(--green)">${cs.length}</div>
+            <div style="padding:14px 12px;font-family:var(--condensed);font-size:24px;font-weight:800;color:var(--blue)">${ct.length}</div>
+            <div style="padding:14px 12px">
+              <div style="font-family:var(--condensed);font-size:24px;font-weight:800;color:${coverageColor}">${clientsCovered}/${totalCoachClients}</div>
+              <div style="font-size:10px;color:var(--text3);margin-top:2px">${coveragePct}% covered</div>
+            </div>
+            <div style="padding:14px 12px;font-family:var(--condensed);font-size:24px;font-weight:800">${avgScore}</div>
+            <div style="padding:14px 12px;font-family:var(--condensed);font-size:24px;font-weight:800;color:${openFU>0?'var(--gold)':'var(--text)'}">${openFU}</div>
+            <div style="padding:14px 12px;font-family:var(--mono);font-size:11px;color:var(--text3)">${lastDate}</div>
+          </div>`;
+        }).join('')}
+      `;
+    }
+  }
+
+  // Open follow-ups
+  const fuEl = document.getElementById('m-open-followups');
+  if (fuEl) {
+    const openFU = entries.filter(e=>e.followUp);
+    if (!openFU.length) {
+      fuEl.innerHTML = '<div class="empty-state" style="color:var(--green)">✓ No open follow-ups across all coaches.</div>';
+    } else {
+      fuEl.innerHTML = openFU.slice(0,10).map(e => `
+        <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div style="font-weight:600;font-size:13px">${e.client}</div>
+              <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px">${e.date} · ${e.coach}</div>
+              ${e.followUpDetail ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">${e.followUpDetail}</div>` : ''}
+            </div>
+            <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:var(--gold-dim);color:var(--gold);flex-shrink:0;margin-left:10px">⚑ OPEN</span>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // Client coverage grid
+  const covEl = document.getElementById('m-client-coverage');
+  if (covEl) {
+    const allClients = [...new Set(entries.map(e=>e.client).filter(Boolean))];
+    const coveredThisWeek = new Set(weekEntries.map(e=>e.client));
+    if (!allClients.length) {
+      covEl.innerHTML = '<div class="empty-state">No clients in session log yet.</div>';
+    } else {
+      covEl.innerHTML = allClients.map(client => {
+        const covered = coveredThisWeek.has(client);
+        const coach = entries.find(e=>e.client===client)?.coach || '—';
+        const lastDate = entries.filter(e=>e.client===client).sort((a,b)=>b.date.localeCompare(a.date))[0]?.date || '—';
+        return `
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+            <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${covered?'var(--green)':'rgba(255,255,255,0.15)'}"></div>
+            <div style="flex:1;font-size:13px;font-weight:${covered?'600':'400'};color:${covered?'var(--text)':'var(--text2)'}">${client}</div>
+            <div style="font-size:11px;color:var(--text3)">${coach}</div>
+            <div style="font-size:10px;padding:2px 7px;border-radius:4px;${covered?'background:var(--green-dim);color:var(--green)':'background:var(--surface3);color:var(--text3)'}">${covered?'✓ Seen':'Not yet'}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // Session log table
+  const tbody = document.getElementById('m-session-log-body');
+  if (tbody) {
+    if (!entries.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No entries yet. <a href="session-log.html" target="_blank" style="color:var(--green)">Open Session Log →</a></td></tr>';
+    } else {
+      tbody.innerHTML = entries.slice(0,20).map(e => {
+        const sc = e.sessionScore;
+        const scColor = s => !s ? '' : s>=8?'color:var(--green)':s>=5?'color:var(--gold)':'color:var(--red)';
+        return `<tr>
+          <td class="td-mono">${e.date}</td>
+          <td><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;${e.type==='session'?'background:var(--green-dim);color:var(--green)':'background:var(--blue-dim);color:var(--blue)'}">${e.type==='session'?'Session':'Touch'}</span></td>
+          <td class="td-name">${e.coach||'—'}</td>
+          <td class="td-name">${e.client||'—'}</td>
+          <td class="td-muted" style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.type==='session'?(e.focus||'—'):(e.method||'—')}</td>
+          <td style="font-family:var(--mono);font-size:12px;${scColor(sc)}">${sc||'—'}</td>
+          <td class="td-muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.notes||'—'}</td>
+          <td>${e.followUp?'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--gold-dim);color:var(--gold)">⚑ Yes</span>':'<span style="color:var(--text3);font-size:12px">—</span>'}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+}
+
+function getWeekStart() {
+  const d = new Date(); const day = d.getDay();
+  const monday = new Date(d); monday.setDate(d.getDate() - (day===0?6:day-1));
+  return monday.toISOString().slice(0,10);
+}
+
 function renderManagerView() {
   const intakes = getFilteredIntakes();
   const cis = getFilteredCheckins();
@@ -1083,6 +1269,7 @@ function renderManagerView() {
   renderConvChart(intakes);
   renderPipelineChart();
   renderRecentTable(intakes);
+  renderCoachSnapshot();
 }
 
 function renderManagerKPIs(intakes, cis) {
