@@ -2226,7 +2226,7 @@ function buildIntakeRow(decision, freq, length, followUpDays) {
     gv('goals'),
     outcome + (document.getElementById('decline-reason') && document.getElementById('decline-reason').value ? ' - ' + document.getElementById('decline-reason').value : ''),
     '',
-    assessmentText.substring(0, 800) + (assessmentText.length > 800 ? '...' : ''),
+    (assessmentText || '').replace(/#{1,6}\s*/g,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/[\u{1F000}-\u{1FFFF}]/gu,'').replace(/[\u{2600}-\u{27BF}]/gu,'').replace(/SECTION:\s*/gi,'').trim().substring(0, 800),
     '=HYPERLINK("https://coachted-retro.github.io/pt-tools/fitness-consultation-tool.html","View Tool")'
   ];
 }
