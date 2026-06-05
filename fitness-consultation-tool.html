@@ -1813,12 +1813,23 @@ function renderBodyCompChart() {
   if (!lean && !fat) return;
 
   var totalWeight = lean + fat;
-  var fatLossPct  = pbf > 30 ? 0.35 : pbf > 25 ? 0.30 : pbf > 20 ? 0.25 : 0.20;
-  var projFatLoss = Math.min(fat * fatLossPct, 52);
-  var projFat     = Math.max(fat - projFatLoss, totalWeight * 0.08);
-  var leanGain    = (gender.indexOf('f') === 0 || gender === 'female') ? 8 : 14;
+  // Aggressive 12-month fat loss: higher BF% = more loss capacity
+  var fatLossPct  = pbf > 35 ? 0.55 : pbf > 30 ? 0.48 : pbf > 25 ? 0.42 : pbf > 20 ? 0.35 : 0.28;
+  var projFatLoss = Math.min(fat * fatLossPct, 65);
+  var projFat     = Math.max(fat - projFatLoss, totalWeight * 0.06);
+  // Check if goal is weight gain / bulking
+  var goalsText   = (document.getElementById('goals') ? document.getElementById('goals').value : '').toLowerCase();
+  var wantGain    = /bulk|gain weight|gain mass|weight gain|add weight|put on weight|heavier/.test(goalsText);
+  var isFem       = gender.indexOf('f') === 0 || gender === 'female';
+  // Lean mass: moderate gain for everyone; more if bulking goal
+  var leanGain    = wantGain ? (isFem ? 12 : 20) : (isFem ? 6 : 10);
   var projLean    = lean + leanGain;
   var projWeight  = projLean + projFat;
+  // If not a bulk goal and projected weight > current, cap it so we always show a decrease
+  if (!wantGain && projWeight >= totalWeight) {
+    projLean = Math.max(lean, totalWeight * 0.88 - projFat);
+    projWeight = projLean + projFat;
+  }
   var projPbf     = ((projFat / projWeight) * 100).toFixed(1);
   var currPbf     = pbf ? pbf.toFixed(1) : ((fat / totalWeight) * 100).toFixed(1);
 
@@ -1886,7 +1897,7 @@ function renderBodyCompChart() {
     barsEl.innerHTML =
       barRow('Lean Mass',    lean,        projLean,   'rgba(90,142,200,0.8)',  'rgba(76,175,125,0.9)') +
       barRow('Body Fat',     fat,         projFat,    'rgba(212,168,67,0.8)',  'rgba(76,175,125,0.6)') +
-      barRow('Total Weight', totalWeight, projWeight, 'rgba(155,111,212,0.7)', 'rgba(76,175,125,0.7)');
+      barRow(wantGain ? 'Total Weight' : 'Goal Weight', totalWeight, projWeight, 'rgba(155,111,212,0.7)', 'rgba(76,175,125,0.7)');
   }
 
   var stats = document.getElementById('body-comp-stats');
@@ -1895,165 +1906,199 @@ function renderBodyCompChart() {
       statCard('BF%',    'Body Fat',   currPbf + '%',               projPbf + '%',                           '#4caf7d') +
       statCard('Muscle', 'Lean Mass',  lean.toFixed(1) + ' lb',     projLean.toFixed(1) + ' lb',             '#4caf7d') +
       statCard('Lost',   'Fat Loss',   fat.toFixed(1) + ' lb',      '-' + (fat - projFat).toFixed(1) + ' lb','#4caf7d') +
-      statCard('Weight', 'Body Wt.',   totalWeight.toFixed(1) + ' lb', projWeight.toFixed(1) + ' lb',        projWeight < totalWeight ? '#4caf7d' : '#d4a843');
+      statCard('Weight', 'Body Wt.',   totalWeight.toFixed(1) + ' lb', projWeight.toFixed(1) + ' lb',        '#4caf7d');
   }
 
-  // Silhouette side-by-side
+  // Silhouette side-by-side — realistic anatomical figures
   var sil = document.getElementById('body-silhouette');
   if (sil) {
-    var bfPctNow = pbf ? parseFloat(pbf) : ((fat / totalWeight) * 100);
+    var bfPctNow  = pbf ? parseFloat(pbf) : ((fat / totalWeight) * 100);
     var bfPctProj = parseFloat(projPbf);
-    var isFemale = (gender.indexOf('f') === 0 || gender === 'female' || gender === 'woman' || gender === 'w');
+    var isFemale  = (gender.indexOf('f') === 0 || gender === 'female' || gender === 'woman' || gender === 'w');
 
-    function buildSilhouette(pct, isFem) {
-      // Interpolation: t=0 → lean/ecto (low BF), t=1 → heavy/endo (high BF)
-      // Male lean ~8%, heavy ~35%+; Female lean ~16%, heavy ~40%+
-      var bfLow  = isFem ? 14 : 8;
-      var bfHigh = isFem ? 42 : 36;
-      var t = Math.max(0, Math.min(1, (pct - bfLow) / (bfHigh - bfLow)));
-
-      // All measurements interpolated between lean and heavy
-      // Coords in a 80x200 viewBox, center=40
-      var cx = 40;
-
-      // Head: small oval
-      var headRx = 10, headRy = 12;
-      var headCy = 14;
-
-      // Neck
-      var neckW2 = lerp(4, 6, t);       // half-width
-      var neckTop = headCy + headRy;
-      var neckBot = neckTop + lerp(7, 9, t);
-
-      // Shoulders
-      var shlY    = neckBot + lerp(2, 3, t);
-      var shlW2   = lerp(isFem ? 15 : 17, isFem ? 18 : 24, t);  // shoulder half-width
-
-      // Chest / waist / hip (half-widths)
-      var chestW2 = lerp(isFem ? 13 : 15, isFem ? 17 : 23, t);
-      var waistW2 = isFem ? lerp(10, 16, t) : lerp(11, 20, t);
-      var hipW2   = isFem ? lerp(14, 20, t) : lerp(13, 21, t);
-
-      // Belly bulge (endomorph) - protrudes forward, shown as extra torso width at mid-section
-      // We simulate by widening waist more aggressively
-      var bellyW2 = isFem ? lerp(10, 19, t) : lerp(11, 24, t);
-
-      // Y positions
-      var chestY  = shlY + lerp(10, 12, t);
-      var bellyY  = shlY + lerp(22, 26, t);
-      var waistY  = shlY + lerp(18, 24, t);
-      var hipTopY = waistY + lerp(4, 7, t);
-      var hipBotY = hipTopY + lerp(10, 14, t);
-      var crotchY = hipBotY + lerp(2, 4, t);
-
-      // Arms
-      var armTopX_L = cx - shlW2 + 1;
-      var armTopX_R = cx + shlW2 - 1;
-      var armMidX_L = cx - shlW2 - lerp(6, 9, t);
-      var armMidX_R = cx + shlW2 + lerp(6, 9, t);
-      var armBotX_L = cx - shlW2 - lerp(4, 7, t);
-      var armBotX_R = cx + shlW2 + lerp(4, 7, t);
-      var armMidY   = shlY + lerp(16, 20, t);
-      var armBotY   = shlY + lerp(38, 44, t);
-      var armW      = lerp(5, 8, t);
-
-      // Legs
-      var legTopGap = lerp(3, 2, t);   // gap from center at crotch
-      var kneeX_L   = cx - lerp(7, 12, t);
-      var kneeX_R   = cx + lerp(7, 12, t);
-      var kneeY     = crotchY + lerp(30, 34, t);
-      var ankleX_L  = cx - lerp(5, 9, t);
-      var ankleX_R  = cx + lerp(5, 9, t);
-      var ankleY    = kneeY + lerp(28, 30, t);
-      var legW      = lerp(7, 11, t);
-
-      // Female: add breast curve at chest, wider hips
-      var breastBump = isFem ? lerp(0, 3, Math.min(1, t * 1.4)) : 0;
-
-      // Build path for torso (left side mirror)
-      // Torso outline as a smooth path
-      var torso = 'M' + (cx - neckW2) + ',' + neckBot +
-        ' L' + (cx - shlW2) + ',' + shlY +
-        ' Q' + (cx - chestW2 - breastBump) + ',' + chestY +
-            ' ' + (cx - bellyW2) + ',' + bellyY +
-        ' Q' + (cx - waistW2) + ',' + waistY +
-            ' ' + (cx - hipW2) + ',' + hipTopY +
-        ' L' + (cx - hipW2 + 2) + ',' + hipBotY +
-        ' L' + (cx - legTopGap) + ',' + crotchY +
-        ' L' + (cx + legTopGap) + ',' + crotchY +
-        ' L' + (cx + hipW2 - 2) + ',' + hipBotY +
-        ' L' + (cx + hipW2) + ',' + hipTopY +
-        ' Q' + (cx + waistW2) + ',' + waistY +
-            ' ' + (cx + bellyW2) + ',' + bellyY +
-        ' Q' + (cx + chestW2 + breastBump) + ',' + chestY +
-            ' ' + (cx + shlW2) + ',' + shlY +
-        ' L' + (cx + neckW2) + ',' + neckBot + ' Z';
-
-      // Left arm path
-      var leftArm = 'M' + armTopX_L + ',' + shlY +
-        ' Q' + armMidX_L + ',' + armMidY +
-            ' ' + armBotX_L + ',' + armBotY;
-
-      // Right arm path
-      var rightArm = 'M' + armTopX_R + ',' + shlY +
-        ' Q' + armMidX_R + ',' + armMidY +
-            ' ' + armBotX_R + ',' + armBotY;
-
-      // Left leg
-      var leftLeg = 'M' + (cx - legTopGap) + ',' + crotchY +
-        ' Q' + kneeX_L + ',' + kneeY +
-            ' ' + ankleX_L + ',' + ankleY;
-
-      // Right leg
-      var rightLeg = 'M' + (cx + legTopGap) + ',' + crotchY +
-        ' Q' + kneeX_R + ',' + kneeY +
-            ' ' + ankleX_R + ',' + ankleY;
-
-      var totalH = ankleY + 6;
-      var vb = '0 0 80 ' + totalH;
-
-      return {
-        svg: '<svg width="80" height="' + totalH + '" viewBox="' + vb + '" xmlns="http://www.w3.org/2000/svg">' +
-          // shadow/base
-          '<ellipse cx="' + cx + '" cy="' + (totalH - 3) + '" rx="' + lerp(16, 22, t) + '" ry="3" fill="rgba(0,0,0,0.08)"/>' +
-          // arms (behind torso)
-          '<path d="' + leftArm  + '" stroke="COLOR" stroke-width="' + armW + '" stroke-linecap="round" fill="none"/>' +
-          '<path d="' + rightArm + '" stroke="COLOR" stroke-width="' + armW + '" stroke-linecap="round" fill="none"/>' +
-          // torso
-          '<path d="' + torso + '" fill="COLOR"/>' +
-          // legs
-          '<path d="' + leftLeg  + '" stroke="COLOR" stroke-width="' + legW + '" stroke-linecap="round" fill="none"/>' +
-          '<path d="' + rightLeg + '" stroke="COLOR" stroke-width="' + legW + '" stroke-linecap="round" fill="none"/>' +
-          // head
-          '<ellipse cx="' + cx + '" cy="' + headCy + '" rx="' + headRx + '" ry="' + headRy + '" fill="COLOR"/>' +
-          // neck
-          '<rect x="' + (cx - neckW2) + '" y="' + neckTop + '" width="' + (neckW2 * 2) + '" height="' + (neckBot - neckTop) + '" rx="2" fill="COLOR"/>' +
-          '</svg>',
-        height: totalH
-      };
+    // t=0 lean/ecto, t=1 heavy/endo
+    function bfToT(pct, fem) {
+      var lo = fem ? 14 : 8, hi = fem ? 43 : 37;
+      return Math.max(0, Math.min(1, (pct - lo) / (hi - lo)));
     }
-
     function lerp(a, b, t) { return a + (b - a) * t; }
 
-    var nowData  = buildSilhouette(bfPctNow, isFemale);
-    var projData = buildSilhouette(bfPctProj, isFemale);
+    function buildFigure(pct, fem, col) {
+      var t  = bfToT(pct, fem);
+      var t2 = t * t;  // ease for belly bulge
 
-    function colorSvg(svgStr, col) { return svgStr.replace(/COLOR/g, col); }
+      // ── viewbox & centre ──────────────────────────────────
+      var W = 90, cx = 45;
 
-    var maxH = Math.max(nowData.height, projData.height);
+      // ── HEAD ──────────────────────────────────────────────
+      var headRx = lerp(9.5, 11.5, t);
+      var headRy = lerp(11.5, 12.5, t);
+      var headCy = 13;
+
+      // ── NECK ──────────────────────────────────────────────
+      var neckW  = lerp(fem ? 6 : 7, fem ? 8 : 10, t);
+      var nkTop  = headCy + headRy - 1;
+      var nkBot  = nkTop + lerp(7, 9, t);
+
+      // ── SHOULDER YOKE ─────────────────────────────────────
+      var shlY   = nkBot + 1;
+      var shlW2  = lerp(fem ? 15 : 18, fem ? 20 : 26, t);
+
+      // ── TORSO KEY Y-COORDS ─────────────────────────────────
+      var chestY = shlY + lerp(fem ? 11 : 9, fem ? 14 : 13, t);
+      var waistY = shlY + lerp(fem ? 24 : 22, fem ? 31 : 29, t);
+      var hipTopY= waistY + lerp(4, 7, t);
+      var hipBotY= hipTopY + lerp(fem ? 12 : 10, fem ? 17 : 15, t);
+      var crotY  = hipBotY + lerp(3, 5, t);
+
+      // ── TORSO WIDTHS (half) ────────────────────────────────
+      var chestW2= lerp(fem ? 13 : 15, fem ? 18 : 24, t);
+      var waistW2= lerp(fem ? 10 : 12, fem ? 18 : 23, t);
+      var hipW2  = lerp(fem ? 15 : 13, fem ? 22 : 20, t);
+      // belly overhang (quadratic for natural bulge)
+      var bellyW2= lerp(fem ? 10 : 12, fem ? 19 : 26, t) + 4 * t2;
+      var bellyY = lerp(waistY - 2, waistY + 3, t);
+
+      // ── FEMALE BREAST CURVE ────────────────────────────────
+      var bustW2 = fem ? lerp(13, 20, t) : chestW2;
+      var bustY  = fem ? lerp(chestY + 4, chestY + 7, t) : chestY;
+      var bustCp = fem ? lerp(3, 7, t) : 0;  // control-point overhang
+
+      // ── TORSO PATH ────────────────────────────────────────
+      var torsoPath;
+      if (fem) {
+        torsoPath =
+          'M' + (cx - neckW/2) + ',' + nkBot +
+          ' L' + (cx - shlW2)  + ',' + shlY +
+          // left chest -> bust curve
+          ' Q' + (cx - bustW2 - bustCp) + ',' + bustY +
+              ' ' + (cx - waistW2) + ',' + waistY +
+          // left hip
+          ' Q' + (cx - hipW2 + 1) + ',' + hipTopY +
+              ' ' + (cx - hipW2 + 1) + ',' + hipBotY +
+          ' L' + (cx - 4) + ',' + crotY +
+          ' L' + (cx + 4) + ',' + crotY +
+          ' L' + (cx + hipW2 - 1) + ',' + hipBotY +
+          ' Q' + (cx + hipW2 - 1) + ',' + hipTopY +
+              ' ' + (cx + waistW2) + ',' + waistY +
+          // right bust curve
+          ' Q' + (cx + bustW2 + bustCp) + ',' + bustY +
+              ' ' + (cx + shlW2) + ',' + shlY +
+          ' L' + (cx + neckW/2) + ',' + nkBot + ' Z';
+      } else {
+        // Male: wider shoulders, taper to waist, slight hip, belly bulge
+        torsoPath =
+          'M' + (cx - neckW/2) + ',' + nkBot +
+          ' L' + (cx - shlW2)  + ',' + shlY +
+          // left side: chest → belly → waist → hip
+          ' C' + (cx - chestW2) + ',' + (chestY + 2) +
+              ',' + (cx - bellyW2) + ',' + (bellyY - 3) +
+              ',' + (cx - bellyW2) + ',' + bellyY +
+          ' C' + (cx - bellyW2) + ',' + (bellyY + 3) +
+              ',' + (cx - hipW2)   + ',' + hipTopY +
+              ',' + (cx - hipW2)   + ',' + hipBotY +
+          ' L' + (cx - 4) + ',' + crotY +
+          ' L' + (cx + 4) + ',' + crotY +
+          ' L' + (cx + hipW2) + ',' + hipBotY +
+          ' C' + (cx + hipW2)   + ',' + hipTopY +
+              ',' + (cx + bellyW2) + ',' + (bellyY + 3) +
+              ',' + (cx + bellyW2) + ',' + bellyY +
+          ' C' + (cx + bellyW2) + ',' + (bellyY - 3) +
+              ',' + (cx + chestW2) + ',' + (chestY + 2) +
+              ',' + (cx + shlW2)   + ',' + shlY +
+          ' L' + (cx + neckW/2) + ',' + nkBot + ' Z';
+      }
+
+      // ── ARMS ──────────────────────────────────────────────
+      var armW     = lerp(fem ? 5 : 6, fem ? 8 : 10, t);
+      var armTopLx = cx - shlW2 + 2;
+      var armTopRx = cx + shlW2 - 2;
+      var armMidLx = cx - shlW2 - lerp(fem ? 8 : 9, fem ? 11 : 13, t);
+      var armMidRx = cx + shlW2 + lerp(fem ? 8 : 9, fem ? 11 : 13, t);
+      var armBotLx = cx - shlW2 - lerp(fem ? 6 : 7, fem ? 9 : 11, t);
+      var armBotRx = cx + shlW2 + lerp(fem ? 6 : 7, fem ? 9 : 11, t);
+      var armMidY  = shlY + lerp(18, 23, t);
+      var armBotY  = shlY + lerp(42, 50, t);
+
+      // ── LEGS ──────────────────────────────────────────────
+      var legW     = lerp(fem ? 8 : 9, fem ? 13 : 14, t);
+      var thighGap = lerp(1.5, 0.5, t);  // thighs touch more at heavier weight
+      var kneeX_L  = cx - lerp(fem ? 8 : 9, fem ? 13 : 14, t);
+      var kneeX_R  = cx + lerp(fem ? 8 : 9, fem ? 13 : 14, t);
+      var kneeY    = crotY + lerp(32, 37, t);
+      var ankleX_L = cx - lerp(fem ? 5 : 6, fem ? 8 : 9, t);
+      var ankleX_R = cx + lerp(fem ? 5 : 6, fem ? 8 : 9, t);
+      var ankleY   = kneeY + lerp(30, 33, t);
+
+      // ── MALE MUSCLE DETAIL (pec line, ab lines) ────────────
+      var detailLines = '';
+      if (!fem && t < 0.7) {
+        var musAlpha = (0.7 - t) * 0.4;  // fade out on heavier bodies
+        var pecY   = shlY + lerp(8, 11, t);
+        var pecW   = lerp(8, 6, t);
+        var abdY1  = shlY + lerp(16, 19, t);
+        var abdY2  = shlY + lerp(22, 26, t);
+        // pec separation line
+        detailLines +=
+          '<line x1="' + cx + '" y1="' + (shlY+2) + '" x2="' + cx + '" y2="' + (pecY+2) + '"' +
+          ' stroke="' + col + '" stroke-width="0.8" opacity="' + musAlpha + '"/>';
+        // ab lines (horizontal)
+        [abdY1, abdY2].forEach(function(ay) {
+          detailLines +=
+            '<line x1="' + (cx - pecW) + '" y1="' + ay + '" x2="' + (cx + pecW) + '" y2="' + ay + '"' +
+            ' stroke="' + col + '" stroke-width="0.7" opacity="' + musAlpha + '"/>';
+        });
+      }
+
+      var totalH = ankleY + 10;
+
+      var svg =
+        '<svg width="' + W + '" height="' + totalH + '" viewBox="0 0 ' + W + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg">' +
+          // ground shadow
+          '<ellipse cx="' + cx + '" cy="' + (totalH - 4) + '" rx="' + lerp(14, 20, t) + '" ry="3.5"' +
+          ' fill="rgba(0,0,0,0.10)"/>' +
+          // arms (render behind torso)
+          '<path d="M' + armTopLx + ',' + shlY + ' Q' + armMidLx + ',' + armMidY + ' ' + armBotLx + ',' + armBotY + '"' +
+          ' stroke="' + col + '" stroke-width="' + armW + '" stroke-linecap="round" fill="none" opacity="0.88"/>' +
+          '<path d="M' + armTopRx + ',' + shlY + ' Q' + armMidRx + ',' + armMidY + ' ' + armBotRx + ',' + armBotY + '"' +
+          ' stroke="' + col + '" stroke-width="' + armW + '" stroke-linecap="round" fill="none" opacity="0.88"/>' +
+          // torso
+          '<path d="' + torsoPath + '" fill="' + col + '" opacity="0.88"/>' +
+          // muscle detail
+          detailLines +
+          // legs
+          '<path d="M' + (cx - thighGap) + ',' + crotY + ' Q' + kneeX_L + ',' + kneeY + ' ' + ankleX_L + ',' + ankleY + '"' +
+          ' stroke="' + col + '" stroke-width="' + legW + '" stroke-linecap="round" fill="none" opacity="0.9"/>' +
+          '<path d="M' + (cx + thighGap) + ',' + crotY + ' Q' + kneeX_R + ',' + kneeY + ' ' + ankleX_R + ',' + ankleY + '"' +
+          ' stroke="' + col + '" stroke-width="' + legW + '" stroke-linecap="round" fill="none" opacity="0.9"/>' +
+          // head (on top)
+          '<ellipse cx="' + cx + '" cy="' + headCy + '" rx="' + headRx + '" ry="' + headRy + '" fill="' + col + '" opacity="0.9"/>' +
+          // neck
+          '<rect x="' + (cx - neckW/2) + '" y="' + nkTop + '" width="' + neckW + '" height="' + (nkBot - nkTop) + '"' +
+          ' rx="2" fill="' + col + '" opacity="0.88"/>' +
+          // face detail: eyes
+          '<ellipse cx="' + (cx - 3.5) + '" cy="' + (headCy + 1) + '" rx="1.2" ry="1.5" fill="rgba(255,255,255,0.45)"/>' +
+          '<ellipse cx="' + (cx + 3.5) + '" cy="' + (headCy + 1) + '" rx="1.2" ry="1.5" fill="rgba(255,255,255,0.45)"/>' +
+        '</svg>';
+
+      return { svg: svg, height: totalH };
+    }
+
+    var nowFig  = buildFigure(bfPctNow,  isFemale, 'rgba(212,168,67,0.88)');
+    var projFig = buildFigure(bfPctProj, isFemale, '#4caf7d');
 
     sil.innerHTML =
-      '<div style="font-size:9px;font-weight:600;color:var(--text3);text-align:center;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">Body Projection</div>' +
-      '<div style="display:flex;gap:10px;align-items:flex-end;justify-content:center">' +
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
+      '<div style="font-size:9px;font-weight:700;color:var(--text3);text-align:center;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">Body Projection</div>' +
+      '<div style="display:flex;gap:8px;align-items:flex-end;justify-content:center">' +
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">' +
           '<div style="font-size:9px;font-weight:700;color:rgba(212,168,67,0.95);letter-spacing:.06em;text-transform:uppercase">Now</div>' +
-          colorSvg(nowData.svg, 'rgba(212,168,67,0.85)') +
+          nowFig.svg +
           '<div style="font-size:11px;font-weight:700;color:rgba(212,168,67,0.95)">' + bfPctNow.toFixed(1) + '%</div>' +
           '<div style="font-size:9px;color:var(--text3)">body fat</div>' +
         '</div>' +
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">' +
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">' +
           '<div style="font-size:9px;font-weight:700;color:#4caf7d;letter-spacing:.06em;text-transform:uppercase">12 Mo.</div>' +
-          colorSvg(projData.svg, '#4caf7d') +
+          projFig.svg +
           '<div style="font-size:11px;font-weight:700;color:#4caf7d">' + bfPctProj.toFixed(1) + '%</div>' +
           '<div style="font-size:9px;color:var(--text3)">body fat</div>' +
         '</div>' +
