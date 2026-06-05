@@ -825,7 +825,6 @@
   .settings-btn:hover { background: var(--surface2); color: var(--text); }
 #config-overlay { display: none !important; }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -1702,167 +1701,102 @@ function renderBodyCompChart() {
   const fat    = parseFloat(document.getElementById('fat-mass')?.value) || 0;
   const pbf    = parseFloat(document.getElementById('pbf')?.value) || 0;
   const gender = (document.getElementById('gender')?.value || '').toLowerCase();
-  const goals  = (document.getElementById('goals')?.value || document.getElementById('orig-goals')?.value || '').toLowerCase();
 
-  if (!lean && !fat) return; // no data to chart
+  if (!lean && !fat) return;
 
   const totalWeight = lean + fat;
+  const fatLossPct  = pbf > 30 ? 0.35 : pbf > 25 ? 0.30 : pbf > 20 ? 0.25 : 0.20;
+  const projFatLoss = Math.min(fat * fatLossPct, 52);
+  const projFat     = Math.max(fat - projFatLoss, totalWeight * 0.08);
+  const leanGain    = gender.includes('f') || gender === 'female' ? 8 : 14;
+  const projLean    = lean + leanGain;
+  const projWeight  = projLean + projFat;
+  const projPbf     = ((projFat / projWeight) * 100).toFixed(1);
+  const currPbf     = pbf ? pbf.toFixed(1) : ((fat / totalWeight) * 100).toFixed(1);
 
-  // ── Project 12-month targets (aggressive but realistic) ──
-  // Fat loss: 1-1.5 lb/week aggressive = ~52-78 lb/year max; realistic cap based on starting fat
-  const fatLossPct = pbf > 30 ? 0.35 : pbf > 25 ? 0.30 : pbf > 20 ? 0.25 : 0.20;
-  const projFatLoss = Math.min(fat * fatLossPct, 52); // max 52lb fat loss
-  const projFat = Math.max(fat - projFatLoss, totalWeight * 0.08); // floor at ~8% bf
-
-  // Muscle gain: 10-20 lb lean mass in 12 months aggressive
-  const leanGain = gender.includes('f') || gender === 'female' ? 8 : 14;
-  const projLean = lean + leanGain;
-
-  const projWeight = projLean + projFat;
-  const projPbf    = ((projFat / projWeight) * 100).toFixed(1);
-  const currPbf    = pbf || ((fat / totalWeight) * 100).toFixed(1);
-
-  // ── Render Chart ──
   const wrap = document.getElementById('body-comp-chart-wrap');
-  const canvas = document.getElementById('body-comp-canvas');
-  if (!wrap || !canvas) return;
+  if (!wrap) return;
   wrap.style.display = 'block';
 
-  // Destroy existing chart if any
-  if (window._bcChart) { window._bcChart.destroy(); }
+  // Max value for scaling bars
+  const maxVal = Math.max(totalWeight, projWeight) * 1.15;
 
-  const ctx = canvas.getContext('2d');
-  window._bcChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: ['Lean Mass (lb)', 'Body Fat (lb)', 'Total Weight (lb)'],
-      datasets: [
-        {
-          label: 'Today',
-          data: [lean.toFixed(1), fat.toFixed(1), totalWeight.toFixed(1)],
-          backgroundColor: 'rgba(138,106,30,0.7)',
-          borderColor: 'rgba(212,168,67,1)',
-          borderWidth: 2,
-          borderRadius: 6,
-        },
-        {
-          label: '12-Month Target',
-          data: [projLean.toFixed(1), projFat.toFixed(1), projWeight.toFixed(1)],
-          backgroundColor: 'rgba(45,90,61,0.75)',
-          borderColor: 'rgba(76,175,125,1)',
-          borderWidth: 2,
-          borderRadius: 6,
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          labels: { color: '#a8a49e', font: { size: 12, family: "'DM Sans', sans-serif" }, padding: 20 }
-        },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} lb`
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: '#a8a49e', font: { size: 12 } }
-        },
-        y: {
-          grid: { color: 'rgba(255,255,255,0.05)' },
-          ticks: { color: '#a8a49e', font: { size: 11 } },
-          beginAtZero: true
-        }
-      }
-    }
-  });
+  const barPct = (val) => Math.round((val / maxVal) * 100);
 
-  // ── Stat Cards ──
-  const stats = document.getElementById('body-comp-stats');
-  const fatLostLb = (fat - projFat).toFixed(1);
-  const leanGainedLb = (projLean - lean).toFixed(1);
-  const bfDrop = (currPbf - projPbf).toFixed(1);
-  const weightChange = (projWeight - totalWeight).toFixed(1);
+  const barRow = (label, nowVal, projVal, nowColor, projColor) => {
+    const nowPct  = barPct(nowVal);
+    const projPct = barPct(projVal);
+    const diff    = projVal - nowVal;
+    const diffStr = (diff > 0 ? '+' : '') + diff.toFixed(1) + ' lb';
+    const diffColor = diff < 0 ? '#4caf7d' : diff > 0 ? '#4caf7d' : '#888';
+    return \`
+      <div style="margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">\${label}</span>
+          <span style="font-size:11px;color:\${diffColor};font-family:var(--mono)">\${diffStr}</span>
+        </div>
+        <div style="margin-bottom:5px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text3);width:60px;flex-shrink:0">Today</span>
+            <div style="flex:1;height:22px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:\${nowPct}%;background:\${nowColor};border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;transition:width .6s ease">
+                <span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">\${nowVal.toFixed(1)} lb</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:11px;color:var(--text3);width:60px;flex-shrink:0">12 Months</span>
+            <div style="flex:1;height:22px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">
+              <div style="height:100%;width:\${projPct}%;background:\${projColor};border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;transition:width .6s ease">
+                <span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">\${projVal.toFixed(1)} lb</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    \`;
+  };
 
-  const card = (icon, label, now, after, color) => `
-    <div style="background:var(--surface3);border-radius:10px;padding:14px 16px">
-      <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">${icon} ${label}</div>
-      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-        <div><div style="font-size:10px;color:var(--text3)">Today</div><div style="font-size:22px;font-weight:700;font-family:'Cabinet Grotesk',sans-serif">${now}</div></div>
-        <div style="font-size:18px;color:var(--text3)">→</div>
-        <div><div style="font-size:10px;color:var(--text3)">12 Months</div><div style="font-size:22px;font-weight:700;font-family:'Cabinet Grotesk',sans-serif;color:${color}">${after}</div></div>
+  const statCard = (icon, label, now, after, color) => \`
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 16px">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">\${icon} \${label}</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div>
+          <div style="font-size:10px;color:var(--text3)">Today</div>
+          <div style="font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif">\${now}</div>
+        </div>
+        <div style="font-size:16px;color:var(--text3)">→</div>
+        <div>
+          <div style="font-size:10px;color:var(--text3)">12 Months</div>
+          <div style="font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:\${color}">\${after}</div>
+        </div>
       </div>
     </div>
-  `;
+  \`;
 
-  stats.innerHTML =
-    card('🔥', 'Body Fat %',    currPbf + '%',            projPbf + '%',               '#4caf7d') +
-    card('💪', 'Lean Mass',     lean.toFixed(1) + ' lb',  projLean.toFixed(1) + ' lb', '#4caf7d') +
-    card('📉', 'Fat Lost',      '—',                       '-' + fatLostLb + ' lb',     '#4caf7d') +
-    card('⚖️', 'Body Weight',   totalWeight.toFixed(1) + ' lb', projWeight.toFixed(1) + ' lb', parseFloat(weightChange) < 0 ? '#4caf7d' : '#d4a843');
-}
-
-async function generateAssessment() {
-  saveDraftSilent(); // auto-save when assessment is generated
-  const apiKey = 'worker';
-  // API key handled by proxy worker
-
-  const btn = document.getElementById('gen-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> &nbsp; Generating assessment...';
-  setStatus('assess-status','info','<span class="spinner dark"></span>&nbsp; Analyzing all member data and generating personalized assessment...');
-  document.getElementById('assessment-box').style.display = 'none';
-  document.getElementById('decision-row').style.display = 'none';
-
-  try {
-    const resp = await fetch(getApiUrl(), {
-      method:'POST',
-      headers: getApiHeaders(apiKey),
-      body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:3000, messages:[{ role:'user', content: buildPrompt() }] })
-    });
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
-
-    assessmentText = data.content.map(b => b.text||'').join('');
-  saveDraftSilent(); // re-save with assessment text included
-    const box = document.getElementById('assessment-box');
-    // Render as formatted HTML
-    const formatted = assessmentText
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--accent)">$1</strong>')
-      .replace(/^(#{1,3}) (.+)$/gm, '<div style="font-weight:700;font-size:15px;margin:14px 0 4px;color:var(--accent)">$2</div>')
-      .replace(/^[-•] (.+)$/gm, '<div style="padding:4px 0 4px 14px;border-left:2px solid var(--accent);margin:3px 0">$1</div>')
-      .replace(/\n\n/g, '<br>')
-      .replace(/\n/g, '<br>');
-    box.innerHTML = formatted;
-    box.style.display = 'block';
-    document.getElementById('decision-row').style.display = 'grid';
-    setStatus('assess-status','','');
-    renderBodyCompChart();
-    // Open Gmail with assessment - fires after AI completes
-    try {
-      var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
-      var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,800)),'_blank');
-    } catch(_em) {}
-  } catch(e) {
-    setStatus('assess-status','error','? ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
+  const canvas = document.getElementById('body-comp-canvas');
+  if (canvas) {
+    canvas.style.display = 'none'; // hide the canvas, use our HTML chart instead
+    const chartDiv = document.createElement('div');
+    chartDiv.innerHTML =
+      barRow('💪 Lean Mass',   lean,        projLean,   'rgba(90,142,200,0.8)',  'rgba(76,175,125,0.9)') +
+      barRow('🔥 Body Fat',    fat,         projFat,    'rgba(212,168,67,0.8)',  'rgba(76,175,125,0.6)') +
+      barRow('⚖️ Total Weight', totalWeight, projWeight, 'rgba(155,111,212,0.7)', 'rgba(76,175,125,0.7)');
+    canvas.parentNode.insertBefore(chartDiv, canvas);
   }
 
-  btn.disabled = false;
-  btn.innerHTML = '* Regenerate Personalized Assessment';
+  const stats = document.getElementById('body-comp-stats');
+  if (stats) {
+    stats.innerHTML =
+      statCard('🔥', 'Body Fat %',  currPbf + '%',               projPbf + '%',                           '#4caf7d') +
+      statCard('💪', 'Lean Mass',   lean.toFixed(1) + ' lb',     projLean.toFixed(1) + ' lb',             '#4caf7d') +
+      statCard('📉', 'Fat to Lose', fat.toFixed(1) + ' lb',      '−' + (fat - projFat).toFixed(1) + ' lb','#4caf7d') +
+      statCard('⚖️', 'Body Weight', totalWeight.toFixed(1) + ' lb', projWeight.toFixed(1) + ' lb',        parseFloat(projWeight) < parseFloat(totalWeight) ? '#4caf7d' : '#d4a843');
+  }
 }
 
-// ===========================================
-// ACCEPT / DECLINE LOGIC
-// ===========================================
-let selectedFreq = '';
-let selectedLength = '';
 
 function pickPill(el, group) {
   document.getElementById(group+'-group').querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
