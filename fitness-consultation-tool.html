@@ -1697,6 +1697,60 @@ Keep total output under 300 words. Punchy. Scannable. Client reads this on scree
 
 
 
+async function generateAssessment() {
+  saveDraftSilent();
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> &nbsp; Generating assessment...';
+  setStatus('assess-status','info','<span class="spinner dark"></span>&nbsp; Analyzing all member data and generating personalized assessment...');
+  document.getElementById('assessment-box').style.display = 'none';
+  document.getElementById('decision-row').style.display = 'none';
+  var wrap = document.getElementById('body-comp-chart-wrap');
+  if (wrap) wrap.style.display = 'none';
+
+  try {
+    var resp = await fetch(getApiUrl(), {
+      method: 'POST',
+      headers: getApiHeaders(),
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 1500,
+        messages: [{ role: 'user', content: buildPrompt() }]
+      })
+    });
+    var data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+
+    var assessmentText = data.content.map(function(b) { return b.text || ''; }).join('');
+    saveDraftSilent();
+
+    var box = document.getElementById('assessment-box');
+    var lines = assessmentText.split('\n');
+    var formatted = lines.map(function(line) {
+      return line.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--accent)">$1</strong>');
+    }).join('<br>');
+    box.innerHTML = formatted;
+    box.style.display = 'block';
+    document.getElementById('decision-row').style.display = 'grid';
+    setStatus('assess-status','','');
+    renderBodyCompChart();
+
+    // Open Gmail with assessment
+    try {
+      var _s = 'PT Assessment: ' + (gv('name') || 'Member');
+      var _b = 'Name: ' + (gv('name') || '') + '\nPhone: ' + (gv('phone') || '') + '\nGoal: ' + (gv('goals') || '') + '\n\n' + assessmentText;
+      var _url = 'https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent('tedscholl@gmail.com,healthylifewithdani1@gmail.com') + '&su=' + encodeURIComponent(_s) + '&body=' + encodeURIComponent(_b);
+      // Don't auto-open - just make available
+    } catch(e) {}
+
+  } catch(e) {
+    setStatus('assess-status','error','Error: ' + e.message);
+  }
+  btn.disabled = false;
+  btn.innerHTML = '&#10024; Generate Personalized Assessment';
+}
+
+
 function renderBodyCompChart() {
   var lean   = parseFloat(document.getElementById('lean-mass') ? document.getElementById('lean-mass').value : 0) || 0;
   var fat    = parseFloat(document.getElementById('fat-mass') ? document.getElementById('fat-mass').value : 0) || 0;
@@ -2024,6 +2078,31 @@ async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
     return data.ok;
   } catch(e) { console.error('PT Tracker failed:', e.message); return false; }
 }
+
+async function finalizeAccept() {
+  var freq  = document.querySelector('#freq-group .pill.selected');
+  var length = document.querySelector('#length-group .pill.selected');
+  if (!freq || !length) { alert('Please select training frequency and program length.'); return; }
+
+  showLoading('Saving enrollment...');
+  try {
+    var row = buildIntakeRow('ACCEPTED');
+    var ok = await appendToSheet('All Intakes', row);
+    await saveToPTTracker();
+    hideLoading();
+    var conf = document.getElementById('confirm-accept');
+    conf.style.display = 'flex';
+    conf.innerHTML = ok
+      ? '&#x2705; Saved to All Intakes. Welcome aboard!'
+      : '&#x26A0;&#xFE0F; Could not write to sheet — please check connection.';
+    saveDraftSilent();
+    setTimeout(function() { sendNotificationEmail('ACCEPTED'); }, 500);
+  } catch(e) {
+    hideLoading();
+    alert('Error saving: ' + e.message);
+  }
+}
+
 
 async function finalizeDecline() {
   saveDraftSilent(); // auto-save before processing
