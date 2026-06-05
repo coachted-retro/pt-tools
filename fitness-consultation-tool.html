@@ -1698,100 +1698,97 @@ Keep total output under 300 words. Punchy. Scannable. Client reads this on scree
 
 
 function renderBodyCompChart() {
-  const lean   = parseFloat(document.getElementById('lean-mass')?.value) || 0;
-  const fat    = parseFloat(document.getElementById('fat-mass')?.value) || 0;
-  const pbf    = parseFloat(document.getElementById('pbf')?.value) || 0;
-  const gender = (document.getElementById('gender')?.value || '').toLowerCase();
+  var lean   = parseFloat(document.getElementById('lean-mass') ? document.getElementById('lean-mass').value : 0) || 0;
+  var fat    = parseFloat(document.getElementById('fat-mass') ? document.getElementById('fat-mass').value : 0) || 0;
+  var pbf    = parseFloat(document.getElementById('pbf') ? document.getElementById('pbf').value : 0) || 0;
+  var gender = document.getElementById('gender') ? (document.getElementById('gender').value || '').toLowerCase() : '';
 
   if (!lean && !fat) return;
 
-  const totalWeight = lean + fat;
-  const fatLossPct  = pbf > 30 ? 0.35 : pbf > 25 ? 0.30 : pbf > 20 ? 0.25 : 0.20;
-  const projFatLoss = Math.min(fat * fatLossPct, 52);
-  const projFat     = Math.max(fat - projFatLoss, totalWeight * 0.08);
-  const leanGain    = gender.includes('f') || gender === 'female' ? 8 : 14;
-  const projLean    = lean + leanGain;
-  const projWeight  = projLean + projFat;
-  const projPbf     = ((projFat / projWeight) * 100).toFixed(1);
-  const currPbf     = pbf ? pbf.toFixed(1) : ((fat / totalWeight) * 100).toFixed(1);
+  var totalWeight = lean + fat;
+  var fatLossPct  = pbf > 30 ? 0.35 : pbf > 25 ? 0.30 : pbf > 20 ? 0.25 : 0.20;
+  var projFatLoss = Math.min(fat * fatLossPct, 52);
+  var projFat     = Math.max(fat - projFatLoss, totalWeight * 0.08);
+  var leanGain    = (gender.indexOf('f') === 0 || gender === 'female') ? 8 : 14;
+  var projLean    = lean + leanGain;
+  var projWeight  = projLean + projFat;
+  var projPbf     = ((projFat / projWeight) * 100).toFixed(1);
+  var currPbf     = pbf ? pbf.toFixed(1) : ((fat / totalWeight) * 100).toFixed(1);
 
-  const wrap = document.getElementById('body-comp-chart-wrap');
+  var wrap = document.getElementById('body-comp-chart-wrap');
   if (!wrap) return;
   wrap.style.display = 'block';
 
-  // Max value for scaling bars
-  const maxVal = Math.max(totalWeight, projWeight) * 1.15;
+  var maxVal = Math.max(totalWeight, projWeight) * 1.15;
 
-  const barPct = (val) => Math.round((val / maxVal) * 100);
+  function barPct(val) { return Math.round((val / maxVal) * 100); }
 
-  const barRow = (label, nowVal, projVal, nowColor, projColor) => {
-    const nowPct  = barPct(nowVal);
-    const projPct = barPct(projVal);
-    const diff    = projVal - nowVal;
-    const diffStr = (diff > 0 ? '+' : '') + diff.toFixed(1) + ' lb';
-    const diffColor = diff < 0 ? '#4caf7d' : diff > 0 ? '#4caf7d' : '#888';
-    return \`
-      <div style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-          <span style="font-size:13px;font-weight:600;color:var(--text)">\${label}</span>
-          <span style="font-size:11px;color:\${diffColor};font-family:var(--mono)">\${diffStr}</span>
-        </div>
-        <div style="margin-bottom:5px">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;color:var(--text3);width:60px;flex-shrink:0">Today</span>
-            <div style="flex:1;height:22px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">
-              <div style="height:100%;width:\${nowPct}%;background:\${nowColor};border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;transition:width .6s ease">
-                <span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">\${nowVal.toFixed(1)} lb</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:11px;color:var(--text3);width:60px;flex-shrink:0">12 Months</span>
-            <div style="flex:1;height:22px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">
-              <div style="height:100%;width:\${projPct}%;background:\${projColor};border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;transition:width .6s ease">
-                <span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">\${projVal.toFixed(1)} lb</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    \`;
-  };
-
-  const statCard = (icon, label, now, after, color) => \`
-    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 16px">
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">\${icon} \${label}</div>
-      <div style="display:flex;align-items:baseline;gap:8px">
-        <div>
-          <div style="font-size:10px;color:var(--text3)">Today</div>
-          <div style="font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif">\${now}</div>
-        </div>
-        <div style="font-size:16px;color:var(--text3)">→</div>
-        <div>
-          <div style="font-size:10px;color:var(--text3)">12 Months</div>
-          <div style="font-size:20px;font-weight:700;font-family:'Barlow Condensed',sans-serif;color:\${color}">\${after}</div>
-        </div>
-      </div>
-    </div>
-  \`;
-
-  const barsEl = document.getElementById('body-comp-bars');
-  if (barsEl) {
-    barsEl.innerHTML =
-      barRow('💪 Lean Mass',    lean,        projLean,   'rgba(90,142,200,0.8)',  'rgba(76,175,125,0.9)') +
-      barRow('🔥 Body Fat',     fat,         projFat,    'rgba(212,168,67,0.8)',  'rgba(76,175,125,0.6)') +
-      barRow('⚖️ Total Weight', totalWeight, projWeight, 'rgba(155,111,212,0.7)', 'rgba(76,175,125,0.7)');
+  function barRow(label, nowVal, projVal, nowColor, projColor) {
+    var diff    = projVal - nowVal;
+    var diffStr = (diff > 0 ? '+' : '') + diff.toFixed(1) + ' lb';
+    var diffColor = diff <= 0 ? '#4caf7d' : '#d4a843';
+    var nowPct  = barPct(nowVal);
+    var projPct = barPct(projVal);
+    return '<div style="margin-bottom:18px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
+        '<span style="font-size:13px;font-weight:600;color:var(--text)">' + label + '</span>' +
+        '<span style="font-size:11px;color:' + diffColor + ';font-family:var(--mono)">' + diffStr + '</span>' +
+      '</div>' +
+      '<div style="margin-bottom:5px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-size:11px;color:var(--text3);width:60px;flex-shrink:0">Today</span>' +
+          '<div style="flex:1;height:22px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">' +
+            '<div style="height:100%;width:' + nowPct + '%;background:' + nowColor + ';border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px">' +
+              '<span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">' + nowVal.toFixed(1) + ' lb</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-size:11px;color:var(--text3);width:60px;flex-shrink:0">12 Mo.</span>' +
+          '<div style="flex:1;height:22px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">' +
+            '<div style="height:100%;width:' + projPct + '%;background:' + projColor + ';border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px">' +
+              '<span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">' + projVal.toFixed(1) + ' lb</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
   }
 
-  const stats = document.getElementById('body-comp-stats');
+  function statCard(icon, label, now, after, color) {
+    return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 16px">' +
+      '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">' + icon + ' ' + label + '</div>' +
+      '<div style="display:flex;align-items:baseline;gap:8px">' +
+        '<div>' +
+          '<div style="font-size:10px;color:var(--text3)">Today</div>' +
+          '<div style="font-size:20px;font-weight:700">' + now + '</div>' +
+        '</div>' +
+        '<div style="font-size:16px;color:var(--text3)">to</div>' +
+        '<div>' +
+          '<div style="font-size:10px;color:var(--text3)">12 Months</div>' +
+          '<div style="font-size:20px;font-weight:700;color:' + color + '">' + after + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var barsEl = document.getElementById('body-comp-bars');
+  if (barsEl) {
+    barsEl.innerHTML =
+      barRow('Lean Mass',    lean,        projLean,   'rgba(90,142,200,0.8)',  'rgba(76,175,125,0.9)') +
+      barRow('Body Fat',     fat,         projFat,    'rgba(212,168,67,0.8)',  'rgba(76,175,125,0.6)') +
+      barRow('Total Weight', totalWeight, projWeight, 'rgba(155,111,212,0.7)', 'rgba(76,175,125,0.7)');
+  }
+
+  var stats = document.getElementById('body-comp-stats');
   if (stats) {
     stats.innerHTML =
-      statCard('🔥', 'Body Fat %',  currPbf + '%',               projPbf + '%',                           '#4caf7d') +
-      statCard('💪', 'Lean Mass',   lean.toFixed(1) + ' lb',     projLean.toFixed(1) + ' lb',             '#4caf7d') +
-      statCard('📉', 'Fat to Lose', fat.toFixed(1) + ' lb',      '−' + (fat - projFat).toFixed(1) + ' lb','#4caf7d') +
-      statCard('⚖️', 'Body Weight', totalWeight.toFixed(1) + ' lb', projWeight.toFixed(1) + ' lb',        parseFloat(projWeight) < parseFloat(totalWeight) ? '#4caf7d' : '#d4a843');
+      statCard('BF%',    'Body Fat',   currPbf + '%',               projPbf + '%',                           '#4caf7d') +
+      statCard('Muscle', 'Lean Mass',  lean.toFixed(1) + ' lb',     projLean.toFixed(1) + ' lb',             '#4caf7d') +
+      statCard('Lost',   'Fat Loss',   fat.toFixed(1) + ' lb',      '-' + (fat - projFat).toFixed(1) + ' lb','#4caf7d') +
+      statCard('Weight', 'Body Wt.',   totalWeight.toFixed(1) + ' lb', projWeight.toFixed(1) + ' lb',        projWeight < totalWeight ? '#4caf7d' : '#d4a843');
   }
 }
 
