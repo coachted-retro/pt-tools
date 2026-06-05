@@ -468,9 +468,18 @@
       <div class="card-title">✅ Weekly Coach Checklist</div>
       <div class="card-sub">Reset every Monday — track your weekly non-negotiables</div>
       <div id="c-checklist"></div>
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:12px;color:var(--text3)" id="checklist-progress">0 / 12 complete</span>
-        <button onclick="resetChecklist()" style="font-size:11px;background:none;border:1px solid var(--border2);border-radius:6px;padding:4px 10px;color:var(--text2);cursor:pointer">Reset Week</button>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <div style="margin-bottom:12px">
+          <label style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px">Your Name (required to submit)</label>
+          <input type="text" id="checklist-coach-name" class="field-input" placeholder="e.g. Coach Ted" style="padding:8px 12px;font-size:13px;width:100%">
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span style="font-size:12px;color:var(--text3)" id="checklist-progress">0 / 8 complete</span>
+          <div style="display:flex;gap:8px">
+            <button onclick="resetChecklist()" style="font-size:11px;background:none;border:1px solid var(--border2);border-radius:6px;padding:6px 12px;color:var(--text2);cursor:pointer">Reset Week</button>
+            <button onclick="emailChecklist()" style="font-size:11px;background:var(--green);border:none;border-radius:6px;padding:6px 14px;color:#000;font-weight:700;cursor:pointer">📧 Submit to Management</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="card">
@@ -1052,18 +1061,14 @@ function renderCoachTrendCharts(cis) {
 
 // ── WEEKLY CHECKLIST ─────────────────────────────────────────
 const CHECKLIST_ITEMS = [
-  {id:'cl1', cat:'Client Outreach', label:'Send a personal check-in text to every active client'},
+  {id:'cl1', cat:'Client Outreach', label:'Send a personal check-in text or message to every active client'},
   {id:'cl2', cat:'Client Outreach', label:'Follow up with any client who missed a session this week'},
-  {id:'cl3', cat:'Client Outreach', label:'Send a win shout-out to top performer this week'},
-  {id:'cl4', cat:'Assessments', label:'Complete all pending monthly check-ins (due this week)'},
-  {id:'cl5', cat:'Assessments', label:'Review last 5 InBody scans for trend changes'},
-  {id:'cl6', cat:'Assessments', label:'Update advisor notes for any significant client changes'},
-  {id:'cl7', cat:'Consultations', label:'Follow up with all Show prospects from this week'},
-  {id:'cl8', cat:'Consultations', label:'Re-engage any 6-week No-Shows not yet contacted'},
-  {id:'cl9', cat:'Nutrition', label:'Verify protein tracking compliance for all clients'},
-  {id:'cl10', cat:'Nutrition', label:'Adjust macro targets for any client who hit a plateau'},
-  {id:'cl11', cat:'Program', label:'Review and update training programs as needed'},
-  {id:'cl12', cat:'Program', label:'Schedule next month\'s check-ins for all active clients'},
+  {id:'cl3', cat:'Client Outreach', label:'Send a win shout-out or recognition to top performer this week'},
+  {id:'cl4', cat:'Assessments', label:'Update advisor notes for any significant client changes this week'},
+  {id:'cl5', cat:'Consultations', label:'Follow up with all Show prospects from this week'},
+  {id:'cl6', cat:'Nutrition', label:'Verify each client is staying on their diet target — reinforce the importance of nutrition consistency'},
+  {id:'cl7', cat:'Program', label:'Ensure all active clients are scheduled for their next session'},
+  {id:'cl8', cat:'Program', label:'Confirm all completed sessions are logged and marked complete in ABC'},
 ];
 
 function renderChecklist() {
@@ -1106,6 +1111,33 @@ function toggleCheck(id) {
 function resetChecklist() {
   localStorage.removeItem('checklist_' + getWeekKey());
   renderChecklist();
+}
+
+
+function emailChecklist() {
+  const coachName = (document.getElementById('checklist-coach-name')?.value||'').trim();
+  if (!coachName) { alert('Please enter your name before submitting.'); return; }
+  const weekKey = 'checklist_' + getWeekKey();
+  const saved = JSON.parse(localStorage.getItem(weekKey) || '{}');
+  const done = CHECKLIST_ITEMS.filter(i => saved[i.id]);
+  const notDone = CHECKLIST_ITEMS.filter(i => !saved[i.id]);
+  const weekOf = getWeekKey();
+  
+  let body = `Weekly Coach Checklist Submission%0D%0A`;
+  body += `Coach: ${coachName}%0D%0A`;
+  body += `Week of: ${weekOf}%0D%0A`;
+  body += `Completed: ${done.length} / ${CHECKLIST_ITEMS.length}%0D%0A%0D%0A`;
+  body += `✅ COMPLETED:%0D%0A`;
+  done.forEach(i => { body += `  • ${i.label}%0D%0A`; });
+  if (notDone.length) {
+    body += `%0D%0A❌ NOT COMPLETED:%0D%0A`;
+    notDone.forEach(i => { body += `  • ${i.label}%0D%0A`; });
+  }
+  body += `%0D%0ASubmitted: ${new Date().toLocaleString('en-US')}`;
+
+  const subject = `Weekly Checklist — ${coachName} — Week of ${weekOf}`;
+  const mailto = `mailto:tedscholl@gmail.com,healthylifewithdani1@gmail.com?subject=${encodeURIComponent(subject)}&body=${body}`;
+  window.location.href = mailto;
 }
 
 function updateChecklistProgress() {

@@ -413,85 +413,7 @@
   </div>
 
 
-  <!-- CHECK-IN PROGRESS SECTION -->
-  <div class="chart-card" style="margin-bottom:20px">
-    <div class="chart-title" style="display:flex;align-items:center;justify-content:space-between">📈 PT Client Progress Trends <a href="https://docs.google.com/spreadsheets/d/1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs/edit?usp=sharing" target="_blank" style="font-size:11px;color:var(--muted);text-decoration:none;border:1px solid var(--border);padding:3px 10px;border-radius:5px;font-family:'DM Sans',sans-serif">📊 Sheet</a></div>
-    <div class="chart-sub">Body composition & performance trends from monthly check-ins</div>
-    <div class="ci-tabs" style="margin-top:14px">
-      <button class="ci-tab-btn active" onclick="switchCITab('all',this)">All Clients</button>
-      <button class="ci-tab-btn men" onclick="switchCITab('men',this)">Men's Program</button>
-      <button class="ci-tab-btn women" onclick="switchCITab('women',this)">Women's Program</button>
-    </div>
-
-    <div id="ci-tab-all" class="ci-tab-panel active">
-      <div class="ci-stat-row" id="ci-all-stats">
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-all-clients">—</div><div class="ci-stat-lbl">Total Check-Ins</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-all-avgbf">—</div><div class="ci-stat-lbl">Avg BF% This Month</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-all-avglean">—</div><div class="ci-stat-lbl">Avg Lean Mass</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-all-avgsession">—</div><div class="ci-stat-lbl">Avg Session Score</div></div>
-      </div>
-      <div class="ci-chart-grid">
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Body Fat % Trend</div>
-          <div style="height:160px"><canvas id="ci-all-bf-chart"></canvas></div>
-        </div>
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Lean Mass Trend</div>
-          <div style="height:160px"><canvas id="ci-all-lean-chart"></canvas></div>
-        </div>
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Session Score Trend</div>
-          <div style="height:160px"><canvas id="ci-all-session-chart"></canvas></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="ci-tab-men" class="ci-tab-panel">
-      <div class="ci-stat-row">
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-men-clients">—</div><div class="ci-stat-lbl">Male Check-Ins</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-men-avgbf">—</div><div class="ci-stat-lbl">Avg BF% This Month</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-men-avglean">—</div><div class="ci-stat-lbl">Avg Lean Mass</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-men-avgsession">—</div><div class="ci-stat-lbl">Avg Session Score</div></div>
-      </div>
-      <div class="ci-chart-grid">
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Body Fat % Trend</div>
-          <div style="height:160px"><canvas id="ci-men-bf-chart"></canvas></div>
-        </div>
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Lean Mass Trend</div>
-          <div style="height:160px"><canvas id="ci-men-lean-chart"></canvas></div>
-        </div>
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Session Score Trend</div>
-          <div style="height:160px"><canvas id="ci-men-session-chart"></canvas></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="ci-tab-women" class="ci-tab-panel">
-      <div class="ci-stat-row">
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-women-clients">—</div><div class="ci-stat-lbl">Female Check-Ins</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-women-avgbf">—</div><div class="ci-stat-lbl">Avg BF% This Month</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-women-avglean">—</div><div class="ci-stat-lbl">Avg Lean Mass</div></div>
-        <div class="ci-stat"><div class="ci-stat-val" id="ci-women-avgsession">—</div><div class="ci-stat-lbl">Avg Session Score</div></div>
-      </div>
-      <div class="ci-chart-grid">
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Body Fat % Trend</div>
-          <div style="height:160px"><canvas id="ci-women-bf-chart"></canvas></div>
-        </div>
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Lean Mass Trend</div>
-          <div style="height:160px"><canvas id="ci-women-lean-chart"></canvas></div>
-        </div>
-        <div class="chart-card" style="box-shadow:none;border:1px solid var(--border)">
-          <div style="font-size:13px;font-weight:600;margin-bottom:12px">Session Score Trend</div>
-          <div style="height:160px"><canvas id="ci-women-session-chart"></canvas></div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- PT Client Progress Trends moved to Coach & Manager Dashboard -->
 
   <!-- AI ANALYSIS -->
   <div class="ai-section">
@@ -653,7 +575,6 @@ function renderDashboard() {
   renderRecentTable(intakes);
   renderUpcomingAppts(upcoming);
   renderAdvisorBreakdown();
-  renderCheckinCharts();
 }
 
 
