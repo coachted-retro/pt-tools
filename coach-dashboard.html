@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coach &amp; Manager Dashboard · Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f0d;
+    --surface: #131713;
+    --surface2: #191d19;
+    --surface3: #1e241e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0ede6;
+    --text2: #a8a49e;
+    --text3: rgba(255,255,255,0.3);
+    --green: #4caf7d;
+    --green-dim: rgba(76,175,125,0.12);
+    --red: #e05252;
+    --red-dim: rgba(224,82,82,0.12);
+    --gold: #d4a843;
+    --gold-dim: rgba(212,168,67,0.12);
+    --blue: #5a8ec8;
+    --blue-dim: rgba(90,142,200,0.12);
+    --purple: #9b6fd4;
+    --purple-dim: rgba(155,111,212,0.12);
+    --coach-accent: #4caf7d;
+    --mgr-accent: #d4a843;
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+    --font: 'DM Sans', sans-serif;
+    --font-condensed: 'Barlow Condensed', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 28px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .back-btn {
+    font-family: var(--font); font-size: 12px; color: var(--text2);
+    background: none; border: 1px solid var(--border2); border-radius: 7px;
+    padding: 6px 12px; cursor: pointer; transition: all .15s;
+  }
+  .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo img { height: 32px; width: auto; border-radius: 4px; }
+  .logo-label { font-family: var(--font-condensed); font-size: 18px; font-weight: 700; letter-spacing: .03em; }
+  .logo-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .last-updated { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+  /* ── VIEW TOGGLE ── */
+  .view-toggle {
+    display: flex; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 10px; padding: 3px; gap: 2px;
+  }
+  .view-btn {
+    font-family: var(--font-condensed); font-size: 13px; font-weight: 600;
+    letter-spacing: .04em; padding: 7px 18px; border: none; border-radius: 7px;
+    cursor: pointer; transition: all .2s; color: var(--text2); background: none;
+  }
+  .view-btn.active-coach {
+    background: var(--coach-accent); color: #000;
+  }
+  .view-btn.active-mgr {
+    background: var(--mgr-accent); color: #000;
+  }
+
+  /* ── MONTH SELECTOR ── */
+  .month-selector {
+    font-family: var(--mono); font-size: 12px; padding: 7px 12px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; color: var(--text); cursor: pointer; outline: none;
+  }
+  .refresh-btn {
+    font-family: var(--font); font-size: 12px; padding: 7px 14px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; color: var(--text2); cursor: pointer; transition: all .15s;
+  }
+  .refresh-btn:hover { color: var(--text); }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+  .container { max-width: 1300px; margin: 0 auto; padding: 28px 28px 60px; }
+
+  /* ── SECTION HEADERS ── */
+  .section-hdr {
+    display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px;
+  }
+  .section-title {
+    font-family: var(--font-condensed); font-size: 13px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
+  }
+  .section-line { flex: 1; height: 1px; background: var(--border); }
+
+  /* ── KPI GRID ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px 20px;
+    transition: border-color .2s;
+  }
+  .kpi-card:hover { border-color: var(--border2); }
+  .kpi-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 8px; }
+  .kpi-val { font-family: var(--font-condensed); font-size: 36px; font-weight: 800; line-height: 1; color: var(--text); }
+  .kpi-val.green { color: var(--green); }
+  .kpi-val.red { color: var(--red); }
+  .kpi-val.gold { color: var(--gold); }
+  .kpi-sub { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: var(--mono); }
+
+  /* ── GRID LAYOUTS ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .col-span-2 { grid-column: span 2; }
+  .col-span-3 { grid-column: span 3; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 22px 24px;
+  }
+  .card-title {
+    font-family: var(--font-condensed); font-size: 14px; font-weight: 700;
+    letter-spacing: .05em; text-transform: uppercase; color: var(--text2);
+    margin-bottom: 16px;
+  }
+  .card-sub { font-size: 11px; color: var(--text3); margin-bottom: 16px; margin-top: -10px; }
+
+  /* ── URGENCY QUEUE ── */
+  .urgency-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .urgency-item:last-child { border-bottom: none; }
+  .urgency-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 5px; white-space: nowrap; flex-shrink: 0;
+  }
+  .badge-high { background: var(--red-dim); color: var(--red); }
+  .badge-medium { background: var(--gold-dim); color: var(--gold); }
+  .badge-low { background: var(--green-dim); color: var(--green); }
+  .urgency-name { font-weight: 600; font-size: 14px; flex: 1; }
+  .urgency-reason { font-size: 12px; color: var(--text2); }
+  .urgency-score { font-family: var(--mono); font-size: 13px; color: var(--text3); flex-shrink: 0; }
+
+  /* ── SCORE BAR ── */
+  .score-bar-wrap { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .score-bar-label { font-size: 12px; color: var(--text2); width: 80px; flex-shrink: 0; }
+  .score-bar-track { flex: 1; height: 6px; background: var(--surface3); border-radius: 99px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 99px; transition: width .6s ease; }
+  .score-bar-val { font-family: var(--mono); font-size: 11px; color: var(--text3); width: 30px; text-align: right; }
+
+  /* ── CHECKIN FEED ── */
+  .feed-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .feed-item:last-child { border-bottom: none; }
+  .feed-avatar {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-condensed); font-weight: 700; font-size: 14px;
+    background: var(--surface3); color: var(--text2);
+  }
+  .feed-name { font-weight: 600; font-size: 14px; }
+  .feed-date { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+  .feed-scores { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .score-chip {
+    font-size: 11px; padding: 2px 8px; border-radius: 5px;
+    font-family: var(--mono);
+  }
+  .chip-green { background: var(--green-dim); color: var(--green); }
+  .chip-gold { background: var(--gold-dim); color: var(--gold); }
+  .chip-red { background: var(--red-dim); color: var(--red); }
+  .chip-blue { background: var(--blue-dim); color: var(--blue); }
+  .chip-neutral { background: var(--surface3); color: var(--text2); }
+
+  /* ── MILESTONE ALERT ── */
+  .milestone-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 16px; background: var(--green-dim);
+    border: 1px solid rgba(76,175,125,0.2); border-radius: var(--radius);
+    margin-bottom: 10px;
+  }
+  .milestone-icon { font-size: 22px; flex-shrink: 0; }
+  .milestone-text { font-size: 13px; }
+  .milestone-name { font-weight: 600; color: var(--green); }
+
+  /* ── COACH LEADERBOARD ── */
+  .coach-row {
+    display: grid; grid-template-columns: 180px repeat(5, 1fr);
+    gap: 0; border-bottom: 1px solid var(--border); align-items: center;
+  }
+  .coach-row.header { border-bottom: 2px solid var(--border2); margin-bottom: 4px; }
+  .coach-row.header > div {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text3); padding: 8px 12px;
+  }
+  .coach-cell { padding: 14px 12px; }
+  .coach-name-cell { display: flex; align-items: center; gap: 10px; padding: 14px 12px; }
+  .coach-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface3); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-condensed); font-weight: 700; font-size: 13px; color: var(--gold); flex-shrink: 0;
+  }
+  .coach-row-name { font-weight: 600; font-size: 14px; }
+  .coach-metric { font-family: var(--font-condensed); font-size: 20px; font-weight: 700; }
+  .coach-metric-label { font-size: 10px; color: var(--text3); }
+
+  /* ── CAPACITY GAUGE ── */
+  .capacity-wrap { margin-bottom: 16px; }
+  .capacity-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .capacity-coach { font-weight: 600; font-size: 14px; }
+  .capacity-count { font-family: var(--mono); font-size: 13px; color: var(--text2); }
+  .capacity-track { height: 10px; background: var(--surface3); border-radius: 99px; overflow: hidden; }
+  .capacity-fill { height: 100%; border-radius: 99px; transition: width .8s ease; }
+  .cap-green { background: var(--green); }
+  .cap-gold { background: var(--gold); }
+  .cap-red { background: var(--red); }
+
+  /* ── REVENUE AT RISK ── */
+  .risk-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .risk-item:last-child { border-bottom: none; }
+  .risk-name { font-weight: 600; }
+  .risk-coach { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .risk-flags { display: flex; gap: 6px; }
+  .risk-amount { font-family: var(--font-condensed); font-size: 20px; font-weight: 700; color: var(--red); }
+
+  /* ── WEEKLY CHECKLIST ── */
+  .checklist-item {
+    display: flex; align-items: flex-start; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .checklist-item:last-child { border-bottom: none; }
+  .check-box {
+    width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0; margin-top: 1px;
+    border: 2px solid var(--border2); cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .check-box.checked { background: var(--green); border-color: var(--green); }
+  .check-box.checked::after { content: '✓'; color: #000; font-size: 11px; font-weight: 700; }
+  .check-label { font-size: 13px; flex: 1; }
+  .check-category {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--text3); margin-top: 2px;
+  }
+
+  /* ── RISK TRIGGER BANNER ── */
+  .trigger-banner {
+    background: var(--red-dim); border: 1px solid rgba(224,82,82,0.25);
+    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 10px;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .trigger-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .trigger-title { font-weight: 600; font-size: 13px; color: var(--red); }
+  .trigger-desc { font-size: 12px; color: var(--text2); margin-top: 3px; line-height: 1.5; }
+  .trigger-meta { font-family: var(--mono); font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* ── TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text3); padding: 10px 14px; text-align: left;
+    border-bottom: 1px solid var(--border2);
+  }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .td-name { font-weight: 600; }
+  .td-muted { color: var(--text2); }
+  .td-mono { font-family: var(--mono); font-size: 12px; }
+
+  /* ── OUTCOME BADGE ── */
+  .outcome-badge {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 5px;
+  }
+  .outcome-accepted { background: var(--green-dim); color: var(--green); }
+  .outcome-declined { background: var(--gold-dim); color: var(--gold); }
+
+  /* ── CHART CONTAINER ── */
+  .chart-box { height: 180px; position: relative; }
+  .chart-box-sm { height: 140px; position: relative; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { padding: 32px; text-align: center; color: var(--text3); font-size: 13px; }
+
+  /* ── LOADING ── */
+  .loading-pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+    background: var(--surface3); border-radius: 6px; height: 20px;
+  }
+  @keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:.8} }
+
+  /* ── ADVISOR BREAKDOWN ── */
+  .adv-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 10px; }
+  .adv-stat { text-align: center; }
+  .adv-stat-num { font-family: var(--font-condensed); font-size: 24px; font-weight: 800; }
+  .adv-stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+  .adv-coach-name { font-family: var(--font-condensed); font-size: 15px; font-weight: 700; color: var(--text2); margin-bottom: 4px; letter-spacing: .05em; text-transform: uppercase; }
+
+  /* ── PROGRESS RING (placeholder) ── */
+  .ring-wrap { display: flex; align-items: center; justify-content: center; padding: 12px 0; }
+
+  /* ── SCROLL ── */
+  .scroll-list { max-height: 380px; overflow-y: auto; }
+  .scroll-list::-webkit-scrollbar { width: 4px; }
+  .scroll-list::-webkit-scrollbar-track { background: transparent; }
+  .scroll-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  @media (max-width: 1024px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .coach-row { grid-template-columns: 140px repeat(5, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .container { padding: 16px; }
+    .grid-2, .grid-3, .grid-3-1 { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .header { padding: 12px 16px; }
+    .coach-row { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <button class="back-btn" onclick="window.location.href='index.html'">← Hub</button>
+    <div class="logo">
+      <img src="Retro_FH_Logo.jpg" alt="Retro Fitness">
+      <div>
+        <div class="logo-label">PT Dashboard</div>
+        <div class="logo-sub">Retro Fitness of Fairless Hills</div>
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="view-toggle">
+      <button class="view-btn active-coach" id="btnCoach" onclick="switchView('coach')">👟 Coach View</button>
+      <button class="view-btn" id="btnMgr" onclick="switchView('manager')">📊 Manager View</button>
+    </div>
+    <select class="month-selector" id="monthSelect" onchange="renderAll()">
+      <option value="all">All Time</option>
+    </select>
+    <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+    <div class="last-updated" id="lastUpdated">Loading...</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     COACH VIEW
+══════════════════════════════════════════════════════ -->
+<div id="view-coach" class="view active">
+<div class="container">
+
+  <!-- KPIs -->
+  <div class="kpi-grid" style="margin-bottom:28px">
+    <div class="kpi-card">
+      <div class="kpi-label">Active Clients</div>
+      <div class="kpi-val green" id="c-kpi-active">—</div>
+      <div class="kpi-sub">total check-ins</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Session Score</div>
+      <div class="kpi-val" id="c-kpi-session">—</div>
+      <div class="kpi-sub">out of 10</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Diet Score</div>
+      <div class="kpi-val" id="c-kpi-diet">—</div>
+      <div class="kpi-sub">out of 10</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Sleep Score</div>
+      <div class="kpi-val" id="c-kpi-sleep">—</div>
+      <div class="kpi-sub">out of 10</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Stress</div>
+      <div class="kpi-val" id="c-kpi-stress">—</div>
+      <div class="kpi-sub" id="c-kpi-stress-sub">lower is better</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg BF%</div>
+      <div class="kpi-val" id="c-kpi-bf">—</div>
+      <div class="kpi-sub">body fat</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Lean Mass</div>
+      <div class="kpi-val" id="c-kpi-lean">—</div>
+      <div class="kpi-sub">pounds</div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Urgent + Milestones -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">⚠️ Urgent Attention Queue</div>
+      <div class="card-sub">Clients flagging high stress, low compliance, or poor scores this check-in</div>
+      <div class="scroll-list" id="c-urgent-list">
+        <div class="empty-state">Loading...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏆 Milestone Alerts</div>
+      <div class="card-sub">Recent wins worth celebrating with your clients</div>
+      <div id="c-milestones">
+        <div class="empty-state">Loading...</div>
+      </div>
+      <div style="margin-top:20px">
+        <div class="card-title" style="margin-bottom:12px">📈 Score Trends (Avg)</div>
+        <div id="c-score-bars">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Recent Check-In Feed -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">📋 Recent Check-In Feed</div>
+    <div class="card-sub">Most recent monthly check-ins — click a row to view notes</div>
+    <div class="scroll-list" id="c-checkin-feed">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </div>
+
+  <!-- ROW 3: Score Charts -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Session Quality Trend</div>
+      <div class="chart-box"><canvas id="c-chart-session"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Diet Adherence Trend</div>
+      <div class="chart-box"><canvas id="c-chart-diet"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Stress Level Trend</div>
+      <div class="chart-box"><canvas id="c-chart-stress"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Weekly Staff Checklist -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">✅ Weekly Coach Checklist</div>
+      <div class="card-sub">Reset every Monday — track your weekly non-negotiables</div>
+      <div id="c-checklist"></div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--text3)" id="checklist-progress">0 / 12 complete</span>
+        <button onclick="resetChecklist()" style="font-size:11px;background:none;border:1px solid var(--border2);border-radius:6px;padding:4px 10px;color:var(--text2);cursor:pointer">Reset Week</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Body Composition Trends</div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:600">BF% Trend</div>
+        <div class="chart-box-sm"><canvas id="c-chart-bf"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Lean Mass Trend</div>
+        <div class="chart-box-sm"><canvas id="c-chart-lean"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MANAGER VIEW
+══════════════════════════════════════════════════════ -->
+<div id="view-manager" class="view">
+<div class="container">
+
+  <!-- KPIs -->
+  <div class="kpi-grid" style="margin-bottom:28px">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Consultations</div>
+      <div class="kpi-val" id="m-kpi-consults">—</div>
+      <div class="kpi-sub" id="m-kpi-consults-sub">this period</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Conversion Rate</div>
+      <div class="kpi-val green" id="m-kpi-conv">—</div>
+      <div class="kpi-sub" id="m-kpi-conv-sub">accepted / total</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">New Sign-Ups</div>
+      <div class="kpi-val green" id="m-kpi-signups">—</div>
+      <div class="kpi-sub">accepted</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Declines</div>
+      <div class="kpi-val red" id="m-kpi-declines">—</div>
+      <div class="kpi-sub">declined</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Booked Consults</div>
+      <div class="kpi-val" id="m-kpi-booked">—</div>
+      <div class="kpi-sub" id="m-kpi-booked-sub">in pipeline</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Hot Prospects</div>
+      <div class="kpi-val gold" id="m-kpi-hot">—</div>
+      <div class="kpi-sub">high interest</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Revenue at Risk</div>
+      <div class="kpi-val red" id="m-kpi-risk">—</div>
+      <div class="kpi-sub">at-risk MRR</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Active PT Clients</div>
+      <div class="kpi-val" id="m-kpi-clients">—</div>
+      <div class="kpi-sub">check-ins on file</div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Risk Triggers + Conversion Chart -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🚨 Automated Client Risk Triggers</div>
+      <div class="card-sub">Clients meeting ≥2 risk criteria — act within 48 hours</div>
+      <div class="scroll-list" id="m-risk-triggers">
+        <div class="empty-state">Loading...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Consultation Volume & Conversion</div>
+      <div class="chart-box" style="height:220px"><canvas id="m-chart-conv"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Coach Leaderboard -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">🏆 Coach Performance Leaderboard</div>
+    <div class="card-sub">Booked consultation outcomes by advisor — all time</div>
+    <div class="coach-row header">
+      <div>Advisor</div>
+      <div>Booked</div>
+      <div>Showed</div>
+      <div>Accepted</div>
+      <div>No-Show</div>
+      <div>Conv. Rate</div>
+    </div>
+    <div id="m-coach-leaderboard">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </div>
+
+  <!-- ROW 3: Capacity + Decline Reasons -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">📊 Roster Capacity</div>
+      <div class="card-sub">Estimated capacity based on check-in volume (assume 30-client max per coach)</div>
+      <div id="m-capacity">
+        <div class="empty-state">Loading...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Decline Reason Breakdown</div>
+      <div class="chart-box"><canvas id="m-chart-decline"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Program Results + Pipeline -->
+  <div class="grid-3">
+    <div class="card col-span-2">
+      <div class="card-title">📉 Avg Program Results (All Clients)</div>
+      <div class="card-sub">Aggregate body composition data — great for marketing & social proof</div>
+      <div class="grid-4" style="margin-bottom:0" id="m-results-kpis">
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-family:var(--font-condensed);font-size:32px;font-weight:800;color:var(--green)" id="m-res-bf-delta">—</div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Avg BF% Δ</div>
+        </div>
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-family:var(--font-condensed);font-size:32px;font-weight:800;color:var(--blue)" id="m-res-lean-delta">—</div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Avg Lean Δ</div>
+        </div>
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-family:var(--font-condensed);font-size:32px;font-weight:800;color:var(--text)" id="m-res-session">—</div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Avg Session</div>
+        </div>
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-family:var(--font-condensed);font-size:32px;font-weight:800;color:var(--gold)" id="m-res-checkins">—</div>
+          <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Total Check-Ins</div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="chart-box-sm"><canvas id="m-chart-results"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Pipeline Health</div>
+      <div class="chart-box"><canvas id="m-chart-pipeline"></canvas></div>
+      <div style="margin-top:12px" id="m-pipeline-stats"></div>
+    </div>
+  </div>
+
+  <!-- ROW 5: Recent Consultations Table -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Recent Consultations</div>
+    <div class="scroll-list">
+      <table class="data-table" id="m-recent-table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Date</th><th>Advisor</th><th>Goal</th><th>Outcome</th><th>Follow-Up</th>
+          </tr>
+        </thead>
+        <tbody id="m-recent-body">
+          <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+const APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
+const WORKER     = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write';
+const CI_SHEET   = '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
+const PT_PER_SESSION = 250; // estimated monthly revenue per client for risk calc
+
+// ── STATE ─────────────────────────────────────────────────────
+let allIntakes = [], allProspects = [], allBC = [], allCheckins = [];
+let charts = {};
+
+// ── VIEW SWITCH ───────────────────────────────────────────────
+function switchView(v) {
+  const isCoach = v === 'coach';
+  document.getElementById('view-coach').classList.toggle('active', isCoach);
+  document.getElementById('view-manager').classList.toggle('active', !isCoach);
+  document.getElementById('btnCoach').className = 'view-btn' + (isCoach ? ' active-coach' : '');
+  document.getElementById('btnMgr').className = 'view-btn' + (!isCoach ? ' active-mgr' : '');
+  localStorage.setItem('dash_view', v);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+async function loadAll() {
+  document.getElementById('lastUpdated').textContent = 'Loading...';
+  try {
+    await Promise.all([loadIntakes(), loadProspects(), loadBC(), loadCheckins()]);
+    populateMonthSelector();
+    renderAll();
+    document.getElementById('lastUpdated').textContent = 'Updated ' +
+      new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('lastUpdated').textContent = 'Error: ' + e.message;
+  }
+}
+
+async function loadIntakes() {
+  try {
+    const res = await fetch(APPS_SCRIPT + '?action=getIntakes&limit=1000');
+    const data = await res.json();
+    allIntakes = data.data || [];
+  } catch(e) { allIntakes = []; }
+}
+
+async function loadProspects() {
+  try {
+    const res = await fetch(APPS_SCRIPT + '?action=getProspects');
+    const data = await res.json();
+    allProspects = data.prospects || [];
+  } catch(e) { allProspects = []; }
+}
+
+async function loadBC() {
+  try {
+    const res = await fetch(APPS_SCRIPT + '?action=getBookedConsultations');
+    const data = await res.json();
+    const rows = data.rows || [];
+    if (rows.length < 2) { allBC = []; return; }
+    const headers = rows[0];
+    allBC = rows.slice(1).filter(r => r.some(c => c !== '')).map(r => {
+      const obj = {}; headers.forEach((h,i) => { obj[h] = r[i]; }); return obj;
+    });
+  } catch(e) { allBC = []; }
+}
+
+async function loadCheckins() {
+  try {
+    const res = await fetch(WORKER, {
+      method: 'POST',
+      headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify({action:'read', tab:'All Check-In History', sheetId: CI_SHEET})
+    });
+    const data = JSON.parse(await res.text());
+    const rows = data.rows || [];
+    if (rows.length < 2) { allCheckins = []; return; }
+    const headers = rows[0].map(h => String(h).trim());
+    allCheckins = rows.slice(1).filter(r => r.some(c => c !== '')).map(r => {
+      const obj = {}; headers.forEach((h,i) => { obj[h] = r[i]; }); return obj;
+    });
+  } catch(e) { allCheckins = []; }
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function gv(obj, ...keys) {
+  for (const k of keys) { const v = obj[k]; if (v !== undefined && v !== '') return v; }
+  return '';
+}
+function avg(arr) { return arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null; }
+function pct(a,b) { return b > 0 ? Math.round((a/b)*100) : 0; }
+function fmtDate(raw) {
+  if (!raw) return '--';
+  const d = new Date(raw);
+  return isNaN(d) ? raw : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function scoreColor(s) {
+  if (!s) return 'chip-neutral';
+  return s >= 8 ? 'chip-green' : s >= 6 ? 'chip-gold' : 'chip-red';
+}
+function barColor(s) {
+  return s >= 8 ? 'var(--green)' : s >= 5 ? 'var(--gold)' : 'var(--red)';
+}
+function initials(name) {
+  return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+}
+
+function getFilteredIntakes() {
+  const val = document.getElementById('monthSelect').value;
+  if (val === 'all') return allIntakes;
+  return allIntakes.filter(r => {
+    if (!r.Date) return false;
+    const d = new Date(r.Date); if (isNaN(d)) return false;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === val;
+  });
+}
+
+function getFilteredCheckins() {
+  const val = document.getElementById('monthSelect').value;
+  if (val === 'all') return allCheckins;
+  return allCheckins.filter(r => {
+    const raw = gv(r, 'Check-In Date', 'CheckInDate', 'Date');
+    if (!raw) return false;
+    const d = new Date(raw); if (isNaN(d)) return false;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === val;
+  });
+}
+
+function populateMonthSelector() {
+  const sel = document.getElementById('monthSelect');
+  const months = new Set();
+  allIntakes.forEach(r => {
+    const d = new Date(r.Date||'');
+    if (!isNaN(d)) months.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  });
+  allCheckins.forEach(r => {
+    const raw = gv(r, 'Check-In Date', 'CheckInDate');
+    const d = new Date(raw||'');
+    if (!isNaN(d)) months.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  });
+  const sorted = [...months].sort().reverse();
+  sel.innerHTML = '<option value="all">All Time</option>';
+  sorted.forEach(m => {
+    const [y,mo] = m.split('-');
+    const label = new Date(y,mo-1).toLocaleString('en-US',{month:'long',year:'numeric'});
+    sel.innerHTML += `<option value="${m}">${label}</option>`;
+  });
+}
+
+function mkChart(id, type, labels, datasets, opts) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(el, {
+    type, data: { labels, datasets },
+    options: Object.assign({
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#7a7066', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#7a7066', font: { size: 10 } } }
+      }
+    }, opts||{})
+  });
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────
+function renderAll() {
+  renderCoachView();
+  renderManagerView();
+}
+
+// ══════════════════════════════════════════════════════════════
+// COACH VIEW
+// ══════════════════════════════════════════════════════════════
+function renderCoachView() {
+  const cis = getFilteredCheckins();
+  if (!cis.length) {
+    ['c-urgent-list','c-milestones','c-checkin-feed','c-score-bars'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="empty-state">No check-in data yet. Complete monthly check-ins to see data here.</div>';
+    });
+    renderCoachKPIs([]);
+    return;
+  }
+  renderCoachKPIs(cis);
+  renderUrgentQueue(cis);
+  renderMilestones(cis);
+  renderCheckinFeed(cis);
+  renderScoreBars(cis);
+  renderCoachTrendCharts(cis);
+  renderChecklist();
+}
+
+function renderCoachKPIs(cis) {
+  const numVal = (arr, field) => {
+    const vals = arr.map(r => parseFloat(gv(r,field)||0)).filter(v => v > 0);
+    return vals.length ? avg(vals).toFixed(1) : '—';
+  };
+  document.getElementById('c-kpi-active').textContent = cis.length || '—';
+  document.getElementById('c-kpi-session').textContent = numVal(cis, 'Session Score');
+  document.getElementById('c-kpi-diet').textContent = numVal(cis, 'Diet Score');
+  document.getElementById('c-kpi-sleep').textContent = numVal(cis, 'Sleep Score');
+  document.getElementById('c-kpi-stress').textContent = numVal(cis, 'Stress Score');
+  const bfVals = cis.map(r => parseFloat(gv(r,'BF%','Body Fat %','PBF')||0)).filter(v=>v>0);
+  const leanVals = cis.map(r => parseFloat(gv(r,'Lean Mass','Lean','LeanMass')||0)).filter(v=>v>0);
+  document.getElementById('c-kpi-bf').textContent = bfVals.length ? avg(bfVals).toFixed(1)+'%' : '—';
+  document.getElementById('c-kpi-lean').textContent = leanVals.length ? avg(leanVals).toFixed(0)+'lb' : '—';
+}
+
+function renderUrgentQueue(cis) {
+  const el = document.getElementById('c-urgent-list');
+  // Use most recent check-in per client
+  const latest = {};
+  cis.forEach(r => {
+    const name = gv(r,'Name','Member Name');
+    if (!name) return;
+    if (!latest[name] || new Date(gv(r,'Check-In Date','Date')) > new Date(gv(latest[name],'Check-In Date','Date'))) {
+      latest[name] = r;
+    }
+  });
+  const urgent = [];
+  Object.values(latest).forEach(r => {
+    const name = gv(r,'Name','Member Name');
+    const stress = parseFloat(gv(r,'Stress Score')||0);
+    const session = parseFloat(gv(r,'Session Score')||0);
+    const diet = parseFloat(gv(r,'Diet Score')||0);
+    const sleep = parseFloat(gv(r,'Sleep Score')||0);
+    const flags = [];
+    if (stress >= 8) flags.push('High stress (' + stress + '/10)');
+    if (session <= 4) flags.push('Poor sessions (' + session + '/10)');
+    if (diet <= 4) flags.push('Low diet adherence (' + diet + '/10)');
+    if (sleep <= 4) flags.push('Poor sleep (' + sleep + '/10)');
+    if (flags.length >= 1) {
+      const severity = flags.length >= 3 ? 'high' : flags.length === 2 ? 'medium' : 'low';
+      urgent.push({ name, flags, severity, stress, session, diet });
+    }
+  });
+  urgent.sort((a,b) => (b.flags.length - a.flags.length));
+  if (!urgent.length) {
+    el.innerHTML = '<div class="empty-state" style="color:var(--green)">✓ No urgent clients right now. Keep it up!</div>';
+    return;
+  }
+  el.innerHTML = urgent.slice(0,10).map(u => `
+    <div class="urgency-item">
+      <span class="urgency-badge badge-${u.severity}">${u.severity}</span>
+      <div style="flex:1">
+        <div class="urgency-name">${u.name}</div>
+        <div class="urgency-reason">${u.flags.join(' · ')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMilestones(cis) {
+  const el = document.getElementById('c-milestones');
+  const milestones = [];
+  // High session streaks, big BF% drops
+  const byClient = {};
+  cis.forEach(r => {
+    const name = gv(r,'Name','Member Name'); if (!name) return;
+    if (!byClient[name]) byClient[name] = [];
+    byClient[name].push(r);
+  });
+  Object.entries(byClient).forEach(([name, rows]) => {
+    const sessions = rows.map(r => parseFloat(gv(r,'Session Score')||0)).filter(v=>v>0);
+    const highSessions = sessions.filter(s => s >= 9).length;
+    if (highSessions >= 2) milestones.push({ icon:'💪', text:`<span class="milestone-name">${name}</span> has scored 9+ on sessions ${highSessions} times!` });
+    if (rows.length >= 3) milestones.push({ icon:'📅', text:`<span class="milestone-name">${name}</span> has completed ${rows.length} monthly check-ins!` });
+  });
+  if (!milestones.length) {
+    el.innerHTML = '<div class="empty-state">Milestones will appear as clients build history.</div>';
+    return;
+  }
+  el.innerHTML = milestones.slice(0,4).map(m => `
+    <div class="milestone-item">
+      <div class="milestone-icon">${m.icon}</div>
+      <div class="milestone-text">${m.text}</div>
+    </div>
+  `).join('');
+}
+
+function renderCheckinFeed(cis) {
+  const el = document.getElementById('c-checkin-feed');
+  const sorted = [...cis].sort((a,b) => {
+    return new Date(gv(b,'Check-In Date','Date')) - new Date(gv(a,'Check-In Date','Date'));
+  });
+  el.innerHTML = sorted.slice(0,15).map(r => {
+    const name = gv(r,'Name','Member Name') || 'Unknown';
+    const date = fmtDate(gv(r,'Check-In Date','Date'));
+    const session = parseFloat(gv(r,'Session Score')||0);
+    const diet = parseFloat(gv(r,'Diet Score')||0);
+    const stress = parseFloat(gv(r,'Stress Score')||0);
+    const sleep = parseFloat(gv(r,'Sleep Score')||0);
+    const advisor = gv(r,'Advisor','advisor') || '--';
+    return `
+      <div class="feed-item">
+        <div class="feed-avatar">${initials(name)}</div>
+        <div style="flex:1">
+          <div class="feed-name">${name}</div>
+          <div class="feed-date">${date} · ${advisor}</div>
+          <div class="feed-scores">
+            ${session ? `<span class="score-chip ${scoreColor(session)}">Session ${session}/10</span>` : ''}
+            ${diet ? `<span class="score-chip ${scoreColor(diet)}">Diet ${diet}/10</span>` : ''}
+            ${stress ? `<span class="score-chip ${stress >= 7 ? 'chip-red' : stress >= 5 ? 'chip-gold' : 'chip-green'}">Stress ${stress}/10</span>` : ''}
+            ${sleep ? `<span class="score-chip ${scoreColor(sleep)}">Sleep ${sleep}/10</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderScoreBars(cis) {
+  const el = document.getElementById('c-score-bars');
+  const fields = [
+    {label:'Session', key:'Session Score'},
+    {label:'Diet', key:'Diet Score'},
+    {label:'Energy', key:'Energy Score'},
+    {label:'Sleep', key:'Sleep Score'},
+    {label:'Stress', key:'Stress Score', invert:true}
+  ];
+  el.innerHTML = fields.map(f => {
+    const vals = cis.map(r => parseFloat(gv(r,f.key)||0)).filter(v=>v>0);
+    const a = vals.length ? avg(vals) : null;
+    const displayVal = a ? a.toFixed(1) : '--';
+    const barPct = a ? (a/10)*100 : 0;
+    const color = f.invert ? (a >= 7 ? 'var(--red)' : a >= 5 ? 'var(--gold)' : 'var(--green)') : barColor(a);
+    return `
+      <div class="score-bar-wrap">
+        <div class="score-bar-label">${f.label}</div>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:${barPct}%;background:${color}"></div></div>
+        <div class="score-bar-val">${displayVal}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCoachTrendCharts(cis) {
+  const byMonth = {};
+  cis.forEach(r => {
+    const raw = gv(r,'Check-In Date','Date');
+    const d = new Date(raw); if (isNaN(d)) return;
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    if (!byMonth[key]) byMonth[key] = {session:[],diet:[],stress:[],bf:[],lean:[]};
+    const sess = parseFloat(gv(r,'Session Score')||0);
+    const diet = parseFloat(gv(r,'Diet Score')||0);
+    const stress = parseFloat(gv(r,'Stress Score')||0);
+    const bf = parseFloat(gv(r,'BF%','Body Fat %','PBF')||0);
+    const lean = parseFloat(gv(r,'Lean Mass','Lean')||0);
+    if (sess>0) byMonth[key].session.push(sess);
+    if (diet>0) byMonth[key].diet.push(diet);
+    if (stress>0) byMonth[key].stress.push(stress);
+    if (bf>0) byMonth[key].bf.push(bf);
+    if (lean>0) byMonth[key].lean.push(lean);
+  });
+  const keys = Object.keys(byMonth).sort();
+  const labels = keys.map(k => { const [y,m] = k.split('-'); return new Date(y,m-1).toLocaleString('en-US',{month:'short',year:'2-digit'}); });
+  const ds = (data, color) => [{ data, borderColor: color, backgroundColor: color+'22', borderWidth: 2, pointRadius: 3, fill: true, tension: 0.3 }];
+  mkChart('c-chart-session','line',labels, ds(keys.map(k=>avg(byMonth[k].session)),'#4caf7d'));
+  mkChart('c-chart-diet','line',labels, ds(keys.map(k=>avg(byMonth[k].diet)),'#5a8ec8'));
+  mkChart('c-chart-stress','line',labels, ds(keys.map(k=>avg(byMonth[k].stress)),'#e05252'));
+  mkChart('c-chart-bf','line',labels, ds(keys.map(k=>avg(byMonth[k].bf)),'#d4a843'));
+  mkChart('c-chart-lean','line',labels, ds(keys.map(k=>avg(byMonth[k].lean)),'#9b6fd4'));
+}
+
+// ── WEEKLY CHECKLIST ─────────────────────────────────────────
+const CHECKLIST_ITEMS = [
+  {id:'cl1', cat:'Client Outreach', label:'Send a personal check-in text to every active client'},
+  {id:'cl2', cat:'Client Outreach', label:'Follow up with any client who missed a session this week'},
+  {id:'cl3', cat:'Client Outreach', label:'Send a win shout-out to top performer this week'},
+  {id:'cl4', cat:'Assessments', label:'Complete all pending monthly check-ins (due this week)'},
+  {id:'cl5', cat:'Assessments', label:'Review last 5 InBody scans for trend changes'},
+  {id:'cl6', cat:'Assessments', label:'Update advisor notes for any significant client changes'},
+  {id:'cl7', cat:'Consultations', label:'Follow up with all Show prospects from this week'},
+  {id:'cl8', cat:'Consultations', label:'Re-engage any 6-week No-Shows not yet contacted'},
+  {id:'cl9', cat:'Nutrition', label:'Verify protein tracking compliance for all clients'},
+  {id:'cl10', cat:'Nutrition', label:'Adjust macro targets for any client who hit a plateau'},
+  {id:'cl11', cat:'Program', label:'Review and update training programs as needed'},
+  {id:'cl12', cat:'Program', label:'Schedule next month\'s check-ins for all active clients'},
+];
+
+function renderChecklist() {
+  const el = document.getElementById('c-checklist');
+  const weekKey = 'checklist_' + getWeekKey();
+  const saved = JSON.parse(localStorage.getItem(weekKey) || '{}');
+  let lastCat = '';
+  el.innerHTML = CHECKLIST_ITEMS.map(item => {
+    const checked = !!saved[item.id];
+    const catHdr = item.cat !== lastCat ? `<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:12px 0 4px">${item.cat}</div>` : '';
+    lastCat = item.cat;
+    return catHdr + `
+      <div class="checklist-item">
+        <div class="check-box ${checked?'checked':''}" onclick="toggleCheck('${item.id}')" id="cb-${item.id}"></div>
+        <div style="flex:1"><div class="check-label" style="${checked?'text-decoration:line-through;color:var(--text3)':''}" id="cl-label-${item.id}">${item.label}</div></div>
+      </div>
+    `;
+  }).join('');
+  updateChecklistProgress();
+}
+
+function getWeekKey() {
+  const d = new Date(); const day = d.getDay();
+  const monday = new Date(d); monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return monday.toISOString().slice(0,10);
+}
+
+function toggleCheck(id) {
+  const weekKey = 'checklist_' + getWeekKey();
+  const saved = JSON.parse(localStorage.getItem(weekKey) || '{}');
+  saved[id] = !saved[id];
+  localStorage.setItem(weekKey, JSON.stringify(saved));
+  const box = document.getElementById('cb-' + id);
+  const label = document.getElementById('cl-label-' + id);
+  if (box) box.classList.toggle('checked', saved[id]);
+  if (label) label.style = saved[id] ? 'text-decoration:line-through;color:var(--text3)' : '';
+  updateChecklistProgress();
+}
+
+function resetChecklist() {
+  localStorage.removeItem('checklist_' + getWeekKey());
+  renderChecklist();
+}
+
+function updateChecklistProgress() {
+  const weekKey = 'checklist_' + getWeekKey();
+  const saved = JSON.parse(localStorage.getItem(weekKey) || '{}');
+  const done = Object.values(saved).filter(Boolean).length;
+  const el = document.getElementById('checklist-progress');
+  if (el) el.textContent = `${done} / ${CHECKLIST_ITEMS.length} complete`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MANAGER VIEW
+// ══════════════════════════════════════════════════════════════
+function renderManagerView() {
+  const intakes = getFilteredIntakes();
+  const cis = getFilteredCheckins();
+  renderManagerKPIs(intakes, cis);
+  renderRiskTriggers(cis);
+  renderCoachLeaderboard();
+  renderCapacity(cis);
+  renderDeclineChart(intakes);
+  renderResultsKPIs(cis);
+  renderConvChart(intakes);
+  renderPipelineChart();
+  renderRecentTable(intakes);
+}
+
+function renderManagerKPIs(intakes, cis) {
+  const accepted = intakes.filter(r => (r.Outcome||'').toUpperCase().includes('ACCEPTED'));
+  const declined = intakes.filter(r => (r.Outcome||'').toUpperCase().includes('DECLINED'));
+  const conv = pct(accepted.length, intakes.length);
+  const hot = allProspects.filter(p => p.Interest === 'Hot').length;
+  // Revenue at risk = clients with stress >= 8 OR 2+ bad scores
+  const atRisk = cis.filter(r => {
+    const stress = parseFloat(gv(r,'Stress Score')||0);
+    const session = parseFloat(gv(r,'Session Score')||0);
+    const diet = parseFloat(gv(r,'Diet Score')||0);
+    const flags = [stress>=8, session<=4, diet<=4].filter(Boolean).length;
+    return flags >= 2;
+  });
+  const uniqueRisk = new Set(atRisk.map(r => gv(r,'Name','Member Name'))).size;
+  document.getElementById('m-kpi-consults').textContent = intakes.length || '—';
+  document.getElementById('m-kpi-conv').textContent = intakes.length ? conv + '%' : '—';
+  document.getElementById('m-kpi-conv-sub').textContent = `${accepted.length} accepted / ${intakes.length} total`;
+  document.getElementById('m-kpi-signups').textContent = accepted.length || '—';
+  document.getElementById('m-kpi-declines').textContent = declined.length || '—';
+  document.getElementById('m-kpi-booked').textContent = allBC.length || '—';
+  document.getElementById('m-kpi-booked-sub').textContent = allBC.filter(b=>(b.Status||b['Status']||'')==='Confirmed').length + ' confirmed';
+  document.getElementById('m-kpi-hot').textContent = hot || '—';
+  document.getElementById('m-kpi-risk').textContent = uniqueRisk ? '$' + (uniqueRisk * PT_PER_SESSION).toLocaleString() : '$0';
+  document.getElementById('m-kpi-clients').textContent = cis.length || '—';
+}
+
+function renderRiskTriggers(cis) {
+  const el = document.getElementById('m-risk-triggers');
+  // Get latest check-in per client
+  const latest = {};
+  cis.forEach(r => {
+    const name = gv(r,'Name','Member Name'); if (!name) return;
+    if (!latest[name] || new Date(gv(r,'Check-In Date','Date')) > new Date(gv(latest[name],'Check-In Date','Date')))
+      latest[name] = r;
+  });
+  const triggers = [];
+  Object.values(latest).forEach(r => {
+    const name = gv(r,'Name','Member Name');
+    const advisor = gv(r,'Advisor','advisor') || '--';
+    const stress = parseFloat(gv(r,'Stress Score')||0);
+    const session = parseFloat(gv(r,'Session Score')||0);
+    const diet = parseFloat(gv(r,'Diet Score')||0);
+    const sleep = parseFloat(gv(r,'Sleep Score')||0);
+    const flags = [];
+    if (stress >= 8) flags.push(`Stress ${stress}/10`);
+    if (session <= 4) flags.push(`Session quality ${session}/10`);
+    if (diet <= 4) flags.push(`Diet ${diet}/10`);
+    if (sleep <= 4) flags.push(`Sleep ${sleep}/10`);
+    if (flags.length >= 2) triggers.push({ name, advisor, flags });
+  });
+  if (!triggers.length) {
+    el.innerHTML = '<div class="empty-state" style="color:var(--green)">✓ No clients meeting risk threshold right now.</div>';
+    return;
+  }
+  el.innerHTML = triggers.sort((a,b) => b.flags.length - a.flags.length).slice(0,8).map(t => `
+    <div class="trigger-banner">
+      <div class="trigger-icon">⚠️</div>
+      <div>
+        <div class="trigger-title">${t.name}</div>
+        <div class="trigger-desc">${t.flags.join(' · ')}</div>
+        <div class="trigger-meta">Advisor: ${t.advisor}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCoachLeaderboard() {
+  const el = document.getElementById('m-coach-leaderboard');
+  // Extract all unique advisors from allBC and allIntakes
+  const advisorSet = new Set();
+  allBC.forEach(b => { const a = (b['Advisor']||b.Advisor||'').trim(); if (a) advisorSet.add(a); });
+  allIntakes.forEach(r => { const a = (r.Advisor||'').trim(); if (a) advisorSet.add(a); });
+  const advisors = [...advisorSet].filter(a => a.toLowerCase() !== 'both');
+  if (!advisors.length) { el.innerHTML = '<div class="empty-state">No advisor data yet.</div>'; return; }
+  const rows = advisors.map(adv => {
+    const name = adv.toLowerCase();
+    const filtered = allBC.filter(b => {
+      const a = (b['Advisor']||b.Advisor||'').toLowerCase().trim();
+      return a === name || a.includes(name) || name.includes(a.split(' ')[0]);
+    });
+    const st = b => (b['Status']||b.Status||'');
+    const booked = filtered.length;
+    const showed = filtered.filter(b => st(b) === 'Show').length;
+    const intakeAdv = allIntakes.filter(r => {
+      const a = (r.Advisor||'').toLowerCase().trim();
+      return a === name || a.includes(name.split(' ')[0]);
+    });
+    const accepted = intakeAdv.filter(r => (r.Outcome||'').toUpperCase().includes('ACCEPTED')).length;
+    const noshow = filtered.filter(b => ['No-Show','Canceled'].includes(st(b))).length;
+    const convRate = booked > 0 ? Math.round((accepted/booked)*100) : 0;
+    return { adv, booked, showed, accepted, noshow, convRate };
+  }).sort((a,b) => b.convRate - a.convRate);
+  el.innerHTML = rows.map((r, i) => `
+    <div class="coach-row">
+      <div class="coach-name-cell">
+        <div class="coach-avatar">${initials(r.adv)}</div>
+        <div>
+          <div class="coach-row-name">${r.adv}</div>
+          <div style="font-size:10px;color:var(--text3)">#${i+1} ranked</div>
+        </div>
+      </div>
+      <div class="coach-cell"><div class="coach-metric">${r.booked}</div><div class="coach-metric-label">booked</div></div>
+      <div class="coach-cell"><div class="coach-metric">${r.showed}</div><div class="coach-metric-label">showed</div></div>
+      <div class="coach-cell"><div class="coach-metric" style="color:var(--green)">${r.accepted}</div><div class="coach-metric-label">accepted</div></div>
+      <div class="coach-cell"><div class="coach-metric" style="color:var(--red)">${r.noshow}</div><div class="coach-metric-label">no-show</div></div>
+      <div class="coach-cell"><div class="coach-metric ${r.convRate>=40?'':'style'}${r.convRate>=40?' style="color:var(--green)"':r.convRate>=25?' style="color:var(--gold)"':' style="color:var(--red)"'}">${r.convRate}%</div><div class="coach-metric-label">conv.</div></div>
+    </div>
+  `).join('');
+}
+
+function renderCapacity(cis) {
+  const el = document.getElementById('m-capacity');
+  const advisorSet = new Set();
+  cis.forEach(r => { const a = gv(r,'Advisor','advisor'); if (a) advisorSet.add(a); });
+  const advisors = [...advisorSet];
+  if (!advisors.length) { el.innerHTML = '<div class="empty-state">No advisor data in check-ins yet.</div>'; return; }
+  const MAX = 30;
+  el.innerHTML = advisors.map(adv => {
+    const clients = new Set(cis.filter(r => gv(r,'Advisor','advisor') === adv).map(r => gv(r,'Name','Member Name'))).size;
+    const fillPct = Math.min((clients/MAX)*100, 100);
+    const capClass = fillPct >= 90 ? 'cap-red' : fillPct >= 70 ? 'cap-gold' : 'cap-green';
+    return `
+      <div class="capacity-wrap">
+        <div class="capacity-header">
+          <div class="capacity-coach">${adv}</div>
+          <div class="capacity-count">${clients} / ${MAX} clients</div>
+        </div>
+        <div class="capacity-track"><div class="capacity-fill ${capClass}" style="width:${fillPct}%"></div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDeclineChart(intakes) {
+  const declined = intakes.filter(r => (r.Outcome||'').toUpperCase().includes('DECLINED'));
+  const reasons = {};
+  declined.forEach(r => {
+    const reason = r['Decline Reason'] || r['DeclineReason'] || r['decline_reason'] || 'Not specified';
+    const key = reason.length > 30 ? reason.slice(0,30)+'…' : reason;
+    reasons[key] = (reasons[key]||0) + 1;
+  });
+  const sorted = Object.entries(reasons).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const colors = ['#e05252','#d4a843','#5a8ec8','#4caf7d','#9b6fd4','#888'];
+  mkChart('m-chart-decline','doughnut',
+    sorted.map(e=>e[0]), [{
+      data: sorted.map(e=>e[1]),
+      backgroundColor: colors.slice(0,sorted.length),
+      borderWidth: 0
+    }],
+    { plugins: { legend: { display: true, position:'right', labels:{ color:'#a8a49e', font:{size:10} } } }, scales: undefined }
+  );
+}
+
+function renderResultsKPIs(cis) {
+  const bfDeltas = cis.map(r => parseFloat(gv(r,'Delta BF%','delta-pbf','DeltaBF')||0)).filter(v => v !== 0);
+  const leanDeltas = cis.map(r => parseFloat(gv(r,'Delta Lean','delta-lean','DeltaLean')||0)).filter(v => v !== 0);
+  const sessions = cis.map(r => parseFloat(gv(r,'Session Score')||0)).filter(v=>v>0);
+  const avgBfDelta = bfDeltas.length ? avg(bfDeltas).toFixed(2) : '—';
+  const avgLeanDelta = leanDeltas.length ? avg(leanDeltas).toFixed(1) : '—';
+  document.getElementById('m-res-bf-delta').textContent = bfDeltas.length ? (parseFloat(avgBfDelta) < 0 ? avgBfDelta+'%' : '+'+avgBfDelta+'%') : '—';
+  document.getElementById('m-res-lean-delta').textContent = leanDeltas.length ? (parseFloat(avgLeanDelta) > 0 ? '+'+avgLeanDelta+'lb' : avgLeanDelta+'lb') : '—';
+  document.getElementById('m-res-session').textContent = sessions.length ? avg(sessions).toFixed(1)+'/10' : '—';
+  document.getElementById('m-res-checkins').textContent = cis.length;
+  // Trend chart
+  const byMonth = {};
+  cis.forEach(r => {
+    const raw = gv(r,'Check-In Date','Date'); const d = new Date(raw); if (isNaN(d)) return;
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    if (!byMonth[key]) byMonth[key] = {session:[]};
+    const s = parseFloat(gv(r,'Session Score')||0); if (s>0) byMonth[key].session.push(s);
+  });
+  const keys = Object.keys(byMonth).sort();
+  const labels = keys.map(k => { const [y,m]=k.split('-'); return new Date(y,m-1).toLocaleString('en-US',{month:'short',year:'2-digit'}); });
+  mkChart('m-chart-results','line',labels,[{
+    data: keys.map(k=>avg(byMonth[k].session)),
+    borderColor:'#4caf7d', backgroundColor:'rgba(76,175,125,0.1)',
+    borderWidth:2, pointRadius:3, fill:true, tension:0.3
+  }]);
+}
+
+function renderConvChart(intakes) {
+  const byMonth = {};
+  intakes.forEach(r => {
+    if (!r.Date) return;
+    const d = new Date(r.Date); if (isNaN(d)) return;
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    if (!byMonth[key]) byMonth[key] = {total:0, accepted:0};
+    byMonth[key].total++;
+    if ((r.Outcome||'').toUpperCase().includes('ACCEPTED')) byMonth[key].accepted++;
+  });
+  const keys = Object.keys(byMonth).sort();
+  const labels = keys.map(k => { const [y,m]=k.split('-'); return new Date(y,m-1).toLocaleString('en-US',{month:'short',year:'2-digit'}); });
+  mkChart('m-chart-conv','bar',labels,[
+    { label:'Total', data: keys.map(k=>byMonth[k].total), backgroundColor:'rgba(90,142,200,0.3)', borderColor:'#5a8ec8', borderWidth:1 },
+    { label:'Accepted', data: keys.map(k=>byMonth[k].accepted), backgroundColor:'rgba(76,175,125,0.5)', borderColor:'#4caf7d', borderWidth:1 }
+  ], { plugins: { legend: { display: true, labels:{ color:'#a8a49e', font:{size:10} } } } });
+}
+
+function renderPipelineChart() {
+  const statuses = {};
+  allProspects.forEach(p => {
+    const s = p.Status || p['status'] || 'Unknown';
+    statuses[s] = (statuses[s]||0) + 1;
+  });
+  const entries = Object.entries(statuses).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const colors = ['#5a8ec8','#4caf7d','#d4a843','#e05252','#9b6fd4','#888'];
+  mkChart('m-chart-pipeline','doughnut',
+    entries.map(e=>e[0]), [{
+      data: entries.map(e=>e[1]),
+      backgroundColor: colors.slice(0,entries.length), borderWidth:0
+    }],
+    { plugins: { legend: { display: true, position:'bottom', labels:{ color:'#a8a49e', font:{size:10} } } }, scales: undefined }
+  );
+  const statsEl = document.getElementById('m-pipeline-stats');
+  if (statsEl) statsEl.innerHTML = `<div style="font-size:12px;color:var(--text3);text-align:center;font-family:var(--mono)">${allProspects.length} total prospects</div>`;
+}
+
+function renderRecentTable(intakes) {
+  const tbody = document.getElementById('m-recent-body');
+  const sorted = [...intakes].sort((a,b) => new Date(b.Date||0) - new Date(a.Date||0));
+  tbody.innerHTML = sorted.slice(0,20).map(r => {
+    const out = (r.Outcome||'').toUpperCase();
+    const badge = out.includes('ACCEPTED') ? `<span class="outcome-badge outcome-accepted">ACCEPTED</span>` :
+                  out.includes('DECLINED') ? `<span class="outcome-badge outcome-declined">DECLINED</span>` :
+                  `<span style="color:var(--text3);font-size:12px">${r.Outcome||'--'}</span>`;
+    return `<tr>
+      <td class="td-name">${r.Name||'--'}</td>
+      <td class="td-mono">${fmtDate(r.Date)}</td>
+      <td class="td-muted">${r.Advisor||'--'}</td>
+      <td class="td-muted" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.Goal||'--'}</td>
+      <td>${badge}</td>
+      <td class="td-mono">${fmtDate(r['Follow-Up Date']||r.FollowUpDate)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="6" class="empty-state">No data yet.</td></tr>';
+}
+
+// ── STARTUP ───────────────────────────────────────────────────
+const savedView = localStorage.getItem('dash_view') || 'coach';
+switchView(savedView);
+renderChecklist();
+loadAll();
+</script>
+</body>
+</html>
