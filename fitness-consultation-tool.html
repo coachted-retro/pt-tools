@@ -1941,190 +1941,195 @@ function renderBodyCompChart() {
     var bfPctProj = parseFloat(projPbf);
     var isFemale  = (gender.indexOf('f') === 0 || gender === 'female' || gender === 'woman' || gender === 'w');
 
-    // t=0 lean/ecto, t=1 heavy/endo
-    function bfToT(pct, fem) {
-      var lo = fem ? 14 : 8, hi = fem ? 43 : 37;
-      return Math.max(0, Math.min(1, (pct - lo) / (hi - lo)));
-    }
     function lerp(a, b, t) { return a + (b - a) * t; }
+    function cl(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function bfT(pct, f) { return cl((pct - (f ? 14 : 8)) / ((f ? 42 : 36) - (f ? 14 : 8)), 0, 1); }
 
-    function buildFigure(pct, fem, col) {
-      var t  = bfToT(pct, fem);
-      var t2 = t * t;  // ease for belly bulge
+    function buildFigureSVG(pct, f, col) {
+      var t = bfT(pct, f), t2 = t * t, cx = 54, W = 108;
 
-      // ── viewbox & centre ──────────────────────────────────
-      var W = 90, cx = 45;
+      var hRx = lerp(9.5, 12, t), hRy = lerp(12, 13.5, t), hCy = 14;
+      var skullPath = 'M' + (cx - hRx * 0.6) + ' ' + (hCy - hRy)
+        + ' Q' + (cx - hRx) + ' ' + (hCy - hRy * 0.9) + ' ' + (cx - hRx) + ' ' + (hCy - hRy * 0.1)
+        + ' Q' + (cx - hRx * 0.95) + ' ' + (hCy + hRy * 0.6) + ' ' + (cx - hRx * 0.5) + ' ' + (hCy + hRy)
+        + ' Q' + cx + ' ' + (hCy + hRy * 1.1) + ' ' + (cx + hRx * 0.5) + ' ' + (hCy + hRy)
+        + ' Q' + (cx + hRx * 0.95) + ' ' + (hCy + hRy * 0.6) + ' ' + (cx + hRx) + ' ' + (hCy - hRy * 0.1)
+        + ' Q' + (cx + hRx) + ' ' + (hCy - hRy * 0.9) + ' ' + (cx + hRx * 0.6) + ' ' + (hCy - hRy) + ' Z';
+      var jawPath = 'M' + (cx - hRx * 0.95) + ' ' + (hCy - hRy * 0.1)
+        + ' Q' + (cx - hRx * 0.92) + ' ' + (hCy + hRy * 0.6) + ' ' + (cx - hRx * 0.48) + ' ' + (hCy + hRy)
+        + ' Q' + cx + ' ' + (hCy + hRy * 1.12) + ' ' + (cx + hRx * 0.48) + ' ' + (hCy + hRy)
+        + ' Q' + (cx + hRx * 0.92) + ' ' + (hCy + hRy * 0.6) + ' ' + (cx + hRx * 0.95) + ' ' + (hCy - hRy * 0.1) + ' Z';
 
-      // ── HEAD ──────────────────────────────────────────────
-      var headRx = lerp(9.5, 11.5, t);
-      var headRy = lerp(11.5, 12.5, t);
-      var headCy = 13;
+      var nW = lerp(f ? 5.5 : 7, f ? 8 : 11, t);
+      var nTop = hCy + hRy * 0.82, nBot = nTop + lerp(8, 11, t);
+      var nPath = 'M' + (cx - nW * 0.8) + ' ' + nTop + ' L' + (cx - nW) + ' ' + nBot
+        + ' L' + (cx + nW) + ' ' + nBot + ' L' + (cx + nW * 0.8) + ' ' + nTop + ' Z';
 
-      // ── NECK ──────────────────────────────────────────────
-      var neckW  = lerp(fem ? 6 : 7, fem ? 8 : 10, t);
-      var nkTop  = headCy + headRy - 1;
-      var nkBot  = nkTop + lerp(7, 9, t);
+      var shlY = nBot + lerp(0, 2, t);
+      var shlW = lerp(f ? 17 : 21, f ? 23 : 29, t);
+      var trapPath = 'M' + (cx - nW) + ' ' + nBot
+        + ' Q' + (cx - shlW * 0.55) + ' ' + (shlY - 2) + ' ' + (cx - shlW) + ' ' + (shlY + lerp(3, 5, t))
+        + ' L' + (cx + shlW) + ' ' + (shlY + lerp(3, 5, t))
+        + ' Q' + (cx + shlW * 0.55) + ' ' + (shlY - 2) + ' ' + (cx + nW) + ' ' + nBot + ' Z';
 
-      // ── SHOULDER YOKE ─────────────────────────────────────
-      var shlY   = nkBot + 1;
-      var shlW2  = lerp(fem ? 15 : 18, fem ? 20 : 26, t);
+      var pectY = shlY + lerp(f ? 10 : 9, f ? 14 : 13, t);
+      var pectW = lerp(f ? 13 : 16, f ? 19 : 26, t);
+      var ribY  = shlY + lerp(f ? 16 : 15, f ? 21 : 20, t);
+      var ribW  = lerp(f ? 12 : 14, f ? 18 : 24, t);
+      var waistY = shlY + lerp(f ? 25 : 23, f ? 33 : 31, t);
+      var waistW = lerp(f ? 10 : 11, f ? 18 : 22, t);
+      var bellyT = cl(t * t * 1.6, 0, 1);
+      var bellyY = lerp(waistY, waistY + 5, t);
+      var bellyW = lerp(f ? 11 : 12, f ? 21 : 28, bellyT);
+      var hipTopY = waistY + lerp(f ? 4 : 3, f ? 8 : 6, t);
+      var hipW    = lerp(f ? 16 : 14, f ? 24 : 21, t);
+      var hipBotY = hipTopY + lerp(f ? 14 : 11, f ? 20 : 17, t);
+      var crotY   = hipBotY + lerp(3, 6, t);
 
-      // ── TORSO KEY Y-COORDS ─────────────────────────────────
-      var chestY = shlY + lerp(fem ? 11 : 9, fem ? 14 : 13, t);
-      var waistY = shlY + lerp(fem ? 24 : 22, fem ? 31 : 29, t);
-      var hipTopY= waistY + lerp(4, 7, t);
-      var hipBotY= hipTopY + lerp(fem ? 12 : 10, fem ? 17 : 15, t);
-      var crotY  = hipBotY + lerp(3, 5, t);
-
-      // ── TORSO WIDTHS (half) ────────────────────────────────
-      var chestW2= lerp(fem ? 13 : 15, fem ? 18 : 24, t);
-      var waistW2= lerp(fem ? 10 : 12, fem ? 18 : 23, t);
-      var hipW2  = lerp(fem ? 15 : 13, fem ? 22 : 20, t);
-      // belly overhang (quadratic for natural bulge)
-      var bellyW2= lerp(fem ? 10 : 12, fem ? 19 : 26, t) + 4 * t2;
-      var bellyY = lerp(waistY - 2, waistY + 3, t);
-
-      // ── FEMALE BREAST CURVE ────────────────────────────────
-      var bustW2 = fem ? lerp(13, 20, t) : chestW2;
-      var bustY  = fem ? lerp(chestY + 4, chestY + 7, t) : chestY;
-      var bustCp = fem ? lerp(3, 7, t) : 0;  // control-point overhang
-
-      // ── TORSO PATH ────────────────────────────────────────
-      var torsoPath;
-      if (fem) {
-        torsoPath =
-          'M' + (cx - neckW/2) + ',' + nkBot +
-          ' L' + (cx - shlW2)  + ',' + shlY +
-          // left chest -> bust curve
-          ' Q' + (cx - bustW2 - bustCp) + ',' + bustY +
-              ' ' + (cx - waistW2) + ',' + waistY +
-          // left hip
-          ' Q' + (cx - hipW2 + 1) + ',' + hipTopY +
-              ' ' + (cx - hipW2 + 1) + ',' + hipBotY +
-          ' L' + (cx - 4) + ',' + crotY +
-          ' L' + (cx + 4) + ',' + crotY +
-          ' L' + (cx + hipW2 - 1) + ',' + hipBotY +
-          ' Q' + (cx + hipW2 - 1) + ',' + hipTopY +
-              ' ' + (cx + waistW2) + ',' + waistY +
-          // right bust curve
-          ' Q' + (cx + bustW2 + bustCp) + ',' + bustY +
-              ' ' + (cx + shlW2) + ',' + shlY +
-          ' L' + (cx + neckW/2) + ',' + nkBot + ' Z';
+      var torso;
+      if (f) {
+        var bustW = lerp(14, 22, t), bustCp = lerp(4, 9, t), bustY = pectY + lerp(4, 8, t);
+        torso = 'M' + (cx - nW) + ' ' + nBot
+          + ' L' + (cx - shlW) + ' ' + (shlY + lerp(3, 5, t))
+          + ' C' + (cx - bustW - bustCp) + ' ' + bustY + ' ' + (cx - waistW * 1.1) + ' ' + (waistY - 5) + ' ' + (cx - waistW) + ' ' + waistY
+          + ' C' + (cx - hipW * 0.9) + ' ' + hipTopY + ' ' + (cx - hipW) + ' ' + (hipBotY - 5) + ' ' + (cx - hipW + 2) + ' ' + hipBotY
+          + ' L' + (cx - 5) + ' ' + crotY + ' L' + (cx + 5) + ' ' + crotY
+          + ' L' + (cx + hipW - 2) + ' ' + hipBotY
+          + ' C' + (cx + hipW) + ' ' + (hipBotY - 5) + ' ' + (cx + hipW * 0.9) + ' ' + hipTopY + ' ' + (cx + waistW) + ' ' + waistY
+          + ' C' + (cx + waistW * 1.1) + ' ' + (waistY - 5) + ' ' + (cx + bustW + bustCp) + ' ' + bustY + ' ' + (cx + shlW) + ' ' + (shlY + lerp(3, 5, t))
+          + ' L' + (cx + nW) + ' ' + nBot + ' Z';
       } else {
-        // Male: wider shoulders, taper to waist, slight hip, belly bulge
-        torsoPath =
-          'M' + (cx - neckW/2) + ',' + nkBot +
-          ' L' + (cx - shlW2)  + ',' + shlY +
-          // left side: chest → belly → waist → hip
-          ' C' + (cx - chestW2) + ',' + (chestY + 2) +
-              ',' + (cx - bellyW2) + ',' + (bellyY - 3) +
-              ',' + (cx - bellyW2) + ',' + bellyY +
-          ' C' + (cx - bellyW2) + ',' + (bellyY + 3) +
-              ',' + (cx - hipW2)   + ',' + hipTopY +
-              ',' + (cx - hipW2)   + ',' + hipBotY +
-          ' L' + (cx - 4) + ',' + crotY +
-          ' L' + (cx + 4) + ',' + crotY +
-          ' L' + (cx + hipW2) + ',' + hipBotY +
-          ' C' + (cx + hipW2)   + ',' + hipTopY +
-              ',' + (cx + bellyW2) + ',' + (bellyY + 3) +
-              ',' + (cx + bellyW2) + ',' + bellyY +
-          ' C' + (cx + bellyW2) + ',' + (bellyY - 3) +
-              ',' + (cx + chestW2) + ',' + (chestY + 2) +
-              ',' + (cx + shlW2)   + ',' + shlY +
-          ' L' + (cx + neckW/2) + ',' + nkBot + ' Z';
+        torso = 'M' + (cx - nW) + ' ' + nBot
+          + ' L' + (cx - shlW) + ' ' + (shlY + lerp(3, 5, t))
+          + ' C' + (cx - pectW) + ' ' + (pectY + 4) + ' ' + (cx - bellyW) + ' ' + (bellyY - 5) + ' ' + (cx - bellyW) + ' ' + bellyY
+          + ' C' + (cx - bellyW) + ' ' + (bellyY + 5) + ' ' + (cx - hipW) + ' ' + hipTopY + ' ' + (cx - hipW) + ' ' + hipBotY
+          + ' L' + (cx - 5) + ' ' + crotY + ' L' + (cx + 5) + ' ' + crotY
+          + ' L' + (cx + hipW) + ' ' + hipBotY
+          + ' C' + (cx + hipW) + ' ' + hipTopY + ' ' + (cx + bellyW) + ' ' + (bellyY + 5) + ' ' + (cx + bellyW) + ' ' + bellyY
+          + ' C' + (cx + bellyW) + ' ' + (bellyY - 5) + ' ' + (cx + pectW) + ' ' + (pectY + 4) + ' ' + (cx + shlW) + ' ' + (shlY + lerp(3, 5, t))
+          + ' L' + (cx + nW) + ' ' + nBot + ' Z';
       }
 
-      // ── ARMS ──────────────────────────────────────────────
-      var armW     = lerp(fem ? 5 : 6, fem ? 8 : 10, t);
-      var armTopLx = cx - shlW2 + 2;
-      var armTopRx = cx + shlW2 - 2;
-      var armMidLx = cx - shlW2 - lerp(fem ? 8 : 9, fem ? 11 : 13, t);
-      var armMidRx = cx + shlW2 + lerp(fem ? 8 : 9, fem ? 11 : 13, t);
-      var armBotLx = cx - shlW2 - lerp(fem ? 6 : 7, fem ? 9 : 11, t);
-      var armBotRx = cx + shlW2 + lerp(fem ? 6 : 7, fem ? 9 : 11, t);
-      var armMidY  = shlY + lerp(18, 23, t);
-      var armBotY  = shlY + lerp(42, 50, t);
+      var uArmW = lerp(f ? 7 : 9, f ? 11 : 15, t);
+      var lArmW = lerp(f ? 6 : 7.5, f ? 9 : 12, t);
+      var elbLx  = cx - shlW - lerp(9, 13, t), elbRx = cx + shlW + lerp(9, 13, t);
+      var elbY   = shlY + lerp(22, 28, t);
+      var wristLx = cx - shlW - lerp(7, 10, t), wristRx = cx + shlW + lerp(7, 10, t);
+      var wristY  = elbY + lerp(22, 27, t);
+      var handY   = wristY + lerp(9, 12, t);
+      var handW   = lerp(f ? 7 : 8, f ? 10 : 12, t), handH = lerp(12, 15, t);
 
-      // ── LEGS ──────────────────────────────────────────────
-      var legW     = lerp(fem ? 8 : 9, fem ? 13 : 14, t);
-      var thighGap = lerp(1.5, 0.5, t);  // thighs touch more at heavier weight
-      var kneeX_L  = cx - lerp(fem ? 8 : 9, fem ? 13 : 14, t);
-      var kneeX_R  = cx + lerp(fem ? 8 : 9, fem ? 13 : 14, t);
-      var kneeY    = crotY + lerp(32, 37, t);
-      var ankleX_L = cx - lerp(fem ? 5 : 6, fem ? 8 : 9, t);
-      var ankleX_R = cx + lerp(fem ? 5 : 6, fem ? 8 : 9, t);
-      var ankleY   = kneeY + lerp(30, 33, t);
-
-      // ── MALE MUSCLE DETAIL (pec line, ab lines) ────────────
-      var detailLines = '';
-      if (!fem && t < 0.7) {
-        var musAlpha = (0.7 - t) * 0.4;  // fade out on heavier bodies
-        var pecY   = shlY + lerp(8, 11, t);
-        var pecW   = lerp(8, 6, t);
-        var abdY1  = shlY + lerp(16, 19, t);
-        var abdY2  = shlY + lerp(22, 26, t);
-        // pec separation line
-        detailLines +=
-          '<line x1="' + cx + '" y1="' + (shlY+2) + '" x2="' + cx + '" y2="' + (pecY+2) + '"' +
-          ' stroke="' + col + '" stroke-width="0.8" opacity="' + musAlpha + '"/>';
-        // ab lines (horizontal)
-        [abdY1, abdY2].forEach(function(ay) {
-          detailLines +=
-            '<line x1="' + (cx - pecW) + '" y1="' + ay + '" x2="' + (cx + pecW) + '" y2="' + ay + '"' +
-            ' stroke="' + col + '" stroke-width="0.7" opacity="' + musAlpha + '"/>';
-        });
+      function armPath(side) {
+        var s = side < 0 ? -1 : 1;
+        var tx = cx + s * shlW - s * 2;
+        var mx = cx + s * (shlW + lerp(8, 12, t));
+        var wx = cx + s * (shlW + lerp(6, 9, t));
+        var aw2 = uArmW / 2, lw2 = lArmW / 2;
+        return 'M' + (tx - s * aw2) + ' ' + (shlY + 3)
+          + ' Q' + (mx - s * aw2 * 0.7) + ' ' + ((shlY + elbY) / 2) + ' ' + (mx - s * lw2 * 0.8) + ' ' + elbY
+          + ' L' + (wx - s * lw2 * 0.6) + ' ' + wristY
+          + ' L' + (wx + s * lw2 * 0.6) + ' ' + wristY
+          + ' Q' + (mx + s * lw2 * 0.8) + ' ' + elbY + ' ' + (mx + s * aw2 * 0.7) + ' ' + ((shlY + elbY) / 2)
+          + ' L' + (tx + s * aw2) + ' ' + (shlY + 3) + ' Z';
+      }
+      function handPath(side) {
+        var s = side < 0 ? -1 : 1;
+        var hx = cx + s * (shlW + lerp(6, 9, t));
+        return 'M' + (hx - handW / 2) + ' ' + wristY
+          + ' Q' + (hx - handW / 2 - s) + ' ' + (wristY + handH * 0.5) + ' ' + (hx - handW / 3) + ' ' + handY
+          + ' Q' + hx + ' ' + (handY + 4) + ' ' + (hx + handW / 3) + ' ' + handY
+          + ' Q' + (hx + handW / 2 + s) + ' ' + (wristY + handH * 0.5) + ' ' + (hx + handW / 2) + ' ' + wristY + ' Z';
       }
 
-      var totalH = ankleY + 10;
+      var lgW = lerp(f ? 10 : 11, f ? 15 : 17, t);
+      var kneeXL = cx - lerp(8, 14, t), kneeXR = cx + lerp(8, 14, t);
+      var kneeY  = crotY + lerp(36, 42, t);
+      var ankXL  = cx - lerp(5, 9, t), ankXR = cx + lerp(5, 9, t);
+      var ankY   = kneeY + lerp(32, 37, t);
+      var calfBLx = cx - lerp(9, 14, t), calfBRx = cx + lerp(9, 14, t);
 
-      var svg =
-        '<svg width="' + W + '" height="' + totalH + '" viewBox="0 0 ' + W + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg">' +
-          // ground shadow
-          '<ellipse cx="' + cx + '" cy="' + (totalH - 4) + '" rx="' + lerp(14, 20, t) + '" ry="3.5"' +
-          ' fill="rgba(0,0,0,0.10)"/>' +
-          // arms (render behind torso)
-          '<path d="M' + armTopLx + ',' + shlY + ' Q' + armMidLx + ',' + armMidY + ' ' + armBotLx + ',' + armBotY + '"' +
-          ' stroke="' + col + '" stroke-width="' + armW + '" stroke-linecap="round" fill="none" opacity="0.88"/>' +
-          '<path d="M' + armTopRx + ',' + shlY + ' Q' + armMidRx + ',' + armMidY + ' ' + armBotRx + ',' + armBotY + '"' +
-          ' stroke="' + col + '" stroke-width="' + armW + '" stroke-linecap="round" fill="none" opacity="0.88"/>' +
-          // torso
-          '<path d="' + torsoPath + '" fill="' + col + '" opacity="0.88"/>' +
-          // muscle detail
-          detailLines +
-          // legs
-          '<path d="M' + (cx - thighGap) + ',' + crotY + ' Q' + kneeX_L + ',' + kneeY + ' ' + ankleX_L + ',' + ankleY + '"' +
-          ' stroke="' + col + '" stroke-width="' + legW + '" stroke-linecap="round" fill="none" opacity="0.9"/>' +
-          '<path d="M' + (cx + thighGap) + ',' + crotY + ' Q' + kneeX_R + ',' + kneeY + ' ' + ankleX_R + ',' + ankleY + '"' +
-          ' stroke="' + col + '" stroke-width="' + legW + '" stroke-linecap="round" fill="none" opacity="0.9"/>' +
-          // head (on top)
-          '<ellipse cx="' + cx + '" cy="' + headCy + '" rx="' + headRx + '" ry="' + headRy + '" fill="' + col + '" opacity="0.9"/>' +
-          // neck
-          '<rect x="' + (cx - neckW/2) + '" y="' + nkTop + '" width="' + neckW + '" height="' + (nkBot - nkTop) + '"' +
-          ' rx="2" fill="' + col + '" opacity="0.88"/>' +
-          // face detail: eyes
-          '<ellipse cx="' + (cx - 3.5) + '" cy="' + (headCy + 1) + '" rx="1.2" ry="1.5" fill="rgba(255,255,255,0.45)"/>' +
-          '<ellipse cx="' + (cx + 3.5) + '" cy="' + (headCy + 1) + '" rx="1.2" ry="1.5" fill="rgba(255,255,255,0.45)"/>' +
-        '</svg>';
+      function legPath(side) {
+        var s = side < 0 ? -1 : 1;
+        var thX = cx + s * lerp(4, 6, t);
+        var kX  = side < 0 ? kneeXL : kneeXR;
+        var aX  = side < 0 ? ankXL  : ankXR;
+        var cX  = side < 0 ? calfBLx : calfBRx;
+        var lw2 = lgW / 2;
+        return 'M' + (thX - s * lw2 * 0.3) + ' ' + crotY
+          + ' C' + (thX - s * lw2) + ' ' + (crotY + 8) + ' ' + (kX - s * lw2 * 0.4) + ' ' + (kneeY - 6) + ' ' + (kX - s * lw2 * 0.35) + ' ' + kneeY
+          + ' C' + (cX - s * lw2 * 0.6) + ' ' + (kneeY + 8) + ' ' + (aX - s * lerp(2, 4, t)) + ' ' + (ankY - 6) + ' ' + (aX - s * lerp(2, 3, t)) + ' ' + ankY
+          + ' L' + (aX + s * lerp(2, 3, t)) + ' ' + ankY
+          + ' C' + (aX + s * lerp(2, 4, t)) + ' ' + (ankY - 6) + ' ' + (cX + s * lw2 * 0.6) + ' ' + (kneeY + 8) + ' ' + (kX + s * lw2 * 0.35) + ' ' + kneeY
+          + ' C' + (kX + s * lw2 * 0.4) + ' ' + (kneeY - 6) + ' ' + (thX + s * lw2) + ' ' + (crotY + 8) + ' ' + (thX + s * lw2 * 0.3) + ' ' + crotY + ' Z';
+      }
+      var footH = lerp(5, 7, t), footFwd = lerp(8, 11, t);
+      function footPath(side) {
+        var aX = side < 0 ? ankXL : ankXR;
+        var fwd = side < 0 ? -footFwd : footFwd;
+        return 'M' + (aX - lerp(3, 5, t)) + ' ' + ankY
+          + ' Q' + (aX + fwd * 0.3) + ' ' + (ankY + footH) + ' ' + (aX + fwd) + ' ' + (ankY + footH * 0.6)
+          + ' Q' + (aX + fwd * 1.2) + ' ' + (ankY + footH * 0.3) + ' ' + (aX + fwd * 0.8) + ' ' + ankY + ' Z';
+      }
 
-      return { svg: svg, height: totalH };
+      var detail = '';
+      var mA = cl((0.6 - t) * 0.45, 0, 0.22);
+      if (!f && mA > 0.02) {
+        var pLY = pectY + lerp(6, 9, t);
+        detail += '<line x1="' + cx + '" y1="' + (shlY + 4) + '" x2="' + cx + '" y2="' + pLY + '" stroke="' + col + '" stroke-width="1.1" opacity="' + mA + '"/>';
+        detail += '<path d="M' + (cx - lerp(10, 7, t)) + ' ' + pLY + ' Q' + (cx - 5) + ' ' + (pLY + 4) + ' ' + cx + ' ' + pLY + '" stroke="' + col + '" stroke-width="1" fill="none" opacity="' + mA + '"/>';
+        detail += '<path d="M' + (cx + lerp(10, 7, t)) + ' ' + pLY + ' Q' + (cx + 5) + ' ' + (pLY + 4) + ' ' + cx + ' ' + pLY + '" stroke="' + col + '" stroke-width="1" fill="none" opacity="' + mA + '"/>';
+        detail += '<path d="M' + (cx - ribW) + ' ' + ribY + ' Q' + (cx - waistW * 1.1) + ' ' + (ribY + lerp(1, 3, t)) + ' ' + (cx - waistW) + ' ' + (waistY - 4) + '" stroke="' + col + '" stroke-width="0.8" fill="none" opacity="' + (mA * 0.6) + '"/>';
+        detail += '<path d="M' + (cx + ribW) + ' ' + ribY + ' Q' + (cx + waistW * 1.1) + ' ' + (ribY + lerp(1, 3, t)) + ' ' + (cx + waistW) + ' ' + (waistY - 4) + '" stroke="' + col + '" stroke-width="0.8" fill="none" opacity="' + (mA * 0.6) + '"/>';
+        var abY = lerp(waistY - 7, waistY - 4, t);
+        detail += '<line x1="' + (cx - lerp(5, 4, t)) + '" y1="' + abY + '" x2="' + (cx + lerp(5, 4, t)) + '" y2="' + abY + '" stroke="' + col + '" stroke-width="0.8" opacity="' + (mA * 0.8) + '"/>';
+      }
+      if (f && mA > 0.02) {
+        detail += '<path d="M' + (cx - nW * 0.9) + ' ' + (nBot + 2) + ' Q' + (cx - shlW * 0.6) + ' ' + (shlY + 4) + ' ' + (cx - shlW + 4) + ' ' + (shlY + 5) + '" stroke="' + col + '" stroke-width="0.9" fill="none" opacity="' + (mA * 0.9) + '"/>';
+        detail += '<path d="M' + (cx + nW * 0.9) + ' ' + (nBot + 2) + ' Q' + (cx + shlW * 0.6) + ' ' + (shlY + 4) + ' ' + (cx + shlW - 4) + ' ' + (shlY + 5) + '" stroke="' + col + '" stroke-width="0.9" fill="none" opacity="' + (mA * 0.9) + '"/>';
+      }
+      var kcA = cl((0.7 - t) * 0.3, 0, 0.18);
+      if (kcA > 0.02) {
+        detail += '<ellipse cx="' + kneeXL + '" cy="' + kneeY + '" rx="' + lerp(3, 2, t) + '" ry="' + lerp(2.5, 1.8, t) + '" fill="none" stroke="' + col + '" stroke-width="0.7" opacity="' + kcA + '"/>';
+        detail += '<ellipse cx="' + kneeXR + '" cy="' + kneeY + '" rx="' + lerp(3, 2, t) + '" ry="' + lerp(2.5, 1.8, t) + '" fill="none" stroke="' + col + '" stroke-width="0.7" opacity="' + kcA + '"/>';
+      }
+
+      var totalH = Math.round(ankY + footH + 10);
+      return '<svg width="' + W + '" height="' + totalH + '" viewBox="0 0 ' + W + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg">'
+        + '<ellipse cx="' + cx + '" cy="' + (totalH - 4) + '" rx="' + lerp(17, 24, t) + '" ry="4" fill="rgba(0,0,0,0.14)"/>'
+        + '<path d="' + armPath(-1) + '" fill="' + col + '" opacity="0.82"/>'
+        + '<path d="' + armPath(1)  + '" fill="' + col + '" opacity="0.82"/>'
+        + '<path d="' + handPath(-1) + '" fill="' + col + '" opacity="0.78"/>'
+        + '<path d="' + handPath(1)  + '" fill="' + col + '" opacity="0.78"/>'
+        + '<path d="' + legPath(-1) + '" fill="' + col + '" opacity="0.88"/>'
+        + '<path d="' + legPath(1)  + '" fill="' + col + '" opacity="0.88"/>'
+        + '<path d="' + footPath(-1) + '" fill="' + col + '" opacity="0.78"/>'
+        + '<path d="' + footPath(1)  + '" fill="' + col + '" opacity="0.78"/>'
+        + '<path d="' + torso + '" fill="' + col + '" opacity="0.9"/>'
+        + '<path d="' + trapPath + '" fill="' + col + '" opacity="0.88"/>'
+        + detail
+        + '<path d="' + nPath + '" fill="' + col + '" opacity="0.9"/>'
+        + '<path d="' + skullPath + '" fill="' + col + '" opacity="0.92"/>'
+        + '<path d="' + jawPath + '" fill="' + col + '" opacity="0.9"/>'
+        + '<path d="M' + (cx - hRx * 0.55) + ' ' + (hCy - 1) + ' Q' + cx + ' ' + (hCy - 3) + ' ' + (cx + hRx * 0.55) + ' ' + (hCy - 1) + '" stroke="' + col + '" stroke-width="' + (hRy * 0.18) + '" fill="none" opacity="0.2"/>'
+        + '</svg>';
     }
 
-    var nowFig  = buildFigure(bfPctNow,  isFemale, 'rgba(212,168,67,0.88)');
-    var projFig = buildFigure(bfPctProj, isFemale, '#4caf7d');
+    var nowSVG  = buildFigureSVG(bfPctNow,  isFemale, 'rgba(212,168,67,0.92)');
+    var projSVG = buildFigureSVG(bfPctProj, isFemale, 'rgba(76,175,125,0.94)');
 
     sil.innerHTML =
       '<div style="font-size:9px;font-weight:700;color:var(--text3);text-align:center;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">Body Projection</div>' +
-      '<div style="display:flex;gap:8px;align-items:flex-end;justify-content:center">' +
+      '<div style="display:flex;gap:6px;align-items:flex-end;justify-content:center">' +
         '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">' +
           '<div style="font-size:9px;font-weight:700;color:rgba(212,168,67,0.95);letter-spacing:.06em;text-transform:uppercase">Now</div>' +
-          nowFig.svg +
-          '<div style="font-size:11px;font-weight:700;color:rgba(212,168,67,0.95)">' + bfPctNow.toFixed(1) + '%</div>' +
+          nowSVG +
+          '<div style="font-size:12px;font-weight:700;color:rgba(212,168,67,0.95)">' + bfPctNow.toFixed(1) + '%</div>' +
           '<div style="font-size:9px;color:var(--text3)">body fat</div>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">' +
-          '<div style="font-size:9px;font-weight:700;color:#4caf7d;letter-spacing:.06em;text-transform:uppercase">12 Mo.</div>' +
-          projFig.svg +
-          '<div style="font-size:11px;font-weight:700;color:#4caf7d">' + bfPctProj.toFixed(1) + '%</div>' +
+          '<div style="font-size:9px;font-weight:700;color:rgba(76,175,125,0.95);letter-spacing:.06em;text-transform:uppercase">12 Mo.</div>' +
+          projSVG +
+          '<div style="font-size:12px;font-weight:700;color:rgba(76,175,125,0.95)">' + bfPctProj.toFixed(1) + '%</div>' +
           '<div style="font-size:9px;color:var(--text3)">body fat</div>' +
         '</div>' +
       '</div>';
