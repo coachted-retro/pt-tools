@@ -981,7 +981,7 @@
             <div class="field"><label>Date of birth</label><input type="date" id="dob"></div>
           </div>
           <div class="grid2">
-            <div class="field"><label>Full name</label><input type="text" id="name" placeholder="Member full name"></div>
+            <div class="field"><label>Full name</label><input type="text" id="name" placeholder="Member full name" oninput="saveDraftSilent()"></div>
             <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="(555) 000-0000"></div>
           </div>
           <div class="field"><label>Email</label><input type="email" id="email" placeholder="member@email.com"></div>
@@ -1422,6 +1422,11 @@ window.addEventListener('load', () => {
   // Set today's date
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('consult-date').value = today;
+
+  // Auto-save draft every 45 seconds
+  setInterval(function() {
+    saveDraftSilent();
+  }, 45000);
 });
 
 // ===========================================
@@ -1429,6 +1434,24 @@ window.addEventListener('load', () => {
 // ===========================================
 let currentPage = 0;
 const pageLabels = ['Upload documents','Member info','Medical history','Diet & nutrition','InBody scan','Assessment'];
+
+
+// Auto-sync partial intake to sheet so Hub always shows in-progress records
+var _lastSyncedId = null;
+var _syncPending = false;
+
+function markDraftSynced(name) {
+  if (!name) return;
+  var drafts = getDrafts();
+  var idx = drafts.findIndex(function(d) { return d._name === name; });
+  if (idx >= 0) { drafts[idx]._synced = true; localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts)); }
+}
+
+function autoSyncToSheet() {
+  // No-op for in-progress: only finalize (accept/decline) writes to the sheet.
+  // This prevents duplicate IN PROGRESS rows in All Intakes.
+  // The Hub Dashboard reads drafts from localStorage for in-progress entries.
+}
 
 function goPage(n) {
   document.getElementById('page-'+currentPage).classList.remove('active');
@@ -1446,6 +1469,8 @@ function goPage(n) {
   document.getElementById('nav-'+n).classList.add('active');
   document.getElementById('breadcrumb-label').textContent = pageLabels[n];
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  saveDraftSilent();
+  autoSyncToSheet();
 }
 
 // ===========================================
@@ -2355,6 +2380,8 @@ async function finalizeAccept() {
     conf.innerHTML = ok
       ? '&#x2705; Saved to All Intakes. Welcome aboard!'
       : '&#x26A0;&#xFE0F; Could not write to sheet — please check connection.';
+    // Mark draft as synced so it won't be double-written
+    markDraftSynced(gv('name'));
     saveDraftSilent();
     setTimeout(function() { sendNotificationEmail('ACCEPTED'); }, 500);
   } catch(e) {
@@ -2378,7 +2405,8 @@ async function finalizeDecline() {
   const gender = gv('gender');
   const tabName = gender === 'Female' ? 'Female Follow-Ups' : 'Male Follow-Ups';
 
-  // Write to All Intakes
+  // Write to All Intakes (mark synced first to prevent duplicates)
+  markDraftSynced(gv('name'));
   const intakeRow = buildIntakeRow('DECLINED', '', '');
   await appendToSheet('All Intakes', intakeRow);
 
@@ -2516,14 +2544,17 @@ function getDrafts() {
 
 function saveDraftSilent() {
   var name = document.getElementById('name') ? document.getElementById('name').value.trim() : '';
-  if (!name) return;
+  if (!name) name = 'Unnamed – ' + new Date().toLocaleDateString();
   var drafts = getDrafts();
   var data = getAllFields();
-  data._id = data._id || Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  // Preserve existing _id so same record is always updated, never duplicated
+  var existing = drafts.find(function(d) { return d._name === name; });
+  data._id = (existing && existing._id) ? existing._id : (Date.now().toString(36) + Math.random().toString(36).slice(2,5));
   data._name = name;
   data._phone = gv('phone');
   data._email = gv('email');
   data._savedAt = new Date().toISOString();
+  data._synced = existing ? (existing._synced || false) : false;
   var idx = drafts.findIndex(function(d) { return d._name === name; });
   if (idx >= 0) drafts[idx] = data;
   else drafts.unshift(data);
