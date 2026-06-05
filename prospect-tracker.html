@@ -1656,7 +1656,7 @@ function openEditBookingModal() {
 
 function closeEditBookingModal() { document.getElementById('editBookingModal').style.display = 'none'; }
 
-async async function confirmEditBooking() {
+async function confirmEditBooking() {
   const b = bcBookings.find(x => x.id === selectedBCId);
   if (!b) return;
   const first = document.getElementById('eb-first').value.trim();
