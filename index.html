@@ -436,7 +436,7 @@ async function loadHistory() {
     var html = '';
     for (var i = 0; i < rows.length; i++) {
       var row = rows[i];
-      var date = (row[0]||'').toString();
+     var raw = (row[0]||'').toString(); var date = raw ? new Date(raw).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '--';
       var advisor = (row[2]||'').toString();
       var name = (row[5]||'').toString();
       var goal = (row[8]||'').toString();
