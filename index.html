@@ -143,7 +143,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <div style="display:none"><input type="hidden" id="cfg-proxy" value="https://broken-cake-e9c2.tedscholl.workers.dev"></div>
     <div class="cfg-f" style="display:none"><input type="hidden" id="cfg-api" value="worker"></div>
     <div class="cfg-f" style="display:none"><input type="hidden" id="cfg-gkey" value="AIzaSyCGFbcmu_oOINqEYB7fL-ToM4Y6G-xjlSU"></div>
+    <div style="display:none"><input type="hidden" id="cfg-emails" value="tedscholl@gmail.com, healthylifewithdani1@gmail.com"></div>
+    <div style="display:none"><input type="hidden" id="cfg-sheet1" value="1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g"></div>
+    <div style="display:none"><input type="hidden" id="cfg-sheet2" value="1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs"></div>
     <div class="cfg-f">
+      <label>Advisor name</label>
       <label>Advisor name</label>
       <input type="text" id="cfg-advisor" placeholder="Your name">
     </div>
@@ -641,6 +645,7 @@ function loadHubDrafts() {
 }
 window.addEventListener('load', function() {
   loadHubDrafts();
+  loadHistory();
 });</script>
 
 <div id="assessment-modal" class="config-overlay" style="z-index:300">
