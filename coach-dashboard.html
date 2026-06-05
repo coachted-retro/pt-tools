@@ -1139,14 +1139,12 @@ function emailChecklist() {
   lines.push('Submitted: ' + new Date().toLocaleString('en-US'));
 
   const subject = 'Weekly Checklist - ' + coachName + ' - Week of ' + weekOf;
-  const body = lines.join('\r\n');
-  const mailto = 'mailto:tedscholl@gmail.com,healthylifewithdani1@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
-  const a = document.createElement('a');
-  a.href = mailto;
-  a.target = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const body = lines.join('\n');
+  const gmailUrl = 'https://mail.google.com/mail/?view=cm'
+    + '&to=' + encodeURIComponent('tedscholl@gmail.com,healthylifewithdani1@gmail.com')
+    + '&su=' + encodeURIComponent(subject)
+    + '&body=' + encodeURIComponent(body);
+  window.open(gmailUrl, '_blank');
 }
 
 
