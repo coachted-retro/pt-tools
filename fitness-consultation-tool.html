@@ -6,7 +6,7 @@
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fitness Consultation Tool v1780075190</title>
+<title>Fitness Consultation Tool v1780660978</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -530,41 +530,6 @@
   .decision-btn.decline:hover { background: #f8d0cc; }
 
   /* ── TERMS PANEL ── */
-
-  .transform-card { display:none; background:#0a0a0f; border:1px solid #2a2a3a; border-radius:14px; padding:22px; margin-top:20px; font-family:'Barlow Condensed',sans-serif; }
-  .transform-card.visible { display:block; }
-  .tc-header { text-align:center; margin-bottom:18px; }
-  .tc-title { font-size:20px; font-weight:800; color:#e8e8f0; letter-spacing:1px; margin-bottom:4px; }
-  .tc-sub { font-size:11px; color:#6b6b85; letter-spacing:1px; }
-  .tc-name-highlight { color:#00e5a0; }
-  .tc-grid { display:grid; grid-template-columns:1fr 40px 1fr; margin-bottom:14px; }
-  .tc-col { background:#13131a; border:1px solid #2a2a3a; border-radius:10px; padding:12px; }
-  .tc-col-goal { border-color:#00e5a0; }
-  .tc-col-hdr { font-size:8px; letter-spacing:2px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #2a2a3a; }
-  .tc-col-now .tc-col-hdr { color:#6b6b85; }
-  .tc-col-goal .tc-col-hdr { color:#00e5a0; }
-  .tc-arrow-col { display:flex; align-items:center; justify-content:center; }
-  .tc-metric { margin-bottom:10px; }
-  .tc-metric:last-child { margin-bottom:0; }
-  .tc-metric-lbl { font-size:8px; color:#6b6b85; letter-spacing:1.5px; margin-bottom:2px; }
-  .tc-metric-val { font-size:20px; font-weight:800; line-height:1; margin-bottom:3px; }
-  .tc-metric-bar-wrap { height:4px; background:#2a2a3a; border-radius:3px; overflow:hidden; }
-  .tc-metric-bar { height:100%; border-radius:3px; }
-  .tc-val-now { color:#e8e8f0; } .tc-val-goal { color:#00e5a0; }
-  .tc-bar-now { background:#3a3a4a; } .tc-bar-goal { background:#00e5a0; }
-  .tc-deltas { display:flex; background:rgba(0,229,160,.07); border:1px solid rgba(0,229,160,.2); border-radius:8px; padding:10px; margin-bottom:14px; }
-  .tc-delta-item { flex:1; text-align:center; }
-  .tc-delta-val { font-size:17px; font-weight:800; color:#00e5a0; }
-  .tc-delta-lbl { font-size:8px; color:#6b6b85; letter-spacing:1px; }
-  .tc-delta-sep { width:0.5px; background:rgba(0,229,160,.2); margin:0 4px; }
-  .tc-milestones { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:14px; }
-  .tc-milestone { background:#13131a; border:1px solid #2a2a3a; border-radius:7px; padding:8px; text-align:center; }
-  .tc-milestone-mo { font-size:8px; color:#00e5a0; letter-spacing:1px; margin-bottom:3px; }
-  .tc-milestone-txt { font-size:10px; color:#e8e8f0; line-height:1.3; }
-  .tc-cta { background:#00e5a0; border-radius:8px; padding:12px; text-align:center; }
-  .tc-cta-text { font-size:13px; font-weight:800; color:#000; letter-spacing:1px; }
-  .tc-cta-sub { font-size:9px; color:rgba(0,0,0,.6); letter-spacing:1px; margin-top:2px; }
-  .tc-section-lbl { font-size:8px; color:#6b6b85; letter-spacing:2px; text-align:center; margin-bottom:8px; }
   .terms-panel {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -961,7 +926,9 @@
           <label>Advisor:</label>
           <input type="text" id="advisor-name" placeholder="Your name" onchange="saveCfgField('advisor',this.value)">
         </div>
-        <button class="settings-btn" onclick="openConfig()" title="Settings">⚙️</button>
+        <button id="save-draft-btn" class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="saveDraft()">Save Draft</button>
+    <button class="btn btn-outline" style="font-size:12px;padding:6px 12px" onclick="openDraftPanel()">📂 Drafts</button>
+    <button class="settings-btn" onclick="openConfig()" title="Settings">⚙️</button>
       </div>
     </div>
 
@@ -1287,51 +1254,6 @@
           </button>
           <div id="assess-status" class="status-bar" style="margin-top:12px;"></div>
           <div id="assessment-box" class="assessment-box"></div>
-          <!-- TRANSFORMATION ROADMAP CARD -->
-          <div id="transform-card" class="transform-card">
-            <div class="tc-header">
-              <div class="tc-title">YOUR TRANSFORMATION ROADMAP</div>
-              <div class="tc-sub">Based on <span class="tc-name-highlight" id="tc-name">your</span> InBody assessment &middot; Retro Fitness PT Program</div>
-            </div>
-            <div class="tc-grid">
-              <div class="tc-col tc-col-now">
-                <div class="tc-col-hdr">WHERE YOU ARE TODAY</div>
-                <div class="tc-metric"><div class="tc-metric-lbl">BODY FAT %</div><div class="tc-metric-val tc-val-now" id="tc-pbf-now">—</div><div class="tc-metric-bar-wrap"><div class="tc-metric-bar tc-bar-now" id="tc-pbf-now-bar" style="width:50%"></div></div></div>
-                <div class="tc-metric"><div class="tc-metric-lbl">LEAN MASS</div><div class="tc-metric-val tc-val-now" id="tc-lean-now">—</div><div class="tc-metric-bar-wrap"><div class="tc-metric-bar tc-bar-now" id="tc-lean-now-bar" style="width:50%"></div></div></div>
-                <div class="tc-metric"><div class="tc-metric-lbl">BODY WEIGHT</div><div class="tc-metric-val tc-val-now" id="tc-weight-now">—</div><div class="tc-metric-bar-wrap"><div class="tc-metric-bar tc-bar-now" style="width:55%"></div></div></div>
-                <div class="tc-metric"><div class="tc-metric-lbl">BMI</div><div class="tc-metric-val tc-val-now" id="tc-bmi-now">—</div><div class="tc-metric-bar-wrap"><div class="tc-metric-bar tc-bar-now" id="tc-bmi-now-bar" style="width:55%"></div></div></div>
-              </div>
-              <div class="tc-arrow-col"><div style="font-size:22px;color:#00e5a0">→</div></div>
-              <div class="tc-col tc-col-goal">
-                <div class="tc-col-hdr">WHERE YOU COULD BE IN 12 MONTHS</div>
-                <div class="tc-metric"><div class="tc-metric-lbl">BODY FAT %</div><div class="tc-metric-val tc-val-goal" id="tc-pbf-goal">—</div><div class="tc-metric-bar-wrap"><div class="tc-metric-bar tc-bar-goal" id="tc-pbf-goal-bar" style="width:30%"></div></div></div>
-                <div class="tc-metric"><div class="tc-metric-lbl">LEAN MASS</div><div class="tc-metric-val tc-val-goal" id="tc-lean-goal">—</div><div class="tc-metric-bar-wrap"><div class="tc-metric-bar tc-bar-goal" id="tc-lean-goal-bar" style="width:70%"></div></div></div>
-                <div class="tc-metric"><div class="tc-metric-lbl">BODY WEIGHT</div><div class="tc-metric-val tc-val-goal" id="tc-weight-goal">—</div><div class="tc-metric-bar-wrap"><div class="tc-metric-bar tc-bar-goal" style="width:45%"></div></div></div>
-                <div class="tc-metric"><div class="tc-metric-lbl">BMI</div><div class="tc-metric-val tc-val-goal" id="tc-bmi-goal">—</div><div class="tc-metric-bar-wrap"><div class="tc-metric-bar tc-bar-goal" id="tc-bmi-goal-bar" style="width:40%"></div></div></div>
-              </div>
-            </div>
-            <div class="tc-deltas">
-              <div class="tc-delta-item"><div class="tc-delta-val" id="tc-d-bf">—</div><div class="tc-delta-lbl">BODY FAT LOST</div></div>
-              <div class="tc-delta-sep"></div>
-              <div class="tc-delta-item"><div class="tc-delta-val" id="tc-d-lean">—</div><div class="tc-delta-lbl">LEAN MASS GAINED</div></div>
-              <div class="tc-delta-sep"></div>
-              <div class="tc-delta-item"><div class="tc-delta-val" id="tc-d-weight">—</div><div class="tc-delta-lbl">WEIGHT LOST</div></div>
-              <div class="tc-delta-sep"></div>
-              <div class="tc-delta-item"><div class="tc-delta-val" id="tc-d-bmi">—</div><div class="tc-delta-lbl">BMI REDUCTION</div></div>
-            </div>
-            <div class="tc-section-lbl">YOUR MILESTONES</div>
-            <div class="tc-milestones">
-              <div class="tc-milestone"><div class="tc-milestone-mo">30 DAYS</div><div class="tc-milestone-txt">Strength baseline built. Energy noticeably up.</div></div>
-              <div class="tc-milestone"><div class="tc-milestone-mo">90 DAYS</div><div class="tc-milestone-txt">Visible changes. Clothes fitting differently.</div></div>
-              <div class="tc-milestone"><div class="tc-milestone-mo">6 MONTHS</div><div class="tc-milestone-txt">Major body composition shift. Confidence up.</div></div>
-              <div class="tc-milestone"><div class="tc-milestone-mo">12 MONTHS</div><div class="tc-milestone-txt">Goal achieved. Sustainable new baseline.</div></div>
-            </div>
-            <div class="tc-cta">
-              <div class="tc-cta-text">THIS IS EXACTLY WHAT YOUR PROGRAM IS DESIGNED TO DO</div>
-              <div class="tc-cta-sub">RETRO FITNESS OF FAIRLESS HILLS &middot; PERSONAL TRAINING</div>
-            </div>
-          </div>
-
           <div id="decision-row" class="decision-row">
             <button class="decision-btn accept" onclick="showTerms()">✓ Accept — proceed to terms</button>
             <button class="decision-btn decline" onclick="showDecline()">✕ Decline — schedule follow-up</button>
@@ -1458,6 +1380,22 @@ function openConfig() {
 
 // Show config on load if not configured
 window.addEventListener('load', () => {
+  // Check if opened with a draft ID in the URL hash
+  var hash = window.location.hash;
+  if (hash && hash.indexOf('draft=') >= 0) {
+    var draftId = hash.split('draft=')[1];
+    if (draftId) {
+      var drafts = [];
+      try { drafts = JSON.parse(localStorage.getItem('fct_drafts') || '[]'); } catch(e) {}
+      var draft = drafts.find(function(d) { return d._id === draftId; });
+      if (draft) {
+        setTimeout(function() {
+          restoreFields(draft);
+          goPage(1);
+        }, 100);
+      }
+    }
+  }
   if (!getCfg('configured')) {
     document.getElementById('config-overlay').style.display = 'flex';
   } else {
@@ -1469,29 +1407,6 @@ window.addEventListener('load', () => {
   // Set today's date
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('consult-date').value = today;
-
-  // Auto-populate contact info from Prospect Tracker (passed via URL params on Show)
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('name')) {
-    document.getElementById('name').value = params.get('name');
-    document.getElementById('phone').value = params.get('phone') || '';
-    document.getElementById('email').value = params.get('email') || '';
-    // Advisor from URL takes priority over saved config
-    if (params.get('advisor')) {
-      document.getElementById('advisor-name').value = params.get('advisor');
-    }
-    // Scroll to top so the pre-filled fields are visible
-    window.scrollTo(0, 0);
-    // Brief highlight so Ted knows the fields were auto-filled
-    ['name','phone','email'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el && el.value) {
-        el.style.transition = 'background 0.5s';
-        el.style.background = 'rgba(0,229,160,0.18)';
-        setTimeout(() => { el.style.background = ''; }, 2500);
-      }
-    });
-  }
 });
 
 // ===========================================
@@ -1691,59 +1606,45 @@ let assessmentText = '';
 function gv(id) { return (document.getElementById(id)||{}).value || ''; }
 
 function buildPrompt() {
-  const name = gv('name') || 'Member';
-  const age = gv('age'); const gender = gv('gender');
-  const height = gv('height'); const bmi = gv('bmi');
-  const pbf = gv('pbf'); const leanMass = gv('lean-mass');
-  const fatMass = gv('fat-mass'); const water = gv('water-weight');
-  const segLA = gv('seg-la'); const segRA = gv('seg-ra');
-  const segTrunk = gv('seg-trunk'); const segLL = gv('seg-ll'); const segRL = gv('seg-rl');
-  const goals = gv('goals'); const experience = gv('experience');
-  const daysPerWeek = gv('days-per-week'); const duration = gv('workout-duration');
-  const workoutStatus = gv('workout-status');
-  const medical = gv('medical'); const medications = gv('medications');
-  const supplements = gv('supplements');
-  const mealsPerDay = gv('meals-per-day'); const calories = gv('calorie-target');
-  const breakfast = gv('breakfast'); const lunch = gv('lunch');
-  const dinner = gv('dinner'); const snacks = gv('snacks');
-  const tracksMacros = gv('tracks-macros');
- 
-  return `You are a Retro Fitness personal training advisor conducting an initial consultation. Generate a SHORT, scannable assessment using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 3 minutes.
- 
-MEMBER: ${name} | Age: ${age} | Gender: ${gender} | Height: ${height}
-INBODY: BMI ${bmi} | Body Fat ${fatMass}lb (${pbf}%) | Lean Mass ${leanMass}lb | Water ${water}lb
-SEGMENTAL: L.Arm ${segLA}% | R.Arm ${segRA}% | Trunk ${segTrunk}% | L.Leg ${segLL}% | R.Leg ${segRL}%
-GOALS: ${goals}
-EXPERIENCE: ${experience} | Workout status: ${workoutStatus} | Training: ${daysPerWeek}/week, ${duration}
-MEDICAL: ${medical || 'None'} | Meds: ${medications || 'None'} | Supplements: ${supplements || 'None'}
-NUTRITION: ${mealsPerDay} meals/day | Calories: ${calories || 'Not tracked'} | Tracks macros: ${tracksMacros}
-Breakfast: ${breakfast} | Lunch: ${lunch} | Dinner: ${dinner} | Snacks: ${snacks}
- 
-FORMAT YOUR RESPONSE EXACTLY LIKE THIS — short bullets only, no long paragraphs:
- 
-📊 WHERE YOU ARE NOW
-• Weight & Composition: [1 sentence using their actual BMI, body fat %, lean mass numbers]
-• Body Fat: [their actual PBF% and what category that puts them in — athletic/fit/acceptable/obese]
-• Lean Mass: [their actual lean mass and what it means for their goal]
-• Key Finding: [the most important thing from their segmental data — e.g. which body part is lagging]
- 
-🏋️ WORKOUT — NEXT STEPS
-• [Specific training frequency recommendation based on their schedule and goal]
-• [Priority focus area based on their segmental imbalances]
-• [One key exercise type or movement pattern to prioritize]
-• [Any modification needed for their medical history if applicable]
- 
-🥗 NUTRITION — CORRECTIVE ACTIONS
-• [Estimated daily calorie target based on their stats and goal]
-• [Protein target in grams based on their lean mass]
-• [One specific change to their current eating habits]
-• [One supplement recommendation or adjustment]
- 
-✅ 90-DAY TARGET
-• [One specific, measurable outcome they can realistically achieve in 90 days based on their actual data]
- 
+  return `You are a professional fitness advisor and certified health consultant. Generate a formal member consultation summary in three clearly labeled sections based on the data below.
+
+1. MEMBER-FACING ASSESSMENT
+A warm, personalized overview of the member's current fitness and health situation. Summarize their starting point, acknowledge their goals, and explain what their InBody scan data means in plain terms. Mention body composition numbers in context (e.g. what their PBF% means for their goals). Use an encouraging, professional tone.
+
+2. ADVISOR RECOMMENDATIONS
+Evidence-based recommendations grounded in ACSM guidelines, exercise science, and nutritional research. Cover:
+- How their medical conditions, injuries, or medications should shape their program
+- Diet quality assessment and specific macro/calorie recommendations based on their stats
+- Supplement assessment (what's useful vs. unnecessary)
+- Key lifestyle factors to address first
+
+3. SUGGESTED NEXT STEPS - STRENGTH TRAINING PROGRAM
+A concrete, specific training framework. Include:
+- Recommended training split and frequency (given their goals and schedule)
+- Priority movement patterns and muscle groups based on segmental lean analysis imbalances
+- Intensity and volume guidelines appropriate to their experience level
+- Any exercise contraindications or modifications based on medical history
+- Short-term (30-day) focus areas
+
+Keep the full advisor notes concise. Then end with this member-facing close section — this is what gets shown on screen and read with the member:
+
+---MEMBER CLOSE---
+
+YOUR SNAPSHOT
+[2 sentences max. Their biggest body composition finding in plain language. Honest and encouraging.]
+
+YOUR OPPORTUNITY  
+[1-2 sentences. Specific result they can realistically achieve in 90 days based on their data and goal.]
+
+YOUR PLAN
+- [Training: one specific action]
+- [Nutrition: one specific change]
+- [What we track together]
+
 THE DECISION
-[One sentence — make today feel like the right time to start. No pressure, just truth.]`;
+[One powerful closing sentence that creates urgency without pressure. Make it feel like today is the right day.]
+
+---END CLOSE---`;
 }
 
 async function generateAssessment() {
@@ -1771,7 +1672,6 @@ async function generateAssessment() {
     box.textContent = assessmentText;
     box.style.display = 'block';
     document.getElementById('decision-row').style.display = 'grid';
-  buildTransformCard();
     setStatus('assess-status','','');
     // Open Gmail with assessment - fires after AI completes
     try {
@@ -1885,8 +1785,8 @@ function buildIntakeRow(decision, freq, length, followUpDays) {
     gv('phone'),
     gv('email'),
     gv('goals'),
-   outcome,
-(document.getElementById('decline-reason') && document.getElementById('decline-reason').value ? document.getElementById('decline-reason').value : ''),
+    outcome + (document.getElementById('decline-reason') && document.getElementById('decline-reason').value ? ' - ' + document.getElementById('decline-reason').value : ''),
+    '',
     assessmentText.substring(0, 800) + (assessmentText.length > 800 ? '...' : ''),
     '=HYPERLINK("https://coachted-retro.github.io/pt-tools/fitness-consultation-tool.html","View Tool")'
   ];
@@ -2025,120 +1925,8 @@ async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   } catch(e) { console.error('PT Tracker failed:', e.message); return false; }
 }
 
-
-
-// ══════════════════════════════════════════════════
-// TRANSFORMATION ROADMAP CARD
-// ══════════════════════════════════════════════════
-function buildTransformCard() {
-  const name = (gv('first-name') || gv('name') || 'Your').split(' ')[0];
-  const pbfNow = parseFloat(gv('pbf')) || 0;
-  const leanNow = parseFloat(gv('lean-mass')) || 0;
-  const bmiNow = parseFloat(gv('bmi')) || 0;
-
-  // Estimate total weight from lean mass and body fat
-  const weightNow = leanNow > 0 && pbfNow > 0
-    ? Math.round(leanNow / (1 - pbfNow / 100))
-    : 0;
-
-  if (!pbfNow && !leanNow) return; // no InBody data — skip
-
-  // Calculate realistic 12-month targets
-  // Avg PT client loses 1% BF/month, gains 1-2lb lean/month
-  const pbfGoal = Math.max(Math.round((pbfNow - 12) * 10) / 10, pbfNow > 20 ? 14 : 10);
-  const leanGoal = Math.round((leanNow + 16) * 10) / 10;
-  const weightGoal = leanGoal > 0 && pbfGoal > 0
-    ? Math.round(leanGoal / (1 - pbfGoal / 100))
-    : (weightNow > 0 ? weightNow - 15 : 0);
-  const bmiGoal = bmiNow > 0 ? Math.round((bmiNow - (bmiNow * 0.12)) * 10) / 10 : 0;
-
-  // Deltas
-  const dBF = (pbfNow - pbfGoal).toFixed(1);
-  const dLean = (leanGoal - leanNow).toFixed(1);
-  const dWeight = weightNow > 0 ? Math.abs(weightNow - weightGoal) : null;
-  const dBMI = bmiNow > 0 ? (bmiNow - bmiGoal).toFixed(1) : null;
-
-  // Populate
-  document.getElementById('tc-name').textContent = name + "'s";
-  document.getElementById('tc-pbf-now').textContent = pbfNow + '%';
-  document.getElementById('tc-pbf-goal').textContent = pbfGoal + '%';
-  document.getElementById('tc-pbf-now-bar').style.width = Math.min(pbfNow * 2, 95) + '%';
-  document.getElementById('tc-pbf-goal-bar').style.width = Math.min(pbfGoal * 2, 95) + '%';
-
-  document.getElementById('tc-lean-now').textContent = leanNow + 'lb';
-  document.getElementById('tc-lean-goal').textContent = leanGoal + 'lb';
-  document.getElementById('tc-lean-now-bar').style.width = Math.min((leanNow / 200) * 100, 85) + '%';
-  document.getElementById('tc-lean-goal-bar').style.width = Math.min((leanGoal / 200) * 100, 95) + '%';
-
-  document.getElementById('tc-weight-now').textContent = weightNow > 0 ? weightNow + 'lb' : '—';
-  document.getElementById('tc-weight-goal').textContent = weightGoal > 0 ? weightGoal + 'lb' : '—';
-
-  document.getElementById('tc-bmi-now').textContent = bmiNow > 0 ? bmiNow : '—';
-  document.getElementById('tc-bmi-goal').textContent = bmiGoal > 0 ? bmiGoal : '—';
-  if (bmiNow > 0) {
-    document.getElementById('tc-bmi-now-bar').style.width = Math.min((bmiNow / 40) * 100, 90) + '%';
-    document.getElementById('tc-bmi-goal-bar').style.width = Math.min((bmiGoal / 40) * 100, 70) + '%';
-  }
-
-  document.getElementById('tc-d-bf').textContent = '-' + dBF + '%';
-  document.getElementById('tc-d-lean').textContent = '+' + dLean + 'lb';
-  document.getElementById('tc-d-weight').textContent = dWeight ? '-' + dWeight + 'lb' : '—';
-  document.getElementById('tc-d-bmi').textContent = dBMI ? '-' + dBMI : '—';
-
-  document.getElementById('transform-card').classList.add('visible');
-}
-
-// ===========================================
-// FINALIZE ACCEPT
-// ===========================================
-async function finalizeAccept() {
-  if (!selectedFreq)   { alert('Please select a training frequency.'); return; }
-  if (!selectedLength) { alert('Please select a program length.'); return; }
-
-  showLoading('Saving enrollment to database...');
-
-  const intakeRow = buildIntakeRow('ACCEPTED', selectedFreq, selectedLength, 42);
-  const ok = await appendToSheet('All Intakes', intakeRow);
-
-  // Also write to Active Clients tab in PT Progress Tracker sheet
-  try {
-    await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write', {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({
-        tab: 'Active Clients',
-        row: [
-          gv('consult-date'),                              // A: Start Date
-          gv('name'),                                      // B: Name
-          gv('email'),                                     // C: Email
-          gv('phone'),                                     // D: Phone
-          gv('gender'),                                    // E: Gender
-          gv('age'),                                       // F: Age
-          gv('goals'),                                     // G: Goal
-          selectedLength,                                  // H: Program
-          selectedFreq,                                    // I: Frequency
-          gv('advisor-name') || getCfg('advisor'),         // J: Advisor
-          (function(){ var d = new Date((gv('consult-date')||new Date().toISOString().split('T')[0])+'T12:00:00'); d.setMonth(d.getMonth()+1); return d.toISOString().split('T')[0]; })(), // K: Next Check-In
-          assessmentText ? assessmentText.substring(0,500) : ''  // L: Assessment Summary
-        ],
-        sheetId: '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs'
-      })
-    });
-  } catch(e) { console.warn('Active Clients write failed:', e); }
-
-  await sendNotificationEmail('ACCEPTED', selectedFreq, selectedLength);
-
-  hideLoading();
-
-  const confirm = document.getElementById('confirm-accept');
-  confirm.style.display = 'flex';
-  if (!ok) {
-    confirm.textContent = '[!] Sheet write may have failed — check your database. Email sent.';
-  }
-  confirm.scrollIntoView({ behavior: 'smooth' });
-}
-
 async function finalizeDecline() {
+  saveDraftSilent(); // auto-save before processing
   var reason = document.getElementById('decline-reason') ? document.getElementById('decline-reason').value : '';
   if (!reason) { alert('Please select a reason for the decline.'); return; }
   showLoading('Saving to follow-up list and sending email...');
@@ -2239,6 +2027,160 @@ function hideLoading() {
 // ===========================================
 // RESET
 // ===========================================
+
+// =========================================== 
+// DRAFT SAVE / LOAD
+// =========================================== 
+var DRAFT_KEY = 'fct_drafts';
+
+function getAllFields() {
+  var fields = ['consult-date','name','phone','email','gender','dob','age','height',
+    'goals','experience','timeframe','workout-status','days-per-week','workout-duration',
+    'medical','doctor-rec','doctor-notes','medications','supplements',
+    'meals-per-day','calorie-target','breakfast','lunch','dinner','snacks',
+    'tracks-macros','macro-protein','macro-carbfat',
+    'bmi','water-weight','lean-mass','fat-mass','pbf',
+    'seg-la','seg-ra','seg-trunk','seg-ll','seg-rl',
+    'advisor-name','decline-reason','decline-notes'];
+  var data = {};
+  fields.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) data[id] = el.value;
+  });
+  data._assessment = assessmentText;
+  data._savedAt = new Date().toISOString();
+  return data;
+}
+
+function restoreFields(data) {
+  Object.keys(data).forEach(function(id) {
+    if (id.startsWith('_')) return;
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.value = data[id];
+    if (data[id]) el.classList.add('autofilled');
+  });
+  if (data.gender) selectGender(data.gender);
+  if (data._assessment) {
+    assessmentText = data._assessment;
+    var box = document.getElementById('assessment-box');
+    if (box) { box.textContent = assessmentText; box.style.display = 'block'; }
+    var dr = document.getElementById('decision-row');
+    if (dr) dr.style.display = 'grid';
+  }
+}
+
+function getDrafts() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '[]'); } catch(e) { return []; }
+}
+
+
+function saveDraftSilent() {
+  var name = document.getElementById('name') ? document.getElementById('name').value.trim() : '';
+  if (!name) return;
+  var drafts = getDrafts();
+  var data = getAllFields();
+  data._id = data._id || Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+  data._name = name;
+  data._phone = gv('phone');
+  data._email = gv('email');
+  data._savedAt = new Date().toISOString();
+  var idx = drafts.findIndex(function(d) { return d._name === name; });
+  if (idx >= 0) drafts[idx] = data;
+  else drafts.unshift(data);
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+}
+
+function saveDraft() {
+  var name = document.getElementById('name') ? document.getElementById('name').value : '';
+  if (!name) { alert('Please enter a member name before saving.'); return; }
+  var drafts = getDrafts();
+  var data = getAllFields();
+  data._id = Date.now().toString(36);
+  data._name = name;
+  // Replace if same name exists
+  var idx = drafts.findIndex(function(d) { return d._name === name; });
+  if (idx >= 0) drafts[idx] = data;
+  else drafts.unshift(data);
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+  var btn = document.getElementById('save-draft-btn');
+  if (btn) { btn.textContent = 'Saved!'; setTimeout(function(){ btn.textContent = 'Save Draft'; }, 2000); }
+}
+
+function loadDraftById(id) {
+  var drafts = getDrafts();
+  var draft = drafts.find(function(d) { return d._id === id; });
+  if (!draft) return;
+  restoreFields(draft);
+  goPage(0);
+  closeDraftPanel();
+}
+
+function deleteDraft(id) {
+  var drafts = getDrafts().filter(function(d) { return d._id !== id; });
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+  renderDraftPanel();
+}
+
+function openDraftPanel() {
+  var panel = document.getElementById('draft-panel');
+  if (panel) { panel.style.display = 'flex'; renderDraftPanel(); }
+}
+
+function closeDraftPanel() {
+  var panel = document.getElementById('draft-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+function renderDraftPanel() {
+  var list = document.getElementById('draft-list');
+  if (!list) return;
+  var drafts = getDrafts();
+  list.innerHTML = '';
+  if (!drafts.length) {
+    list.innerHTML = '<div style="color:#888;font-size:13px;text-align:center;padding:24px">No saved intakes yet. Fill in a member name and click Save Draft.</div>';
+    return;
+  }
+  drafts.forEach(function(d) {
+    var row = document.createElement('div');
+    row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer';
+    row.onmouseover = function() { this.style.background='rgba(255,255,255,0.04)'; };
+    row.onmouseout = function() { this.style.background=''; };
+
+    var info = document.createElement('div');
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-weight:600;color:#f0ede6;font-size:14px';
+    nameEl.textContent = d._name;
+    var dateEl = document.createElement('div');
+    dateEl.style.cssText = 'font-size:12px;color:#888;margin-top:2px';
+    var consultDate = d['consult-date'] || '';
+    var savedDate = d._savedAt ? new Date(d._savedAt).toLocaleDateString('en-US') : '';
+    dateEl.textContent = 'Consult: ' + consultDate + ' · Saved: ' + savedDate;
+    info.appendChild(nameEl);
+    info.appendChild(dateEl);
+
+    var btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:8px;flex-shrink:0';
+
+    var loadBtn = document.createElement('button');
+    loadBtn.textContent = 'Load';
+    loadBtn.style.cssText = 'background:#00e5a0;color:#000;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700';
+    loadBtn.onclick = (function(id) { return function(e) { e.stopPropagation(); loadDraftById(id); }; })(d._id);
+
+    var delBtn = document.createElement('button');
+    delBtn.textContent = 'X';
+    delBtn.style.cssText = 'background:rgba(255,68,68,.15);color:#ff4444;border:1px solid rgba(255,68,68,.3);padding:5px 10px;border-radius:6px;cursor:pointer;font-size:12px';
+    delBtn.onclick = (function(id) { return function(e) { e.stopPropagation(); if(confirm('Delete this draft?')) deleteDraft(id); }; })(d._id);
+
+    btns.appendChild(loadBtn);
+    btns.appendChild(delBtn);
+    row.appendChild(info);
+    row.appendChild(btns);
+    row.onclick = (function(id) { return function() { loadDraftById(id); }; })(d._id);
+    list.appendChild(row);
+  });
+}
+
 function resetForm() {
   if (!confirm('Start a new consultation? Current data will be cleared.')) return;
   const advisor = gv('advisor-name');
@@ -2269,7 +2211,110 @@ function resetForm() {
   setStatus('assess-status','','');
   goPage(0);
 }
+
+function openClientSearch() {
+  var panel = document.getElementById('client-search-panel');
+  if (panel) { panel.style.display = 'flex'; filterClients(''); }
+  var input = document.getElementById('client-search-input');
+  if (input) { input.value = ''; setTimeout(function(){ input.focus(); }, 100); }
+}
+
+function closeClientSearch() {
+  var panel = document.getElementById('client-search-panel');
+  if (panel) panel.style.display = 'none';
+}
+
+function filterClients(query) {
+  var results = document.getElementById('client-search-results');
+  if (!results) return;
+  var drafts = getDrafts();
+  var q = (query || '').toLowerCase().trim();
+  var filtered = q ? drafts.filter(function(d) {
+    return (d._name||'').toLowerCase().includes(q) ||
+           (d._phone||'').includes(q) ||
+           (d._email||'').toLowerCase().includes(q) ||
+           (d['name']||'').toLowerCase().includes(q) ||
+           (d['phone']||'').includes(q) ||
+           (d['email']||'').toLowerCase().includes(q);
+  }) : drafts;
+  
+  results.innerHTML = '';
+  if (!filtered.length) {
+    results.innerHTML = '<div style="padding:24px;color:#888;font-size:13px;text-align:center">' + (q ? 'No clients found matching "'+q+'"' : 'No saved intakes yet. Complete a consultation to save.') + '</div>';
+    return;
+  }
+  
+  filtered.forEach(function(d) {
+    var row = document.createElement('div');
+    row.style.cssText = 'padding:14px 24px;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:background .15s';
+    row.onmouseover = function(){ this.style.background='rgba(255,255,255,0.04)'; };
+    row.onmouseout = function(){ this.style.background=''; };
+    
+    var top = document.createElement('div');
+    top.style.cssText = 'display:flex;justify-content:space-between;align-items:center';
+    
+    var info = document.createElement('div');
+    var nameEl = document.createElement('div');
+    nameEl.style.cssText = 'font-weight:700;color:#f0ede6;font-size:15px';
+    nameEl.textContent = d._name || d['name'] || 'Unknown';
+    var metaEl = document.createElement('div');
+    metaEl.style.cssText = 'font-size:12px;color:#888;margin-top:3px';
+    var parts = [];
+    if (d['phone']) parts.push(d['phone']);
+    if (d['email']) parts.push(d['email']);
+    if (d['consult-date']) parts.push('Consult: ' + d['consult-date']);
+    metaEl.textContent = parts.join(' · ');
+    info.appendChild(nameEl);
+    info.appendChild(metaEl);
+    
+    var loadBtn = document.createElement('button');
+    loadBtn.textContent = 'Open Intake';
+    loadBtn.style.cssText = 'background:#00e5a0;color:#000;border:none;padding:7px 16px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;margin-left:12px';
+    loadBtn.onclick = (function(id){ return function(e){ e.stopPropagation(); loadDraftById(id); closeClientSearch(); }; })(d._id);
+    
+    top.appendChild(info);
+    top.appendChild(loadBtn);
+    row.appendChild(top);
+    
+    if (d._assessment) {
+      var preview = document.createElement('div');
+      preview.style.cssText = 'font-size:12px;color:#666;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%';
+      preview.textContent = d._assessment.substring(0,100) + '...';
+      row.appendChild(preview);
+    }
+    
+    row.onclick = (function(id){ return function(){ loadDraftById(id); closeClientSearch(); }; })(d._id);
+    results.appendChild(row);
+  });
+}
 </script>
 <a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#2d5a3d;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
+
+<div id="draft-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;max-width:560px;width:100%;max-height:80vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #2a2a3a">
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:#f0ede6;letter-spacing:.5px">Saved Intakes</div>
+      <button onclick="closeDraftPanel()" style="background:none;border:1px solid #2a2a3a;color:#888;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px">Close</button>
+    </div>
+    <div id="draft-list" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
+<div id="client-search-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;max-width:580px;width:100%;max-height:85vh;display:flex;flex-direction:column">
+    <div style="padding:20px 24px;border-bottom:1px solid #2a2a3a;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:#f0ede6;letter-spacing:.5px">Find Client</div>
+      <button onclick="closeClientSearch()" style="background:none;border:1px solid #2a2a3a;color:#888;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px">Close</button>
+    </div>
+    <div style="padding:16px 24px;border-bottom:1px solid #2a2a3a">
+      <input id="client-search-input" type="text" placeholder="Search by name, phone, or email..." 
+        oninput="filterClients(this.value)"
+        style="width:100%;background:#0d0d14;border:1px solid #2a2a3a;color:#f0ede6;padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;outline:none">
+    </div>
+    <div id="client-search-results" style="overflow-y:auto;flex:1;max-height:500px">
+      <div style="padding:20px;color:#888;font-size:13px;text-align:center">Type to search saved intakes...</div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
