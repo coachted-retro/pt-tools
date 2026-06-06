@@ -1508,13 +1508,25 @@ function handleFiles(files) {
   const listEl = document.getElementById('file-list');
   listEl.innerHTML = uploadedFiles.map((f, i) => `
     <div class="file-chip" id="fchip-${i}">
-      <span style="font-size:20px">${f.type.includes('pdf') ? '[PDF]' : '[IMG]'}</span>
+      <span style="font-size:20px">${f.type.includes('pdf') ? '📄' : '🖼️'}</span>
       <span class="file-name">${f.name}</span>
       <span class="file-size">${(f.size/1024).toFixed(0)} KB</span>
       <span class="file-status" id="fstatus-${i}">Ready</span>
     </div>`).join('');
   document.getElementById('parse-btn').style.display = 'block';
   setStatus('upload-status','','');
+  // Auto-advance: 1+ PDF detected → parse and go to member info page
+  const hasPDF = uploadedFiles.some(f => f.type.includes('pdf') || f.name.toLowerCase().endsWith('.pdf'));
+  if (hasPDF) {
+    setStatus('upload-status','info','✓ InBody PDF detected — reading and auto-filling...');
+    setTimeout(function() {
+      generateAssessment && parseAllFiles().then(function() {
+        goPage(1);
+      }).catch(function() {
+        goPage(1);
+      });
+    }, 400);
+  }
 }
 
 function setStatus(id, type, msg) {
