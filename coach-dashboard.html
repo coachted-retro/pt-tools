@@ -734,7 +734,10 @@ async function loadIntakes() {
   try {
     const res = await fetch(APPS_SCRIPT + '?action=getIntakes&limit=1000');
     const data = await res.json();
-    allIntakes = data.data || [];
+    allIntakes = (data.data || []).map(r => ({
+      ...r,
+      Advisor: normalizeAdvisor(r.Advisor || '')
+    }));
   } catch(e) { allIntakes = []; }
 }
 
@@ -754,7 +757,9 @@ async function loadBC() {
     if (rows.length < 2) { allBC = []; return; }
     const headers = rows[0];
     allBC = rows.slice(1).filter(r => r.some(c => c !== '')).map(r => {
-      const obj = {}; headers.forEach((h,i) => { obj[h] = r[i]; }); return obj;
+      const obj = {}; headers.forEach((h,i) => { obj[h] = r[i]; });
+      obj['Advisor'] = normalizeAdvisor(obj['Advisor'] || '');
+      return obj;
     });
   } catch(e) { allBC = []; }
 }
@@ -1446,27 +1451,28 @@ function renderRiskTriggers(cis) {
   `).join('');
 }
 
+function normalizeAdvisor(raw) {
+  const s = (raw || '').toLowerCase().trim().replace(/^coach\s+/i, '');
+  if (s.startsWith('ted') || s === 't') return 'Ted';
+  if (s.startsWith('dani') || s === 'd') return 'Dani';
+  // Capitalize first letter of anything else
+  return (raw || '').trim().replace(/^coach\s+/i, '').replace(/^./, c => c.toUpperCase());
+}
+
 function renderCoachLeaderboard() {
   const el = document.getElementById('m-coach-leaderboard');
-  // Extract all unique advisors from allBC and allIntakes
+  // Collect all advisor names, normalized to canonical form
   const advisorSet = new Set();
-  allBC.forEach(b => { const a = (b['Advisor']||b.Advisor||'').trim(); if (a) advisorSet.add(a); });
-  allIntakes.forEach(r => { const a = (r.Advisor||'').trim(); if (a) advisorSet.add(a); });
+  allBC.forEach(b => { const a = normalizeAdvisor(b['Advisor']||b.Advisor||''); if (a) advisorSet.add(a); });
+  allIntakes.forEach(r => { const a = normalizeAdvisor(r.Advisor||''); if (a) advisorSet.add(a); });
   const advisors = [...advisorSet].filter(a => a.toLowerCase() !== 'both');
   if (!advisors.length) { el.innerHTML = '<div class="empty-state">No advisor data yet.</div>'; return; }
   const rows = advisors.map(adv => {
-    const name = adv.toLowerCase();
-    const filtered = allBC.filter(b => {
-      const a = (b['Advisor']||b.Advisor||'').toLowerCase().trim();
-      return a === name || a.includes(name) || name.includes(a.split(' ')[0]);
-    });
+    const filtered = allBC.filter(b => normalizeAdvisor(b['Advisor']||b.Advisor||'') === adv);
     const st = b => (b['Status']||b.Status||'');
     const booked = filtered.length;
     const showed = filtered.filter(b => st(b) === 'Show').length;
-    const intakeAdv = allIntakes.filter(r => {
-      const a = (r.Advisor||'').toLowerCase().trim();
-      return a === name || a.includes(name.split(' ')[0]);
-    });
+    const intakeAdv = allIntakes.filter(r => normalizeAdvisor(r.Advisor||'') === adv);
     const accepted = intakeAdv.filter(r => (r.Outcome||'').toUpperCase().includes('ACCEPTED')).length;
     const noshow = filtered.filter(b => ['No-Show','Canceled'].includes(st(b))).length;
     const convRate = booked > 0 ? Math.round((accepted/booked)*100) : 0;
