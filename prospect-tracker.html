@@ -985,8 +985,8 @@ async function syncFromSheet() {
           }
           const rawDate = String(r[4] || '');
           const apptDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
-          // Convert 12hr time back to 24hr for internal storage if needed
-          const rawTime = String(r[5] || '');
+          // Convert sheet time (12hr like '3:30 PM') to 24hr for internal storage
+          const rawTime = to24hr(String(r[5] || ''));
           return {
             id: genId(),
             name: String(r[1] || ''),
@@ -1274,7 +1274,7 @@ async function confirmBook() {
       phone: booking.phone,
       email: booking.email,
       apptDate: booking.apptDate,
-      apptTime: booking.apptTime,
+      apptTime: formatTime(booking.apptTime),
       bookedBy: booking.bookedBy,
       advisor: booking.advisor || '',
       status: booking.status,
@@ -1324,9 +1324,30 @@ function renderBC(filter='') {
 
 function formatTime(t) {
   if (!t) return '';
+  // Already 12hr format (from sheet re-sync)?
+  if (/am|pm/i.test(t)) return t;
   const [h, m] = t.split(':');
   const hr = parseInt(h);
-  return (hr % 12 || 12) + ':' + m + ' ' + (hr < 12 ? 'AM' : 'PM');
+  return (hr % 12 || 12) + ':' + (m || '00') + ' ' + (hr < 12 ? 'AM' : 'PM');
+}
+
+function to24hr(t) {
+  // Convert '3:30 PM' or '15:30' to '15:30' (24hr for <input type=time>)
+  if (!t) return '';
+  if (/am|pm/i.test(t)) {
+    const clean = t.trim();
+    const isPM = /pm/i.test(clean);
+    const isAM = /am/i.test(clean);
+    const parts = clean.replace(/[apm]/gi,'').trim().split(':');
+    let hr = parseInt(parts[0]);
+    const mn = parts[1] ? parts[1].trim().padStart(2,'0') : '00';
+    if (isPM && hr !== 12) hr += 12;
+    if (isAM && hr === 12) hr = 0;
+    return String(hr).padStart(2,'0') + ':' + mn;
+  }
+  // Already 24hr
+  const parts = t.split(':');
+  return parts[0].padStart(2,'0') + ':' + (parts[1] || '00').padStart(2,'0');
 }
 
 function selectBC(id) {
@@ -1646,7 +1667,7 @@ function openEditBookingModal() {
   document.getElementById('eb-phone').value = b.phone || '';
   document.getElementById('eb-email').value = b.email || '';
   document.getElementById('eb-appt-date').value = b.apptDate || '';
-  document.getElementById('eb-appt-time').value = b.apptTime || '';
+  document.getElementById('eb-appt-time').value = to24hr(b.apptTime || '');
   document.getElementById('eb-booked-by').value = b.bookedBy || '';
   document.getElementById('eb-advisor').value = b.advisor || '';
   document.getElementById('eb-notes').value = b.notes || '';
@@ -1752,7 +1773,7 @@ async function confirmNewBooking() {
       phone: booking.phone,
       email: booking.email,
       apptDate: booking.apptDate,
-      apptTime: booking.apptTime,
+      apptTime: formatTime(booking.apptTime),
       bookedBy: booking.bookedBy + (booking.advisor ? ' → ' + booking.advisor : ''),
       status: booking.status,
       notes: booking.notes,
