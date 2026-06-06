@@ -1801,7 +1801,7 @@ async function generateAssessment() {
     var data = await resp.json();
     if (data.error) throw new Error(data.error.message);
 
-    var assessmentText = data.content.map(function(b) { return b.text || ''; }).join('');
+    assessmentText = data.content.map(function(b) { return b.text || ''; }).join('');
     saveDraftSilent();
 
     var box = document.getElementById('assessment-box');
@@ -2504,6 +2504,7 @@ function hideLoading() {
 // DRAFT SAVE / LOAD
 // =========================================== 
 var DRAFT_KEY = 'fct_drafts';
+var _sessionDraftId = Date.now().toString(36) + Math.random().toString(36).slice(2,5);
 
 function getAllFields() {
   var fields = ['consult-date','name','phone','email','gender','dob','age','height',
@@ -2549,18 +2550,19 @@ function getDrafts() {
 
 function saveDraftSilent() {
   var name = document.getElementById('name') ? document.getElementById('name').value.trim() : '';
-  if (!name) name = 'Unnamed – ' + new Date().toLocaleDateString();
+  if (!name) name = 'Unnamed';
   var drafts = getDrafts();
   var data = getAllFields();
-  // Preserve existing _id so same record is always updated, never duplicated
-  var existing = drafts.find(function(d) { return d._name === name; });
-  data._id = (existing && existing._id) ? existing._id : (Date.now().toString(36) + Math.random().toString(36).slice(2,5));
+  // Always use the stable session ID - never create duplicates regardless of name changes
+  data._id = _sessionDraftId;
   data._name = name;
   data._phone = gv('phone');
   data._email = gv('email');
   data._savedAt = new Date().toISOString();
+  // Match by _id first (same session), fall back to name match for old drafts
+  var existing = drafts.find(function(d) { return d._id === _sessionDraftId; });
   data._synced = existing ? (existing._synced || false) : false;
-  var idx = drafts.findIndex(function(d) { return d._name === name; });
+  var idx = drafts.findIndex(function(d) { return d._id === _sessionDraftId; });
   if (idx >= 0) drafts[idx] = data;
   else drafts.unshift(data);
   localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
@@ -2586,6 +2588,7 @@ function loadDraftById(id) {
   var drafts = getDrafts();
   var draft = drafts.find(function(d) { return d._id === id; });
   if (!draft) return;
+  _sessionDraftId = id; // lock session to this draft so updates go to same record
   restoreFields(draft);
   goPage(0);
   closeDraftPanel();
@@ -2610,7 +2613,19 @@ function closeDraftPanel() {
 function renderDraftPanel() {
   var list = document.getElementById('draft-list');
   if (!list) return;
-  var drafts = getDrafts();
+  var allDrafts = getDrafts();
+  // Deduplicate by _id, filter out Unnamed entries
+  var seen = new Set();
+  var drafts = allDrafts.filter(function(d) {
+    if (!d._id || seen.has(d._id)) return false;
+    if (!d._name || d._name === 'Unnamed' || d._name.startsWith('Unnamed')) return false;
+    seen.add(d._id);
+    return true;
+  });
+  // Also save back the cleaned list to remove junk
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(allDrafts.filter(function(d) {
+    return d._id && !(!d._name || d._name === 'Unnamed' || d._name.startsWith('Unnamed'));
+  })));
   list.innerHTML = '';
   if (!drafts.length) {
     list.innerHTML = '<div style="color:#888;font-size:13px;text-align:center;padding:24px">No saved intakes yet. Fill in a member name and click Save Draft.</div>';
@@ -2658,6 +2673,7 @@ function renderDraftPanel() {
 
 function resetForm() {
   if (!confirm('Start a new consultation? Current data will be cleared.')) return;
+  _sessionDraftId = Date.now().toString(36) + Math.random().toString(36).slice(2,5); // new session = new draft
   const advisor = gv('advisor-name');
   document.querySelectorAll('input:not(#advisor-name), select, textarea').forEach(el => {
     if (el.type === 'date') el.value = '';

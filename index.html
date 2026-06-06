@@ -643,7 +643,17 @@ function loadHubDrafts() {
   var listEl = document.getElementById('drafts-list');
   var emptyEl = document.getElementById('drafts-empty');
   try {
-    _allDrafts = JSON.parse(localStorage.getItem('fct_drafts') || '[]');
+    var raw = JSON.parse(localStorage.getItem('fct_drafts') || '[]');
+    // Deduplicate by _id, remove Unnamed entries
+    var seen = new Set();
+    _allDrafts = raw.filter(function(d) {
+      if (!d._id || seen.has(d._id)) return false;
+      if (!d._name || d._name === 'Unnamed' || d._name.startsWith('Unnamed')) return false;
+      seen.add(d._id);
+      return true;
+    });
+    // Write cleaned list back to localStorage
+    localStorage.setItem('fct_drafts', JSON.stringify(_allDrafts));
     // Sort newest first
     _allDrafts.sort(function(a,b){ return new Date(b._savedAt||0) - new Date(a._savedAt||0); });
     if (loadingEl) loadingEl.style.display = 'none';
