@@ -697,7 +697,7 @@
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
+const APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbxTwCBhjV6jScnXtOKEdYSqnf6h5z9iq4y2im4nnK08EYKYUDmumYxo7OOw2iG26jd6/exec';
 const WORKER     = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write';
 const CI_SHEET   = '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
 const PT_PER_SESSION = 250; // estimated monthly revenue per client for risk calc
@@ -766,29 +766,25 @@ async function loadBC() {
 
 async function loadCheckins() {
   try {
-    const res = await fetch(WORKER, {
-      method: 'POST',
-      headers: {'Content-Type':'text/plain'},
-      body: JSON.stringify({action:'read', tab:'Check-In History', sheetId: CI_SHEET})
-    });
-    const data = JSON.parse(await res.text());
+    // Use Apps Script to read PT Check-In History (Cloudflare Worker is write-only)
+    const res = await fetch(APPS_SCRIPT + '?action=getCheckins&sheetId=' + CI_SHEET);
+    const data = await res.json();
     const rows = data.rows || [];
     if (rows.length < 2) { allCheckins = []; return; }
     const headers = rows[0].map(h => String(h).trim());
     allCheckins = rows.slice(1).filter(r => r.some(c => c !== '')).map(r => {
-      const obj = {}; headers.forEach((h,i) => { obj[h] = r[i]; });
+      const obj = {}; headers.forEach((h,i) => { obj[h] = r[i] || ''; });
       // Compute deltas for milestone detection
-      const nowBF   = parseFloat(obj['BF%']) || 0;
-      const prevBF  = parseFloat(obj['Prev BF%']) || 0;
-      const nowLean = parseFloat(obj['Lean Mass']) || 0;
-      const prevLean= parseFloat(obj['Prev Lean Mass']) || 0;
+      const nowBF    = parseFloat(obj['BF%'])             || 0;
+      const prevBF   = parseFloat(obj['Prev BF%'])         || 0;
+      const nowLean  = parseFloat(obj['Lean Mass'])        || 0;
+      const prevLean = parseFloat(obj['Prev Lean Mass'])   || 0;
       if (prevBF  && nowBF)   obj['Delta BF%']  = (nowBF  - prevBF).toFixed(1);
       if (prevLean && nowLean) obj['Delta Lean'] = (nowLean - prevLean).toFixed(1);
-      // Normalize advisor
       obj['Advisor'] = normalizeAdvisor(obj['Advisor'] || '');
       return obj;
     });
-  } catch(e) { allCheckins = []; }
+  } catch(e) { console.error('loadCheckins error:', e); allCheckins = []; }
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
