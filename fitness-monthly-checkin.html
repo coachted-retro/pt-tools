@@ -866,6 +866,36 @@ function autoFill(d){
 let assessmentText='';
 function gv(id){ return (document.getElementById(id)||{}).value||''; }
 
+
+function formatAssessmentSections(text) {
+  text = text.replace(/#{1,6}\s*/g, '');
+  text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
+  text = text.replace(/\*([^*]+)\*/g, '$1');
+  text = text.replace(/[^\u0000-\u007F]/g, '');
+  var sectionColors = ['#5a8ec8','#4caf7d','#d4a843','#a374d4','#e07a5f','#4caf7d'];
+  var html = '';
+  var parts = text.split(/SECTION:\s*/i);
+  parts.shift();
+  parts.forEach(function(part, i) {
+    var lines = part.trim().split('\n');
+    var title = lines.shift().trim().replace(/:+$/, '').trim();
+    var body = lines.join('\n').trim();
+    var color = sectionColors[i % sectionColors.length];
+    var bodyHtml = body.split('\n').map(function(line) {
+      line = line.trim();
+      if (!line) return '';
+      if (line.match(/^-\s/)) {
+        return '<div style="display:flex;gap:8px;margin:3px 0;font-size:13px;line-height:1.6"><span style="color:'+color+';flex-shrink:0">-</span><span>'+line.replace(/^-\s*/,'')+'</span></div>';
+      }
+      return '<p style="font-size:13px;line-height:1.7;margin:4px 0">'+line+'</p>';
+    }).join('');
+    html += '<div style="border-left:3px solid '+color+';padding:10px 14px;margin-bottom:14px;background:rgba(0,0,0,0.015);border-radius:0 8px 8px 0">'
+          + '<div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:'+color+';margin-bottom:8px">'+title+'</div>'
+          + bodyHtml + '</div>';
+  });
+  return html || '<p style="font-size:13px;line-height:1.7">'+text+'</p>';
+}
+
 function buildPrompt(){
   return `You are a Retro Fitness personal training advisor doing a monthly check-in. Generate a SHORT, scannable monthly summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 2 minutes.
 
@@ -901,37 +931,39 @@ Lean Mass: ${gv('prev-lean')}lb → ${gv('now-lean')}lb
 Segmental: LA ${gv('prev-seg-la')}%→${gv('now-seg-la')}% | RA ${gv('prev-seg-ra')}%→${gv('now-seg-ra')}% | Trunk ${gv('prev-seg-trunk')}%→${gv('now-seg-trunk')}% | LL ${gv('prev-seg-ll')}%→${gv('now-seg-ll')}% | RL ${gv('prev-seg-rl')}%→${gv('now-seg-rl')}%
 Scan notes: ${gv('scan-notes')}
 
-FORMAT YOUR RESPONSE EXACTLY LIKE THIS — short bullets only, no long paragraphs:
+OUTPUT FORMAT - follow exactly. NO emojis. NO hashtags. NO stars. NO markdown symbols. Use plain dashes for list items.
 
-📊 THIS MONTH vs LAST MONTH
-• Body Composition: [actual change — fat lbs lost/gained, lean lbs gained/lost with real numbers]
-• Body Fat %: [previous PBF% → current PBF% and what that means]
-• Weight: [previous → current and context]
-• Key InBody Finding: [most significant segmental change or ongoing imbalance]
+SECTION: THIS MONTH VS LAST MONTH
+- Body composition: actual fat and lean mass change with real numbers
+- Body fat: previous to current percentage and what it means
+- Weight: change with context
+- Key finding: most significant InBody result this month
 
-🏋️ TRAINING — HOW IT WENT
-• Consistency: [sessions done vs missed, honest assessment]
-• Performance: [biggest strength or endurance win this month]
-• Program Status: [is the current program working, needs adjustment, or ready to progress?]
+SECTION: TRAINING
+- Consistency: sessions completed vs missed
+- Performance: biggest strength or endurance improvement
+- Program: working well, needs adjustment, or ready to progress
 
-🥗 NUTRITION — THIS MONTH
-• Overall: [diet score context — what it means for their results]
-• Protein: [are they hitting target — if not, impact on lean mass]
-• One win: [best nutrition habit this month]
-• One fix: [most important nutrition change for next month]
+SECTION: NUTRITION
+- Overall: diet score and what it means for their results
+- Protein: on target or not, and the effect on lean mass
+- Win: best nutrition habit this month
+- Fix: most important change for next month
 
-😴 RECOVERY & WELLBEING
-• Sleep: [sleep score and hours — impact on recovery and results]
-• Energy/Stress: [energy vs stress scores — any red flags or improvements]
-• Challenge to address: [their biggest challenge and how to tackle it]
+SECTION: RECOVERY AND WELLBEING
+- Sleep: hours and score, impact on recovery
+- Energy and stress: any red flags or improvements
+- Challenge: biggest obstacle and how to address it
 
-🎯 NEXT MONTH — FOCUS AREAS
-• Training: [one specific progression or adjustment based on their data]
-• Nutrition: [one specific nutrition priority]
-• Target to beat: [one measurable InBody metric to improve]
+SECTION: NEXT MONTH FOCUS
+- Training: one specific progression or adjustment
+- Nutrition: one specific priority
+- Target: one measurable number to beat next month
 
-🏆 THIS MONTH'S WIN
-[One sentence celebrating their most meaningful result or effort. Make it specific and personal.]`;
+SECTION: THIS MONTHS WIN
+One sentence. Specific and personal. Celebrate their most meaningful result or effort this month.
+
+Plain text only. No formatting symbols of any kind.`;
 }
 
 async function generateAssessment(){
@@ -945,7 +977,7 @@ async function generateAssessment(){
     const data=await resp.json();
     if(data.error) throw new Error(data.error.message);
     assessmentText=data.content.map(b=>b.text||'').join('');
-    document.getElementById('assessment-box').textContent=assessmentText;
+    document.getElementById('assessment-box').innerHTML=formatAssessmentSections(assessmentText);
     document.getElementById('assessment-box').style.display='block';
     document.getElementById('next-date-panel').style.display='block';
     setStatus('assess-status','','');
@@ -1000,12 +1032,12 @@ async function saveCheckin(){
     (assessmentText?assessmentText.substring(0,800)+(assessmentText.length>800?'...':''):'')  // X: Summary
   ];
   const gender = gv('gender') || '';
-  const ok=await appendToSheet('Check-In History',row);
+  const ok=await appendToSheet('PT Check-In History',row);
   hideLoading();
   const confirm=document.getElementById('confirm-save');
   confirm.classList.add('show');
   if(!ok) confirm.innerHTML='[!] Could not write to Google Sheets — check connection.';
-  else confirm.innerHTML='✅ Saved to Check-In History. Next check-in: '+nextCheckin;
+  else confirm.innerHTML='✅ Saved to PT Check-In History. Next check-in: '+nextCheckin;
   if(nextCheckin){ setTimeout(()=>addToCalendar(gv('name'),nextCheckin),800); }
 }
 
