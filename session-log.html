@@ -264,7 +264,7 @@
       </div>
       <div class="field-group">
         <label class="field-label">Client Name <span>*</span></label>
-        <input type="text" id="log-client" class="field-input" placeholder="Full name" list="client-list">
+        <input type="text" id="log-client" class="field-input" placeholder="Search active PT clients..." list="client-list" oninput="onClientSelected()">
         <datalist id="client-list"></datalist>
       </div>
     </div>
@@ -499,6 +499,51 @@ let selectedMethod = '';
 let allEntries = []; // local cache from sheet
 
 // ── INIT ──────────────────────────────────────────────────────
+// Active clients cache
+let activeClients = [];
+
+async function loadActiveClients() {
+  try {
+    const resp = await fetch(WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'read', tab: 'Active Clients', sheetId: SHEET_ID })
+    });
+    const data = JSON.parse(await resp.text());
+    const rows = data.rows || [];
+    if (rows.length < 2) return;
+    const headers = rows[0];
+    activeClients = rows.slice(1).filter(r => r[1]).map(r => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = r[i] || ''; });
+      return obj;
+    });
+    // Populate datalist
+    const dl = document.getElementById('client-list');
+    dl.innerHTML = activeClients.map(c => `<option value="${c['Name']}">`).join('');
+  } catch(e) { console.warn('Could not load active clients:', e.message); }
+}
+
+function onClientSelected() {
+  const name = document.getElementById('log-client').value.trim();
+  const client = activeClients.find(c => c['Name'] && c['Name'].toLowerCase() === name.toLowerCase());
+  if (!client) return;
+  // Show client info chip below the field
+  const info = [
+    client['Phone'] ? '📞 ' + client['Phone'] : '',
+    client['Goals'] ? '🎯 ' + client['Goals'] : '',
+    client['Advisor'] ? '👤 ' + client['Advisor'] : ''
+  ].filter(Boolean).join('  ·  ');
+  let chip = document.getElementById('client-info-chip');
+  if (!chip) {
+    chip = document.createElement('div');
+    chip.id = 'client-info-chip';
+    chip.style.cssText = 'font-size:11px;color:var(--green);margin-top:4px;padding:4px 8px;background:rgba(76,175,125,0.08);border-radius:6px;';
+    document.getElementById('log-client').parentNode.appendChild(chip);
+  }
+  chip.textContent = info || client['Name'];
+}
+
 window.addEventListener('load', function() {
   // Set today's date and current time
   const now = new Date();
@@ -522,6 +567,7 @@ window.addEventListener('load', function() {
 
   buildScales();
   loadEntries();
+  loadActiveClients();
 });
 
 // ── TAB SWITCHING ─────────────────────────────────────────────
