@@ -550,6 +550,26 @@ window.addEventListener('load', function() {
   document.getElementById('log-date').value = now.toISOString().slice(0,10);
   document.getElementById('log-time').value = now.toTimeString().slice(0,5);
 
+  // Auto-fill from calendar URL params
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('client')) {
+    document.getElementById('log-client').value = params.get('client');
+    onClientSelected();
+  }
+  if (params.get('coach'))  document.getElementById('log-coach').value  = params.get('coach');
+  if (params.get('date'))   document.getElementById('log-date').value   = params.get('date');
+  if (params.get('time'))   document.getElementById('log-time').value   = params.get('time');
+  if (params.get('focus'))  document.getElementById('log-focus').value  = params.get('focus');
+  if (params.get('sessionId')) {
+    // Store for marking complete on save
+    window._calendarSessionId = params.get('sessionId');
+    // Show "from calendar" indicator
+    const badge = document.createElement('div');
+    badge.style.cssText = 'background:rgba(90,142,200,0.15);color:#7eb3e8;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;margin-bottom:12px;display:inline-block';
+    badge.textContent = '📅 Scheduled session — fill in details below';
+    document.querySelector('.log-header') && document.querySelector('.log-header').after(badge);
+  }
+
   // Load advisor name from localStorage
   const PREFIXES = ['fct_','ffu_','ptci_','pttools_'];
   function readCfg(k) {
@@ -698,6 +718,15 @@ async function submitLog() {
     renderSidebarStats();
     renderRecentList('all');
     showStatus('success', `✅ ${currentType === 'session' ? 'Session' : 'Touchpoint'} logged for ${client}!`);
+    // Mark calendar session complete if opened from calendar
+    if (window._calendarSessionId) {
+      try {
+        const calSessions = JSON.parse(localStorage.getItem('coach_scheduled_sessions') || '[]');
+        const cIdx = calSessions.findIndex(s => s.id === window._calendarSessionId);
+        if (cIdx >= 0) { calSessions[cIdx].completed = true; localStorage.setItem('coach_scheduled_sessions', JSON.stringify(calSessions)); }
+      } catch(e) {}
+      window._calendarSessionId = null;
+    }
   } catch(e) {
     showStatus('error', '❌ Could not save to sheet: ' + e.message);
   }

@@ -453,23 +453,78 @@
   <!-- ROW 4: Weekly Staff Checklist -->
   <div class="grid-2">
     <div class="card">
-      <div class="card-title">✅ Weekly Coach Checklist</div>
-      <div class="card-sub">Reset every Monday — track your weekly non-negotiables</div>
-      <div id="c-checklist"></div>
-      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-        <div style="margin-bottom:12px">
-          <label style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px">Your Name (required to submit)</label>
-          <input type="text" id="checklist-coach-name" class="field-input" placeholder="e.g. Coach Ted" style="padding:8px 12px;font-size:13px;width:100%">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div class="card-title" style="margin-bottom:2px">📅 Session Calendar</div>
+          <div class="card-sub">Scheduled sessions — click any session to log details</div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-          <span style="font-size:12px;color:var(--text3)" id="checklist-progress">0 / 8 complete</span>
-          <div style="display:flex;gap:8px">
-            <button onclick="resetChecklist()" style="font-size:11px;background:none;border:1px solid var(--border2);border-radius:6px;padding:6px 12px;color:var(--text2);cursor:pointer">Reset Week</button>
-            <button onclick="emailChecklist()" style="font-size:11px;background:var(--green);border:none;border-radius:6px;padding:6px 14px;color:#000;font-weight:700;cursor:pointer">📧 Submit to Management</button>
+        <button class="btn-sm" onclick="openScheduleModal()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">+ Schedule Session</button>
+      </div>
+
+      <!-- Calendar nav -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <button onclick="calNav(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:13px">←</button>
+        <div id="cal-month-label" style="font-size:14px;font-weight:700"></div>
+        <button onclick="calNav(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 12px;cursor:pointer;font-size:13px">→</button>
+      </div>
+
+      <!-- Day headers -->
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px">SUN</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px">MON</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px">TUE</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px">WED</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px">THU</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px">FRI</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text3);padding:4px">SAT</div>
+      </div>
+
+      <!-- Calendar grid -->
+      <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px"></div>
+
+      <!-- Upcoming list -->
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:10px">Upcoming Sessions</div>
+        <div id="cal-upcoming"></div>
+      </div>
+    </div>
+
+    <!-- Schedule Session Modal -->
+    <div id="schedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:440px;max-width:95vw">
+        <div style="font-size:16px;font-weight:700;margin-bottom:18px">Schedule a Session</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Client Name</div>
+            <input id="sch-client" list="sch-client-list" placeholder="Search active clients..." style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-size:13px">
+            <datalist id="sch-client-list"></datalist>
           </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Coach / Trainer</div>
+            <input id="sch-coach" placeholder="e.g. Ted" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-size:13px">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Date</div>
+            <input type="date" id="sch-date" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-size:13px">
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Time</div>
+            <input type="time" id="sch-time" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-size:13px">
+          </div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">Session Focus (optional)</div>
+          <input id="sch-focus" placeholder="e.g. Upper body, leg day, cardio..." style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-size:13px">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onclick="closeScheduleModal()" style="background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+          <button onclick="saveScheduledSession()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer">Schedule</button>
         </div>
       </div>
     </div>
+
     <div class="card">
       <div class="card-title">Body Composition Trends</div>
       <div style="margin-bottom:16px">
@@ -627,6 +682,211 @@ const PT_PER_SESSION = 250; // estimated monthly revenue per client for risk cal
 let allCheckins = [];
 let charts = {};
 
+// ── SESSION CALENDAR ──────────────────────────────────────────────────────
+var calCurrentDate = new Date();
+var scheduledSessions = JSON.parse(localStorage.getItem('coach_scheduled_sessions') || '[]');
+
+function saveScheduledSessions() {
+  localStorage.setItem('coach_scheduled_sessions', JSON.stringify(scheduledSessions));
+}
+
+function calNav(dir) {
+  calCurrentDate.setMonth(calCurrentDate.getMonth() + dir);
+  renderCalendar();
+}
+
+function initCalendarClicks() {
+  document.addEventListener('click', function(e) {
+    var pill = e.target.closest('.cal-pill');
+    if (pill) {
+      var sid = pill.getAttribute('data-sid');
+      if (sid) openSessionById(sid);
+    }
+  });
+}
+
+function renderCalendar() {
+  const now = new Date();
+  const year = calCurrentDate.getFullYear();
+  const month = calCurrentDate.getMonth();
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const label = document.getElementById('cal-month-label');
+  if (label) label.textContent = months[month] + ' ' + year;
+
+  const grid = document.getElementById('cal-grid');
+  if (!grid) return;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Group sessions by date
+  const sessionsByDate = {};
+  scheduledSessions.forEach(s => {
+    const d = s.date;
+    if (!sessionsByDate[d]) sessionsByDate[d] = [];
+    sessionsByDate[d].push(s);
+  });
+
+  let html = '';
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div style="min-height:60px;border-radius:6px;background:rgba(255,255,255,0.01)"></div>';
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isToday = d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
+    const sessions = sessionsByDate[dateStr] || [];
+
+    var sessionPills = sessions.map(function(s) {
+      var bg = s.completed ? 'rgba(76,175,125,0.25)' : 'rgba(90,142,200,0.25)';
+      var col = s.completed ? 'var(--green)' : '#7eb3e8';
+      return '<div class="cal-pill" data-sid="' + (s.id||'') + '" style="font-size:9px;font-weight:600;background:' + bg + ';color:' + col + ';border-radius:3px;padding:2px 4px;margin-top:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+        formatTime12(s.time) + ' ' + (s.clientName || '') + '</div>';
+    }).join('');;
+
+    html += '<div style="min-height:60px;border-radius:6px;background:' +
+      (isToday ? 'rgba(76,175,125,0.08)' : 'rgba(255,255,255,0.02)') +
+      ';border:1px solid ' + (isToday ? 'var(--accent)' : 'rgba(255,255,255,0.05)') +
+      ';padding:5px;overflow:hidden">' +
+      '<div style="font-size:11px;font-weight:' + (isToday ? '800' : '500') + ';color:' + (isToday ? 'var(--accent)' : 'var(--text3)') + ';margin-bottom:1px">' + d + '</div>' +
+      sessionPills +
+      '</div>';
+  }
+
+  grid.innerHTML = html;
+  renderUpcoming();
+}
+
+function renderUpcoming() {
+  var el = document.getElementById('cal-upcoming');
+  if (!el) return;
+  var now = new Date();
+  var today = now.toISOString().slice(0,10);
+
+  var upcoming = scheduledSessions
+    .filter(function(s) { return s.date >= today && !s.completed; })
+    .sort(function(a,b) { return (a.date + a.time).localeCompare(b.date + b.time); })
+    .slice(0, 6);
+
+  if (!upcoming.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">No upcoming sessions scheduled</div>';
+    return;
+  }
+
+  el.innerHTML = upcoming.map(function(s) {
+    var d = new Date(s.date + 'T12:00:00');
+    var mon = d.toLocaleDateString('en-US',{month:'short'}).toUpperCase();
+    var day = d.getDate();
+    var focus = s.focus ? ' · ' + s.focus : '';
+    var coach = s.coach ? ' · ' + s.coach : '';
+    return '<div class="cal-pill" data-sid="' + (s.id||'') + '" style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px;cursor:pointer;border:1px solid var(--border)">' +
+      '<div style="width:40px;height:40px;border-radius:8px;background:rgba(90,142,200,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">' +
+        '<div style="font-size:10px;font-weight:800;color:#7eb3e8;text-align:center;line-height:1.2">' + mon + '<br>' + day + '</div>' +
+      '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--text)">' + (s.clientName || 'Client') + '</div>' +
+        '<div style="font-size:11px;color:var(--text3)">' + formatTime12(s.time) + coach + focus + '</div>' +
+      '</div>' +
+      '<div style="font-size:11px;font-weight:600;color:#7eb3e8;flex-shrink:0">Log →</div>' +
+    '</div>';
+  }).join('');
+}
+
+
+function formatTime12(t) {
+  if (!t) return '';
+  if (/am|pm/i.test(t)) return t;
+  const [h, m] = t.split(':');
+  const hr = parseInt(h);
+  return (hr % 12 || 12) + ':' + m + ' ' + (hr < 12 ? 'AM' : 'PM');
+}
+
+function openScheduleModal() {
+  // Pre-fill coach name
+  const coach = document.querySelector('#sch-coach');
+  if (coach && !coach.value) {
+    const saved = localStorage.getItem('fct_advisor') || localStorage.getItem('ptci_advisor') || '';
+    coach.value = saved;
+  }
+  // Pre-fill today's date
+  const dateEl = document.getElementById('sch-date');
+  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0,10);
+  // Populate client datalist from active clients
+  const dl = document.getElementById('sch-client-list');
+  if (dl && allActiveClients && allActiveClients.length) {
+    dl.innerHTML = allActiveClients.map(c => '<option value="' + (c.Name || c.name || '') + '">').join('');
+  }
+  document.getElementById('schedule-modal').style.display = 'flex';
+}
+
+function closeScheduleModal() {
+  document.getElementById('schedule-modal').style.display = 'none';
+}
+
+function saveScheduledSession() {
+  const client = document.getElementById('sch-client').value.trim();
+  const coach  = document.getElementById('sch-coach').value.trim();
+  const date   = document.getElementById('sch-date').value;
+  const time   = document.getElementById('sch-time').value;
+  const focus  = document.getElementById('sch-focus').value.trim();
+
+  if (!client || !date || !time) {
+    alert('Client name, date, and time are required.');
+    return;
+  }
+
+  const session = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    clientName: client,
+    coach: coach,
+    date: date,
+    time: time,
+    focus: focus,
+    completed: false,
+    scheduledAt: new Date().toISOString()
+  };
+
+  scheduledSessions.push(session);
+  saveScheduledSessions();
+  closeScheduleModal();
+  // Clear fields
+  ['sch-client','sch-coach','sch-focus'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('sch-date').value = '';
+  document.getElementById('sch-time').value = '';
+  renderCalendar();
+}
+
+function openSessionById(id) {
+  var session = scheduledSessions.find(function(s) { return s.id === id; });
+  if (session) openSessionFromCal(session);
+}
+
+function openSessionFromCal(session) {
+  // Build URL to session-log.html with pre-filled params
+  const params = new URLSearchParams({
+    client: session.clientName || '',
+    coach:  session.coach || '',
+    date:   session.date || '',
+    time:   session.time || '',
+    focus:  session.focus || '',
+    sessionId: session.id || ''
+  });
+  // Mark as completed when opened
+  const idx = scheduledSessions.findIndex(s => s.id === session.id);
+  if (idx >= 0) {
+    scheduledSessions[idx].completed = true;
+    saveScheduledSessions();
+    renderCalendar();
+  }
+  window.open('session-log.html?' + params.toString(), '_blank');
+}
+
+// Cache active clients for schedule modal
+var allActiveClients = [];
+
+
 // ── VIEW SWITCH ───────────────────────────────────────────────
 
 
@@ -635,6 +895,8 @@ async function loadAll() {
   document.getElementById('lastUpdated').textContent = 'Loading...';
   try {
     await loadCheckins();
+  renderCalendar();
+  initCalendarClicks();
     populateMonthSelector();
     renderAll();
     document.getElementById('lastUpdated').textContent = 'Updated ' +
