@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retro Fitness · Drive Migration Tool</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #1c2128;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+    --green: #4caf7d; --green-dim: rgba(76,175,125,0.12);
+    --red: #f47067; --red-dim: rgba(244,112,103,0.12);
+    --amber: #d4a843; --amber-dim: rgba(212,168,67,0.12);
+    --blue: #5a8ec8; --blue-dim: rgba(90,142,200,0.12);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; min-height: 100vh; }
+  
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; gap: 16px; }
+  .logo { font-size: 13px; font-weight: 700; color: var(--green); letter-spacing: .06em; text-transform: uppercase; }
+  .title { font-size: 18px; font-weight: 700; }
+  .subtitle { font-size: 12px; color: var(--text2); margin-top: 1px; }
+
+  .main { max-width: 860px; margin: 0 auto; padding: 32px 24px; }
+  
+  /* Steps */
+  .steps { display: flex; gap: 0; margin-bottom: 32px; }
+  .step { flex: 1; display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); position: relative; }
+  .step:not(:last-child) { border-right: none; }
+  .step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+  .step:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+  .step.active { background: var(--green-dim); border-color: var(--green); }
+  .step.done { background: rgba(76,175,125,0.06); border-color: rgba(76,175,125,0.3); }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .step.active .step-num { background: var(--green); border-color: var(--green); color: #000; }
+  .step.done .step-num { background: var(--green); border-color: var(--green); color: #000; }
+  .step-label { font-size: 12px; font-weight: 600; }
+  .step-sub { font-size: 10px; color: var(--text3); }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+  .card-title { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); margin-bottom: 16px; }
+
+  /* Auth */
+  .auth-btn { display: inline-flex; align-items: center; gap: 10px; background: #fff; color: #3c4043; border: none; border-radius: 8px; padding: 11px 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .auth-btn:hover { background: #f8f9fa; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .auth-btn svg { width: 18px; height: 18px; }
+  .auth-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+  .auth-status.ok { background: var(--green-dim); color: var(--green); border: 1px solid rgba(76,175,125,0.3); }
+  .auth-status.err { background: var(--red-dim); color: var(--red); border: 1px solid rgba(244,112,103,0.3); }
+
+  /* Sheet config */
+  .sheet-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: .05em; text-transform: uppercase; }
+  .field input { background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; padding: 9px 12px; color: var(--text); font-size: 13px; width: 100%; }
+  .field input:focus { outline: none; border-color: var(--green); }
+
+  /* Data preview */
+  .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .data-source { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .data-source-name { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text2); margin-bottom: 8px; }
+  .data-count { font-size: 28px; font-weight: 800; color: var(--text); line-height: 1; }
+  .data-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .data-samples { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+  .data-sample { font-size: 11px; color: var(--text2); padding: 3px 0; border-bottom: 1px solid var(--border); }
+  .data-sample:last-child { border: none; }
+
+  /* Folder preview */
+  .folder-tree { font-family: 'DM Mono', monospace; font-size: 12px; line-height: 1.9; color: var(--text2); background: var(--surface2); border-radius: 8px; padding: 16px; max-height: 320px; overflow-y: auto; }
+  .folder-tree .folder { color: var(--amber); }
+  .folder-tree .file { color: var(--text3); }
+  .folder-tree .client { color: var(--green); }
+  .folder-tree .prospect { color: var(--blue); }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; transition: all .15s; }
+  .btn-primary { background: var(--green); color: #000; }
+  .btn-primary:hover { background: #5ac98e; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+  .btn-secondary:hover { border-color: var(--text2); }
+  .btn-danger { background: var(--red-dim); color: var(--red); border: 1px solid rgba(244,112,103,0.3); }
+
+  /* Progress */
+  .progress-wrap { background: var(--surface2); border-radius: 6px; height: 6px; overflow: hidden; margin: 12px 0; }
+  .progress-bar { height: 100%; background: var(--green); border-radius: 6px; transition: width .3s; }
+  .log { background: var(--surface2); border-radius: 8px; padding: 14px; max-height: 240px; overflow-y: auto; font-family: 'DM Mono', monospace; font-size: 11px; line-height: 1.8; }
+  .log-ok { color: var(--green); }
+  .log-err { color: var(--red); }
+  .log-info { color: var(--text2); }
+  .log-warn { color: var(--amber); }
+
+  /* Status badge */
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  .badge-green { background: var(--green-dim); color: var(--green); }
+  .badge-red { background: var(--red-dim); color: var(--red); }
+  .badge-amber { background: var(--amber-dim); color: var(--amber); }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .hidden { display: none !important; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #000; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .summary-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+  .summary-num { font-size: 32px; font-weight: 800; }
+  .summary-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .07em; margin-top: 4px; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">🏋️ Retro Fitness</div>
+    <div class="title">Drive Migration Tool</div>
+    <div class="subtitle">Migrate Google Sheets data to organized Drive folders — one folder per client</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step active" id="s1">
+      <div class="step-num">1</div>
+      <div><div class="step-label">Sign In</div><div class="step-sub">Google Auth</div></div>
+    </div>
+    <div class="step" id="s2">
+      <div class="step-num">2</div>
+      <div><div class="step-label">Read Sheets</div><div class="step-sub">Preview data</div></div>
+    </div>
+    <div class="step" id="s3">
+      <div class="step-num">3</div>
+      <div><div class="step-label">Review</div><div class="step-sub">Confirm plan</div></div>
+    </div>
+    <div class="step" id="s4">
+      <div class="step-num">4</div>
+      <div><div class="step-label">Migrate</div><div class="step-sub">Create folders</div></div>
+    </div>
+  </div>
+
+  <!-- STEP 1: AUTH -->
+  <div id="panel-1" class="card">
+    <div class="card-title">Step 1 — Sign in with Google</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.6">
+      This tool needs access to your Google Sheets (to read data) and Google Drive (to create folders and files). 
+      Nothing is deleted. Your sheets stay exactly as-is. We only read from them.
+    </p>
+    <div class="row">
+      <button class="auth-btn" onclick="signIn()">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Sign in with Google
+      </button>
+      <div id="auth-status" class="hidden"></div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);margin-top:14px">
+      Scopes requested: Sheets (read-only) · Drive (create files/folders only)
+    </p>
+  </div>
+
+  <!-- STEP 2: SHEET CONFIG -->
+  <div id="panel-2" class="card hidden">
+    <div class="card-title">Step 2 — Sheet Configuration</div>
+    <div class="sheet-row">
+      <div class="field">
+        <label>Retro Fitness Database ID</label>
+        <input id="db-sheet" value="1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g">
+      </div>
+      <div class="field">
+        <label>PT Member Progress Tracker ID</label>
+        <input id="pt-sheet" value="1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label>Drive Destination Folder ID</label>
+      <input id="drive-folder" value="1KR79llJbneucTXv4TVcEMRQy3inthQsQ">
+    </div>
+    <button class="btn btn-primary" onclick="readSheets()" id="read-btn">
+      Read All Sheets
+    </button>
+  </div>
+
+  <!-- STEP 3: PREVIEW -->
+  <div id="panel-3" class="card hidden">
+    <div class="card-title">Step 3 — Data Preview & Migration Plan</div>
+    
+    <div class="summary-grid" id="summary-grid" style="margin-bottom:20px"></div>
+
+    <hr class="divider">
+    
+    <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:12px">Folder Structure to Create</div>
+    <div class="folder-tree" id="folder-tree">Loading...</div>
+
+    <hr class="divider">
+
+    <div style="font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Deduplication Report</div>
+    <div id="dedup-report" style="font-size:13px;color:var(--text2);line-height:1.8"></div>
+
+    <hr class="divider">
+    <div class="row">
+      <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" onclick="startMigration()" id="migrate-btn">
+        Create Folders & Migrate Data →
+      </button>
+    </div>
+  </div>
+
+  <!-- STEP 4: MIGRATION -->
+  <div id="panel-4" class="card hidden">
+    <div class="card-title">Step 4 — Migration Progress</div>
+    <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px" id="progress-label">Starting...</div>
+    <div class="log" id="migration-log"></div>
+    <div id="migration-done" class="hidden" style="margin-top:20px">
+      <div style="background:var(--green-dim);border:1px solid rgba(76,175,125,0.3);border-radius:8px;padding:16px;font-size:13px;color:var(--green);line-height:1.6">
+        ✅ Migration complete! All data has been written to your Drive folder. 
+        Your Google Sheets are untouched. 
+        <a id="drive-link" href="#" target="_blank" style="color:var(--green);font-weight:700">Open Drive Folder →</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────
+const CLIENT_ID = ''; // Will prompt user if empty
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.file';
+
+let tokenClient, accessToken;
+let allData = { intakes: [], bookings: [], activeClients: [], checkins: [], touchpoints: [] };
+let migrationPlan = { activeClients: [], prospects: [] };
+
+// ── AUTH ──────────────────────────────────────────────────────────────────
+function signIn() {
+  // Load Google Identity Services
+  const script = document.createElement('script');
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.onload = initGoogleAuth;
+  document.head.appendChild(script);
+}
+
+function initGoogleAuth() {
+  // We'll use the token popup flow
+  const clientIdInput = prompt(
+    'Enter your Google OAuth Client ID\n(From console.cloud.google.com → APIs & Services → Credentials)',
+    ''
+  );
+  if (!clientIdInput) return;
+
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientIdInput,
+    scope: SCOPES,
+    callback: onTokenReceived,
+  });
+  tokenClient.requestAccessToken();
+}
+
+function onTokenReceived(resp) {
+  if (resp.error) {
+    showAuthStatus('error', 'Auth failed: ' + resp.error);
+    return;
+  }
+  accessToken = resp.access_token;
+  showAuthStatus('ok', '✓ Signed in — ready to read sheets');
+  goStep(2);
+}
+
+function showAuthStatus(type, msg) {
+  const el = document.getElementById('auth-status');
+  el.className = 'auth-status ' + (type === 'ok' ? 'ok' : 'err');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+// ── SHEETS READ ───────────────────────────────────────────────────────────
+async function readSheets() {
+  const btn = document.getElementById('read-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Reading sheets...';
+
+  const dbSheet = document.getElementById('db-sheet').value.trim();
+  const ptSheet = document.getElementById('pt-sheet').value.trim();
+
+  try {
+    log('Reading All Intakes...');
+    const intakeRows = await readTab(dbSheet, 'All Intakes');
+    allData.intakes = rowsToObjects(intakeRows);
+
+    log('Reading Booked Consultations...');
+    const bcRows = await readTab(dbSheet, 'Booked Consultations');
+    allData.bookings = rowsToObjects(bcRows);
+
+    log('Reading Active Clients...');
+    const acRows = await readTab(ptSheet, 'Active Clients');
+    allData.activeClients = rowsToObjects(acRows);
+
+    log('Reading Check-In History...');
+    const ciRows = await readTab(ptSheet, 'PT Check-In History').catch(() => readTab(ptSheet, 'All Check-In History'));
+    allData.checkins = rowsToObjects(ciRows);
+
+    log('Reading Trainer Touchpoints...');
+    const tpRows = await readTab(ptSheet, 'Trainer Touchpoints');
+    allData.touchpoints = rowsToObjects(tpRows);
+
+    buildMigrationPlan();
+    renderPreview();
+    goStep(3);
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = 'Read All Sheets';
+    alert('Error reading sheets: ' + e.message + '\n\nMake sure your sheets are shared with your Google account.');
+  }
+}
+
+async function readTab(sheetId, tabName) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(tabName)}`;
+  const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + accessToken } });
+  if (!resp.ok) throw new Error(`Could not read tab "${tabName}": ${resp.status}`);
+  const data = await resp.json();
+  return data.values || [];
+}
+
+function rowsToObjects(rows) {
+  if (!rows || rows.length < 2) return [];
+  const headers = rows[0];
+  return rows.slice(1)
+    .filter(r => r.some(c => c))
+    .map(r => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = r[i] || ''; });
+      return obj;
+    });
+}
+
+// ── MIGRATION PLAN ────────────────────────────────────────────────────────
+function buildMigrationPlan() {
+  const clientMap = {};
+  const prospectMap = {};
+
+  // Active clients first (most authoritative)
+  allData.activeClients.forEach(c => {
+    const name = (c['Name'] || c['Client Name'] || '').trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    clientMap[key] = {
+      name,
+      profile: c,
+      checkins: [],
+      sessions: [],
+      touchpoints: []
+    };
+  });
+
+  // Match check-ins to clients
+  allData.checkins.forEach(ci => {
+    const name = (ci['Name'] || ci['Client'] || '').trim();
+    const key = name.toLowerCase();
+    if (clientMap[key]) clientMap[key].checkins.push(ci);
+  });
+
+  // Match touchpoints and sessions
+  allData.touchpoints.forEach(tp => {
+    const name = (tp['Client'] || tp['Name'] || '').trim();
+    const key = name.toLowerCase();
+    if (clientMap[key]) {
+      clientMap[key].touchpoints.push(tp);
+    }
+  });
+
+  // Booked consultations → prospects (unless already active client)
+  allData.bookings.forEach(b => {
+    const name = (b['Name'] || b['Client Name'] || '').trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (clientMap[key]) {
+      // Already an active client — skip
+      return;
+    }
+    if (!prospectMap[key]) {
+      prospectMap[key] = { name, bookings: [], intakes: [] };
+    }
+    prospectMap[key].bookings.push(b);
+  });
+
+  // Intake records — match to prospect or client
+  allData.intakes.forEach(intake => {
+    const name = (intake['Name'] || '').trim();
+    if (!name) return;
+    const key = name.toLowerCase();
+    if (clientMap[key]) {
+      // Add intake to active client profile
+      if (!clientMap[key].intakeData) clientMap[key].intakeData = intake;
+    } else {
+      if (!prospectMap[key]) {
+        prospectMap[key] = { name, bookings: [], intakes: [] };
+      }
+      prospectMap[key].intakes.push(intake);
+    }
+  });
+
+  migrationPlan.activeClients = Object.values(clientMap);
+  migrationPlan.prospects = Object.values(prospectMap);
+}
+
+function renderPreview() {
+  // Summary grid
+  const sg = document.getElementById('summary-grid');
+  sg.innerHTML = [
+    { num: migrationPlan.activeClients.length, lbl: 'Active Client Folders', color: 'var(--green)' },
+    { num: migrationPlan.prospects.length, lbl: 'Prospect Folders', color: 'var(--blue)' },
+    { num: allData.checkins.length, lbl: 'Check-In Records', color: 'var(--amber)' },
+    { num: allData.touchpoints.length, lbl: 'Session / Touchpoints', color: 'var(--text)' },
+  ].map(s => `
+    <div class="summary-card">
+      <div class="summary-num" style="color:${s.color}">${s.num}</div>
+      <div class="summary-lbl">${s.lbl}</div>
+    </div>
+  `).join('');
+
+  // Folder tree
+  let tree = '<span class="folder">📁 Retro Fitness PT</span>\n';
+  tree += '├── <span class="folder">📁 Active Clients</span>\n';
+  migrationPlan.activeClients.slice(0, 8).forEach((c, i) => {
+    const isLast = i === migrationPlan.activeClients.length - 1 || i === 7;
+    const pref = isLast ? '│   └──' : '│   ├──';
+    tree += `${pref} <span class="client">📁 ${c.name}</span>\n`;
+    tree += `│   │   ├── <span class="file">profile.json</span>\n`;
+    if (c.checkins.length) tree += `│   │   ├── <span class="file">checkins.json (${c.checkins.length} records)</span>\n`;
+    if (c.touchpoints.length) tree += `│   │   └── <span class="file">sessions.json (${c.touchpoints.length} entries)</span>\n`;
+  });
+  if (migrationPlan.activeClients.length > 8) {
+    tree += `│   └── <span class="file">... +${migrationPlan.activeClients.length - 8} more</span>\n`;
+  }
+  tree += '└── <span class="folder">📁 Prospects</span>\n';
+  migrationPlan.prospects.slice(0, 6).forEach((p, i) => {
+    const isLast = i === migrationPlan.prospects.length - 1 || i === 5;
+    const pref = isLast ? '    └──' : '    ├──';
+    tree += `${pref} <span class="prospect">📁 ${p.name}</span>\n`;
+    tree += `    │   └── <span class="file">profile.json</span>\n`;
+  });
+  if (migrationPlan.prospects.length > 6) {
+    tree += `    └── <span class="file">... +${migrationPlan.prospects.length - 6} more</span>\n`;
+  }
+  document.getElementById('folder-tree').innerHTML = tree;
+
+  // Dedup report
+  const dupes = findDuplicates();
+  const dr = document.getElementById('dedup-report');
+  if (dupes.length === 0) {
+    dr.innerHTML = '<span style="color:var(--green)">✓ No duplicates detected across sheets.</span>';
+  } else {
+    dr.innerHTML = dupes.map(d =>
+      `<div style="margin-bottom:6px">⚠️ <strong>${d.name}</strong> appears in ${d.sources.join(' + ')} — will be merged into one folder</div>`
+    ).join('');
+  }
+}
+
+function findDuplicates() {
+  const dupes = [];
+  const allNames = {};
+
+  allData.intakes.forEach(r => {
+    const n = (r['Name']||'').toLowerCase().trim();
+    if (n) { allNames[n] = allNames[n] || []; allNames[n].push('All Intakes'); }
+  });
+  allData.bookings.forEach(r => {
+    const n = (r['Name']||'').toLowerCase().trim();
+    if (n) { allNames[n] = allNames[n] || []; if (!allNames[n].includes('Booked Consultations')) allNames[n].push('Booked Consultations'); }
+  });
+  allData.activeClients.forEach(r => {
+    const n = (r['Name']||r['Client Name']||'').toLowerCase().trim();
+    if (n) { allNames[n] = allNames[n] || []; if (!allNames[n].includes('Active Clients')) allNames[n].push('Active Clients'); }
+  });
+
+  Object.entries(allNames).forEach(([name, sources]) => {
+    if (sources.length > 1) dupes.push({ name, sources });
+  });
+  return dupes;
+}
+
+// ── MIGRATION ─────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const el = document.getElementById('migration-log');
+  if (!el) { console.log(msg); return; }
+  el.innerHTML += `<div class="log-${type}">${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+let totalSteps = 0, completedSteps = 0;
+function updateProgress(label) {
+  completedSteps++;
+  const pct = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = label + ` (${pct}%)`;
+}
+
+async function startMigration() {
+  const btn = document.getElementById('migrate-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Migrating...';
+  goStep(4);
+
+  const rootId = document.getElementById('drive-folder').value.trim();
+  totalSteps = 2 + migrationPlan.activeClients.length + migrationPlan.prospects.length;
+  completedSteps = 0;
+
+  try {
+    // Create top-level folders
+    log('Creating Active Clients folder...', 'info');
+    const acFolderId = await createFolder('Active Clients', rootId);
+    updateProgress('Active Clients folder created');
+
+    log('Creating Prospects folder...', 'info');
+    const pFolderId = await createFolder('Prospects', rootId);
+    updateProgress('Prospects folder created');
+
+    // Active clients
+    for (const client of migrationPlan.activeClients) {
+      log(`Creating folder: ${client.name}`, 'info');
+      const clientFolderId = await createFolder(client.name, acFolderId);
+      
+      // profile.json
+      const profile = {
+        name: client.name,
+        profile: client.profile,
+        intakeData: client.intakeData || null,
+        createdAt: new Date().toISOString(),
+        source: 'migrated'
+      };
+      await createJSONFile('profile.json', profile, clientFolderId);
+
+      // checkins.json
+      if (client.checkins.length) {
+        await createJSONFile('checkins.json', { checkins: client.checkins }, clientFolderId);
+      }
+
+      // sessions.json
+      if (client.touchpoints.length) {
+        await createJSONFile('sessions.json', { sessions: client.touchpoints }, clientFolderId);
+      }
+
+      log(`✓ ${client.name} — profile + ${client.checkins.length} check-ins + ${client.touchpoints.length} sessions`, 'ok');
+      updateProgress(client.name);
+    }
+
+    // Prospects
+    for (const prospect of migrationPlan.prospects) {
+      log(`Creating prospect folder: ${prospect.name}`, 'info');
+      const pFolder = await createFolder(prospect.name, pFolderId);
+      
+      const profile = {
+        name: prospect.name,
+        bookings: prospect.bookings,
+        intakes: prospect.intakes,
+        status: prospect.bookings[0]?.Status || prospect.intakes[0]?.Outcome || 'Unknown',
+        createdAt: new Date().toISOString(),
+        source: 'migrated'
+      };
+      await createJSONFile('profile.json', profile, pFolder);
+      log(`✓ ${prospect.name}`, 'ok');
+      updateProgress(prospect.name);
+    }
+
+    log('', 'info');
+    log('🎉 Migration complete!', 'ok');
+    document.getElementById('migration-done').classList.remove('hidden');
+    document.getElementById('drive-link').href = `https://drive.google.com/drive/folders/${rootId}`;
+
+  } catch(e) {
+    log('ERROR: ' + e.message, 'err');
+    btn.disabled = false;
+    btn.innerHTML = 'Retry Migration';
+  }
+}
+
+async function createFolder(name, parentId) {
+  const resp = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + accessToken,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      name,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentId]
+    })
+  });
+  if (!resp.ok) throw new Error('Could not create folder: ' + name + ' (' + resp.status + ')');
+  const data = await resp.json();
+  return data.id;
+}
+
+async function createJSONFile(name, content, folderId) {
+  const blob = new Blob([JSON.stringify(content, null, 2)], { type: 'application/json' });
+  const metadata = { name, parents: [folderId], mimeType: 'application/json' };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', blob);
+  const resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + accessToken },
+    body: form
+  });
+  if (!resp.ok) throw new Error('Could not create file: ' + name);
+  return await resp.json();
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function goStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('panel-' + i).classList.add('hidden');
+    const s = document.getElementById('s' + i);
+    s.classList.remove('active', 'done');
+    if (i < n) s.classList.add('done');
+    if (i === n) s.classList.add('active');
+  }
+  document.getElementById('panel-' + n).classList.remove('hidden');
+}
+</script>
+</body>
+</html>
