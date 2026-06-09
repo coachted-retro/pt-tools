@@ -449,12 +449,17 @@ async function loadHistory() {
   var tableEl = document.getElementById('history-table');
   if (!loadingEl) return;
   try {
-    var resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write', {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({action: 'read', tab: 'All Intakes'})
-    });
-    var data = JSON.parse(await resp.text());
+    var resp = await fetch('https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec?action=getIntakes&limit=30');
+    var raw = await resp.json();
+    var data;
+    if (raw.success && raw.data) {
+      var firstObj = raw.data[0] || {};
+      var hdrs = Object.keys(firstObj).filter(function(k){ return k !== 'rowNumber'; });
+      var rows2 = raw.data.map(function(obj) { return hdrs.map(function(h){ return obj[h]||''; }); });
+      data = { ok: true, rows: rows2 };
+    } else {
+      data = { ok: false, rows: [] };
+    }
     loadingEl.style.display = 'none';
     if (!data.ok || !data.rows || !data.rows.length) {
       if (emptyEl) emptyEl.style.display = 'block';
