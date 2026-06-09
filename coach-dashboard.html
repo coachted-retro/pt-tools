@@ -1212,6 +1212,7 @@ const CHECKLIST_ITEMS = [
 
 function renderChecklist() {
   const el = document.getElementById('c-checklist');
+  if (!el) return; // element removed — checklist replaced by session calendar
   const weekKey = 'checklist_' + getWeekKey();
   const saved = JSON.parse(localStorage.getItem(weekKey) || '{}');
   let lastCat = '';
