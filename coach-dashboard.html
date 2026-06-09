@@ -680,6 +680,13 @@ const PT_PER_SESSION = 250; // estimated monthly revenue per client for risk cal
 
 // ── STATE ─────────────────────────────────────────────────────
 let allCheckins = [];
+
+function normalizeAdvisor(name) {
+  const n = String(name).trim().toLowerCase();
+  if (n === 'ted' || n === 'coach ted' || n === 'ted scholl') return 'Coach Ted';
+  if (n === 'dani' || n === 'dani ' || n.startsWith('dani')) return 'Dani';
+  return String(name).trim() || 'Unknown';
+}
 let charts = {};
 
 // ── SESSION CALENDAR ──────────────────────────────────────────────────────
