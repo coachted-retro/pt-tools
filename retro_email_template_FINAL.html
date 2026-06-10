@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coach Ted | Retro Fitness</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background-color: #1a1a1a; font-family: Arial, Helvetica, sans-serif; }
+.email-wrapper { background-color: #1a1a1a; padding: 32px 16px; }
+.email-container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 4px; overflow: hidden; }
+.hero { background: #000000; padding: 36px 40px; text-align: center; }
+.accent-bar { background-color: #E31837; height: 5px; width: 100%; }
+.email-body { padding: 40px 48px; background: #ffffff; }
+.greeting { font-size: 16px; color: #111111; font-weight: 700; margin-bottom: 20px; }
+.body-text { font-size: 15px; color: #333333; line-height: 1.75; margin-bottom: 16px; }
+.body-text strong { color: #111111; }
+.highlight-box { background-color: #f8f8f8; border-left: 4px solid #E31837; padding: 20px 24px; margin: 28px 0; border-radius: 0 4px 4px 0; }
+.highlight-box p { font-size: 15px; color: #222222; font-weight: 700; margin-bottom: 10px; }
+.highlight-box ul { padding-left: 20px; margin: 0; }
+.highlight-box ul li { font-size: 14px; color: #333333; line-height: 2.1; }
+.highlight-box ul li::marker { color: #E31837; }
+.cta-wrapper { text-align: center; margin: 36px 0 28px; }
+.cta-button { display: inline-block; background-color: #E31837; color: #ffffff !important; text-decoration: none; font-size: 14px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 16px 44px; border-radius: 2px; }
+.signature { margin-top: 32px; padding-top: 24px; border-top: 1px solid #eeeeee; }
+.sig-name { font-size: 16px; font-weight: 700; color: #111111; }
+.sig-title { font-size: 12px; color: #E31837; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px; }
+.sig-club { font-size: 13px; color: #777777; margin-top: 2px; }
+.sig-contact { font-size: 13px; color: #555555; margin-top: 8px; }
+.email-footer { background-color: #111111; padding: 28px 48px; text-align: center; }
+.footer-logo { font-size: 17px; font-weight: 900; color: #ffffff; letter-spacing: 1px; text-transform: uppercase; }
+.footer-logo span { color: #E31837; }
+.footer-address { font-size: 12px; color: #888888; margin-top: 8px; line-height: 1.7; }
+.footer-unsub { font-size: 11px; color: #555555; margin-top: 16px; }
+.footer-unsub a { color: #777777; }
+@media (max-width: 600px) {
+  .email-body { padding: 28px 24px; }
+  .email-footer { padding: 24px; }
+}
+</style>
+</head>
+<body>
+<div class="email-wrapper">
+  <div class="email-container">
+
+    <!-- HEADER WITH REAL LOGO -->
+    <div class="hero">
+      <img src="data:image/jpeg;base64,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" alt="Retro Fitness of Fairless Hills" width="320" style="display:block;margin:0 auto;max-width:320px;height:auto;" />
+    </div>
+
+    <!-- RED ACCENT BAR -->
+    <div class="accent-bar"></div>
+
+    <!-- BODY — SWAP CONTENT BETWEEN THESE COMMENTS FOR EACH EMAIL -->
+    <div class="email-body">
+      <p class="greeting">Hi {{contact.FIRSTNAME}},</p>
+
+      <p class="body-text">
+        Thanks for reaching out. The fact that you're here tells me something — you're not just thinking about getting in shape, you're actually doing something about it. That already puts you ahead of most people.
+      </p>
+
+      <p class="body-text">
+        My name is <strong>Coach Ted</strong>. I'm the Fitness Advisor at Retro Fitness of Fairless Hills, and I want to be straightforward with you about what I do and don't do.
+      </p>
+
+      <p class="body-text">
+        I don't run group classes where everyone follows the same workout. I don't hand you a generic program off a template. And I don't guess.
+      </p>
+
+      <div class="highlight-box">
+        <p>What you get:</p>
+        <ul>
+          <li>Full InBody body composition scan — your actual numbers</li>
+          <li>One-on-one program built around your specific goal</li>
+          <li>Nutrition guidance tailored to your body</li>
+          <li>Real progress tracking — no guesswork</li>
+        </ul>
+      </div>
+
+      <p class="body-text">
+        I have a limited number of training spots available. If you're serious about making a real change, I'd like to schedule a <strong>free 15-minute transformation review</strong> — no pressure, no sales pitch. Just a conversation about your goal and whether we're a good fit.
+      </p>
+
+      <!-- CTA BUTTON — UPDATE HREF WITH YOUR BOOKING LINK -->
+      <div class="cta-wrapper">
+        <a href="{{BOOKING_LINK}}" class="cta-button">Book Your Free Consultation</a>
+      </div>
+
+      <!-- SIGNATURE -->
+      <div class="signature">
+        <div class="sig-name">Coach Ted Scholl</div>
+        <div class="sig-title">Fitness Advisor</div>
+        <div class="sig-club">Retro Fitness of Fairless Hills</div>
+        <div class="sig-contact">267-421-6336</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="email-footer">
+      <div class="footer-logo">Retro <span>Fitness</span></div>
+      <div class="footer-address">
+        516 Lincoln Hwy, Fairless Hills, PA 19030<br>
+        Personal Training &nbsp;|&nbsp; Body Composition &nbsp;|&nbsp; Nutrition Coaching
+      </div>
+      <div class="footer-unsub">
+        You're receiving this because you expressed interest in personal training at Retro Fitness of Fairless Hills.<br>
+        <a href="{{unsubscribe}}">Unsubscribe</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
