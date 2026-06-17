@@ -1243,7 +1243,7 @@
       <!-- ══ PAGE 5: ASSESSMENT ══ -->
       <div class="page" id="page-5">
         <div class="page-header">
-          <h2>Personalized Assessment</h2>
+          <h2>Personalized Assessment & Program</h2>
           <p>Generate a full member-facing assessment, advisor recommendations, and strength training program based on all intake data.</p>
         </div>
 
@@ -1269,18 +1269,296 @@
               Projections based on aggressive progressive overload + structured nutrition. Individual results vary. Tracked monthly via InBody scan.
             </div>
           </div>
+          <!-- PACKAGE TIERS -->
+          <div class="package-section" id="package-section" style="display:none;">
+            <div class="package-section-title">Choose a Training Program</div>
+            <div class="package-section-sub">Select the package that fits the member's goals and schedule. Packages with ★ include Coach Ted's personalized meal plans.</div>
+            <div class="package-grid">
+              <div class="package-card" id="pkg-1" onclick="selectPkg(1)">
+                <div class="pkg-name">Coach Ted Training</div>
+                <div class="pkg-price">$180<span>/mo</span></div>
+                <div class="pkg-freq">4 sessions &middot; 1x per week</div>
+                <ul class="pkg-features">
+                  <li>4 one-on-one training sessions</li>
+                  <li>Personalized workout program</li>
+                  <li>Monthly InBody scan review</li>
+                  <li>Trainerize app access</li>
+                  <li>Session notes &amp; progress tracking</li>
+                </ul>
+                <button class="pkg-select-btn">Select</button>
+              </div>
+              <div class="package-card" id="pkg-2" onclick="selectPkg(2)">
+                <div class="pkg-badge">Most Popular</div>
+                <div class="pkg-name">Coach Ted Complete</div>
+                <div class="pkg-price">$249<span>/mo</span></div>
+                <div class="pkg-freq">4 sessions &middot; 1x per week</div>
+                <ul class="pkg-features">
+                  <li>4 one-on-one training sessions</li>
+                  <li>Personalized workout program</li>
+                  <li>Monthly InBody scan review</li>
+                  <li>Trainerize app access</li>
+                  <li class="chef">Weekly personalized meal plan</li>
+                  <li class="chef">Chef-crafted recipes + grocery list</li>
+                  <li class="chef">Macro targets from InBody data</li>
+                  <li class="chef">1st Phorm supplement stack</li>
+                </ul>
+                <button class="pkg-select-btn">Select</button>
+              </div>
+              <div class="package-card" id="pkg-3" onclick="selectPkg(3)">
+                <div class="pkg-name">Coach Ted Complete+</div>
+                <div class="pkg-price">$349<span>/mo</span></div>
+                <div class="pkg-freq">8 sessions &middot; 2x per week</div>
+                <ul class="pkg-features">
+                  <li>8 one-on-one training sessions</li>
+                  <li>Personalized workout program</li>
+                  <li>Monthly InBody scan review</li>
+                  <li>Trainerize app access</li>
+                  <li class="chef">Weekly personalized meal plan</li>
+                  <li class="chef">Chef-crafted recipes + grocery list</li>
+                  <li class="chef">Macro targets from InBody data</li>
+                  <li class="chef">1st Phorm supplement stack</li>
+                  <li>Faster results track</li>
+                </ul>
+                <button class="pkg-select-btn">Select</button>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;">★ Chef-built nutrition features included in Complete and Complete+ only.</div>
+          </div>
+
           <div id="decision-row" class="decision-row">
-            <button class="decision-btn accept" onclick="showTerms()">✓ Accept — proceed to terms</button>
+            <button class="decision-btn accept" onclick="showPackages()">✓ Accept — choose program</button>
             <button class="decision-btn decline" onclick="showDecline()">✕ Decline — schedule follow-up</button>
           </div>
         </div>
 
-        <!-- TERMS PANEL -->
-        <div class="terms-panel" id="terms-panel">
-          <div class="terms-title">📋 Training terms</div>
-          <p style="font-size:13px; color:var(--text2); margin-bottom:16px;">Select training frequency and program length to finalize enrollment.</p>
+        <!-- NUTRITION PREFERENCES PANEL (Complete/Complete+ only) -->
+        <div class="terms-panel" id="nutrition-panel">
+          <div class="terms-title">🥗 Nutrition Preferences</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Check anything the member doesn't eat, can't have, or is allergic to. This personalizes every weekly meal plan.</p>
+          <div class="disclaimer-box">
+            <p><strong>Important:</strong> Meal plans generated are <strong>general nutrition recommendations</strong> based on fitness goals and stated preferences only — not medical advice. Members with health conditions should consult their physician or a registered dietitian before making significant dietary changes.</p>
+          </div>
 
-          <label style="font-size:12px; font-weight:500; color:var(--text2); display:block; margin-bottom:6px;">Training frequency</label>
+          <div class="pref-section">
+            <div class="pref-section-title">Proteins — check to exclude</div>
+            <div class="pref-grid">
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Chicken</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Turkey</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Salmon</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Tuna</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Tilapia</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Shrimp</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Beef (lean)</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Ground Turkey</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Eggs</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Greek Yogurt</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Cottage Cheese</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Pork Tenderloin</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Tofu</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Tempeh</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Whey Protein</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Plant Protein</div>
+            </div>
+          </div>
+
+          <div class="pref-section">
+            <div class="pref-section-title">Vegetables — check to exclude</div>
+            <div class="pref-grid">
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Broccoli</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Spinach</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Kale</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Asparagus</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Brussels Sprouts</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Cauliflower</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Bell Peppers</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Zucchini</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Sweet Potato</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Mushrooms</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Onions</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Garlic</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Cucumbers</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Tomatoes</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Green Beans</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Cabbage</div>
+            </div>
+          </div>
+
+          <div class="pref-section">
+            <div class="pref-section-title">Fruits — check to exclude</div>
+            <div class="pref-grid">
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Blueberries</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Strawberries</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Banana</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Apple</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Mango</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Pineapple</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Grapes</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Watermelon</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Oranges</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Peaches</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Cherries</div>
+              <div class="pref-item" onclick="togglePref(this)"><input type="checkbox">Raspberries</div>
+            </div>
+          </div>
+
+          <div class="pref-section">
+            <div class="pref-section-title">Health &amp; Digestive Conditions — check all that apply</div>
+            <div class="pref-section-sub">Meal plans automatically avoid known trigger foods for checked conditions.</div>
+            <div class="pref-grid-3">
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Lactose Intolerance</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Celiac Disease</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">FODMAP Intolerance</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">IBS</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Crohn's Disease</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Ulcerative Colitis</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">GERD</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Histamine Intolerance</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Peanut Allergy</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Tree Nut Allergy</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Shellfish Allergy</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Milk Allergy</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Egg Allergy</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Soy Allergy</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Wheat Allergy</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Sesame Allergy</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Insulin Resistance</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Type 2 Diabetes</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Diverticulitis</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Gastroparesis</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">EPI</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Short Bowel Syndrome</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Fructose Malabsorption</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Sucrose Intolerance</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Galactosemia</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">PKU</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">SIBO</div>
+              <div class="pref-item condition" onclick="togglePref(this,'condition')"><input type="checkbox">Leaky Gut Syndrome</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:6px;">Additional allergies or restrictions</label>
+            <textarea id="nutrition-other" rows="2" placeholder="e.g. No cilantro, vegetarian on weekends, kosher..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;resize:vertical;font-family:var(--font);"></textarea>
+          </div>
+
+          <button class="btn btn-primary btn-full" onclick="showMeasurements()">
+            Next: Body Measurements →
+          </button>
+        </div>
+
+        <!-- BODY MEASUREMENTS PANEL -->
+        <div class="terms-panel" id="measurements-panel">
+          <div class="terms-title">📏 Body Measurements</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Baseline measurements taken at sign-up. Repeated at each monthly check-in to track progress.</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Neck (in)</label><input type="number" id="meas-neck" step="0.1" placeholder="15.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Shoulders (in)</label><input type="number" id="meas-shoulders" step="0.1" placeholder="48.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Chest (in)</label><input type="number" id="meas-chest" step="0.1" placeholder="42.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Right Bicep (in)</label><input type="number" id="meas-bicep-r" step="0.1" placeholder="14.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Left Bicep (in)</label><input type="number" id="meas-bicep-l" step="0.1" placeholder="14.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Waist (in)</label><input type="number" id="meas-waist" step="0.1" placeholder="38.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Hips (in)</label><input type="number" id="meas-hips" step="0.1" placeholder="42.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Right Thigh (in)</label><input type="number" id="meas-thigh-r" step="0.1" placeholder="24.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Left Thigh (in)</label><input type="number" id="meas-thigh-l" step="0.1" placeholder="23.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Right Calf (in)</label><input type="number" id="meas-calf-r" step="0.1" placeholder="14.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Left Calf (in)</label><input type="number" id="meas-calf-l" step="0.1" placeholder="14.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+            <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Forearm (in)</label><input type="number" id="meas-forearm" step="0.1" placeholder="12.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Posture &amp; notes</label>
+            <textarea id="meas-notes" rows="2" placeholder="e.g. Slight forward head posture, left shoulder higher than right..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;resize:vertical;font-family:var(--font);"></textarea>
+          </div>
+          <div style="background:var(--warning-light);border:1px solid #e6c84a;border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;">
+            <p style="font-size:11px;color:var(--warning);line-height:1.6;">Measurements are for fitness progress tracking only and do not constitute a medical assessment. Consult a physician regarding any health concerns.</p>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="showPhotoCapture()">
+            Next: Progress Photos →
+          </button>
+        </div>
+
+        <!-- PROGRESS PHOTOS PANEL -->
+        <div class="terms-panel" id="photos-panel">
+          <div class="terms-title">📸 Baseline Progress Photos</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Upload 3 photos — front, side, and back. These are the baseline all future check-ins will compare against. Date and time stamped automatically.</p>
+
+          <div class="photo-prompt-dark">
+            <div class="photo-prompt-title">Upload Baseline Photos</div>
+            <div class="photo-prompt-sub">Select photos from your device. All 3 required before proceeding.</div>
+            <div class="photo-grid-3">
+              <div class="photo-slot-dark" id="slot-front" onclick="document.getElementById('upload-front').click()">
+                <input type="file" id="upload-front" accept="image/*" style="display:none" onchange="handlePhotoUpload('front',this)">
+                <div class="photo-slot-icon" id="icon-front">📁</div>
+                <div class="photo-slot-label">Front</div>
+                <div class="photo-slot-status" id="status-front">Click to upload</div>
+              </div>
+              <div class="photo-slot-dark" id="slot-side" onclick="document.getElementById('upload-side').click()">
+                <input type="file" id="upload-side" accept="image/*" style="display:none" onchange="handlePhotoUpload('side',this)">
+                <div class="photo-slot-icon" id="icon-side">📁</div>
+                <div class="photo-slot-label">Side</div>
+                <div class="photo-slot-status" id="status-side">Click to upload</div>
+              </div>
+              <div class="photo-slot-dark" id="slot-back" onclick="document.getElementById('upload-back').click()">
+                <input type="file" id="upload-back" accept="image/*" style="display:none" onchange="handlePhotoUpload('back',this)">
+                <div class="photo-slot-icon" id="icon-back">📁</div>
+                <div class="photo-slot-label">Back</div>
+                <div class="photo-slot-status" id="status-back">Click to upload</div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:12px;" id="photo-timestamp-display"></div>
+          </div>
+
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;">
+            <ul style="font-size:12px;color:var(--text2);padding-left:16px;line-height:2.1;margin:0;">
+              <li>Stand against a plain wall or neutral background</li>
+              <li>Wear fitted clothing so body composition is visible</li>
+              <li>Arms slightly away from body for front and back shots</li>
+              <li>Photos stored securely in the client's Drive folder</li>
+              <li>Used for progress comparison only — never shared without consent</li>
+            </ul>
+          </div>
+
+          <button class="btn btn-primary btn-full" id="photos-to-enrollment-btn" onclick="showEnrollmentTerms()" disabled style="opacity:.4;cursor:not-allowed;">
+            Next: Finalize Enrollment →
+          </button>
+        </div>
+
+        <!-- ENROLLMENT / TERMS PANEL -->
+        <div class="terms-panel" id="terms-panel">
+          <div class="terms-title">📋 Finalize Enrollment</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Confirm program length and complete enrollment.</p>
+
+          <div id="enroll-pkg-summary" style="background:var(--accent-light);border:1px solid var(--accent);border-radius:var(--radius);padding:14px;margin-bottom:16px;font-size:13px;color:var(--accent);font-weight:600;">— No package selected —</div>
+
+          <label style="font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:6px;">Program length</label>
+          <div class="pill-group" id="length-group">
+            <div class="pill" onclick="pickLengthEnroll(this,'12')">12 months — $45/session (best rate)</div>
+            <div class="pill" onclick="pickLengthEnroll(this,'6')">6 months — $50/session</div>
+          </div>
+
+          <div id="pricing-breakdown-enroll" style="display:none;margin-bottom:16px;">
+            <div class="pricing-compare">
+              <div class="pricing-card best" id="enroll-price-12-card">
+                <div class="pricing-card-label" style="color:var(--accent);">12 months</div>
+                <div class="pricing-card-price" id="enroll-price-12">—</div>
+                <div class="pricing-card-sub">per month</div>
+                <div class="pricing-card-total" id="enroll-total-12">—</div>
+              </div>
+              <div class="pricing-card" id="enroll-price-6-card">
+                <div class="pricing-card-label" style="color:var(--text2);">6 months</div>
+                <div class="pricing-card-price" style="color:var(--text);" id="enroll-price-6">—</div>
+                <div class="pricing-card-sub">per month</div>
+                <div class="pricing-card-total" style="color:var(--text2);" id="enroll-total-6">—</div>
+              </div>
+            </div>
+            <div style="background:var(--warning-light);border:1px solid #e6c84a;border-radius:8px;padding:9px 12px;font-size:11px;color:var(--warning);" id="enroll-savings-note"></div>
+          </div>
+
+          <div id="enroll-commitment-display" style="display:none;background:var(--accent-light);border:1.5px solid var(--accent);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;text-align:center;">
+            <div style="font-size:13px;font-weight:700;color:var(--accent);" id="enroll-commit-label">—</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="enroll-commit-sub">—</div>
+          </div>
+
+          <label style="font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:6px;">Training frequency</label>
           <div class="pill-group" id="freq-group">
             <div class="pill" onclick="pickPill(this,'freq')">1x per week</div>
             <div class="pill" onclick="pickPill(this,'freq')">2x per week</div>
@@ -1289,17 +1567,19 @@
             <div class="pill" onclick="pickPill(this,'freq')">1x every other week</div>
           </div>
 
-          <label style="font-size:12px; font-weight:500; color:var(--text2); display:block; margin-bottom:6px;">Program length</label>
-          <div class="pill-group" id="length-group">
-            <div class="pill" onclick="pickPill(this,'length')">6 months</div>
-            <div class="pill" onclick="pickPill(this,'length')">12 months</div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;">
+            <p style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px;"><strong style="color:var(--text);">Member consent:</strong> By enrolling, the member acknowledges that training packages are billed monthly for the selected commitment period. The $45/session rate applies exclusively to 12-month commitments.</p>
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--text2);">
+              <input type="checkbox" id="consent-data" style="margin-top:2px;accent-color:var(--accent);flex-shrink:0;">
+              I consent to Coach Ted storing my fitness, nutrition preference, and measurement data securely for the purpose of personalizing my training program.
+            </label>
           </div>
 
           <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="finalizeAccept()">
-            📤 Finalize enrollment & save to database
+            📤 Finalize enrollment &amp; save to database
           </button>
           <div id="confirm-accept" class="confirm-box">
-            ✅ Saved to All Intakes and email sent to tedscholl@gmail.com & healthylifewithdani1@gmail.com. Welcome aboard!
+            &#x2705; Saved to All Intakes and email sent to tedscholl@gmail.com &amp; healthylifewithdani1@gmail.com. Welcome aboard!
           </div>
         </div>
 
@@ -2790,34 +3070,176 @@ function filterClients(query) {
     results.appendChild(row);
   });
 }
+
+// ── PACKAGE & ENROLLMENT FLOW ─────────────────────────────────
+var selectedPkg = 0;
+var enrollLength = '';
+
+var pkgPricing = {
+  1: { name: 'Coach Ted Training',   sessions: 4,  mo12: 180, mo6: 200, hasNutrition: false },
+  2: { name: 'Coach Ted Complete',   sessions: 4,  mo12: 249, mo6: 269, hasNutrition: true  },
+  3: { name: 'Coach Ted Complete+',  sessions: 8,  mo12: 349, mo6: 389, hasNutrition: true  }
+};
+
+function showPackages() {
+  document.getElementById('package-section').style.display = 'block';
+  document.getElementById('decision-row').style.display = 'none';
+  document.getElementById('package-section').scrollIntoView({ behavior:'smooth' });
+}
+
+function selectPkg(num) {
+  selectedPkg = num;
+  document.querySelectorAll('.package-card').forEach(function(c) { c.classList.remove('pkg-selected'); });
+  document.getElementById('pkg-' + num).classList.add('pkg-selected');
+  var p = pkgPricing[num];
+  // Update enroll summary
+  var sum = document.getElementById('enroll-pkg-summary');
+  if (sum) sum.textContent = p.name + ' — ' + p.sessions + ' sessions/mo';
+  // Auto-proceed after short delay
+  setTimeout(function() {
+    if (p.hasNutrition) {
+      showNutritionPanel();
+    } else {
+      showMeasurements();
+    }
+  }, 300);
+}
+
+function showNutritionPanel() {
+  var panels = ['nutrition-panel','measurements-panel','photos-panel','terms-panel'];
+  panels.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var np = document.getElementById('nutrition-panel');
+  np.style.display = 'block';
+  np.scrollIntoView({ behavior:'smooth' });
+}
+
+function showMeasurements() {
+  var panels = ['nutrition-panel','measurements-panel','photos-panel','terms-panel'];
+  panels.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var mp = document.getElementById('measurements-panel');
+  mp.style.display = 'block';
+  mp.scrollIntoView({ behavior:'smooth' });
+}
+
+function showPhotoCapture() {
+  var panels = ['nutrition-panel','measurements-panel','photos-panel','terms-panel'];
+  panels.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var pp = document.getElementById('photos-panel');
+  pp.style.display = 'block';
+  // Set timestamp
+  var now = new Date();
+  var ts = document.getElementById('photo-timestamp-display');
+  if (ts) ts.textContent = 'Photos will be timestamped: ' + now.toLocaleDateString('en-US', {weekday:'short',month:'short',day:'numeric',year:'numeric'}) + ' at ' + now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  pp.scrollIntoView({ behavior:'smooth' });
+}
+
+function showEnrollmentTerms() {
+  var panels = ['nutrition-panel','measurements-panel','photos-panel'];
+  panels.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var tp = document.getElementById('terms-panel');
+  tp.style.display = 'block';
+  updateEnrollPricing();
+  tp.scrollIntoView({ behavior:'smooth' });
+}
+
+function handlePhotoUpload(type, input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var slot = document.getElementById('slot-' + type);
+    var icon = document.getElementById('icon-' + type);
+    var status = document.getElementById('status-' + type);
+    slot.classList.add('uploaded');
+    icon.innerHTML = '<img src="' + e.target.result + '" style="width:56px;height:56px;object-fit:cover;border-radius:6px;">';
+    var now = new Date();
+    status.textContent = now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+    // Check all 3
+    var front = document.getElementById('slot-front').classList.contains('uploaded');
+    var side  = document.getElementById('slot-side').classList.contains('uploaded');
+    var back  = document.getElementById('slot-back').classList.contains('uploaded');
+    if (front && side && back) {
+      var btn = document.getElementById('photos-to-enrollment-btn');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function pickLengthEnroll(el, months) {
+  enrollLength = months;
+  document.querySelectorAll('#length-group .pill').forEach(function(p) { p.classList.remove('selected'); });
+  el.classList.add('selected');
+  updateEnrollPricing();
+}
+
+function updateEnrollPricing() {
+  if (!selectedPkg) return;
+  var p = pkgPricing[selectedPkg];
+  var bd = document.getElementById('pricing-breakdown-enroll');
+  if (bd) {
+    bd.style.display = 'block';
+    document.getElementById('enroll-price-12').textContent = '$' + p.mo12;
+    document.getElementById('enroll-total-12').textContent = '$' + (p.mo12 * 12).toLocaleString() + ' total';
+    document.getElementById('enroll-price-6').textContent = '$' + p.mo6;
+    document.getElementById('enroll-total-6').textContent = '$' + (p.mo6 * 6).toLocaleString() + ' for 6 months';
+    var diff = (p.mo6 * 12) - (p.mo12 * 12);
+    var note = document.getElementById('enroll-savings-note');
+    if (note) note.textContent = 'Two 6-month terms = $' + (p.mo6*12).toLocaleString() + ' — $' + diff + ' more than the 12-month rate. Annual saves $' + diff + '.';
+  }
+  if (enrollLength) {
+    var mo = enrollLength === '12' ? p.mo12 : p.mo6;
+    var total = mo * parseInt(enrollLength);
+    var cd = document.getElementById('enroll-commitment-display');
+    if (cd) {
+      cd.style.display = 'block';
+      document.getElementById('enroll-commit-label').textContent = p.name + ' — ' + enrollLength + '-month — $' + mo + '/mo';
+      document.getElementById('enroll-commit-sub').textContent = 'Total: $' + total.toLocaleString() + '  ·  $' + (enrollLength==='12'?'45':'50') + '/session';
+    }
+  }
+}
+
+function togglePref(el, type) {
+  el.classList.toggle('excluded');
+  var cb = el.querySelector('input[type=checkbox]');
+  if (cb) cb.checked = el.classList.contains('excluded');
+}
+
+function getExcludedPrefs() {
+  var excluded = [];
+  document.querySelectorAll('#nutrition-panel .pref-item.excluded').forEach(function(el) {
+    excluded.push(el.textContent.trim());
+  });
+  return excluded.join(', ');
+}
+
+function getMeasurements() {
+  var fields = ['neck','shoulders','chest','bicep-r','bicep-l','waist','hips','thigh-r','thigh-l','calf-r','calf-l','forearm'];
+  var result = {};
+  fields.forEach(function(f) {
+    var el = document.getElementById('meas-' + f);
+    if (el && el.value) result[f] = el.value;
+  });
+  return JSON.stringify(result);
+}
+
+// Override showTerms to use new flow
+function showTerms() {
+  showPackages();
+}
+
 </script>
-<a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#2d5a3d;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
-
-<div id="draft-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;max-width:560px;width:100%;max-height:80vh;display:flex;flex-direction:column">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #2a2a3a">
-      <div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:#f0ede6;letter-spacing:.5px">Saved Intakes</div>
-      <button onclick="closeDraftPanel()" style="background:none;border:1px solid #2a2a3a;color:#888;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px">Close</button>
-    </div>
-    <div id="draft-list" style="overflow-y:auto;flex:1"></div>
-  </div>
-</div>
-
-<div id="client-search-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;max-width:580px;width:100%;max-height:85vh;display:flex;flex-direction:column">
-    <div style="padding:20px 24px;border-bottom:1px solid #2a2a3a;display:flex;justify-content:space-between;align-items:center">
-      <div style="font-family:Barlow Condensed,sans-serif;font-size:20px;font-weight:800;color:#f0ede6;letter-spacing:.5px">Find Client</div>
-      <button onclick="closeClientSearch()" style="background:none;border:1px solid #2a2a3a;color:#888;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px">Close</button>
-    </div>
-    <div style="padding:16px 24px;border-bottom:1px solid #2a2a3a">
-      <input id="client-search-input" type="text" placeholder="Search by name, phone, or email..." 
-        oninput="filterClients(this.value)"
-        style="width:100%;background:#0d0d14;border:1px solid #2a2a3a;color:#f0ede6;padding:10px 14px;border-radius:8px;font-size:14px;font-family:inherit;outline:none">
-    </div>
-    <div id="client-search-results" style="overflow-y:auto;flex:1;max-height:500px">
-      <div style="padding:20px;color:#888;font-size:13px;text-align:center">Type to search saved intakes...</div>
-    </div>
-  </div>
-</div>
-</body>
-</html>
