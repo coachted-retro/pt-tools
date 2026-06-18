@@ -1334,6 +1334,12 @@
           <div id="confirm-enroll" class="confirm-box">
             ✅ Enrollment saved to database. Team notified at tedscholl@gmail.com & healthylifewithdani1@gmail.com.
           </div>
+          <div id="report-enrolled-wrap" style="display:none;margin-top:14px;">
+            <button class="btn btn-success btn-full" onclick="runFollowupReport('welcome')" style="background:#1a6b3c;border-color:#1a6b3c;">
+              📄 Generate Welcome Packet PDF &amp; Email Client
+            </button>
+            <div id="report-enrolled-status" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
+          </div>
         </div>
 
         
@@ -1385,6 +1391,12 @@
           </div>
           <button class="btn btn-primary btn-full" onclick="finalizeAnotherFollowup()">📤 Save & schedule next follow-up</button>
           <div id="confirm-another-fu" class="confirm-box">✅ Rescheduled. Follow-up record updated and team notified.</div>
+          <div id="report-fu-wrap" style="display:none;margin-top:14px;">
+            <button class="btn btn-outline btn-full" onclick="runFollowupReport('thankyou')">
+              📄 Generate Thank You Letter PDF &amp; Email Client
+            </button>
+            <div id="report-fu-status" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
+          </div>
         </div>
 
         <!-- NOT READY PANEL -->
@@ -1406,6 +1418,12 @@
           <div class="field"><label>Closing notes</label><textarea id="close-notes" placeholder="Any final context for the record..."></textarea></div>
           <button class="btn btn-outline btn-full" onclick="finalizeNotReady()">📤 Mark as dead & notify team</button>
           <div id="confirm-not-ready" class="confirm-box">✅ Record closed. Team notified.</div>
+          <div id="report-notready-wrap" style="display:none;margin-top:14px;">
+            <button class="btn btn-outline btn-full" onclick="runFollowupReport('thankyou')">
+              📄 Generate Thank You Letter PDF &amp; Email Client
+            </button>
+            <div id="report-notready-status" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
+          </div>
         </div>
 
         <div class="nav-row">
@@ -2152,6 +2170,386 @@ function resetForm(){
   });
   goPage(0);
 }
+
+// === REPORT ENGINE ===
+// ============================================================
+// RETRO FITNESS — REPORT ENGINE (injected into all 3 tools)
+// Handles: PDF generation via jsPDF + Gmail compose open
+// ============================================================
+
+// Dynamically load jsPDF
+function loadJsPDF(callback) {
+  if (window.jspdf) { callback(); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload = callback;
+  document.head.appendChild(s);
+}
+
+// ---- SHARED SIGNATURE BLOCK ----
+const PHORM_SIGNATURE = `--
+Additional Helpful Resources:
+Why I Partner with 1st Phorm Nutritional Supplements
+(The Real Difference) Your Protein and Nutritional Supplements Here: https://1stphorm.com/?a_aid=coachted
+
+If you're going to put time and effort into your nutrition, the supplements you use to back it up need to match that level of commitment. The supplement industry is flooded with low-tier products, but 1st Phorm stands entirely apart for a few critical reasons:
+
+1. Low-Temperature Processing
+Most brands use high-heat cross-flow filtration to process their whey protein, which actually denatures (burns) the protein. This damages its bioavailability and causes the gas, bloating, and stomach discomfort so many people experience. 1st Phorm processes their proteins—like Level-1—using a specialized low-temperature flash-drying method. This leaves the protein completely intact, incredibly easy on your digestion, and fully available for muscle recovery.
+
+2. FDA-Inspected, SQF Level-3 Facilities
+A massive portion of the supplement world relies on third-party manufacturers with questionable quality control. 1st Phorm manufactures its products in Safe Quality Food (SQF) Level-3 Certified facilities. This is the highest possible standard for food manufacturing, subject to strict, regular FDA inspections to guarantee that what is on the label is exactly what is in your bottle.
+
+3. Therapeutic-Grade Raw Materials
+They don't cut corners on sourcing. 1st Phorm uses high-tier, premium raw ingredients rather than cheap filler powders. This means your body absorbs more of the nutrients per serving, giving you better performance, better recovery, and the absolute most out of every single workout.
+
+Let's Get Strong Together
+Ted Scholl
+Coach & Fitness Advisor
+
+Retro Fitness of Fairless Hills
+516 Lincoln Highway
+Fairless Hills, PA 19030
+215-295-2004`;
+
+// ---- AI REPORT GENERATION ----
+async function generateReportContent(reportType, clientData, assessmentSummary) {
+  const systemPrompts = {
+    welcome: `You are writing a Welcome Packet for a new personal training client at Retro Fitness of Fairless Hills. 
+Generate a professional, warm, motivating welcome report. 
+STRICT RULES — never violate:
+- DO include: InBody scan analysis, current baseline stats, where they stand vs their goal, 2-3 specific barriers between them and success, what the first training phase will focus on (general, e.g. "building movement quality and foundation strength"), why having a coach accelerates results vs going solo, an inspiring closing statement tied to their specific goal.
+- DO NOT include: specific workout plans, exercise prescriptions, sets/reps, macro targets, specific calorie numbers, meal plans, or supplement protocols. These are reserved for paid coaching sessions.
+- Tone: warm, expert, premium. Makes them feel they made the right decision enrolling.
+- Format: use plain section headers in ALL CAPS, no markdown symbols, no emojis, no asterisks. Plain text with line breaks only.`,
+
+    thankyou: `You are writing a Thank You / Body Composition Results Letter for a prospect who attended a consultation but did not enroll in personal training at Retro Fitness of Fairless Hills.
+STRICT RULES — never violate:
+- DO include: genuine thanks for their time, a summary of their InBody results in plain language, 2-3 specific insights from their body composition data, what the data tells us about where they are vs where they want to be, what unguided progress typically looks like without structured coaching, a soft invitation to reconsider when the time is right.
+- DO NOT include: specific workout plans, macro targets, meal plans, or any prescriptive content that removes the need for coaching.
+- Tone: appreciative, insightful, zero pressure. They should leave feeling informed and respected — and quietly wishing they had signed up.
+- Format: plain section headers ALL CAPS, no markdown, no emojis. Plain text only.`,
+
+    monthly: `You are writing a Monthly Progress Report for an active personal training client at Retro Fitness of Fairless Hills.
+STRICT RULES — never violate:
+- DO include: this month vs last month InBody comparison with real numbers, training consistency assessment, nutrition adherence summary, recovery and wellbeing snapshot, key wins this month, one specific focus area for next month, motivating closing statement.
+- DO NOT include: specific workout prescriptions, sets/reps/weights, specific macro targets or calorie numbers, meal plans. These are coaching deliverables — the report documents progress, not the program.
+- Tone: encouraging, data-driven, coach-to-client. Celebrate wins, address gaps constructively.
+- Format: plain section headers ALL CAPS, no markdown, no emojis. Plain text only.`
+  };
+
+  const userPrompt = `CLIENT DATA:
+${JSON.stringify(clientData, null, 2)}
+
+ASSESSMENT SUMMARY FROM SESSION:
+${assessmentSummary}
+
+Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType === 'thankyou' ? 'Thank You Letter' : 'Monthly Progress Report'} now. Use the real data above — never use placeholders. Under 500 words.`;
+
+  const resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: systemPrompts[reportType],
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.content.map(b => b.text || '').join('');
+}
+
+// ---- PDF BUILDER ----
+function buildPDF(reportType, clientName, reportContent, clientData) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const W = 612, margin = 50, contentW = W - margin * 2;
+
+  // ---- HEADER ----
+  doc.setFillColor(20, 20, 20);
+  doc.rect(0, 0, W, 80, 'F');
+  // Red accent bar
+  doc.setFillColor(180, 0, 0);
+  doc.rect(0, 80, W, 4, 'F');
+
+  // Logo text
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('RETRO FITNESS', margin, 35);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('of Fairless Hills  |  516 Lincoln Highway, Fairless Hills, PA 19030  |  215-295-2004', margin, 52);
+
+  // Report title
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  const titles = { welcome: 'PERSONAL TRAINING WELCOME PACKET', thankyou: 'THANK YOU — BODY COMPOSITION RESULTS', monthly: 'MONTHLY PROGRESS REPORT' };
+  doc.text(titles[reportType] || 'CLIENT REPORT', margin, 68);
+
+  // ---- CLIENT INFO BAR ----
+  doc.setFillColor(240, 240, 240);
+  doc.rect(0, 84, W, 36, 'F');
+  doc.setTextColor(30, 30, 30);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CLIENT:', margin, 99);
+  doc.setFont('helvetica', 'normal');
+  doc.text(clientName, margin + 48, 99);
+  doc.setFont('helvetica', 'bold');
+  doc.text('DATE:', margin + 200, 99);
+  doc.setFont('helvetica', 'normal');
+  doc.text(new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }), margin + 228, 99);
+  doc.setFont('helvetica', 'bold');
+  doc.text('ADVISOR:', margin + 380, 99);
+  doc.setFont('helvetica', 'normal');
+  doc.text(clientData.advisor || 'Coach Ted Scholl', margin + 428, 99);
+
+  // ---- INBODY SNAPSHOT TABLE (if data available) ----
+  let y = 135;
+  const hasInBody = clientData.leanMass || clientData.fatMass || clientData.pbf || clientData.bmi;
+  if (hasInBody) {
+    doc.setFillColor(180, 0, 0);
+    doc.rect(margin, y, contentW, 18, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text('INBODY SNAPSHOT', margin + 6, y + 12);
+    y += 18;
+
+    const inbodyRows = [
+      ['Lean Mass', clientData.leanMass ? clientData.leanMass + ' lb' : '—',
+       'Body Fat', clientData.fatMass ? clientData.fatMass + ' lb' : '—'],
+      ['Body Fat %', clientData.pbf ? clientData.pbf + '%' : '—',
+       'BMI', clientData.bmi || '—'],
+    ];
+    if (clientData.prevLean && clientData.nowLean) {
+      inbodyRows.push(['Lean Mass Change', clientData.prevLean + ' → ' + clientData.nowLean + ' lb',
+        'Fat Mass Change', (clientData.prevFat || '—') + ' → ' + (clientData.nowFat || '—') + ' lb']);
+    }
+
+    inbodyRows.forEach((row, i) => {
+      doc.setFillColor(i % 2 === 0 ? 250 : 245, i % 2 === 0 ? 250 : 245, i % 2 === 0 ? 250 : 245);
+      doc.rect(margin, y, contentW, 16, 'F');
+      doc.setTextColor(60, 60, 60);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text(row[0], margin + 6, y + 11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(row[1], margin + 120, y + 11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(row[2], margin + 260, y + 11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(row[3], margin + 360, y + 11);
+      y += 16;
+    });
+    y += 10;
+  }
+
+  // ---- REPORT CONTENT ----
+  doc.setTextColor(30, 30, 30);
+  const lines = reportContent.split('\n');
+  lines.forEach(line => {
+    if (y > 720) { doc.addPage(); y = 60; }
+    const trimmed = line.trim();
+    if (!trimmed) { y += 6; return; }
+
+    // Section headers (all caps lines)
+    if (trimmed === trimmed.toUpperCase() && trimmed.length > 3 && !trimmed.match(/^\d/)) {
+      if (y > 680) { doc.addPage(); y = 60; }
+      y += 6;
+      doc.setFillColor(180, 0, 0);
+      doc.rect(margin, y, 3, 12, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(180, 0, 0);
+      doc.text(trimmed, margin + 10, y + 10);
+      y += 18;
+      doc.setTextColor(30, 30, 30);
+      return;
+    }
+
+    // Body text
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(50, 50, 50);
+    const wrapped = doc.splitTextToSize(trimmed, contentW - 10);
+    wrapped.forEach(wl => {
+      if (y > 730) { doc.addPage(); y = 60; }
+      doc.text(wl, margin + 10, y);
+      y += 13;
+    });
+  });
+
+  // ---- FOOTER ----
+  y += 20;
+  if (y > 680) { doc.addPage(); y = 60; }
+  doc.setFillColor(20, 20, 20);
+  doc.rect(margin, y, contentW, 1, 'F');
+  y += 14;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text('"Progress is built one month at a time. Stay consistent, stay committed."', margin + 10, y);
+  y += 12;
+  doc.setFont('helvetica', 'normal');
+  doc.text('Coach Ted Scholl  |  Retro Fitness of Fairless Hills  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
+
+  // Save
+  const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+  doc.save(filename);
+  return filename;
+}
+
+// ---- EMAIL BODIES ----
+function buildEmailBody(reportType, clientName, clientData, assessmentSummary) {
+  const firstName = clientName.split(' ')[0];
+  const bodies = {
+    welcome: `Hi ${firstName},
+
+It was great meeting with you today. I've attached your personalized Welcome Packet — it includes your InBody baseline, a breakdown of where you stand right now, and what we're going to focus on together in your first phase of training.
+
+Take a few minutes to review it before your first session. It sets the stage for everything we'll be building toward.
+
+I'm genuinely excited to get to work with you. You made a great decision today and I don't take that lightly — we're going to make this count.
+
+Your first session is coming up soon. If you have any questions before then, don't hesitate to reach out.
+
+${PHORM_SIGNATURE}`,
+
+    thankyou: `Hi ${firstName},
+
+Thank you for taking the time to come in today for your complimentary consultation and InBody scan. I've attached your body composition results along with some key insights from our session.
+
+Even if personal training isn't the right fit right now, the data from your InBody scan is valuable. Take a look at the attached report — it breaks down exactly where you are today and what your numbers mean for your goals.
+
+Whenever you're ready to take the next step, I'm here. No pressure, no expiration date.
+
+${PHORM_SIGNATURE}`,
+
+    monthly: `Hi ${firstName},
+
+Your monthly progress report is attached. It covers your InBody comparison from last month, your training consistency, nutrition summary, and what we're focusing on heading into next month.
+
+Take a look and let me know if anything stands out or if you have questions before your next session.
+
+Keep showing up — the numbers don't lie and you're moving in the right direction.
+
+${PHORM_SIGNATURE}`
+  };
+  return bodies[reportType] || bodies.monthly;
+}
+
+// ---- MAIN TRIGGER FUNCTION ----
+async function triggerReportWorkflow(reportType, clientData, assessmentSummary, statusElemId) {
+  const statusEl = document.getElementById(statusElemId);
+  if (statusEl) statusEl.innerHTML = '<span style="color:#d4a843">⏳ Generating report...</span>';
+
+  try {
+    loadJsPDF(async () => {
+      try {
+        const reportContent = await generateReportContent(reportType, clientData, assessmentSummary);
+        const filename = buildPDF(reportType, clientData.name, reportContent, clientData);
+
+        if (statusEl) statusEl.innerHTML = '<span style="color:#4caf7d">✅ PDF downloaded: ' + filename + '</span>';
+
+        // Open Gmail compose to client
+        setTimeout(() => {
+          const emailBody = buildEmailBody(reportType, clientData.name, clientData, assessmentSummary);
+          const subjects = {
+            welcome: 'Welcome to Retro Fitness Elite Training — Your Welcome Packet',
+            thankyou: 'Your Body Composition Results — Retro Fitness of Fairless Hills',
+            monthly: 'Your Monthly Progress Report — ' + new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'})
+          };
+          const gmailUrl = 'https://mail.google.com/mail/?view=cm' +
+            '&to=' + encodeURIComponent(clientData.email || '') +
+            '&su=' + encodeURIComponent(subjects[reportType]) +
+            '&body=' + encodeURIComponent(emailBody);
+          window.open(gmailUrl, '_blank');
+          if (statusEl) statusEl.innerHTML += '<br><span style="color:#5a8ec8">📧 Gmail compose opened — attach the PDF before sending.</span>';
+        }, 1200);
+
+      } catch(e) {
+        if (statusEl) statusEl.innerHTML = '<span style="color:#c0392b">❌ Error: ' + e.message + '</span>';
+      }
+    });
+  } catch(e) {
+    if (statusEl) statusEl.innerHTML = '<span style="color:#c0392b">❌ ' + e.message + '</span>';
+  }
+}
+
+
+// === FOLLOWUP REPORT TRIGGER ===
+function runFollowupReport(type) {
+  var clientData = {
+    name: gv('name') || 'Member',
+    email: gv('email') || '',
+    advisor: getCfg('advisor') || 'Coach Ted Scholl',
+    goals: gv('long-goal') || gv('goals') || '',
+    age: gv('age') || '',
+    gender: gv('gender') || '',
+    medical: gv('medical') || '',
+    prevLean: gv('prev-lean') || '',
+    nowLean: gv('now-lean') || '',
+    prevFat: gv('prev-fat') || '',
+    nowFat: gv('now-fat') || '',
+    pbf: gv('now-pbf') || gv('pbf') || '',
+    bmi: gv('now-bmi') || gv('bmi') || '',
+    leanMass: gv('now-lean') || '',
+    fatMass: gv('now-fat') || '',
+  };
+  // Determine which status div to use
+  var statusId = type === 'welcome' ? 'report-enrolled-status' : 
+    (document.getElementById('report-fu-status') ? 'report-fu-status' : 'report-notready-status');
+  triggerReportWorkflow(type, clientData, assessmentText || '', statusId);
+}
+
+// Patch outcome finalizers to show report buttons
+document.addEventListener('DOMContentLoaded', function() {
+  var _fe = window.finalizeEnrolled;
+  if (_fe) {
+    window.finalizeEnrolled = async function() {
+      await _fe.apply(this, arguments);
+      setTimeout(function() {
+        var w = document.getElementById('report-enrolled-wrap');
+        if (w) w.style.display = 'block';
+      }, 800);
+    };
+  }
+  var _fa = window.finalizeAnotherFollowup;
+  if (_fa) {
+    window.finalizeAnotherFollowup = async function() {
+      await _fa.apply(this, arguments);
+      setTimeout(function() {
+        var w = document.getElementById('report-fu-wrap');
+        if (w) w.style.display = 'block';
+      }, 800);
+    };
+  }
+  var _fn = window.finalizeNotReady;
+  if (_fn) {
+    window.finalizeNotReady = async function() {
+      await _fn.apply(this, arguments);
+      setTimeout(function() {
+        var w = document.getElementById('report-notready-wrap');
+        if (w) w.style.display = 'block';
+      }, 800);
+    };
+  }
+  var _fl = window.finalizeLongFollowup;
+  if (_fl) {
+    window.finalizeLongFollowup = async function() {
+      await _fl.apply(this, arguments);
+      setTimeout(function() {
+        var w = document.getElementById('report-fu-wrap');
+        if (w) w.style.display = 'block';
+      }, 800);
+    };
+  }
+});
+
 </script>
 <a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#2d5a3d;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
 </body>
