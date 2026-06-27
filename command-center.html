@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Center — Retro Fitness PT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --red:#E0192B; --red-dk:#B0121F; --ink:#15171A; --bg:#F5F6F8;
+    --card:#FFFFFF; --line:#E4E7EC; --muted:#6B7280; --soft:#F0F2F5;
+    --green:#1E9E5A; --amber:#D98A0B; --blue:#2563EB; --gray:#9AA1AC;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  h1,h2,h3,.disp{font-family:'Oswald',sans-serif;letter-spacing:.5px}
+  .upper{text-transform:uppercase}
+  a{color:var(--red);text-decoration:none}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;gap:16px;background:var(--card);border-bottom:3px solid var(--red);
+    padding:12px 22px;position:sticky;top:0;z-index:20}
+  .topbar img{height:40px;width:auto;border-radius:4px}
+  .topbar .title{font-family:'Oswald';font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .title span{color:var(--red)}
+  .topbar .spacer{flex:1}
+  .search{display:flex;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:7px 12px;min-width:240px}
+  .search input{border:0;background:transparent;outline:0;font-size:14px;width:100%;font-family:'Inter'}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.6px;font-weight:600;font-size:13px;
+    border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 16px;border-radius:8px;cursor:pointer}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}
+  .btn.red:hover{background:var(--red-dk)}
+
+  .wrap{padding:22px;max-width:1500px;margin:0 auto}
+
+  /* stat cards */
+  .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--red)}
+  .stat .label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600}
+  .stat .num{font-family:'Oswald';font-weight:700;font-size:34px;line-height:1.1;margin-top:4px}
+  .stat .sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .tab{font-family:'Oswald';text-transform:uppercase;letter-spacing:.6px;font-weight:600;font-size:14px;
+    padding:10px 18px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--ink);border-bottom-color:var(--red)}
+
+  .layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:1100px){.layout{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .panel .head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .panel .head h3{margin:0;font-size:15px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .panel .head .count{background:var(--soft);color:var(--muted);font-size:12px;font-weight:600;padding:2px 8px;border-radius:20px}
+  .panel .body{padding:6px 0;max-height:560px;overflow:auto}
+
+  /* list rows */
+  .row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--soft);cursor:pointer}
+  .row:hover{background:var(--soft)}
+  .row:last-child{border-bottom:0}
+  .row .main{flex:1;min-width:0}
+  .row .name{font-weight:600}
+  .row .meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .p-active{background:#E3F5EC;color:var(--green)} .p-new{background:#E7EEFE;color:var(--blue)}
+  .p-prospect{background:#FBEFD9;color:var(--amber)} .p-declined,.p-dead,.p-lapsed{background:#EEF0F3;color:var(--gray)}
+  .p-won,.p-partner_active{background:#E3F5EC;color:var(--green)}
+  .p-contacted,.p-qualified,.p-meeting_set{background:#FBEFD9;color:var(--amber)}
+
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  @media(max-width:1100px){.charts{grid-template-columns:1fr}}
+  .chartbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .chartbox h3{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+
+  .empty{padding:38px 22px;text-align:center;color:var(--muted)}
+  .empty .big{font-family:'Oswald';font-size:18px;color:var(--ink);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+
+  /* drawer */
+  .drawer-bg{position:fixed;inset:0;background:rgba(20,23,26,.35);display:none;z-index:40}
+  .drawer-bg.open{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,94vw);background:var(--bg);box-shadow:-8px 0 30px rgba(0,0,0,.18);
+    transform:translateX(100%);transition:transform .22s ease;z-index:41;overflow:auto}
+  .drawer.open{transform:translateX(0)}
+  .drawer .dhead{background:var(--card);border-bottom:3px solid var(--red);padding:18px 20px;position:sticky;top:0;z-index:2}
+  .drawer .dhead .dname{font-family:'Oswald';font-weight:700;font-size:24px;text-transform:uppercase;letter-spacing:.5px}
+  .drawer .dhead .dsub{color:var(--muted);font-size:13px;margin-top:2px}
+  .drawer .close{position:absolute;right:16px;top:16px;cursor:pointer;font-size:22px;color:var(--muted);line-height:1}
+  .dsec{margin:16px 20px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .dsec h4{margin:0 0 12px;font-family:'Oswald';text-transform:uppercase;letter-spacing:.6px;font-size:13px;color:var(--red)}
+  .tl{position:relative;padding-left:18px}
+  .tl .ev{position:relative;padding:0 0 14px 14px;border-left:2px solid var(--line)}
+  .tl .ev:last-child{border-left-color:transparent}
+  .tl .ev::before{content:"";position:absolute;left:-7px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--red);border:2px solid var(--card)}
+  .tl .ev .et{font-weight:600}
+  .tl .ev .ed{font-size:12px;color:var(--muted)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}
+  .kv .k{color:var(--muted)}
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600;margin-bottom:4px}
+  .field select,.field input,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13px;background:#fff}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .note{font-size:12px;color:var(--muted)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" onerror="this.style.display='none'">
+  <div class="title">Command <span>Center</span></div>
+  <div class="spacer"></div>
+  <div class="search"><input id="q" placeholder="Search clients and leads..." oninput="render()"></div>
+  <button class="btn" onclick="loadAll()">Refresh</button>
+</div>
+
+<div class="wrap">
+
+  <div class="cards" id="cards"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="roster" onclick="setTab('roster')">Clients</div>
+    <div class="tab" data-tab="pipeline" onclick="setTab('pipeline')">Pipeline</div>
+    <div class="tab" data-tab="due" onclick="setTab('due')">Due This Week</div>
+  </div>
+
+  <!-- ROSTER -->
+  <div id="view-roster">
+    <div class="layout">
+      <div class="panel">
+        <div class="head"><h3>Client Roster</h3><span class="count" id="rosterCount">0</span></div>
+        <div class="body" id="rosterList"></div>
+      </div>
+      <div class="panel">
+        <div class="head"><h3>Status Breakdown</h3></div>
+        <div class="body" style="padding:18px"><canvas id="clientChart" height="220"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div id="view-pipeline" style="display:none">
+    <div class="toolbar">
+      <select id="harvestCat" class="field" style="width:auto;padding:9px 11px;border-radius:8px">
+        <option value="">All categories</option>
+        <option value="chiropractor">Chiropractors</option>
+        <option value="physical_therapy">Physical therapists</option>
+        <option value="med_spa">Med spas</option>
+        <option value="nutritionist">Nutritionists</option>
+        <option value="fire_department">Fire departments</option>
+        <option value="police">Police</option>
+        <option value="ems">EMS</option>
+        <option value="employer">Employers</option>
+      </select>
+      <button class="btn red" onclick="runHarvest()">Run Harvest</button>
+      <span class="note" id="harvestNote">Pulls fresh leads within 10 miles into the pipeline.</span>
+    </div>
+    <div class="layout">
+      <div class="panel">
+        <div class="head"><h3>Leads</h3><span class="count" id="leadCount">0</span></div>
+        <div class="body" id="leadList"></div>
+      </div>
+      <div class="panel">
+        <div class="head"><h3>Pipeline Funnel</h3></div>
+        <div class="body" style="padding:18px"><canvas id="statusChart" height="220"></canvas></div>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="chartbox"><h3>Leads by Category</h3><canvas id="catChart" height="200"></canvas></div>
+      <div class="chartbox"><h3>Leads by Type</h3><canvas id="typeChart" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- DUE -->
+  <div id="view-due" style="display:none">
+    <div class="panel">
+      <div class="head"><h3>Due in the Next 7 Days</h3><span class="count" id="dueCount">0</span></div>
+      <div class="body" id="dueList"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-bg" id="drawerBg" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="dhead">
+    <div class="close" onclick="closeDrawer()">&times;</div>
+    <div class="dname" id="dName">—</div>
+    <div class="dsub" id="dSub"></div>
+  </div>
+  <div id="dBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let CLIENTS = [], LEADS = [], tab = 'roster';
+let charts = {};
+
+async function db(body){
+  const r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body)});
+  return r.json();
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function daysFromNow(d){ if(!d) return null; const ms=new Date(d+'T00:00:00')-new Date(); return Math.ceil(ms/86400000); }
+
+async function loadAll(){
+  const [c, l] = await Promise.all([
+    db({op:'select', table:'clients', orderBy:'updated_at DESC', limit:1000}),
+    db({op:'select', table:'leads',   orderBy:'created_at DESC', limit:2000})
+  ]);
+  CLIENTS = (c.results)||[]; LEADS = (l.results)||[];
+  render();
+}
+
+function setTab(t){
+  tab=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===t));
+  ['roster','pipeline','due'].forEach(v=>document.getElementById('view-'+v).style.display = v===t?'block':'none');
+  render();
+}
+
+function render(){
+  renderCards();
+  if(tab==='roster') renderRoster();
+  if(tab==='pipeline') renderPipeline();
+  if(tab==='due') renderDue();
+}
+
+function renderCards(){
+  const active = CLIENTS.filter(c=>c.status==='active_pt').length;
+  const due = CLIENTS.filter(c=>{ /* placeholder, real due uses checkins */ return false; }).length;
+  const corp = LEADS.filter(l=>l.lead_type==='corporate').length;
+  const ref  = LEADS.filter(l=>l.lead_type==='referral_partner').length;
+  const dueItems = dueThisWeek().length;
+  const cards = [
+    {label:'Active PT Clients', num:active, sub:CLIENTS.length+' total in roster'},
+    {label:'Total Leads', num:LEADS.length, sub:'in the pipeline'},
+    {label:'Corporate', num:corp, sub:'wellness targets'},
+    {label:'Referral Partners', num:ref, sub:'allied health'},
+    {label:'Due This Week', num:dueItems, sub:'check-ins + follow-ups'}
+  ];
+  document.getElementById('cards').innerHTML = cards.map(c=>
+    `<div class="stat"><div class="label">${c.label}</div><div class="num">${c.num}</div><div class="sub">${c.sub}</div></div>`).join('');
+}
+
+function matchQ(s){ const q=document.getElementById('q').value.trim().toLowerCase(); return !q || (s||'').toLowerCase().includes(q); }
+
+function renderRoster(){
+  const list = CLIENTS.filter(c=>matchQ((c.first_name||'')+' '+(c.last_name||'')+' '+(c.email||'')));
+  document.getElementById('rosterCount').textContent = list.length;
+  const el = document.getElementById('rosterList');
+  if(!list.length){
+    el.innerHTML = `<div class="empty"><div class="big">No clients yet</div>Clients appear here once a consultation or check-in is saved. Your three tools will write straight into this database.</div>`;
+  } else {
+    el.innerHTML = list.map(c=>{
+      const nm = esc((c.first_name||'')+' '+(c.last_name||'')).trim()||'(no name)';
+      const st = c.status||'prospect';
+      return `<div class="row" onclick="openClient(${c.id})">
+        <div class="main"><div class="name">${nm}</div><div class="meta">${esc(c.email||'')} ${c.advisor?'· '+esc(c.advisor):''}</div></div>
+        <span class="pill p-${st}">${st.replace('_',' ')}</span></div>`;
+    }).join('');
+  }
+  drawClientChart();
+}
+
+function renderPipeline(){
+  const list = LEADS.filter(l=>matchQ((l.business_name||'')+' '+(l.city||'')+' '+(l.category||'')));
+  document.getElementById('leadCount').textContent = list.length;
+  const el = document.getElementById('leadList');
+  if(!list.length){
+    el.innerHTML = `<div class="empty"><div class="big">No leads yet</div>Pick a category and hit Run Harvest to pull businesses within 10 miles into the pipeline.</div>`;
+  } else {
+    el.innerHTML = list.map(l=>{
+      const st=l.status||'new';
+      const dist=(l.distance_mi!=null)?l.distance_mi+' mi':'';
+      return `<div class="row" onclick="openLead(${l.id})">
+        <div class="main"><div class="name">${esc(l.business_name||'(no name)')}</div>
+        <div class="meta">${esc((l.category||'').replace('_',' '))} · ${esc(l.city||'')} ${dist?'· '+dist:''}</div></div>
+        <span class="pill p-${st}">${st.replace('_',' ')}</span></div>`;
+    }).join('');
+  }
+  drawStatusChart(); drawCatChart(); drawTypeChart();
+}
+
+function dueThisWeek(){
+  const items=[];
+  LEADS.forEach(l=>{ const d=daysFromNow(l.next_action_date); if(d!=null && d<=7) items.push({type:'Lead follow-up', name:l.business_name, when:l.next_action_date, days:d, kind:'lead', id:l.id}); });
+  return items.sort((a,b)=>a.days-b.days);
+}
+function renderDue(){
+  const items=dueThisWeek();
+  document.getElementById('dueCount').textContent=items.length;
+  const el=document.getElementById('dueList');
+  if(!items.length){ el.innerHTML=`<div class="empty"><div class="big">Nothing due</div>Follow-ups with a date in the next 7 days show up here.</div>`; return; }
+  el.innerHTML=items.map(i=>`<div class="row" onclick="${i.kind==='lead'?'openLead('+i.id+')':'openClient('+i.id+')'}">
+    <div class="main"><div class="name">${esc(i.name||'')}</div><div class="meta">${i.type} · ${esc(i.when)}</div></div>
+    <span class="pill ${i.days<0?'p-dead':'p-prospect'}">${i.days<0?'overdue':'in '+i.days+'d'}</span></div>`).join('');
+}
+
+/* ---------- charts ---------- */
+function mk(id,cfg){ if(charts[id]) charts[id].destroy(); charts[id]=new Chart(document.getElementById(id),cfg); }
+const RED='#E0192B', INK='#15171A', GRID='#EDEFF2';
+function countBy(arr,key){ const m={}; arr.forEach(x=>{const k=(x[key]||'unknown'); m[k]=(m[k]||0)+1;}); return m; }
+
+function drawClientChart(){
+  const m=countBy(CLIENTS,'status'); const labels=Object.keys(m);
+  mk('clientChart',{type:'doughnut',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),
+    backgroundColor:['#1E9E5A','#2563EB','#D98A0B','#9AA1AC','#E0192B']}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Inter'}}}},cutout:'62%'}});
+}
+function drawStatusChart(){
+  const order=['new','contacted','qualified','meeting_set','partner_active','won','dead'];
+  const m=countBy(LEADS,'status'); const labels=order.filter(s=>m[s]);
+  mk('statusChart',{type:'bar',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),backgroundColor:RED,borderRadius:6}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:GRID},ticks:{precision:0}},y:{grid:{display:false}}}}});
+}
+function drawCatChart(){
+  const m=countBy(LEADS,'category'); const labels=Object.keys(m).sort((a,b)=>m[b]-m[a]);
+  mk('catChart',{type:'bar',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),backgroundColor:INK,borderRadius:6}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{grid:{color:GRID},ticks:{precision:0}},x:{grid:{display:false}}}}});
+}
+function drawTypeChart(){
+  const m=countBy(LEADS,'lead_type'); const labels=Object.keys(m);
+  mk('typeChart',{type:'doughnut',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),
+    backgroundColor:[RED,INK,'#D98A0B']}]},options:{plugins:{legend:{position:'bottom'}},cutout:'62%'}});
+}
+
+/* ---------- client drawer ---------- */
+async function openClient(id){
+  const c = CLIENTS.find(x=>x.id===id); if(!c) return;
+  openDrawer((c.first_name||'')+' '+(c.last_name||''), (c.status||'').replace('_',' ')+(c.email?' · '+c.email:''));
+  const body=document.getElementById('dBody'); body.innerHTML=`<div class="dsec">Loading history...</div>`;
+  const [con,fu,ci,pr,ts]=await Promise.all([
+    db({op:'select',table:'consultations',where:{client_id:id},orderBy:'consult_date DESC'}),
+    db({op:'select',table:'followups',where:{client_id:id},orderBy:'followup_date DESC'}),
+    db({op:'select',table:'checkins',where:{client_id:id},orderBy:'checkin_date DESC'}),
+    db({op:'select',table:'programs',where:{client_id:id},orderBy:'start_date DESC'}),
+    db({op:'select',table:'training_sessions',where:{client_id:id},orderBy:'session_date DESC',limit:60})
+  ]);
+  const cons=con.results||[], fus=fu.results||[], cis=ci.results||[], prs=pr.results||[], sess=ts.results||[];
+
+  // build InBody trend points from all sources
+  const pts=[];
+  cons.forEach(r=>pts.push({d:r.consult_date,w:r.weight,ln:r.lean_mass,bf:r.body_fat_pct}));
+  fus.forEach(r=>pts.push({d:r.followup_date,w:r.now_weight,ln:r.now_lean,bf:r.now_body_fat_pct}));
+  cis.forEach(r=>pts.push({d:r.checkin_date,w:r.now_weight,ln:r.now_lean,bf:r.now_body_fat_pct}));
+  pts.sort((a,b)=>(a.d||'').localeCompare(b.d||''));
+
+  // timeline events
+  const ev=[];
+  cons.forEach(r=>ev.push({d:r.consult_date,t:'Initial consultation',s:r.outcome||''}));
+  fus.forEach(r=>ev.push({d:r.followup_date,t:'6-week follow-up',s:r.outcome||''}));
+  cis.forEach(r=>ev.push({d:r.checkin_date,t:'Monthly check-in',s:r.wins?('wins: '+r.wins):''}));
+  ev.sort((a,b)=>(b.d||'').localeCompare(a.d||''));
+
+  const sessDone=sess.filter(s=>s.completed==1).length;
+  const prog = prs[0];
+
+  body.innerHTML = `
+    <div class="dsec"><h4>InBody Trend</h4>${pts.length?'<canvas id="inbodyChart" height="200"></canvas>':'<div class="note">No InBody data captured yet.</div>'}</div>
+    <div class="dsec"><h4>Training Program</h4>
+      ${prog?`<div class="kv"><div class="k">Program</div><div>${esc(prog.program_name||'—')}</div>
+      <div class="k">Status</div><div>${esc(prog.status||'—')}</div>
+      <div class="k">Sessions logged</div><div>${sess.length} (${sessDone} completed)</div></div>`
+      :`<div class="note">No program linked yet. Once Trainerize is connected, routines and sessions appear here.</div>`}
+    </div>
+    <div class="dsec"><h4>Timeline</h4>
+      ${ev.length?`<div class="tl">${ev.map(e=>`<div class="ev"><div class="et">${esc(e.t)}</div><div class="ed">${esc(e.d||'')} ${e.s?'· '+esc(e.s):''}</div></div>`).join('')}</div>`
+      :'<div class="note">No sessions recorded yet.</div>'}
+    </div>`;
+
+  if(pts.length){
+    mk('inbodyChart',{type:'line',data:{labels:pts.map(p=>p.d),datasets:[
+      {label:'Weight',data:pts.map(p=>p.w),borderColor:INK,backgroundColor:'transparent',tension:.3,yAxisID:'y'},
+      {label:'Lean mass',data:pts.map(p=>p.ln),borderColor:RED,backgroundColor:'transparent',tension:.3,yAxisID:'y'},
+      {label:'Body fat %',data:pts.map(p=>p.bf),borderColor:'#D98A0B',backgroundColor:'transparent',tension:.3,yAxisID:'y1'}
+    ]},options:{plugins:{legend:{position:'bottom'}},scales:{
+      y:{position:'left',grid:{color:GRID},title:{display:true,text:'lbs'}},
+      y1:{position:'right',grid:{display:false},title:{display:true,text:'bf %'}}}}});
+  }
+}
+
+/* ---------- lead drawer ---------- */
+async function openLead(id){
+  const l = LEADS.find(x=>x.id===id); if(!l) return;
+  openDrawer(l.business_name||'(no name)', (l.lead_type||'').replace('_',' ')+' · '+(l.category||'').replace('_',' '));
+  const tp = await db({op:'select',table:'touchpoints',where:{lead_id:id},orderBy:'contact_date DESC'});
+  const tps=tp.results||[];
+  const body=document.getElementById('dBody');
+  const statuses=['new','contacted','qualified','meeting_set','partner_active','won','dead'];
+  body.innerHTML=`
+    <div class="dsec"><h4>Details</h4>
+      <div class="kv">
+        <div class="k">Phone</div><div>${esc(l.phone||'—')}</div>
+        <div class="k">Address</div><div>${esc(l.address||'—')}</div>
+        <div class="k">City</div><div>${esc(l.city||'')} ${esc(l.state||'')} ${esc(l.zip||'')}</div>
+        <div class="k">Distance</div><div>${l.distance_mi!=null?l.distance_mi+' mi':'—'}</div>
+        <div class="k">Email</div><div>${esc(l.email||'—')}</div>
+      </div>
+    </div>
+    <div class="dsec"><h4>Status &amp; Next Step</h4>
+      <div class="field"><label>Status</label><select id="ls">${statuses.map(s=>`<option value="${s}" ${l.status===s?'selected':''}>${s.replace('_',' ')}</option>`).join('')}</select></div>
+      <div class="field"><label>Next action</label><input id="lna" value="${esc(l.next_action||'')}" placeholder="e.g. call to set intro meeting"></div>
+      <div class="field"><label>Next action date</label><input id="lnad" type="date" value="${esc(l.next_action_date||'')}"></div>
+      <button class="btn red" onclick="saveLead(${id})">Save</button>
+    </div>
+    <div class="dsec"><h4>Log a Touchpoint</h4>
+      <div class="field"><label>Channel</label><select id="tch"><option>call</option><option>email</option><option>in_person</option><option>text</option></select></div>
+      <div class="field"><label>Summary</label><textarea id="tsum" placeholder="What happened?"></textarea></div>
+      <button class="btn" onclick="logTouch(${id})">Add touchpoint</button>
+      ${tps.length?`<div class="tl" style="margin-top:14px">${tps.map(t=>`<div class="ev"><div class="et">${esc(t.channel||'')}</div><div class="ed">${esc(t.contact_date||'')} · ${esc(t.summary||'')}</div></div>`).join('')}</div>`:''}
+    </div>`;
+}
+
+async function saveLead(id){
+  const status=document.getElementById('ls').value;
+  const na=document.getElementById('lna').value;
+  const nad=document.getElementById('lnad').value;
+  await db({op:'update',table:'leads',values:{status,next_action:na,next_action_date:nad,updated_at:new Date().toISOString()},where:{id}});
+  toast('Lead updated'); await loadAll(); openLead(id);
+}
+async function logTouch(id){
+  const channel=document.getElementById('tch').value;
+  const summary=document.getElementById('tsum').value;
+  if(!summary.trim()){ toast('Add a summary first'); return; }
+  await db({op:'insert',table:'touchpoints',values:{lead_id:id,contact_date:new Date().toISOString().split('T')[0],channel,direction:'outbound',summary}});
+  toast('Touchpoint logged'); openLead(id);
+}
+
+async function runHarvest(){
+  const cat=document.getElementById('harvestCat').value;
+  const note=document.getElementById('harvestNote');
+  note.textContent='Harvesting... this can take a minute.';
+  try{
+    const r=await fetch(WORKER+'/harvest/run',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(cat?{category:cat,limit:20}:{limit:20})});
+    const d=await r.json();
+    if(d.ok){ const s=d.summary; note.textContent=`Found ${s.found}, added ${s.inserted}, ${s.skipped_dupe} already had, ${s.skipped_far} too far.`; toast('Harvest complete'); await loadAll(); }
+    else { note.textContent='Error: '+(d.error||'unknown'); }
+  }catch(e){ note.textContent='Error: '+e.message; }
+}
+
+/* ---------- drawer plumbing ---------- */
+function openDrawer(name,sub){
+  document.getElementById('dName').textContent=name||'—';
+  document.getElementById('dSub').textContent=sub||'';
+  document.getElementById('drawerBg').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer(){
+  document.getElementById('drawerBg').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDrawer(); });
+
+loadAll();
+</script>
+</body>
+</html>
