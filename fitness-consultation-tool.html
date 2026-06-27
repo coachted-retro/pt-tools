@@ -3324,16 +3324,24 @@ ${assessmentSummary}
 
 Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType === 'thankyou' ? 'Thank You Letter' : 'Monthly Progress Report'} now. Use the real data above — never use placeholders. Under 500 words.`;
 
-  const resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
-      system: systemPrompts[reportType],
-      messages: [{ role: 'user', content: userPrompt }]
-    })
-  });
+  // NOTE: text/plain avoids a CORS preflight (OPTIONS). The Worker reads the
+  // JSON body regardless of declared content-type. application/json forced a
+  // preflight the Worker did not answer, which surfaced as "Failed to fetch".
+  let resp;
+  try {
+    resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompts[reportType],
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+  } catch (netErr) {
+    throw new Error('Could not reach the report service. Confirm the Cloudflare Worker (broken-cake-e9c2) is deployed and its API key is set in Settings > Variables.');
+  }
   const data = await resp.json();
   if (data.error) throw new Error(data.error.message);
   return data.content.map(b => b.text || '').join('');
