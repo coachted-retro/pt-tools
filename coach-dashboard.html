@@ -4,35 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PT Dashboard · Retro Fitness</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #0d0f0d;
-    --surface: #131713;
-    --surface2: #191d19;
-    --surface3: #1e241e;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.12);
-    --text: #f0ede6;
-    --text2: #a8a49e;
-    --text3: rgba(255,255,255,0.3);
-    --green: #4caf7d;
-    --green-dim: rgba(76,175,125,0.12);
-    --red: #e05252;
-    --red-dim: rgba(224,82,82,0.12);
-    --gold: #d4a843;
-    --gold-dim: rgba(212,168,67,0.12);
-    --blue: #5a8ec8;
-    --blue-dim: rgba(90,142,200,0.12);
-    --purple: #9b6fd4;
-    --purple-dim: rgba(155,111,212,0.12);
-    --coach-accent: #4caf7d;
-    --mgr-accent: #d4a843;
-    --shadow: 0 2px 12px rgba(0,0,0,0.4);
-    --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-    --font: 'DM Sans', sans-serif;
-    --font-condensed: 'Barlow Condensed', sans-serif;
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface2: #F0F2F5;
+    --surface3: #E9ECEF;
+    --border: #E4E7EC;
+    --border2: #D7DBE0;
+    --text: #15171A;
+    --text2: #6B7280;
+    --text3: #9AA1AC;
+    --green: #1E9E5A;
+    --green-dim: rgba(30,158,90,0.12);
+    --red: #E0192B;
+    --red-dim: rgba(224,25,43,0.10);
+    --gold: #D98A0B;
+    --gold-dim: rgba(217,138,11,0.12);
+    --blue: #2563EB;
+    --blue-dim: rgba(37,99,235,0.10);
+    --purple: #7C3AED;
+    --purple-dim: rgba(124,58,237,0.10);
+    --coach-accent: #E0192B;
+    --mgr-accent: #15171A;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 28px rgba(0,0,0,0.10);
+    --font: 'Inter', sans-serif;
+    --font-condensed: 'Oswald', sans-serif;
     --mono: 'DM Mono', monospace;
     --radius: 10px;
     --radius-lg: 16px;
@@ -45,7 +45,7 @@
   .header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 28px; background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 3px solid var(--red);
     position: sticky; top: 0; z-index: 100;
   }
   .header-left { display: flex; align-items: center; gap: 16px; }
@@ -54,7 +54,7 @@
     background: none; border: 1px solid var(--border2); border-radius: 7px;
     padding: 6px 12px; cursor: pointer; transition: all .15s;
   }
-  .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .back-btn:hover { color: var(--text); border-color: #C4C9D0; }
   .logo { display: flex; align-items: center; gap: 10px; }
   .logo img { height: 32px; width: auto; border-radius: 4px; }
   .logo-label { font-family: var(--font-condensed); font-size: 18px; font-weight: 700; letter-spacing: .03em; }
@@ -65,8 +65,8 @@
   /* ── VIEW TOGGLE ── */
   .view-toggle { display: flex; gap: 4px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 3px; }
   .view-btn { font-family: var(--font); font-size: 12px; font-weight: 600; padding: 6px 14px; border: none; border-radius: 7px; cursor: pointer; background: none; color: var(--text3); transition: all .15s; letter-spacing: .02em; }
-  .view-btn.active-coach { background: var(--green); color: #000; }
-  .view-btn.active-mgr   { background: var(--gold);  color: #000; }
+  .view-btn.active-coach { background: var(--coach-accent); color: #fff; }
+  .view-btn.active-mgr   { background: var(--mgr-accent); color: #fff; }
   .view { display: none; }
   .view.active { display: block; }
 
