@@ -107,6 +107,18 @@
   .note{font-size:12px;color:var(--muted)}
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
   .toast.show{opacity:1}
+
+  /* tool launcher */
+  .tools-label{font-family:'Oswald';text-transform:uppercase;letter-spacing:.8px;font-size:12px;color:var(--muted);font-weight:600;margin:0 0 10px}
+  .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  @media(max-width:1100px){.tools{grid-template-columns:repeat(2,1fr)}}
+  .toolcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px 30px;cursor:pointer;transition:.15s;position:relative}
+  .toolcard:hover{border-color:var(--red);box-shadow:0 5px 16px rgba(224,25,43,.10);transform:translateY(-1px)}
+  .toolcard .ic{font-size:20px;display:block;margin-bottom:8px}
+  .toolcard .eb{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--red);font-weight:700;margin-bottom:3px}
+  .toolcard .tt{font-family:'Oswald';text-transform:uppercase;letter-spacing:.3px;font-weight:700;font-size:16px;line-height:1.1;margin-bottom:5px}
+  .toolcard .td{font-size:12px;color:var(--muted);line-height:1.4}
+  .toolcard .arrow{position:absolute;right:15px;bottom:12px;color:var(--red);font-weight:700;font-size:15px}
 </style>
 </head>
 <body>
@@ -120,6 +132,38 @@
 </div>
 
 <div class="wrap">
+
+  <div class="tools-label">Assessment Tools</div>
+  <div class="tools">
+    <div class="toolcard" onclick="openTool('fitness-consultation-tool.html')">
+      <span class="ic">📋</span><div class="eb">Step 1 · New Member</div><div class="tt">Initial Consultation</div>
+      <div class="td">Full intake, InBody, AI assessment. Welcome Packet on sign-up.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openTool('fitness-followup-tool.html')">
+      <span class="ic">🔄</span><div class="eb">Step 2 · Declined</div><div class="tt">6-Week Follow-Up</div>
+      <div class="td">Re-engagement interview and a fresh InBody comparison.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openTool('fitness-monthly-checkin.html')">
+      <span class="ic">📅</span><div class="eb">Step 3 · Active</div><div class="tt">Monthly Check-In</div>
+      <div class="td">Monthly progress review and report for enrolled clients.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openTool('prospect-tracker.html')">
+      <span class="ic">🎯</span><div class="eb">Prospect Pipeline</div><div class="tt">Prospect Tracker</div>
+      <div class="td">Leads, interest levels, touchpoints, dated follow-ups.</div><span class="arrow">→</span></div>
+  </div>
+
+  <div class="tools-label">Management</div>
+  <div class="tools">
+    <div class="toolcard" onclick="openTool('management-dashboard.html')">
+      <span class="ic">📊</span><div class="eb">Overview</div><div class="tt">Management Dashboard</div>
+      <div class="td">KPIs, conversion rates, pipeline status, AI analysis.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openTool('coach-dashboard.html')">
+      <span class="ic">👟</span><div class="eb">Coach · Manager</div><div class="tt">Coach &amp; Manager View</div>
+      <div class="td">Coaching communication log, client tactics, leaderboard.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openTool('progress-capture.html')">
+      <span class="ic">📸</span><div class="eb">Photos · Measurements</div><div class="tt">Progress Capture</div>
+      <div class="td">Front, side, back photos and body measurements per client.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="loadAll()">
+      <span class="ic">📡</span><div class="eb">This Page</div><div class="tt">Live Data</div>
+      <div class="td">Roster, pipeline, and charts below. Click to refresh.</div><span class="arrow">↓</span></div>
+  </div>
 
   <div class="cards" id="cards"></div>
 
@@ -209,6 +253,7 @@ async function db(body){
   return r.json();
 }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+function openTool(file){ location.href = file; }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function daysFromNow(d){ if(!d) return null; const ms=new Date(d+'T00:00:00')-new Date(); return Math.ceil(ms/86400000); }
 
