@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meal Plans — Retro Fitness PT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F5F6F8;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px}
+  .topbar img{height:36px;border-radius:4px}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)}
+  .topbar .spacer{flex:1}
+  .wrap{max-width:820px;margin:0 auto;padding:22px}
+  .note{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.6px;font-weight:600;font-size:13px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 15px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--soft)} .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.red:hover{background:var(--red-dk)}
+  .btn.green{background:var(--green);border-color:var(--green);color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;display:flex;align-items:center;gap:14px}
+  .card .main{flex:1;min-width:0}
+  .card .name{font-family:'Oswald';font-weight:600;font-size:17px;text-transform:uppercase;letter-spacing:.3px}
+  .card .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .card .act{display:flex;gap:8px;align-items:center}
+  .pill{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;background:#E3F5EC;color:var(--green)}
+  .st{font-size:12px;color:var(--muted);min-width:120px;text-align:right}
+  .empty{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:34px;text-align:center;color:var(--muted)}
+  .empty .big{font-family:'Oswald';font-size:18px;color:var(--ink);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  #pdfStage{position:fixed;left:-9999px;top:0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness" onerror="this.style.display='none'">
+  <div class="t">Meal <span>Plans</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="command-center.html">Back to Command Center</a>
+</div>
+
+<div class="wrap">
+  <div class="note">Complete and Complete+ clients. Build a plan and it makes the PDF, then opens Gmail with a short note so you can attach and send. Nothing sends on its own.</div>
+  <div id="list"></div>
+</div>
+
+<div id="pdfStage"></div>
+
+<script>
+const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+let CLIENTS={}, LAST_RES={};
+
+async function db(body){
+  const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+  return r.json();
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function load(){
+  const [pf,cl]=await Promise.all([
+    db({op:'select',table:'meal_profiles',orderBy:'updated_at DESC',limit:500}),
+    db({op:'select',table:'clients',limit:1000})
+  ]);
+  (cl.results||[]).forEach(c=>CLIENTS[c.id]=c);
+  const profiles=(pf.results||[]).filter(p=>p.package==='complete'||p.package==='complete_plus');
+  const el=document.getElementById('list');
+  if(!profiles.length){
+    el.innerHTML='<div class="empty"><div class="big">No Complete clients yet</div>Set a client’s package to Complete or Complete+ on the nutrition preference page, and they’ll show up here ready for a weekly plan.</div>';
+    return;
+  }
+  el.innerHTML=profiles.map(p=>{
+    const c=CLIENTS[p.client_id]||{};
+    const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||('Client #'+p.client_id);
+    const pkg=p.package==='complete_plus'?'Complete+':'Complete';
+    return '<div class="card" id="card-'+p.client_id+'">'+
+      '<div class="main"><div class="name">'+esc(nm)+'</div>'+
+      '<div class="meta">'+pkg+' \\u00b7 goal: '+esc(p.goal_type||'n/a')+(c.email?' \\u00b7 '+esc(c.email):'')+'</div></div>'+
+      '<div class="st" id="st-'+p.client_id+'"></div>'+
+      '<div class="act"><span class="pill">'+pkg+'</span>'+
+      '<button class="btn red" id="btn-'+p.client_id+'" onclick="buildPlan('+p.client_id+')">Build plan</button></div></div>';
+  }).join('');
+}
+
+async function buildPlan(clientId){
+  const btn=document.getElementById('btn-'+clientId);
+  const st=document.getElementById('st-'+clientId);
+  btn.disabled=true; st.textContent='Building plan...';
+  try{
+    const r=await fetch(WORKER+'/mealplan/generate',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({client:clientId})});
+    const d=await r.json();
+    if(!d.ok || !d.results || !d.results.length){ st.textContent='Error: '+(d.error||(d.errors&&d.errors[0])||'no plan'); btn.disabled=false; return; }
+    const res=d.results[0];
+    st.textContent='Making PDF...';
+    await makePdf(res);
+    st.textContent='PDF saved';
+    // swap to an Open Gmail button (fresh click avoids popup blocking)
+    LAST_RES[clientId]=res;
+    btn.parentElement.innerHTML='<button class="btn green" onclick="openGmail('+clientId+')">Open Gmail</button>'+
+                  '<button class="btn" onclick="buildPlan('+clientId+')">Rebuild</button>';
+  }catch(e){ st.textContent='Error: '+e.message; btn.disabled=false; }
+}
+
+async function makePdf(res){
+  const stage=document.getElementById('pdfStage');
+  stage.innerHTML='<div style="width:680px;font-family:Inter,Arial,sans-serif;color:#15171A;padding:6px;line-height:1.5">'+
+    '<h1 style="font-family:Oswald,sans-serif;color:#E0192B;margin:0 0 2px">Weekly Meal Plan</h1>'+
+    '<div style="font-size:13px;color:#555;margin-bottom:12px">'+esc(res.name)+' &middot; Week of '+esc(res.week)+' &middot; Coach Ted Scholl, Retro Fitness of Fairless Hills</div>'+
+    res.html+'</div>';
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'letter'});
+  await doc.html(stage.firstChild,{x:24,y:24,width:560,windowWidth:720,autoPaging:'text'});
+  doc.save('MealPlan_'+String(res.name).replace(/\s+/g,'_')+'_'+res.week+'.pdf');
+}
+
+function openGmail(clientId){
+  const o=LAST_RES[clientId]; if(!o) return;
+  const first=String(o.name||'').split(' ')[0]||'there';
+  const subj='Your Retro Fitness Meal Plan - Week of '+o.week;
+  const body='Hi '+first+',\n\nAttached is your personalized meal plan and shopping list for the week, built around your goal and your latest InBody numbers. Use it as your guide and reach out anytime with questions.\n\nLet\u2019s keep the momentum going.\n\nCoach Ted\nRetro Fitness of Fairless Hills';
+  const url='https://mail.google.com/mail/?view=cm&fs=1&to='+encodeURIComponent(o.email||'')+'&su='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  window.open(url,'_blank');
+}
+
+load();
+</script>
+</body>
+</html>

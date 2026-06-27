@@ -62,6 +62,8 @@
   /* list rows */
   .row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--soft);cursor:pointer}
   .row:hover{background:var(--soft)}
+  .row.static{cursor:default}
+  .row.static:hover{background:var(--card)}
   .row:last-child{border-bottom:0}
   .row .main{flex:1;min-width:0}
   .row .name{font-weight:600}
@@ -160,6 +162,9 @@
     <div class="toolcard" onclick="openTool('progress-capture.html')">
       <span class="ic">📸</span><div class="eb">Photos · Measurements</div><div class="tt">Progress Capture</div>
       <div class="td">Front, side, back photos and body measurements per client.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openTool('meal-plans.html')">
+      <span class="ic">🥗</span><div class="eb">Complete · Complete+</div><div class="tt">Meal Plans</div>
+      <div class="td">Build weekly plans and shopping lists, then send by Gmail.</div><span class="arrow">→</span></div>
     <div class="toolcard" onclick="loadAll()">
       <span class="ic">📡</span><div class="eb">This Page</div><div class="tt">Live Data</div>
       <div class="td">Roster, pipeline, and charts below. Click to refresh.</div><span class="arrow">↓</span></div>
@@ -168,13 +173,22 @@
   <div class="cards" id="cards"></div>
 
   <div class="tabs">
-    <div class="tab active" data-tab="roster" onclick="setTab('roster')">Clients</div>
+    <div class="tab active" data-tab="appts" onclick="setTab('appts')">Appointments</div>
+    <div class="tab" data-tab="roster" onclick="setTab('roster')">Clients</div>
     <div class="tab" data-tab="pipeline" onclick="setTab('pipeline')">Pipeline</div>
     <div class="tab" data-tab="due" onclick="setTab('due')">Due This Week</div>
   </div>
 
+  <!-- APPOINTMENTS -->
+  <div id="view-appts">
+    <div class="panel">
+      <div class="head"><h3>Upcoming Appointments</h3><span class="count" id="apptCount">0</span></div>
+      <div class="body" id="apptList"></div>
+    </div>
+  </div>
+
   <!-- ROSTER -->
-  <div id="view-roster">
+  <div id="view-roster" style="display:none">
     <div class="layout">
       <div class="panel">
         <div class="head"><h3>Client Roster</h3><span class="count" id="rosterCount">0</span></div>
@@ -245,7 +259,7 @@
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
-let CLIENTS = [], LEADS = [], tab = 'roster';
+let CLIENTS = [], LEADS = [], APPTS = [], tab = 'appts';
 let charts = {};
 
 async function db(body){
@@ -263,18 +277,20 @@ async function loadAll(){
     db({op:'select', table:'leads',   orderBy:'created_at DESC', limit:2000})
   ]);
   CLIENTS = (c.results)||[]; LEADS = (l.results)||[];
+  try{ const cr=await fetch(WORKER+'/calendar'); const cd=await cr.json(); APPTS=(cd&&cd.ok&&cd.events)?cd.events:[]; }catch(e){ APPTS=[]; }
   render();
 }
 
 function setTab(t){
   tab=t;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===t));
-  ['roster','pipeline','due'].forEach(v=>document.getElementById('view-'+v).style.display = v===t?'block':'none');
+  ['appts','roster','pipeline','due'].forEach(v=>document.getElementById('view-'+v).style.display = v===t?'block':'none');
   render();
 }
 
 function render(){
   renderCards();
+  if(tab==='appts') renderAppts();
   if(tab==='roster') renderRoster();
   if(tab==='pipeline') renderPipeline();
   if(tab==='due') renderDue();
@@ -349,6 +365,62 @@ function renderDue(){
   el.innerHTML=items.map(i=>`<div class="row" onclick="${i.kind==='lead'?'openLead('+i.id+')':'openClient('+i.id+')'}">
     <div class="main"><div class="name">${esc(i.name||'')}</div><div class="meta">${i.type} · ${esc(i.when)}</div></div>
     <span class="pill ${i.days<0?'p-dead':'p-prospect'}">${i.days<0?'overdue':'in '+i.days+'d'}</span></div>`).join('');
+}
+
+/* ---------- appointments ---------- */
+const APPT_TYPES=[
+  {key:'followup',label:'6-Week Follow-Up',file:'fitness-followup-tool.html',pill:'p-prospect',
+   rx:/6[\s-]*week|six[\s-]*week|follow[\s-]*up|re[\s-]*engage/i},
+  {key:'monthly',label:'Monthly Check-In',file:'fitness-monthly-checkin.html',pill:'p-active',
+   rx:/monthly|check[\s-]*in|progress/i},
+  {key:'consult',label:'Initial Consultation',file:'fitness-consultation-tool.html',pill:'p-new',
+   rx:/new member|inbody|initial|consult|intake|assessment|scan/i}
+];
+function classifyAppt(typePart){ for(const t of APPT_TYPES){ if(t.rx.test(typePart||'')) return t; } return null; }
+function parseAppt(summary){
+  const s=(summary||'').trim();
+  const dash=s.indexOf('-');                 // Club OS format: "Name-Type"
+  let name='', typePart=s;
+  if(dash>0){ name=s.slice(0,dash).trim(); typePart=s.slice(dash+1).trim(); }
+  return { name, typePart, t: classifyAppt(typePart) };
+}
+function fmtAppt(start){
+  if(!start) return '';
+  const m=start.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+  if(!m) return start;
+  const dt=new Date(+m[1],+m[2]-1,+m[3], m[4]?+m[4]:0, m[5]?+m[5]:0);
+  const opts=m[4]?{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}
+                 :{weekday:'short',month:'short',day:'numeric'};
+  return dt.toLocaleString('en-US',opts);
+}
+function renderAppts(){
+  const el=document.getElementById('apptList');
+  document.getElementById('apptCount').textContent=APPTS.length;
+  if(!APPTS.length){
+    el.innerHTML='<div class="empty"><div class="big">No appointments</div>Connect your Club OS calendar (deploy the calendar Worker and set GCAL_ICS), then hit Refresh.</div>';
+    return;
+  }
+  el.innerHTML=APPTS.map((a,i)=>{
+    const p=parseAppt(a.summary); const when=fmtAppt(a.start);
+    if(p.t){
+      return '<div class="row" onclick="openAppt('+i+')">'+
+        '<div class="main"><div class="name">'+esc(p.name||'(no name)')+'</div>'+
+        '<div class="meta">'+esc(when)+' \u00b7 '+esc(p.t.label)+(a.location?' \u00b7 '+esc(a.location):'')+'</div></div>'+
+        '<span class="pill '+p.t.pill+'">'+esc(p.t.key)+'</span></div>';
+    }
+    const title=p.name||p.typePart||a.summary||'(untitled)';
+    const sub=p.name?esc(p.typePart):'Session / class';
+    return '<div class="row static">'+
+      '<div class="main"><div class="name">'+esc(title)+'</div>'+
+      '<div class="meta">'+esc(when)+' \u00b7 '+sub+'</div></div>'+
+      '<span class="pill p-declined">session</span></div>';
+  }).join('');
+}
+function openAppt(i){
+  const a=APPTS[i]; if(!a) return;
+  const p=parseAppt(a.summary); if(!p.t) return;
+  const q='?name='+encodeURIComponent(p.name)+'&appt='+p.t.key+'&date='+encodeURIComponent((a.start||'').slice(0,10));
+  openTool(p.t.file+q);
 }
 
 /* ---------- charts ---------- */
