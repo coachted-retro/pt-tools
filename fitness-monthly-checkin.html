@@ -366,14 +366,14 @@
           <div class="card-title"><span class="dot"></span> Member information</div>
           <div class="grid2">
             <div class="field"><label>Check-in date</label><input type="date" id="checkin-date" onchange="updateDates()"></div>
-            <div class="field"><label>Program start date</label><input type="date" id="program-start" onchange="updateDates()"></div>
+            <div class="field"><label>Program start date</label><input type="date" id="program-start" onchange="updateDates();rememberStartDate()"><small id="start-hint" style="display:none;font-size:11px;color:var(--success);margin-top:4px;font-weight:600;"></small></div>
           </div>
           <div class="grid2">
-            <div class="field"><label>Member name</label><input type="text" id="name" placeholder="Full name"></div>
-            <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="(555) 000-0000"></div>
+            <div class="field"><label>Member name</label><input type="text" id="name" placeholder="Full name" onblur="lookupClient()"></div>
+            <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="(555) 000-0000" onblur="lookupClient()"></div>
           </div>
           <div class="grid2">
-            <div class="field"><label>Email</label><input type="email" id="email" placeholder="member@email.com"></div>
+            <div class="field"><label>Email</label><input type="email" id="email" placeholder="member@email.com" onblur="lookupClient()"></div>
             <div class="field"><label>Gender</label>
               <select id="gender"><option value="">Select...</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
             </div>
@@ -1010,6 +1010,7 @@ function addToCalendar(name,followUpDate){
 
 async function saveCheckin(){
   showLoading('Saving to progress tracker...');
+  await rememberStartDate();
   const nextCheckin=gv('next-checkin');
   const row=[
     gv('checkin-date'),                                    // A: Check-In Date
@@ -1435,5 +1436,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </script>
 <a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#2d5a3d;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
+
+<script>
+/* ---------- Client record: training start date pull + remember ---------- */
+let MATCHED_CLIENT=null;
+async function _db(body){
+  const r=await fetch(getApiUrl()+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+  return r.json();
+}
+function _digits(x){ return (x||'').replace(/\D/g,''); }
+async function _allClients(){
+  try{ return ((await _db({op:'select',table:'clients',limit:2000})).results)||[]; }catch(e){ return []; }
+}
+function _matchClient(all,email,phone,name){
+  email=(email||'').trim().toLowerCase(); phone=_digits(phone); name=(name||'').trim().toLowerCase();
+  return (email && all.find(x=>(x.email||'').trim().toLowerCase()===email))
+      || (phone && all.find(x=>_digits(x.phone)===phone))
+      || (name && all.find(x=>(((x.first_name||'')+' '+(x.last_name||'')).trim().toLowerCase())===name))
+      || null;
+}
+async function lookupClient(){
+  const email=gv('email'), phone=gv('phone'), name=gv('name');
+  if(!email && !phone && !name) return;
+  const all=await _allClients();
+  const c=_matchClient(all,email,phone,name);
+  MATCHED_CLIENT=c;
+  const hint=document.getElementById('start-hint');
+  if(c && c.training_start_date){
+    const ps=document.getElementById('program-start');
+    if(!ps.value){ ps.value=c.training_start_date; updateDates(); }
+    if(hint){ hint.style.display='block'; hint.textContent='Start date loaded from '+(((c.first_name||'')+' '+(c.last_name||'')).trim())+'\u2019s record.'; }
+  } else if(hint){ hint.style.display='none'; }
+}
+async function rememberStartDate(){
+  const start=gv('program-start'); if(!start) return;
+  const email=gv('email'), phone=gv('phone'), name=gv('name');
+  const all=await _allClients();
+  let c=MATCHED_CLIENT||_matchClient(all,email,phone,name);
+  try{
+    if(c){
+      if(c.training_start_date===start) return;
+      await _db({op:'update',table:'clients',values:{training_start_date:start,updated_at:new Date().toISOString()},where:{id:c.id}});
+    } else {
+      const parts=(name||'').trim().split(' '); const first=parts.shift()||''; const last=parts.join(' ');
+      if(!first && !email && !phone) return;
+      await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,status:'active',advisor:(getCfg('advisor')||''),training_start_date:start}});
+    }
+  }catch(e){}
+}
+function _fillFromClient(c){
+  MATCHED_CLIENT=c;
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e&&!e.value&&v) e.value=v; };
+  set('name',(((c.first_name||'')+' '+(c.last_name||'')).trim()));
+  set('email',c.email); set('phone',c.phone);
+  if(c.training_start_date){ const ps=document.getElementById('program-start'); if(ps&&!ps.value){ ps.value=c.training_start_date; updateDates(); }
+    const hint=document.getElementById('start-hint'); if(hint){ hint.style.display='block'; hint.textContent='Start date loaded from record.'; } }
+}
+(function initClientPull(){
+  try{
+    const q=new URLSearchParams(location.search);
+    const nm=q.get('name'), em=q.get('email'), cid=q.get('client');
+    if(nm){ const e=document.getElementById('name'); if(e&&!e.value) e.value=nm; }
+    if(em){ const e=document.getElementById('email'); if(e&&!e.value) e.value=em; }
+    if(cid){ _db({op:'select',table:'clients',where:{id:cid},limit:1}).then(d=>{ const c=(d.results||[])[0]; if(c) _fillFromClient(c); }); }
+    else if(nm||em){ setTimeout(lookupClient,300); }
+  }catch(e){}
+})();
+</script>
+
 </body>
 </html>
