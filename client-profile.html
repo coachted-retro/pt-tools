@@ -292,8 +292,12 @@ function renderCheckins(checkins){
 function renderSessions(sessions){
   const el=document.getElementById('sessionList');
   if(!sessions.length){ el.innerHTML='<div class="empty">No sessions logged yet. Log Session writes here and builds the training record.</div>'; return; }
-  el.innerHTML=sessions.map(s=>'<div class="row"><div class="main"><div class="name">'+esc(s.workout_name||'Training session')+'</div>'+
-    '<div class="meta">'+esc(fmtDate(s.session_date))+(s.duration_min?' · '+s.duration_min+' min':'')+(s.source?' · '+esc(s.source):'')+'</div></div></div>').join('');
+  el.innerHTML=sessions.map(s=>{
+    const isT=s.entry_type==='touchpoint';
+    const title=s.focus_areas||s.workout_name||(isT?'Touchpoint':'Training session');
+    const meta=[fmtDate(s.session_date), (s.session_score?'score '+s.session_score:''), (s.coach?'coach '+s.coach:''), (s.notes?String(s.notes).slice(0,55):'')].filter(Boolean).join(' · ');
+    return '<div class="row"><div class="main"><div class="name">'+esc(title)+(isT?' <span class="pill">touchpoint</span>':'')+'</div><div class="meta">'+esc(meta)+'</div></div></div>';
+  }).join('');
 }
 function renderMeals(meals){
   const el=document.getElementById('mealList');

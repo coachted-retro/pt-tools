@@ -714,6 +714,7 @@ async function submitLog() {
     };
     allEntries.unshift(entry);
     saveLocal();
+    _logToD1(client, entry);
     resetForm();
     renderSidebarStats();
     renderRecentList('all');
@@ -732,6 +733,32 @@ async function submitLog() {
   }
   btn.disabled = false;
   btn.textContent = currentType === 'session' ? '💾 Save Session Log' : '💾 Save Touchpoint';
+}
+
+async function _logToD1(clientName, e){
+  try{
+    const base='https://broken-cake-e9c2.tedscholl.workers.dev';
+    const db=async b=>{ const r=await fetch(base+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)}); return r.json(); };
+    const name=(clientName||'').trim(); if(!name) return;
+    const all=((await db({op:'select',table:'clients',limit:5000})).results)||[];
+    const key=name.toLowerCase();
+    let c=all.find(x=>(((x.first_name||'')+' '+(x.last_name||'')).trim().toLowerCase())===key);
+    let clientId;
+    if(c){ clientId=c.id; }
+    else{ const p=name.split(/\s+/); const ins=await db({op:'insert',table:'clients',values:{first_name:p[0]||'',last_name:p.slice(1).join(' '),status:'active_pt',source:'session_log'}}); clientId=ins.id; }
+    if(!clientId) return;
+    const vals={
+      client_id:clientId, session_date:e.date, completed:1, source:'session_log',
+      entry_type:e.type, coach:e.coach, client_name:name,
+      workout_name:e.focus||(e.type==='session'?'Training session':'Touchpoint'),
+      focus_areas:e.focus, session_score:e.sessionScore||null, energy_score:e.energyScore||null,
+      homework:e.homework, next_goal:e.nextGoal, notes:e.notes, method:e.method,
+      follow_up:e.followUp?1:0, follow_up_detail:e.followUpDetail
+    };
+    Object.keys(vals).forEach(k=>{ if(vals[k]===''||vals[k]===null||vals[k]===undefined) delete vals[k]; });
+    vals.client_id=clientId;
+    await db({op:'insert',table:'training_sessions',values:vals});
+  }catch(err){ console.warn('D1 session save failed', err); }
 }
 
 // ── RESET FORM ────────────────────────────────────────────────
