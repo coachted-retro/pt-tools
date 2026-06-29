@@ -532,6 +532,7 @@ function drawTypeChart(){
 
 /* ---------- client drawer ---------- */
 async function openClient(id){
+  location.href='client-profile.html?client='+id; return;
   const c = CLIENTS.find(x=>x.id===id); if(!c) return;
   openDrawer((c.first_name||'')+' '+(c.last_name||''), (c.status||'').replace('_',' ')+(c.email?' · '+c.email:''));
   const body=document.getElementById('dBody'); body.innerHTML=`<div class="dsec">Loading history...</div>`;

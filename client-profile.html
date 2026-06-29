@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Profile — Retro Fitness PT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F5F6F8;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--amber:#D98A0B;--blue:#2563EB}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:30}
+  .topbar img{height:34px;border-radius:4px}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)}
+  .topbar .spacer{flex:1}
+  .search{position:relative}
+  .search input{font-family:'Inter';font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;width:240px;background:var(--soft)}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 13px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block;white-space:nowrap}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.red:hover{background:var(--red-dk)}
+  .wrap{max-width:1040px;margin:0 auto;padding:20px}
+  .head-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;gap:18px;align-items:center;margin-bottom:14px}
+  .avatar{width:64px;height:64px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-size:24px;font-weight:700;flex:0 0 auto}
+  .head-main{flex:1;min-width:0}
+  .head-main h1{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:26px;margin:0 0 4px}
+  .head-meta{font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 16px}
+  .head-meta b{color:var(--ink);font-weight:600}
+  .pill{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;background:var(--soft);color:var(--muted)}
+  .pill.active{background:#E3F5EC;color:var(--green)} .pill.prospect{background:#E7EEFE;color:var(--blue)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .stat .num{font-family:'Oswald';font-size:26px;font-weight:700;line-height:1}
+  .stat .delta{font-size:11.5px;margin-top:4px;font-weight:600}
+  .delta.up{color:var(--green)} .delta.down{color:var(--red)} .delta.flat{color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
+  .panel .ph{padding:13px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+  .panel .ph h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0}
+  .panel .pb{padding:16px 18px}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .main{flex:1;min-width:0}
+  .row .name{font-weight:600}
+  .row .meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .scorechip{font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--soft);color:var(--ink);margin-left:6px}
+  .empty{padding:26px;text-align:center;color:var(--muted);font-size:13px}
+  .empty .big{font-family:'Oswald';font-size:16px;color:var(--ink);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  canvas{max-height:240px}
+  .soon{background:var(--soft);border:1px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:12.5px}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.search input{width:150px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness" onerror="this.style.display='none'">
+  <div class="t">Client <span>Profile</span></div>
+  <div class="spacer"></div>
+  <div class="search"><input id="clientSearch" placeholder="Search a client..." list="clientList" onchange="pickClient(this.value)"><datalist id="clientList"></datalist></div>
+  <a class="btn" href="command-center.html">← Command Center</a>
+</div>
+
+<div class="wrap" id="wrap">
+  <div class="empty"><div class="big">Pick a client</div>Search above to open a client's profile, or open one from the Command Center roster.</div>
+</div>
+
+<script>
+const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+async function db(body){
+  const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+  return r.json();
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function num(v,d){ const n=parseFloat(v); return isNaN(n)?(d||''):n; }
+function fmtDate(s){ if(!s) return ''; const d=new Date(s.length<=10?s+'T00:00:00':s); return isNaN(d)?s:d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function daysBetween(a,b){ const x=new Date(a), y=new Date(b||Date.now()); return Math.floor((y-x)/86400000); }
+let ALL_CLIENTS=[];
+
+async function initSearch(){
+  const d=await db({op:'select',table:'clients',orderBy:'updated_at DESC',limit:2000});
+  ALL_CLIENTS=(d.results||[]);
+  document.getElementById('clientList').innerHTML=ALL_CLIENTS.map(c=>{
+    const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||('Client #'+c.id);
+    return '<option value="'+esc(nm)+' #'+c.id+'">';
+  }).join('');
+}
+function pickClient(v){
+  const m=String(v).match(/#(\d+)\s*$/);
+  if(m) loadProfile(+m[1]);
+}
+
+async function loadProfile(clientId){
+  const wrap=document.getElementById('wrap');
+  wrap.innerHTML='<div class="empty">Loading profile...</div>';
+  let client, checkins=[], consults=[], meals=[], measures=[], sessions=[];
+  try{
+    const [c,ch,co,mp,ms,ts]=await Promise.all([
+      db({op:'select',table:'clients',where:{id:clientId},limit:1}),
+      db({op:'select',table:'checkins',where:{client_id:clientId},orderBy:'checkin_date ASC',limit:200}),
+      db({op:'select',table:'consultations',where:{client_id:clientId},orderBy:'consult_date ASC',limit:50}),
+      db({op:'select',table:'meal_plans',where:{client_id:clientId},orderBy:'week_of DESC',limit:50}),
+      db({op:'select',table:'measurements',where:{client_id:clientId},orderBy:'measured_at ASC',limit:100}),
+      db({op:'select',table:'training_sessions',where:{client_id:clientId},orderBy:'session_date DESC',limit:100})
+    ]);
+    client=(c.results||[])[0]; checkins=ch.results||[]; consults=co.results||[]; meals=mp.results||[]; measures=ms.results||[]; sessions=ts.results||[];
+  }catch(e){ wrap.innerHTML='<div class="empty"><div class="big">Could not load</div>'+esc(e.message)+'</div>'; return; }
+  if(!client){ wrap.innerHTML='<div class="empty"><div class="big">Client not found</div></div>'; return; }
+  render(client, checkins, consults, meals, measures, sessions);
+}
+
+function latestStats(checkins, consults){
+  if(checkins.length){ const c=checkins[checkins.length-1]; return {weight:c.now_weight,lean:c.now_lean,bf:c.now_body_fat_pct,bmi:c.now_bmi,date:c.checkin_date}; }
+  if(consults.length){ const c=consults[consults.length-1]; return {weight:c.weight,lean:c.lean_mass,bf:c.body_fat_pct,bmi:c.bmi,date:c.consult_date}; }
+  return {};
+}
+function firstStats(checkins, consults){
+  if(consults.length){ const c=consults[0]; return {weight:c.weight,lean:c.lean_mass,bf:c.body_fat_pct}; }
+  if(checkins.length){ const c=checkins[0]; return {weight:c.prev_weight||c.now_weight,lean:c.prev_lean||c.now_lean,bf:c.prev_body_fat_pct||c.now_body_fat_pct}; }
+  return {};
+}
+function deltaHtml(now, first, lowerBetter){
+  const a=num(now), b=num(first);
+  if(a===''||b==='') return '';
+  const diff=+(a-b).toFixed(1);
+  if(diff===0) return '<div class="delta flat">no change</div>';
+  const good = lowerBetter ? diff<0 : diff>0;
+  const arrow = diff>0?'▲':'▼';
+  return '<div class="delta '+(good?'up':'down')+'">'+arrow+' '+Math.abs(diff)+' since start</div>';
+}
+
+function render(client, checkins, consults, meals, measures, sessions){
+  const nm=((client.first_name||'')+' '+(client.last_name||'')).trim()||('Client #'+client.id);
+  const initials=((client.first_name||' ')[0]+(client.last_name||' ')[0]).toUpperCase();
+  const stat=latestStats(checkins,consults), first=firstStats(checkins,consults);
+  const start=client.training_start_date;
+  const tenure = start? (daysBetween(start)+' days training') : 'start date not set';
+  const statusCls = (client.status||'').indexOf('active')>=0?'active':((client.status||'')==='prospect'?'prospect':'');
+  const pkg = client.package? client.package : (client.goal_primary||'');
+
+  let html='';
+  // header
+  html+='<div class="head-card"><div class="avatar">'+esc(initials.trim()||'?')+'</div><div class="head-main">'+
+    '<h1>'+esc(nm)+'</h1><div class="head-meta">'+
+    (client.status?'<span class="pill '+statusCls+'">'+esc(client.status)+'</span>':'')+
+    (client.coach?'<span>Trainer: <b>'+esc(client.coach)+'</b></span>':'')+
+    (client.advisor?'<span>Advisor: <b>'+esc(client.advisor)+'</b></span>':'')+
+    (client.goal_primary?'<span>Goal: <b>'+esc(client.goal_primary)+'</b></span>':'')+
+    (start?'<span>Started: <b>'+esc(fmtDate(start))+'</b> ('+tenure+')</span>':'<span>'+tenure+'</span>')+
+    (client.email?'<span>'+esc(client.email)+'</span>':'')+
+    (client.phone?'<span>'+esc(client.phone)+'</span>':'')+
+    '</div></div></div>';
+
+  // actions
+  const q='?client='+encodeURIComponent(nm);
+  html+='<div class="actions">'+
+    '<a class="btn red" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Start Check-In</a>'+
+    '<a class="btn" href="session-log.html?client='+encodeURIComponent(nm)+'&coach=Ted">Log Session</a>'+
+    '<a class="btn" href="meal-plans.html">Build Meal Plan</a>'+
+    '<a class="btn" href="fitness-consultation-tool.html'+q+'">New Consultation</a>'+
+    '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
+    '</div>';
+
+  // stat tiles
+  html+='<div class="stats">'+
+    statTile('Weight', stat.weight, 'lb', deltaHtml(stat.weight,first.weight,true))+
+    statTile('Lean Mass', stat.lean, 'lb', deltaHtml(stat.lean,first.lean,false))+
+    statTile('Body Fat', stat.bf, '%', deltaHtml(stat.bf,first.bf,true))+
+    statTile('BMI', stat.bmi, '', '')+
+    '</div>';
+
+  // charts
+  html+='<div class="grid2">'+
+    '<div class="panel"><div class="ph"><h3>Body Composition</h3></div><div class="pb"><canvas id="bodyChart"></canvas><div id="bodyEmpty"></div></div></div>'+
+    '<div class="panel"><div class="ph"><h3>Wellness Scores</h3></div><div class="pb"><canvas id="scoreChart"></canvas><div id="scoreEmpty"></div></div></div>'+
+    '</div>';
+
+  // check-in history
+  html+='<div class="panel"><div class="ph"><h3>Check-In History</h3><span class="pill">'+checkins.length+'</span></div><div class="pb" id="checkinList"></div></div>';
+  // training sessions
+  html+='<div class="panel"><div class="ph"><h3>Training Sessions</h3><span class="pill">'+sessions.length+'</span></div><div class="pb" id="sessionList"></div></div>';
+  // meal plans
+  html+='<div class="panel"><div class="ph"><h3>Meal Plans</h3><span class="pill">'+meals.length+'</span></div><div class="pb" id="mealList"></div></div>';
+  // measurements
+  html+='<div class="panel"><div class="ph"><h3>Body Measurements</h3><span class="pill">'+measures.length+'</span></div><div class="pb" id="measureList"></div></div>';
+  // uploads (coming with storage)
+  html+='<div class="panel"><div class="ph"><h3>Workouts &amp; InBody Scans</h3></div><div class="pb"><div class="soon">Upload screenshots of Trainerize workouts and InBody scans here. This unlocks once the private storage bucket is connected, and the system will read each upload into the charts above automatically.</div></div></div>';
+
+  document.getElementById('wrap').innerHTML=html;
+
+  // build chart series from consultation (start) + checkins
+  const pts=[];
+  if(consults.length){ const c0=consults[0]; pts.push({d:c0.consult_date,w:c0.weight,l:c0.lean_mass,b:c0.body_fat_pct}); }
+  checkins.forEach(c=>pts.push({d:c.checkin_date,w:c.now_weight,l:c.now_lean,b:c.now_body_fat_pct}));
+  drawBody(pts);
+  drawScores(checkins);
+
+  renderCheckins(checkins);
+  renderSessions(sessions);
+  renderMeals(meals);
+  renderMeasures(measures);
+}
+
+function statTile(lbl,val,unit,delta){
+  const v=num(val);
+  return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="num">'+(v===''?'—':v+(unit?'<span style="font-size:14px;color:var(--muted)"> '+unit+'</span>':''))+'</div>'+(delta||'')+'</div>';
+}
+
+function drawBody(pts){
+  pts=pts.filter(p=>p.d);
+  const el=document.getElementById('bodyChart');
+  if(pts.length<2){ el.style.display='none'; document.getElementById('bodyEmpty').innerHTML='<div class="empty">Two or more dated check-ins build the trend line. It fills as you complete check-ins.</div>'; return; }
+  const labels=pts.map(p=>fmtDate(p.d));
+  new Chart(el,{type:'line',data:{labels,datasets:[
+    {label:'Weight',data:pts.map(p=>num(p.w,null)),borderColor:'#E0192B',backgroundColor:'rgba(224,25,43,.08)',tension:.3,spanGaps:true},
+    {label:'Lean',data:pts.map(p=>num(p.l,null)),borderColor:'#1E9E5A',backgroundColor:'rgba(30,158,90,.08)',tension:.3,spanGaps:true},
+    {label:'Body Fat %',data:pts.map(p=>num(p.b,null)),borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.08)',tension:.3,spanGaps:true,yAxisID:'y1'}
+  ]},options:{plugins:{legend:{labels:{font:{family:'Inter'},boxWidth:12}}},scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
+}
+function drawScores(checkins){
+  const c=checkins.filter(x=>x.checkin_date);
+  const el=document.getElementById('scoreChart');
+  if(!c.length){ el.style.display='none'; document.getElementById('scoreEmpty').innerHTML='<div class="empty">Session, diet, sleep and stress scores chart here once check-ins are recorded.</div>'; return; }
+  const labels=c.map(x=>fmtDate(x.checkin_date));
+  new Chart(el,{type:'line',data:{labels,datasets:[
+    {label:'Session',data:c.map(x=>num(x.session_score,null)),borderColor:'#1E9E5A',tension:.3,spanGaps:true},
+    {label:'Diet',data:c.map(x=>num(x.diet_score,null)),borderColor:'#D98A0B',tension:.3,spanGaps:true},
+    {label:'Sleep',data:c.map(x=>num(x.sleep_score,null)),borderColor:'#2563EB',tension:.3,spanGaps:true},
+    {label:'Stress',data:c.map(x=>num(x.stress_score,null)),borderColor:'#E0192B',tension:.3,spanGaps:true}
+  ]},options:{plugins:{legend:{labels:{font:{family:'Inter'},boxWidth:12}}},scales:{y:{min:0,max:10}}}});
+}
+
+function renderCheckins(checkins){
+  const el=document.getElementById('checkinList');
+  if(!checkins.length){ el.innerHTML='<div class="empty">No check-ins recorded yet. Each monthly check-in you save lands here and feeds the charts.</div>'; return; }
+  el.innerHTML=checkins.slice().reverse().map(c=>{
+    const scores=[['S',c.session_score],['D',c.diet_score],['Sl',c.sleep_score],['St',c.stress_score]].filter(x=>x[1]!=null).map(x=>'<span class="scorechip">'+x[0]+' '+x[1]+'</span>').join('');
+    const w=num(c.now_weight), bf=num(c.now_body_fat_pct);
+    return '<div class="row"><div class="main"><div class="name">'+esc(fmtDate(c.checkin_date))+(c.advisor?' · '+esc(c.advisor):'')+'</div>'+
+      '<div class="meta">'+(w!==''?'Weight '+w+' lb':'')+(bf!==''?' · BF '+bf+'%':'')+(c.wins?' · '+esc(String(c.wins).slice(0,60)):'')+'</div></div>'+scores+'</div>';
+  }).join('');
+}
+function renderSessions(sessions){
+  const el=document.getElementById('sessionList');
+  if(!sessions.length){ el.innerHTML='<div class="empty">No sessions logged yet. Log Session writes here and builds the training record.</div>'; return; }
+  el.innerHTML=sessions.map(s=>'<div class="row"><div class="main"><div class="name">'+esc(s.workout_name||'Training session')+'</div>'+
+    '<div class="meta">'+esc(fmtDate(s.session_date))+(s.duration_min?' · '+s.duration_min+' min':'')+(s.source?' · '+esc(s.source):'')+'</div></div></div>').join('');
+}
+function renderMeals(meals){
+  const el=document.getElementById('mealList');
+  if(!meals.length){ el.innerHTML='<div class="empty">No meal plans yet. Build one from the action bar above (Complete and Complete+ clients).</div>'; return; }
+  el.innerHTML=meals.map(m=>'<div class="row"><div class="main"><div class="name">Week of '+esc(fmtDate(m.week_of))+'</div>'+
+    '<div class="meta">'+(m.macros_summary?esc(String(m.macros_summary).slice(0,70)):'Generated plan')+'</div></div>'+
+    '<a class="btn" href="meal-plans.html">Open</a></div>').join('');
+}
+function renderMeasures(measures){
+  const el=document.getElementById('measureList');
+  if(!measures.length){ el.innerHTML='<div class="empty">No measurements recorded yet.</div>'; return; }
+  el.innerHTML=measures.slice().reverse().map(m=>'<div class="row"><div class="main"><div class="name">'+esc(fmtDate(m.measured_at))+'</div>'+
+    '<div class="meta">'+[['Waist',m.waist],['Chest',m.chest],['Hips',m.hips],['Arm',m.right_arm],['Thigh',m.right_thigh]].filter(x=>x[1]!=null).map(x=>x[0]+' '+x[1]).join(' · ')+'</div></div></div>').join('');
+}
+
+// init
+(async function(){
+  await initSearch();
+  const q=new URLSearchParams(location.search);
+  const cid=q.get('client')||q.get('id');
+  if(cid && /^\d+$/.test(cid)) loadProfile(+cid);
+})();
+</script>
+</body>
+</html>
