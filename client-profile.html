@@ -228,6 +228,23 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     statTile('BMI', stat.bmi, '', '')+
     '</div>';
 
+  // progress summary (year in review)
+  const since = start ? fmtDate(start) : null;
+  const months = start ? Math.max(1, Math.round(daysBetween(start)/30.44)) : null;
+  const dW=(num(stat.weight)!==''&&num(first.weight)!=='')?+(num(stat.weight)-num(first.weight)).toFixed(1):null;
+  const dB=(num(stat.bf)!==''&&num(first.bf)!=='')?+(num(stat.bf)-num(first.bf)).toFixed(1):null;
+  const dL=(num(stat.lean)!==''&&num(first.lean)!=='')?+(num(stat.lean)-num(first.lean)).toFixed(1):null;
+  const nScans=(scans||[]).filter(x=>x.source!=='inbody_history').length;
+  const hasProg=(dW!=null||dB!=null||dL!=null);
+  html+='<div class="panel"><div class="ph"><h3>Progress Summary</h3>'+(since?'<span class="pill">since '+esc(since)+'</span>':'')+'</div><div class="pb">'+
+    (hasProg?('<div style="display:flex;gap:32px;flex-wrap:wrap;margin-bottom:4px">'+
+      sumItem('Weight',dW,' lb',true)+sumItem('Body Fat',dB,'%',true)+sumItem('Lean Mass',dL,' lb',false)+
+    '</div>'):'<div class="empty" style="padding:8px 0">Totals appear once there are two or more dated data points.</div>')+
+    '<div style="color:var(--muted);font-size:12.5px;margin-top:10px">'+
+      (months?(months+' month'+(months>1?'s':'')+' training · '):'')+
+      checkins.length+' check-ins · '+sessions.length+' sessions · '+nScans+' InBody scans'+
+    '</div></div></div>';
+
   // charts
   html+='<div class="grid2">'+
     '<div class="panel"><div class="ph"><h3>Body Composition</h3></div><div class="pb"><canvas id="bodyChart"></canvas><div id="bodyEmpty"></div></div></div>'+
@@ -284,6 +301,14 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   renderPhotos(photos||[]);
 }
 
+function sumItem(label,v,unit,lowerGood){
+  if(v==null) return '';
+  const good = lowerGood ? v<0 : v>0;
+  const color = v===0?'var(--muted)':(good?'var(--green)':'var(--red)');
+  const sg=(v>0?'+':'')+v;
+  return '<div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700">'+label+'</div>'+
+    '<div style="font-family:Oswald;font-size:24px;font-weight:700;color:'+color+'">'+sg+(unit||'')+'</div></div>';
+}
 function statTile(lbl,val,unit,delta){
   const v=num(val);
   return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="num">'+(v===''?'—':v+(unit?'<span style="font-size:14px;color:var(--muted)"> '+unit+'</span>':''))+'</div>'+(delta||'')+'</div>';
