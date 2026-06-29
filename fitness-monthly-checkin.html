@@ -1042,6 +1042,7 @@ async function saveCheckin(){
   ];
   const gender = gv('gender') || '';
   const ok=await appendToSheet('PT Check-In History',row);
+  try{ await _saveCheckinToD1(); }catch(e){ console.warn(e); }
   hideLoading();
   const confirm=document.getElementById('confirm-save');
   confirm.classList.add('show');
@@ -1497,6 +1498,47 @@ async function rememberStartDate(){
       await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,status:'active',advisor:(getCfg('advisor')||''),coach:coach||'',training_start_date:start||null}});
     }
   }catch(e){}
+}
+async function _saveCheckinToD1(){
+  try{
+    const email=gv('email'), phone=gv('phone'), name=gv('name');
+    const all=await _allClients();
+    let c=MATCHED_CLIENT||_matchClient(all,email,phone,name);
+    const start=gv('program-start'), coach=gv('client-coach');
+    let clientId;
+    if(c){
+      clientId=c.id;
+      const uv={updated_at:new Date().toISOString()};
+      if(start && c.training_start_date!==start) uv.training_start_date=start;
+      if(coach && c.coach!==coach) uv.coach=coach;
+      if(Object.keys(uv).length>1){ await _db({op:'update',table:'clients',values:uv,where:{id:clientId}}); }
+    } else {
+      const parts=(name||'').trim().split(' '); const first=parts.shift()||''; const last=parts.join(' ');
+      if(!first && !email && !phone) return;
+      const ins=await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,gender:gv('gender'),status:'active_pt',advisor:(gv('advisor-name')||getCfg('advisor')||''),coach:coach||'',training_start_date:start||null}});
+      clientId=ins.id;
+    }
+    if(!clientId) return;
+    const pf=v=>{ const n=parseFloat(v); return isNaN(n)?null:n; };
+    const vals={
+      client_id:clientId,
+      checkin_date:gv('checkin-date'), next_checkin:gv('next-checkin'),
+      advisor:gv('advisor-name')||getCfg('advisor'),
+      session_score:pf(gv('session-score')), diet_score:pf(gv('diet-score')),
+      energy_score:pf(gv('energy-score')), sleep_score:pf(gv('sleep-score')), stress_score:pf(gv('stress-score')),
+      prev_weight:pf(gv('prev-weight')), now_weight:pf(gv('now-weight')),
+      prev_lean:pf(gv('prev-lean')), now_lean:pf(gv('now-lean')),
+      prev_body_fat_pct:pf(gv('prev-pbf')), now_body_fat_pct:pf(gv('now-pbf')),
+      prev_fat_mass:pf(gv('prev-fat')), now_fat_mass:pf(gv('now-fat')),
+      prev_bmi:pf(gv('prev-bmi')), now_bmi:pf(gv('now-bmi')),
+      training_freq:gv('training-freq'), wins:gv('wins-list'),
+      assessment_summary:(assessmentText||'').substring(0,2000), advisor_notes:gv('advisor-notes')
+    };
+    Object.keys(vals).forEach(k=>{ if(vals[k]===null||vals[k]===''||vals[k]===undefined) delete vals[k]; });
+    vals.client_id=clientId;
+    try{ const ex=await _db({op:'select',table:'checkins',where:{client_id:clientId},limit:500}); const dts=new Set((ex.results||[]).map(r=>r.checkin_date)); if(vals.checkin_date && dts.has(vals.checkin_date)) return; }catch(e){}
+    await _db({op:'insert',table:'checkins',values:vals});
+  }catch(e){ console.warn('D1 checkin save failed', e); }
 }
 function _fillFromClient(c){
   MATCHED_CLIENT=c;
