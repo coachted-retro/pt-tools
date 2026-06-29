@@ -4,27 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Intake Summary | Retro Fitness PT</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0a0a0a;
-      --surface: #111111;
-      --surface2: #181818;
-      --border: #222222;
-      --red: #e02020;
-      --red-dim: rgba(224,32,32,0.10);
-      --text: #f0f0f0;
-      --muted: #888;
-      --label: #555;
-      --green: #22c55e;
-      --yellow: #f59e0b;
-      --orange: #f97316;
+      --bg: #F5F6F8;
+      --surface: #FFFFFF;
+      --surface2: #F0F2F5;
+      --border: #E4E7EC;
+      --red: #E0192B;
+      --red-dim: rgba(224,25,43,0.10);
+      --text: #15171A;
+      --muted: #6B7280;
+      --label: #9AA1AC;
+      --green: #1E9E5A;
+      --yellow: #D98A0B;
+      --orange: #EA580C;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Barlow', sans-serif;
+      font-family: 'Inter', sans-serif;
       min-height: 100vh;
     }
 
@@ -38,7 +38,7 @@
       gap: 16px;
     }
     .topbar-logo {
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: 'Oswald', sans-serif;
       font-weight: 900;
       font-size: 1.1rem;
       letter-spacing: 0.12em;
@@ -47,7 +47,7 @@
     }
     .topbar-sep { color: var(--border); font-size: 1.2rem; }
     .topbar-title {
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: 'Oswald', sans-serif;
       font-weight: 600;
       font-size: 1rem;
       letter-spacing: 0.08em;
@@ -59,7 +59,7 @@
       background: none;
       border: 1px solid var(--border);
       color: var(--muted);
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: 'Oswald', sans-serif;
       font-size: 0.8rem;
       font-weight: 600;
       letter-spacing: 0.1em;
@@ -105,7 +105,7 @@
     }
     .hero-left { flex: 1; min-width: 200px; }
     .hero-name {
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: 'Oswald', sans-serif;
       font-weight: 900;
       font-size: 2.4rem;
       letter-spacing: 0.04em;
@@ -150,7 +150,7 @@
       gap: 6px;
       border-radius: 5px;
       padding: 8px 16px;
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: 'Oswald', sans-serif;
       font-weight: 700;
       font-size: 0.95rem;
       letter-spacing: 0.1em;
@@ -200,7 +200,7 @@
       flex-shrink: 0;
     }
     .section-title {
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: 'Oswald', sans-serif;
       font-weight: 700;
       font-size: 0.8rem;
       letter-spacing: 0.14em;
@@ -312,7 +312,7 @@
       display: inline-flex; align-items: center; gap: 8px;
       padding: 11px 20px;
       border-radius: 5px;
-      font-family: 'Barlow Condensed', sans-serif;
+      font-family: 'Oswald', sans-serif;
       font-weight: 700;
       font-size: 0.85rem;
       letter-spacing: 0.1em;
@@ -342,7 +342,7 @@
   <span class="topbar-logo">Retro Fitness</span>
   <span class="topbar-sep">|</span>
   <span class="topbar-title">Intake Summary</span>
-  <a href="index.html" class="back-btn">← Hub</a>
+  <a href="command-center.html" class="back-btn">← Hub</a>
 </div>
 
 <div id="loading" class="state-center">
@@ -353,7 +353,7 @@
 <div id="error" class="state-center" style="display:none;">
   <p style="font-size:2rem;">⚠️</p>
   <p id="error-msg">Could not load intake.</p>
-  <a href="index.html" class="btn btn-ghost" style="margin-top:12px;">← Back to Hub</a>
+  <a href="command-center.html" class="btn btn-ghost" style="margin-top:12px;">← Back to Hub</a>
 </div>
 
 <div id="app" class="container" style="display:none;"></div>
@@ -537,7 +537,7 @@
       <!-- ACTIONS -->
       <div class="actions">
         <a href="${SHEET_URL}${sheetRow}" target="_blank" class="btn btn-primary">📊 View Row in Sheet</a>
-        <a href="index.html" class="btn btn-ghost">← Back to Hub</a>
+        <a href="command-center.html" class="btn btn-ghost">← Back to Hub</a>
       </div>
     `;
 

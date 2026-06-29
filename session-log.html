@@ -4,33 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Session & Touchpoint Log · Retro Fitness</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d0f0d;
-    --surface: #131713;
-    --surface2: #191d19;
-    --surface3: #1e241e;
-    --border: rgba(255,255,255,0.07);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f0ede6;
-    --text2: #a8a49e;
-    --text3: rgba(255,255,255,0.28);
-    --green: #4caf7d;
-    --green-dim: rgba(76,175,125,0.12);
-    --gold: #d4a843;
-    --gold-dim: rgba(212,168,67,0.12);
-    --blue: #5a8ec8;
-    --blue-dim: rgba(90,142,200,0.12);
-    --red: #e05252;
-    --red-dim: rgba(224,82,82,0.12);
-    --purple: #9b6fd4;
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface2: #F0F2F5;
+    --surface3: #E9ECEF;
+    --border: #E4E7EC;
+    --border2: #D7DBE0;
+    --text: #15171A;
+    --text2: #6B7280;
+    --text3: #9AA1AC;
+    --green: #1E9E5A;
+    --green-dim: rgba(30,158,90,0.12);
+    --gold: #D98A0B;
+    --gold-dim: rgba(217,138,11,0.12);
+    --blue: #2563EB;
+    --blue-dim: rgba(37,99,235,0.10);
+    --red: #E0192B;
+    --red-dim: rgba(224,25,43,0.10);
+    --purple: #7C3AED;
     --radius: 10px;
     --radius-lg: 16px;
-    --font: 'DM Sans', sans-serif;
-    --condensed: 'Barlow Condensed', sans-serif;
+    --font: 'Inter', sans-serif;
+    --condensed: 'Oswald', sans-serif;
     --mono: 'DM Mono', monospace;
-    --shadow: 0 4px 20px rgba(0,0,0,0.5);
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
@@ -39,11 +39,11 @@
   .header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 28px; background: var(--surface);
-    border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50;
+    border-bottom: 3px solid var(--red); position: sticky; top: 0; z-index: 50;
   }
   .header-left { display: flex; align-items: center; gap: 14px; }
   .back-btn { font-family: var(--font); font-size: 12px; color: var(--text2); background: none; border: 1px solid var(--border2); border-radius: 7px; padding: 6px 12px; cursor: pointer; transition: all .15s; }
-  .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.3); }
+  .back-btn:hover { color: var(--text); border-color: #C4C9D0; }
   .page-title-wrap { }
   .page-title { font-family: var(--condensed); font-size: 20px; font-weight: 700; letter-spacing: .03em; }
   .page-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
@@ -90,7 +90,7 @@
   }
   .field-input:focus, .field-select:focus, .field-textarea:focus { border-color: var(--green); }
   .field-textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
-  .field-select option { background: #1a1a1a; }
+  .field-select option { background: #E9ECEF; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 
@@ -187,7 +187,7 @@
   .history-table th { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border2); background: var(--surface2); }
   .history-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; }
   .history-table tr:last-child td { border-bottom: none; }
-  .history-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .history-table tr:hover td { background: rgba(0,0,0,0.03); }
   .td-name { font-weight: 600; }
   .td-note { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text2); }
   .td-mono { font-family: var(--mono); font-size: 11px; color: var(--text3); }
@@ -210,7 +210,7 @@
   </div>
   <div class="header-right">
     <div class="advisor-chip" id="advisor-chip">Coach: —</div>
-    <button class="back-btn" onclick="window.location.href='index.html'">← Hub</button>
+    <button class="back-btn" onclick="window.location.href='command-center.html'">← Hub</button>
   </div>
 </div>
 

@@ -4,25 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prospect Tracker — Retro Fitness</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --surface2: #1c1c26;
-    --border: #2a2a3a;
-    --accent: #00e5a0;
-    --accent2: #ff6b35;
-    --warm: #ffb830;
-    --text: #e8e8f0;
-    --muted: #6b6b85;
-    --hot: #ff4444;
-    --warm-c: #ffb830;
-    --cold: #4488ff;
-    --purple: #a855f7;
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface2: #F0F2F5;
+    --border: #E4E7EC;
+    --accent: #E0192B;
+    --accent2: #15171A;
+    --warm: #D98A0B;
+    --text: #15171A;
+    --muted: #6B7280;
+    --hot: #E0192B;
+    --warm-c: #D98A0B;
+    --cold: #2563EB;
+    --purple: #7C3AED;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; min-height: 100vh; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
 
   /* HEADER */
   .header {
@@ -38,38 +38,38 @@
   .back-btn {
     background: none; border: 1px solid var(--border); color: var(--muted);
     padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
-    font-family: 'Barlow', sans-serif; transition: all .2s;
+    font-family: 'Inter', sans-serif; transition: all .2s;
   }
   .back-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .logo-text { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: 1px; color: var(--accent); }
+  .logo-text { font-family: 'Oswald', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: 1px; color: var(--accent); }
   .logo-sub { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
   .header-right { display: flex; gap: 10px; align-items: center; }
   .btn-primary {
     background: var(--accent); color: #000; border: none; padding: 9px 20px;
-    border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    border-radius: 8px; font-family: 'Oswald', sans-serif; font-weight: 700;
     font-size: 14px; letter-spacing: .5px; cursor: pointer; transition: all .2s;
   }
-  .btn-primary:hover { background: #00ffb3; transform: translateY(-1px); }
+  .btn-primary:hover { background: #E0192B; transform: translateY(-1px); }
   .btn-outline {
     background: none; color: var(--text); border: 1px solid var(--border); padding: 8px 16px;
-    border-radius: 8px; font-family: 'Barlow', sans-serif; font-size: 13px; cursor: pointer; transition: all .2s;
+    border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; transition: all .2s;
   }
   .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
   .btn-danger {
     background: none; color: #ff4444; border: 1px solid #ff4444; padding: 8px 16px;
-    border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    border-radius: 8px; font-family: 'Oswald', sans-serif; font-weight: 700;
     font-size: 13px; letter-spacing: .5px; cursor: pointer; transition: all .2s;
   }
   .btn-danger:hover { background: #ff4444; color: #fff; }
   .btn-purple {
     background: none; color: var(--purple); border: 1px solid var(--purple); padding: 8px 16px;
-    border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    border-radius: 8px; font-family: 'Oswald', sans-serif; font-weight: 700;
     font-size: 13px; letter-spacing: .5px; cursor: pointer; transition: all .2s;
   }
   .btn-purple:hover { background: var(--purple); color: #fff; }
   .btn-warm {
     background: none; color: var(--warm-c); border: 1px solid var(--warm-c); padding: 8px 16px;
-    border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    border-radius: 8px; font-family: 'Oswald', sans-serif; font-weight: 700;
     font-size: 13px; letter-spacing: .5px; cursor: pointer; transition: all .2s;
   }
   .btn-warm:hover { background: var(--warm-c); color: #000; }
@@ -84,7 +84,7 @@
   }
   .tab-btn {
     background: none; border: none; color: var(--muted);
-    padding: 14px 20px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif;
+    padding: 14px 20px; cursor: pointer; font-family: 'Oswald', sans-serif;
     font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
     border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .2s;
   }
@@ -95,7 +95,7 @@
   .tab-count {
     display: inline-block; background: var(--surface2); border: 1px solid var(--border);
     color: var(--muted); font-size: 10px; padding: 1px 6px; border-radius: 10px;
-    margin-left: 6px; font-family: 'Barlow', sans-serif; font-weight: 600;
+    margin-left: 6px; font-family: 'Inter', sans-serif; font-weight: 600;
   }
 
   /* TAB PANELS */
@@ -113,7 +113,7 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
     padding: 16px; text-align: center;
   }
-  .stat-num { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; }
+  .stat-num { font-family: 'Oswald', sans-serif; font-size: 32px; font-weight: 800; line-height: 1; }
   .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
   .stat-hot .stat-num { color: var(--hot); }
   .stat-warm .stat-num { color: var(--warm-c); }
@@ -134,7 +134,7 @@
     padding: 16px 20px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
   }
-  .panel-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
+  .panel-title { font-family: 'Oswald', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); }
   .panel-title-purple { color: var(--purple); }
   .panel-title-warm { color: var(--warm-c); }
   .panel-body { padding: 20px; }
@@ -145,7 +145,7 @@
   label { display: block; font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
   input, select, textarea {
     width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-    padding: 9px 12px; border-radius: 7px; font-family: 'Barlow', sans-serif; font-size: 14px;
+    padding: 9px 12px; border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 14px;
     transition: border-color .2s; outline: none;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--accent); }
@@ -155,7 +155,7 @@
   .interest-btns { display: flex; gap: 8px; }
   .interest-btn {
     flex: 1; padding: 8px; border: 2px solid var(--border); background: none;
-    border-radius: 7px; cursor: pointer; font-family: 'Barlow Condensed', sans-serif;
+    border-radius: 7px; cursor: pointer; font-family: 'Oswald', sans-serif;
     font-size: 13px; font-weight: 700; letter-spacing: .5px; transition: all .2s; color: var(--muted);
   }
   .interest-btn.hot { border-color: var(--hot); color: var(--hot); }
@@ -183,7 +183,7 @@
   .prospect-type { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
   .interest-badge {
     padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-    letter-spacing: .5px; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: .5px; text-transform: uppercase; font-family: 'Oswald', sans-serif;
   }
   .badge-hot { background: rgba(255,68,68,.15); color: var(--hot); }
   .badge-warm { background: rgba(255,184,48,.15); color: var(--warm-c); }
@@ -193,12 +193,12 @@
   /* STATUS BADGES */
   .status-badge {
     padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-    letter-spacing: .5px; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: .5px; text-transform: uppercase; font-family: 'Oswald', sans-serif;
     display: inline-block;
   }
   .status-booked { background: rgba(168,85,247,.15); color: var(--purple); }
   .status-confirmed { background: rgba(0,229,160,.15); color: var(--accent); }
-  .status-show { background: rgba(0,229,160,.2); color: #00ff99; }
+  .status-show { background: rgba(0,229,160,.2); color: #E0192B; }
   .status-noshow { background: rgba(255,68,68,.15); color: var(--hot); }
   .status-canceled { background: rgba(107,107,133,.2); color: var(--muted); }
   .status-rescheduled { background: rgba(255,184,48,.15); color: var(--warm-c); }
@@ -215,7 +215,7 @@
   .empty-icon { font-size: 48px; opacity: .3; }
 
   .detail-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
-  .detail-name { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 800; }
+  .detail-name { font-family: 'Oswald', sans-serif; font-size: 28px; font-weight: 800; }
   .detail-meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
   .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 
@@ -225,15 +225,15 @@
 
   /* TOUCHPOINT LOG */
   .touchpoint-section { padding: 20px; }
-  .touchpoint-section h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .touchpoint-section h3 { font-family: 'Oswald', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
   .add-touchpoint { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 16px; }
   .tp-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: end; }
   .btn-add-tp {
     background: var(--accent); color: #000; border: none; padding: 9px 16px; border-radius: 7px;
-    font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer;
+    font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer;
     white-space: nowrap; transition: all .2s;
   }
-  .btn-add-tp:hover { background: #00ffb3; }
+  .btn-add-tp:hover { background: #E0192B; }
 
   .tp-history { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; }
   .tp-entry {
@@ -269,7 +269,7 @@
   /* CALENDAR */
   .calendar-wrap { padding: 20px; }
   .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .cal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--text); }
+  .cal-title { font-family: 'Oswald', sans-serif; font-size: 20px; font-weight: 700; color: var(--text); }
   .cal-nav { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all .2s; }
   .cal-nav:hover { border-color: var(--purple); color: var(--purple); }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
@@ -289,7 +289,7 @@
   }
   .cal-event.ev-booked { background: rgba(168,85,247,.25); color: var(--purple); }
   .cal-event.ev-confirmed { background: rgba(0,229,160,.2); color: var(--accent); }
-  .cal-event.ev-show { background: rgba(0,229,160,.35); color: #00ff99; }
+  .cal-event.ev-show { background: rgba(0,229,160,.35); color: #E0192B; }
   .cal-event.ev-noshow { background: rgba(255,68,68,.2); color: var(--hot); }
   .cal-event.ev-canceled { background: rgba(107,107,133,.2); color: var(--muted); }
 
@@ -304,7 +304,7 @@
 
 <div class="header">
   <div class="header-left">
-    <button class="back-btn" onclick="window.location.href='index.html'">← Hub</button>
+    <button class="back-btn" onclick="window.location.href='command-center.html'">← Hub</button>
     <img src="Retro_FH_Logo.jpg" alt="Retro Fitness" style="height:44px;width:auto;display:block;">
     <div>
       <div class="logo-text">PROSPECT TRACKER</div>
@@ -496,7 +496,7 @@
         <div style="display:flex;gap:8px;align-items:center">
           <span id="bc-list-count" style="font-size:12px;color:var(--muted)">0</span>
           
-          <button onclick="openNewBookingModal()" style="background:var(--purple);color:#fff;border:none;padding:6px 14px;border-radius:7px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">+ New Booking</button>
+          <button onclick="openNewBookingModal()" style="background:var(--purple);color:#fff;border:none;padding:6px 14px;border-radius:7px;font-family:'Oswald',sans-serif;font-weight:700;font-size:13px;cursor:pointer;">+ New Booking</button>
         </div>
       </div>
       <div class="search-bar">
@@ -543,8 +543,8 @@
               <button class="btn-danger" id="bc-btn-noshow" onclick="bcUpdateStatus('No-Show')" style="display:none">❌ No-Show</button>
               <button class="btn-warm" id="bc-btn-cancel" onclick="bcUpdateStatus('Canceled')" style="display:none">🚫 Cancel</button>
               <button class="btn-warn" id="bc-btn-reschedule" onclick="bcUpdateStatus('Rescheduled')" style="display:none;background:none;border:1px solid var(--warm-c);color:var(--warm-c);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px">♻️ Reschedule</button>
-              <button id="bc-btn-reset" onclick="bcUpdateStatus('Booked')" style="display:none;background:none;border:1px solid var(--accent);color:var(--accent);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px">↩ Reset to Booked</button>
-              <button onclick="openEditBookingModal()" style="background:none;border:1px solid #4488ff;color:#4488ff;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px">✏️ Edit</button>
+              <button id="bc-btn-reset" onclick="bcUpdateStatus('Booked')" style="display:none;background:none;border:1px solid var(--accent);color:var(--accent);padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:13px">↩ Reset to Booked</button>
+              <button onclick="openEditBookingModal()" style="background:none;border:1px solid #4488ff;color:#4488ff;padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:13px">✏️ Edit</button>
               <button class="btn-danger" onclick="confirmDeleteBC()">🗑</button>
             </div>
           </div>
@@ -593,8 +593,8 @@
 
 <!-- Book Consultation Modal -->
 <div id="bookModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:480px;width:90%;">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:var(--purple);margin-bottom:20px">📅 Book Consultation</div>
+  <div style="background:#FFFFFF;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:480px;width:90%;">
+    <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;color:var(--purple);margin-bottom:20px">📅 Book Consultation</div>
     <div id="book-prospect-name" style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text)"></div>
     <div class="form-row" style="margin-bottom:12px">
       <div class="form-group"><label>Appointment Date *</label><input type="date" id="book-date"></div>
@@ -605,7 +605,7 @@
     <div class="status-msg" id="book-status"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
       <button onclick="closeBookModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
-      <button onclick="confirmBook()" style="background:var(--purple);color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Book It</button>
+      <button onclick="confirmBook()" style="background:var(--purple);color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">Book It</button>
     </div>
   </div>
 </div>
@@ -613,26 +613,26 @@
 
 <!-- Duplicate Warning Modal -->
 <div id="dupModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:420px;width:90%;text-align:center;">
+  <div style="background:#FFFFFF;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:420px;width:90%;text-align:center;">
     <div style="font-size:40px;margin-bottom:14px">⚠️</div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#ffb830;margin-bottom:8px">Possible Duplicate</div>
+    <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;color:#ffb830;margin-bottom:8px">Possible Duplicate</div>
     <div style="font-size:14px;color:#6b6b85;line-height:1.6;margin-bottom:22px">A prospect with the <strong style="color:#e8e8f0" id="dupModalReason"></strong> already exists:<br><strong style="color:#e8e8f0" id="dupModalName"></strong><br><br>Do you want to add them anyway?</div>
     <div style="display:flex;gap:10px;justify-content:center;">
       <button onclick="closeDupModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
-      <button onclick="proceedDespiteDuplicate()" style="background:#ffb830;color:#000;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Add Anyway</button>
+      <button onclick="proceedDespiteDuplicate()" style="background:#ffb830;color:#000;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">Add Anyway</button>
     </div>
   </div>
 </div>
 
 <!-- Confirm Delete Modal -->
 <div id="confirmModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:420px;width:90%;text-align:center;">
+  <div style="background:#FFFFFF;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:420px;width:90%;text-align:center;">
     <div style="font-size:40px;margin-bottom:14px">🗑️</div>
-    <div id="modalTitle" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#ff4444;margin-bottom:8px"></div>
+    <div id="modalTitle" style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;color:#ff4444;margin-bottom:8px"></div>
     <div id="modalBody" style="font-size:14px;color:#6b6b85;line-height:1.6;margin-bottom:22px"></div>
     <div style="display:flex;gap:10px;justify-content:center;">
       <button onclick="closeModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 24px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
-      <button id="modalConfirmBtn" style="background:#ff4444;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Delete</button>
+      <button id="modalConfirmBtn" style="background:#ff4444;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">Delete</button>
     </div>
   </div>
 </div>
@@ -640,93 +640,93 @@
 
 <!-- Reason Modal (No-Show / Cancel) -->
 <div id="reasonModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:440px;width:90%;">
-    <div id="reason-modal-title" style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#ff4444;margin-bottom:16px"></div>
+  <div style="background:#FFFFFF;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:440px;width:90%;">
+    <div id="reason-modal-title" style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;color:#ff4444;margin-bottom:16px"></div>
     <input type="hidden" id="reason-modal-status">
     <div style="margin-bottom:12px">
       <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Reason *</label>
-      <select id="reason-modal-select" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px"></select>
+      <select id="reason-modal-select" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px"></select>
     </div>
     <div style="margin-bottom:16px">
       <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Additional Notes</label>
-      <textarea id="reason-modal-notes" rows="2" placeholder="Optional notes..." style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px;resize:vertical"></textarea>
+      <textarea id="reason-modal-notes" rows="2" placeholder="Optional notes..." style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px;resize:vertical"></textarea>
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button onclick="closeReasonModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
-      <button onclick="confirmReasonModal()" style="background:#ff4444;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Confirm</button>
+      <button onclick="confirmReasonModal()" style="background:#ff4444;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">Confirm</button>
     </div>
   </div>
 </div>
 
 <!-- Reschedule Modal -->
 <div id="rescheduleModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:440px;width:90%;">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#ffb830;margin-bottom:8px">♻️ Reschedule</div>
+  <div style="background:#FFFFFF;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:440px;width:90%;">
+    <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;color:#ffb830;margin-bottom:8px">♻️ Reschedule</div>
     <div id="reschedule-name" style="font-size:15px;font-weight:600;color:#e8e8f0;margin-bottom:16px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">New Date *</label>
-        <input type="date" id="reschedule-date" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input type="date" id="reschedule-date" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">New Time</label>
-        <input type="time" id="reschedule-time" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input type="time" id="reschedule-time" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button onclick="closeRescheduleModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
-      <button onclick="confirmReschedule()" style="background:#ffb830;color:#000;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Reschedule</button>
+      <button onclick="confirmReschedule()" style="background:#ffb830;color:#000;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">Reschedule</button>
     </div>
   </div>
 </div>
 
 <!-- New Booking Modal (standalone — no prospect required) -->
 <div id="newBookingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#a855f7;margin-bottom:20px">📅 New Booked Consultation</div>
+  <div style="background:#FFFFFF;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;">
+    <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;color:#a855f7;margin-bottom:20px">📅 New Booked Consultation</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">First Name *</label>
-        <input id="nb-first" placeholder="First" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="nb-first" placeholder="First" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Last Name *</label>
-        <input id="nb-last" placeholder="Last" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="nb-last" placeholder="Last" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Phone *</label>
-        <input id="nb-phone" placeholder="(215) 555-0000" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="nb-phone" placeholder="(215) 555-0000" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Email</label>
-        <input id="nb-email" placeholder="email@example.com" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="nb-email" placeholder="email@example.com" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Date Booked</label>
-        <input type="date" id="nb-date-booked" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input type="date" id="nb-date-booked" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">MEA Who Booked</label>
-        <input id="nb-mea" placeholder="MEA name" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="nb-mea" placeholder="MEA name" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Appointment Date *</label>
-        <input type="date" id="nb-appt-date" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input type="date" id="nb-appt-date" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Appointment Time</label>
-        <input type="time" id="nb-appt-time" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input type="time" id="nb-appt-time" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
     </div>
     <div style="margin-bottom:16px">
       <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Advisor Assigned</label>
-      <select id="nb-advisor" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+      <select id="nb-advisor" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
         <option value="">— Select advisor —</option>
         <option value="Ted">Ted</option>
         <option value="Dani">Dani</option>
@@ -734,12 +734,12 @@
     </div>
     <div style="margin-bottom:16px">
       <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Notes</label>
-      <textarea id="nb-notes" rows="2" placeholder="Any notes about this booking..." style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px;resize:vertical"></textarea>
+      <textarea id="nb-notes" rows="2" placeholder="Any notes about this booking..." style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px;resize:vertical"></textarea>
     </div>
     <div id="nb-status" style="margin-bottom:10px"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button onclick="closeNewBookingModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
-      <button onclick="confirmNewBooking()" style="background:#a855f7;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Book It</button>
+      <button onclick="confirmNewBooking()" style="background:#a855f7;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">Book It</button>
     </div>
   </div>
 </div>
@@ -747,46 +747,46 @@
 
 <!-- Edit Booking Modal -->
 <div id="editBookingModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:999;align-items:center;justify-content:center;">
-  <div style="background:#13131a;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#4488ff;margin-bottom:20px">✏️ Edit Booking</div>
+  <div style="background:#FFFFFF;border:1px solid #2a2a3a;border-radius:14px;padding:28px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;">
+    <div style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:800;color:#4488ff;margin-bottom:20px">✏️ Edit Booking</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">First Name *</label>
-        <input id="eb-first" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="eb-first" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Last Name *</label>
-        <input id="eb-last" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="eb-last" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Phone</label>
-        <input id="eb-phone" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="eb-phone" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Email</label>
-        <input id="eb-email" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="eb-email" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Appt Date *</label>
-        <input type="date" id="eb-appt-date" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input type="date" id="eb-appt-date" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Appt Time</label>
-        <input type="time" id="eb-appt-time" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input type="time" id="eb-appt-time" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Booked By (MEA)</label>
-        <input id="eb-booked-by" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <input id="eb-booked-by" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
       </div>
       <div>
         <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Advisor Assigned</label>
-        <select id="eb-advisor" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px">
+        <select id="eb-advisor" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px">
           <option value="">— Select —</option>
           <option value="Ted">Ted</option>
           <option value="Dani">Dani</option>
@@ -795,17 +795,17 @@
     </div>
     <div style="margin-bottom:16px">
       <label style="font-size:11px;color:#6b6b85;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">Notes</label>
-      <textarea id="eb-notes" rows="2" style="width:100%;background:#1c1c26;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Barlow',sans-serif;font-size:14px;resize:vertical"></textarea>
+      <textarea id="eb-notes" rows="2" style="width:100%;background:#F0F2F5;border:1px solid #2a2a3a;color:#e8e8f0;padding:9px 12px;border-radius:7px;font-family:'Inter',sans-serif;font-size:14px;resize:vertical"></textarea>
     </div>
     <div id="eb-status" style="font-size:13px;color:#ff4444;margin-bottom:10px"></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;">
       <button onclick="closeEditBookingModal()" style="background:none;border:1px solid #2a2a3a;color:#e8e8f0;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px">Cancel</button>
-      <button onclick="confirmEditBooking()" style="background:#4488ff;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px">Save Changes</button>
+      <button onclick="confirmEditBooking()" style="background:#4488ff;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:'Oswald',sans-serif;font-weight:700;font-size:15px">Save Changes</button>
     </div>
   </div>
 </div>
 
-<a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#2d5a3d;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:998;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
+<a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#E0192B;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:998;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
 
 <script>
 // ══════════════════════════════════════════════════
