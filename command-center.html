@@ -162,9 +162,12 @@
     <div class="toolcard" onclick="openTool('meal-plans.html')">
       <span class="ic">🥗</span><div class="eb">Complete · Complete+</div><div class="tt">Meal Plans</div>
       <div class="td">Build weekly plans and shopping lists, then send by Gmail.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="loadAll()">
-      <span class="ic">📡</span><div class="eb">This Page</div><div class="tt">Live Data</div>
-      <div class="td">Roster, pipeline, and charts below. Click to refresh.</div><span class="arrow">↓</span></div>
+    <div class="toolcard" onclick="location.href='data-import.html'">
+      <span class="ic">⬇️</span><div class="eb">From Google Sheets</div><div class="tt">Import Clients</div>
+      <div class="td">Pull your saved clients and check-in history into the database.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="location.href='client-profile.html?add=1'">
+      <span class="ic">➕</span><div class="eb">New Record</div><div class="tt">Add Client</div>
+      <div class="td">Create a client and set status, trainer, goal and start date.</div><span class="arrow">→</span></div>
   </div>
 
   <div class="cards" id="cards"></div>
@@ -197,7 +200,9 @@
   <div id="view-roster" style="display:none">
     <div class="layout">
       <div class="panel">
-        <div class="head"><h3>Client Roster</h3><span class="count" id="rosterCount">0</span></div>
+        <div class="head"><h3>Client Roster</h3><span class="count" id="rosterCount">0</span><span style="flex:1"></span>
+          <a class="btn" style="padding:5px 11px;font-size:11px" href="data-import.html">Import</a>
+          <a class="btn" style="padding:5px 11px;font-size:11px;background:var(--red);color:#fff;border-color:var(--red)" href="client-profile.html?add=1">+ Add</a></div>
         <div class="body" id="rosterList"></div>
       </div>
       <div class="panel">
@@ -334,7 +339,7 @@ function renderRoster(){
   document.getElementById('rosterCount').textContent = list.length;
   const el = document.getElementById('rosterList');
   if(!list.length){
-    el.innerHTML = `<div class="empty"><div class="big">No clients yet</div>Clients appear here once a consultation or check-in is saved. Your three tools will write straight into this database.</div>`;
+    el.innerHTML = `<div class="empty"><div class="big">No clients yet</div>Import your saved clients from Google Sheets, or add one by hand. Your check-in tool also writes new clients here automatically.<div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><a class="btn" href="data-import.html">Import from Sheets</a><a class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" href="client-profile.html?add=1">+ Add Client</a></div></div>`;
   } else {
     el.innerHTML = list.map(c=>{
       const nm = esc((c.first_name||'')+' '+(c.last_name||'')).trim()||'(no name)';

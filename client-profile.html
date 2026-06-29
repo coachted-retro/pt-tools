@@ -315,6 +315,7 @@ function renderMeasures(measures){
   const q=new URLSearchParams(location.search);
   const cid=q.get('client')||q.get('id');
   if(cid && /^\d+$/.test(cid)) loadProfile(+cid);
+  else if(q.get('add')) openAdd();
 })();
 </script>
 
