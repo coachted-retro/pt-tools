@@ -906,9 +906,9 @@ function buildPrompt(){
   return `You are a Retro Fitness personal training advisor doing a monthly check-in. Generate a SHORT, scannable monthly summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 2 minutes.
 
 MEMBER: ${gv('name')} | Age: ${gv('age')} | Gender: ${gv('gender')}
-ADVISOR: ${gv('advisor-name')||getCfg('advisor')},                 // B: Advisor
-    gv('client-coach'),                                    // C: Assigned Coach
-    nextCheckin,                                           // D: Next Check-In} | Date: ${gv('checkin-date')}
+ADVISOR (report author): ${gv('advisor-name')||getCfg('advisor')} | ASSIGNED COACH/TRAINER: ${gv('client-coach')||'(not specified)'} | Date: ${gv('checkin-date')}
+
+NAME HANDLING: The member's assigned coach/trainer is "${gv('client-coach')||'not specified'}". When the summary refers to the member's coach or trainer, use that name. The advisor above authored the report and may not be the member's trainer, so never call the advisor the member's coach or trainer.
 FREQUENCY: ${gv('training-freq')} | Program start: ${gv('program-start')}
 
 SCORES: Session quality ${gv('session-score')}/10 | Recovery ${gv('recovery-score')}/10 | Diet adherence ${gv('diet-score')}/10 | Energy ${gv('energy-score')}/10 | Motivation ${gv('motivation-score')}/10 | Sleep ${gv('sleep-score')}/10 | Stress ${gv('stress-score')}/10
@@ -1216,6 +1216,12 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.text('ADVISOR:', margin + 380, 99);
   doc.setFont('helvetica', 'normal');
   doc.text(clientData.advisor || 'Coach Ted Scholl', margin + 428, 99);
+  if (clientData.coach) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('COACH/TRAINER:', margin, 111);
+    doc.setFont('helvetica', 'normal');
+    doc.text(clientData.coach, margin + 78, 111);
+  }
 
   // ---- INBODY SNAPSHOT TABLE (if data available) ----
   let y = 135;
@@ -1397,6 +1403,7 @@ function runMonthlyReport() {
     name: gv('name') || 'Member',
     email: gv('email') || '',
     advisor: gv('advisor-name') || getCfg('advisor') || 'Coach Ted Scholl',
+    coach: gv('client-coach') || '',
     goals: gv('long-goal') || '',
     age: gv('age') || '',
     gender: gv('gender') || '',
@@ -1467,20 +1474,25 @@ async function lookupClient(){
     if(!ps.value){ ps.value=c.training_start_date; updateDates(); }
     if(hint){ hint.style.display='block'; hint.textContent='Start date loaded from '+(((c.first_name||'')+' '+(c.last_name||'')).trim())+'\u2019s record.'; }
   } else if(hint){ hint.style.display='none'; }
+  const cc=document.getElementById('client-coach');
+  if(c && c.coach && cc && !cc.value){ cc.value=c.coach; }
 }
 async function rememberStartDate(){
-  const start=gv('program-start'); if(!start) return;
+  const start=gv('program-start'); const coach=gv('client-coach');
+  if(!start && !coach) return;
   const email=gv('email'), phone=gv('phone'), name=gv('name');
   const all=await _allClients();
   let c=MATCHED_CLIENT||_matchClient(all,email,phone,name);
   try{
     if(c){
-      if(c.training_start_date===start) return;
-      await _db({op:'update',table:'clients',values:{training_start_date:start,updated_at:new Date().toISOString()},where:{id:c.id}});
+      const vals={updated_at:new Date().toISOString()};
+      if(start && c.training_start_date!==start) vals.training_start_date=start;
+      if(coach && c.coach!==coach) vals.coach=coach;
+      if(Object.keys(vals).length>1){ await _db({op:'update',table:'clients',values:vals,where:{id:c.id}}); }
     } else {
       const parts=(name||'').trim().split(' '); const first=parts.shift()||''; const last=parts.join(' ');
       if(!first && !email && !phone) return;
-      await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,status:'active',advisor:(getCfg('advisor')||''),training_start_date:start}});
+      await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,status:'active',advisor:(getCfg('advisor')||''),coach:coach||'',training_start_date:start||null}});
     }
   }catch(e){}
 }
@@ -1488,7 +1500,7 @@ function _fillFromClient(c){
   MATCHED_CLIENT=c;
   const set=(id,v)=>{ const e=document.getElementById(id); if(e&&!e.value&&v) e.value=v; };
   set('name',(((c.first_name||'')+' '+(c.last_name||'')).trim()));
-  set('email',c.email); set('phone',c.phone);
+  set('email',c.email); set('phone',c.phone); set('client-coach',c.coach);
   if(c.training_start_date){ const ps=document.getElementById('program-start'); if(ps&&!ps.value){ ps.value=c.training_start_date; updateDates(); }
     const hint=document.getElementById('start-hint'); if(hint){ hint.style.display='block'; hint.textContent='Start date loaded from record.'; } }
 }
