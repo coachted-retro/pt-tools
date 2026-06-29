@@ -52,6 +52,17 @@
   .empty .big{font-family:'Oswald';font-size:16px;color:var(--ink);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
   canvas{max-height:240px}
   .soon{background:var(--soft);border:1px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:12.5px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .modal.open{display:flex}
+  .modal .box{background:var(--card);border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow:auto;border:1px solid var(--line)}
+  .modal .mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .modal .mh h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:17px;margin:0}
+  .modal .mb{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .modal .mb .full{grid-column:1/3}
+  .fld label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .fld input,.fld select{width:100%;font-family:'Inter';font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--soft)}
+  .modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
+  .x{cursor:pointer;color:var(--muted);font-size:20px;background:none;border:none}
   @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.search input{width:150px}}
 </style>
 </head>
@@ -62,6 +73,7 @@
   <div class="t">Client <span>Profile</span></div>
   <div class="spacer"></div>
   <div class="search"><input id="clientSearch" placeholder="Search a client..." list="clientList" onchange="pickClient(this.value)"><datalist id="clientList"></datalist></div>
+  <button class="btn red" onclick="openAdd()">+ New Client</button>
   <a class="btn" href="command-center.html">← Command Center</a>
 </div>
 
@@ -80,6 +92,38 @@ function num(v,d){ const n=parseFloat(v); return isNaN(n)?(d||''):n; }
 function fmtDate(s){ if(!s) return ''; const d=new Date(s.length<=10?s+'T00:00:00':s); return isNaN(d)?s:d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function daysBetween(a,b){ const x=new Date(a), y=new Date(b||Date.now()); return Math.floor((y-x)/86400000); }
 let ALL_CLIENTS=[];
+let CURRENT=null, EDIT_ID=null;
+function setF(id,v){ const e=document.getElementById(id); if(e) e.value=(v==null?'':v); }
+function getF(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
+function openAdd(){
+  EDIT_ID=null; document.getElementById('modalTitle').textContent='New Client';
+  ['m_first','m_last','m_email','m_phone','m_coach','m_advisor','m_goal','m_start'].forEach(i=>setF(i,''));
+  setF('m_gender',''); setF('m_status','active_pt'); setF('m_package','');
+  document.getElementById('clientModal').classList.add('open');
+}
+function openEdit(){
+  if(!CURRENT) return; EDIT_ID=CURRENT.id; document.getElementById('modalTitle').textContent='Edit Client';
+  setF('m_first',CURRENT.first_name); setF('m_last',CURRENT.last_name); setF('m_email',CURRENT.email);
+  setF('m_phone',CURRENT.phone); setF('m_gender',CURRENT.gender); setF('m_status',CURRENT.status||'active_pt');
+  setF('m_coach',CURRENT.coach); setF('m_advisor',CURRENT.advisor); setF('m_package',CURRENT.package||'');
+  setF('m_goal',CURRENT.goal_primary); setF('m_start',CURRENT.training_start_date);
+  document.getElementById('clientModal').classList.add('open');
+}
+function closeModal(){ document.getElementById('clientModal').classList.remove('open'); }
+async function saveClient(){
+  const btn=document.getElementById('m_save'); btn.disabled=true; btn.textContent='Saving...';
+  const vals={
+    first_name:getF('m_first'), last_name:getF('m_last'), email:getF('m_email'), phone:getF('m_phone'),
+    gender:getF('m_gender'), status:getF('m_status'), coach:getF('m_coach'), advisor:getF('m_advisor'),
+    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start')
+  };
+  if(!vals.first_name && !vals.last_name){ alert('Enter a name'); btn.disabled=false; btn.textContent='Save'; return; }
+  try{
+    if(EDIT_ID){ await db({op:'update',table:'clients',values:vals,where:{id:EDIT_ID}}); closeModal(); await initSearch(); loadProfile(EDIT_ID); }
+    else{ const ins=await db({op:'insert',table:'clients',values:vals}); closeModal(); await initSearch(); loadProfile(ins.id); }
+  }catch(e){ alert('Save failed: '+e.message); }
+  btn.disabled=false; btn.textContent='Save';
+}
 
 async function initSearch(){
   const d=await db({op:'select',table:'clients',orderBy:'updated_at DESC',limit:2000});
@@ -134,6 +178,7 @@ function deltaHtml(now, first, lowerBetter){
 }
 
 function render(client, checkins, consults, meals, measures, sessions){
+  CURRENT=client;
   const nm=((client.first_name||'')+' '+(client.last_name||'')).trim()||('Client #'+client.id);
   const initials=((client.first_name||' ')[0]+(client.last_name||' ')[0]).toUpperCase();
   const stat=latestStats(checkins,consults), first=firstStats(checkins,consults);
@@ -153,7 +198,7 @@ function render(client, checkins, consults, meals, measures, sessions){
     (start?'<span>Started: <b>'+esc(fmtDate(start))+'</b> ('+tenure+')</span>':'<span>'+tenure+'</span>')+
     (client.email?'<span>'+esc(client.email)+'</span>':'')+
     (client.phone?'<span>'+esc(client.phone)+'</span>':'')+
-    '</div></div></div>';
+    '</div></div><button class="btn" onclick="openEdit()">Edit</button></div>';
 
   // actions
   const q='?client='+encodeURIComponent(nm);
@@ -272,5 +317,34 @@ function renderMeasures(measures){
   if(cid && /^\d+$/.test(cid)) loadProfile(+cid);
 })();
 </script>
+
+<div class="modal" id="clientModal">
+  <div class="box">
+    <div class="mh"><h3 id="modalTitle">Edit Client</h3><button class="x" onclick="closeModal()">&times;</button></div>
+    <div class="mb">
+      <div class="fld"><label>First name</label><input id="m_first"></div>
+      <div class="fld"><label>Last name</label><input id="m_last"></div>
+      <div class="fld"><label>Email</label><input id="m_email"></div>
+      <div class="fld"><label>Phone</label><input id="m_phone"></div>
+      <div class="fld"><label>Gender</label><select id="m_gender"><option value="">—</option><option>Male</option><option>Female</option></select></div>
+      <div class="fld"><label>Status</label><select id="m_status">
+        <option value="active_pt">Active PT</option>
+        <option value="paused">Paused</option>
+        <option value="completed">Completed</option>
+        <option value="former">No longer training</option>
+        <option value="prospect">Prospect</option>
+      </select></div>
+      <div class="fld"><label>Trainer</label><input id="m_coach"></div>
+      <div class="fld"><label>Advisor</label><input id="m_advisor"></div>
+      <div class="fld"><label>Package</label><select id="m_package"><option value="">—</option><option value="training">Training $180</option><option value="complete">Complete $249</option><option value="complete_plus">Complete+ $349</option></select></div>
+      <div class="fld"><label>Training start date</label><input id="m_start" type="date"></div>
+      <div class="fld full"><label>Primary goal</label><input id="m_goal"></div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn red" id="m_save" onclick="saveClient()">Save</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

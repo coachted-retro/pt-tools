@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Import Clients from Sheets — Retro Fitness PT</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F5F6F8;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--blue:#2563EB}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px}
+  .topbar img{height:32px;border-radius:4px}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)} .spacer{flex:1}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:13px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 16px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.red:hover{background:var(--red-dk)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .wrap{max-width:820px;margin:0 auto;padding:24px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+  h2{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:20px;margin:0 0 6px}
+  p{color:var(--muted);line-height:1.5;margin:0 0 14px}
+  .stats{display:flex;gap:24px;margin:16px 0}
+  .stat .n{font-family:'Oswald';font-size:30px;font-weight:700} .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700}
+  .log{background:#0E1013;color:#CDE3D2;border-radius:10px;padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;max-height:340px;overflow:auto;white-space:pre-wrap;margin-top:14px}
+  .log .ok{color:#7BE0A3} .log .warn{color:#E8C06A} .log .err{color:#F08A8A} .log .head{color:#8FB7F0}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness" onerror="this.style.display='none'">
+  <div class="t">Import <span>from Sheets</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="command-center.html">← Command Center</a>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <h2>Bring your saved clients into the database</h2>
+    <p>This reads your "All Check-In History" tab from the PT Member Progress Tracker and loads each client into the database, along with their full check-in history so their progress charts fill in. It is safe to run more than once: clients and check-ins that already exist are skipped, not duplicated.</p>
+    <div class="stats">
+      <div class="stat"><div class="n" id="sClients">—</div><div class="l">Clients found</div></div>
+      <div class="stat"><div class="n" id="sCheckins">—</div><div class="l">Check-in rows</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="scanBtn" onclick="scan()">1 · Scan the Sheet</button>
+      <button class="btn red" id="importBtn" onclick="runImport()" disabled>2 · Import to Database</button>
+    </div>
+    <div class="log" id="log" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const APPS_SCRIPT='https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
+const CI_SHEET='1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
+const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+
+let parsedClients=[]; // {key, first, last, gender, advisor, start, rows:[checkinObj...]}
+
+function logEl(){ const e=document.getElementById('log'); e.style.display='block'; return e; }
+function log(msg,cls){ const e=logEl(); e.innerHTML+=(cls?'<span class="'+cls+'">'+msg+'</span>':msg)+'\n'; e.scrollTop=e.scrollHeight; }
+function gv(o,...ks){ for(const k of ks){ const v=o[k]; if(v!==undefined && String(v).trim()!=='') return v; } return ''; }
+function pf(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
+function isoDate(raw){ if(!raw) return ''; const d=new Date(raw); if(isNaN(d)) return String(raw).slice(0,10); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function splitName(n){ const parts=String(n).trim().split(/\s+/); return {first:parts[0]||'', last:parts.slice(1).join(' ')}; }
+
+async function db(body){
+  const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('DB '+r.status);
+  return r.json();
+}
+
+async function scan(){
+  document.getElementById('scanBtn').disabled=true;
+  logEl().innerHTML=''; log('Reading Sheet...','head');
+  try{
+    const res=await fetch(APPS_SCRIPT+'?action=getCheckins&tab=All Check-In History&sheetId='+CI_SHEET);
+    const data=await res.json();
+    const rows=data.rows||[];
+    if(rows.length<2){ log('No data rows found in the tab.','warn'); document.getElementById('scanBtn').disabled=false; return; }
+    const headers=rows[0].map(h=>String(h).trim());
+    const objs=rows.slice(1).filter(r=>r.some(c=>String(c).trim()!=='')).map(r=>{ const o={}; headers.forEach((h,i)=>o[h]=r[i]||''); return o; });
+
+    const map={};
+    objs.forEach(o=>{
+      const name=String(gv(o,'Member Name','Name','Client Name','Client')).trim();
+      if(!name) return;
+      const key=name.toLowerCase();
+      if(!map[key]){ const sn=splitName(name); map[key]={key,name,first:sn.first,last:sn.last,gender:'',advisor:'',start:'',rows:[]}; }
+      const c=map[key];
+      const date=isoDate(gv(o,'Check-In Date','CheckInDate','Date'));
+      c.rows.push({
+        checkin_date:date,
+        advisor:String(gv(o,'Advisor','advisor')).trim(),
+        session_score:pf(gv(o,'Session Score')), diet_score:pf(gv(o,'Diet Score')),
+        sleep_score:pf(gv(o,'Sleep Score')), stress_score:pf(gv(o,'Stress Score')), energy_score:pf(gv(o,'Energy Score')),
+        now_weight:pf(gv(o,'Weight','Current Weight','Now Weight')), prev_weight:pf(gv(o,'Prev Weight')),
+        now_lean:pf(gv(o,'Lean Mass','Lean','LeanMass')), prev_lean:pf(gv(o,'Prev Lean Mass')),
+        now_body_fat_pct:pf(gv(o,'BF%','Body Fat %','PBF')), prev_body_fat_pct:pf(gv(o,'Prev BF%')),
+        now_bmi:pf(gv(o,'BMI')),
+        training_freq:String(gv(o,'Training Frequency','Training Freq','Frequency')).trim(),
+        wins:String(gv(o,'Wins','Win')).trim(),
+        assessment_summary:String(gv(o,'Assessment Summary','Assessment','Summary')).trim(),
+        advisor_notes:String(gv(o,'Advisor Notes','Notes')).trim()
+      });
+      if(!c.gender) c.gender=String(gv(o,'Gender')).trim();
+      const adv=String(gv(o,'Advisor','advisor')).trim(); if(adv) c.advisor=adv;
+      if(date && (!c.start || date<c.start)) c.start=date;
+    });
+
+    parsedClients=Object.values(map);
+    const totalRows=parsedClients.reduce((a,c)=>a+c.rows.length,0);
+    document.getElementById('sClients').textContent=parsedClients.length;
+    document.getElementById('sCheckins').textContent=totalRows;
+    log('Found '+parsedClients.length+' clients and '+totalRows+' check-in rows.','ok');
+    parsedClients.slice(0,40).forEach(c=>log('  · '+c.name+'  ('+c.rows.length+' check-ins'+(c.start?', since '+c.start:'')+')'));
+    if(parsedClients.length>40) log('  ...and '+(parsedClients.length-40)+' more');
+    log('\nReady. Click "Import to Database" to load them in.','head');
+    document.getElementById('importBtn').disabled=false;
+  }catch(e){
+    log('Could not read the Sheet: '+e.message,'err');
+    log('Make sure you are signed into the Google account that owns the Apps Script.','warn');
+  }
+  document.getElementById('scanBtn').disabled=false;
+}
+
+async function runImport(){
+  if(!parsedClients.length){ log('Scan first.','warn'); return; }
+  if(!confirm('Import '+parsedClients.length+' clients and their check-ins into the database?')) return;
+  document.getElementById('importBtn').disabled=true; document.getElementById('scanBtn').disabled=true;
+  log('\nLoading existing clients...','head');
+  let existing={};
+  try{
+    const d=await db({op:'select',table:'clients',limit:5000});
+    (d.results||[]).forEach(c=>{ const k=((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase(); if(k) existing[k]=c; });
+  }catch(e){ log('Could not load existing clients: '+e.message,'err'); return; }
+
+  let newClients=0, skippedClients=0, newCheckins=0, skippedCheckins=0, errors=0;
+  for(const c of parsedClients){
+    try{
+      let row=existing[c.key], clientId;
+      if(row){ clientId=row.id; skippedClients++; log('• '+c.name+' — exists (#'+clientId+')'); }
+      else{
+        const vals={first_name:c.first,last_name:c.last,status:'active_pt',source:'sheets_import'};
+        if(c.gender) vals.gender=c.gender;
+        if(c.advisor) vals.advisor=c.advisor;
+        if(c.start) vals.training_start_date=c.start;
+        const ins=await db({op:'insert',table:'clients',values:vals});
+        clientId=ins.id; newClients++; log('• '+c.name+' — created (#'+clientId+')','ok');
+        existing[c.key]={id:clientId};
+      }
+      // existing check-in dates for this client (skip dupes)
+      let haveDates=new Set();
+      try{ const ex=await db({op:'select',table:'checkins',where:{client_id:clientId},limit:500}); (ex.results||[]).forEach(r=>haveDates.add(r.checkin_date)); }catch(e){}
+      for(const ci of c.rows){
+        if(ci.checkin_date && haveDates.has(ci.checkin_date)){ skippedCheckins++; continue; }
+        const vals={client_id:clientId};
+        Object.keys(ci).forEach(k=>{ const v=ci[k]; if(v!==null && v!=='' && v!==undefined) vals[k]=v; });
+        if(Object.keys(vals).length<=1){ continue; }
+        try{ await db({op:'insert',table:'checkins',values:vals}); newCheckins++; }
+        catch(e){ errors++; }
+      }
+    }catch(e){ errors++; log('  error on '+c.name+': '+e.message,'err'); }
+  }
+  log('\nDone.','head');
+  log('New clients: '+newClients+' · already existed: '+skippedClients,'ok');
+  log('New check-ins imported: '+newCheckins+' · skipped (already there): '+skippedCheckins,'ok');
+  if(errors) log('Errors: '+errors,'warn');
+  log('\nOpen the Command Center or a client profile to see them.','head');
+  document.getElementById('scanBtn').disabled=false;
+}
+</script>
+</body>
+</html>
