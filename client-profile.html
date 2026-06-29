@@ -147,9 +147,9 @@ function pickClient(v){
 async function loadProfile(clientId){
   const wrap=document.getElementById('wrap');
   wrap.innerHTML='<div class="empty">Loading profile...</div>';
-  let client, checkins=[], consults=[], meals=[], measures=[], sessions=[], scans=[], workouts=[];
+  let client, checkins=[], consults=[], meals=[], measures=[], sessions=[], scans=[], workouts=[], photos=[];
   try{
-    const [c,ch,co,mp,ms,ts,sc,wk]=await Promise.all([
+    const [c,ch,co,mp,ms,ts,sc,wk,ph]=await Promise.all([
       db({op:'select',table:'clients',where:{id:clientId},limit:1}),
       db({op:'select',table:'checkins',where:{client_id:clientId},orderBy:'checkin_date ASC',limit:200}),
       db({op:'select',table:'consultations',where:{client_id:clientId},orderBy:'consult_date ASC',limit:50}),
@@ -157,12 +157,13 @@ async function loadProfile(clientId){
       db({op:'select',table:'measurements',where:{client_id:clientId},orderBy:'measured_at ASC',limit:100}),
       db({op:'select',table:'training_sessions',where:{client_id:clientId},orderBy:'session_date DESC',limit:100}),
       db({op:'select',table:'inbody_scans',where:{client_id:clientId},orderBy:'scan_date ASC',limit:200}),
-      db({op:'select',table:'workouts',where:{client_id:clientId},orderBy:'workout_date DESC',limit:200})
+      db({op:'select',table:'workouts',where:{client_id:clientId},orderBy:'workout_date DESC',limit:200}),
+      db({op:'select',table:'progress_photos',where:{client_id:clientId},orderBy:'captured_at DESC',limit:300})
     ]);
-    client=(c.results||[])[0]; checkins=ch.results||[]; consults=co.results||[]; meals=mp.results||[]; measures=ms.results||[]; sessions=ts.results||[]; scans=sc.results||[]; workouts=wk.results||[];
+    client=(c.results||[])[0]; checkins=ch.results||[]; consults=co.results||[]; meals=mp.results||[]; measures=ms.results||[]; sessions=ts.results||[]; scans=sc.results||[]; workouts=wk.results||[]; photos=ph.results||[];
   }catch(e){ wrap.innerHTML='<div class="empty"><div class="big">Could not load</div>'+esc(e.message)+'</div>'; return; }
   if(!client){ wrap.innerHTML='<div class="empty"><div class="big">Client not found</div></div>'; return; }
-  render(client, checkins, consults, meals, measures, sessions, scans, workouts);
+  render(client, checkins, consults, meals, measures, sessions, scans, workouts, photos);
 }
 
 function latestStats(checkins, consults){
@@ -185,7 +186,7 @@ function deltaHtml(now, first, lowerBetter){
   return '<div class="delta '+(good?'up':'down')+'">'+arrow+' '+Math.abs(diff)+' since start</div>';
 }
 
-function render(client, checkins, consults, meals, measures, sessions, scans, workouts){
+function render(client, checkins, consults, meals, measures, sessions, scans, workouts, photos){
   CURRENT=client;
   const nm=((client.first_name||'')+' '+(client.last_name||'')).trim()||('Client #'+client.id);
   const initials=((client.first_name||' ')[0]+(client.last_name||' ')[0]).toUpperCase();
@@ -240,7 +241,9 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   // meal plans
   html+='<div class="panel"><div class="ph"><h3>Meal Plans</h3><span class="pill">'+meals.length+'</span></div><div class="pb" id="mealList"></div></div>';
   // measurements
-  html+='<div class="panel"><div class="ph"><h3>Body Measurements</h3><span class="pill">'+measures.length+'</span></div><div class="pb" id="measureList"></div></div>';
+  html+='<div class="panel"><div class="ph"><h3>Body Measurements</h3><span class="pill">'+measures.length+'</span></div><div class="pb">'+
+    '<div style="margin-bottom:12px"><button class="btn red" onclick="toggleMeasForm()">+ Add Measurements</button></div>'+
+    '<div id="measForm" style="display:none"></div><div id="measureList"></div></div></div>';
   // uploads (coming with storage)
   const realScans=(scans||[]).filter(s=>s.source!=='inbody_history');
   html+='<div class="panel"><div class="ph"><h3>InBody Scans</h3><span class="pill">'+realScans.length+'</span></div><div class="pb">'+
@@ -253,6 +256,13 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<label class="btn red" style="cursor:pointer">Upload Workout<input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadWorkout(event)"></label>'+
     '<span id="woStatus" style="font-size:12px;color:var(--muted)"></span></div>'+
     '<div id="workoutsList"></div></div></div>';
+  html+='<div class="panel"><div class="ph"><h3>Progress Photos</h3><span class="pill">'+(photos||[]).length+'</span></div><div class="pb">'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'+
+    '<label class="btn red" style="cursor:pointer">Front<input type="file" accept="image/*" style="display:none" onchange="uploadPhoto(event,&quot;front&quot;)"></label>'+
+    '<label class="btn red" style="cursor:pointer">Side<input type="file" accept="image/*" style="display:none" onchange="uploadPhoto(event,&quot;side&quot;)"></label>'+
+    '<label class="btn red" style="cursor:pointer">Back<input type="file" accept="image/*" style="display:none" onchange="uploadPhoto(event,&quot;back&quot;)"></label>'+
+    '<span id="phStatus" style="font-size:12px;color:var(--muted)"></span></div>'+
+    '<div id="photosList"></div></div></div>';
 
   document.getElementById('wrap').innerHTML=html;
 
@@ -271,6 +281,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   renderMeasures(measures);
   renderScans(scans||[]);
   renderWorkouts(workouts||[]);
+  renderPhotos(photos||[]);
 }
 
 function statTile(lbl,val,unit,delta){
@@ -334,6 +345,54 @@ function renderMeasures(measures){
   if(!measures.length){ el.innerHTML='<div class="empty">No measurements recorded yet.</div>'; return; }
   el.innerHTML=measures.slice().reverse().map(m=>'<div class="row"><div class="main"><div class="name">'+esc(fmtDate(m.measured_at))+'</div>'+
     '<div class="meta">'+[['Waist',m.waist],['Chest',m.chest],['Hips',m.hips],['Arm',m.right_arm],['Thigh',m.right_thigh]].filter(x=>x[1]!=null).map(x=>x[0]+' '+x[1]).join(' · ')+'</div></div></div>').join('');
+}
+
+// ---------- progress photos + measurements ----------
+async function uploadPhoto(ev, pose){
+  const file=ev.target.files[0]; ev.target.value=''; if(!file||!CURRENT) return;
+  const st=document.getElementById('phStatus'); if(st) st.textContent='Uploading '+pose+'...';
+  try{
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+    const buf=await file.arrayBuffer();
+    const r=await fetch(WORKER+'/file/upload?client='+CURRENT.id+'&kind=photo_'+pose+'&ext='+ext+'&ct='+encodeURIComponent(file.type||'image/jpeg'),{method:'POST',body:buf});
+    const d=await r.json(); if(!d.key) throw new Error(d.error||'Upload failed');
+    const row={client_id:CURRENT.id, captured_at:new Date().toISOString().slice(0,10), pose:pose, r2_key:d.key, source:'profile'};
+    const ins=await db({op:'insert',table:'progress_photos',values:row});
+    if(ins && ins.error) throw new Error(ins.error);
+    if(st) st.textContent='Saved.'; loadProfile(CURRENT.id);
+  }catch(e){ if(st) st.textContent='Failed: '+e.message; }
+}
+function renderPhotos(photos){
+  const el=document.getElementById('photosList'); if(!el) return;
+  if(!photos.length){ el.innerHTML='<div class="empty">No progress photos yet. Snap front, side and back. They store privately and build a visual timeline.</div>'; return; }
+  const byDate={}; photos.forEach(p=>{ const d=p.captured_at||''; (byDate[d]=byDate[d]||[]).push(p); });
+  el.innerHTML=Object.keys(byDate).sort().reverse().map(d=>{
+    const thumbs=byDate[d].map(p=>'<a href="'+WORKER+'/file/get?key='+encodeURIComponent(p.r2_key)+'" target="_blank" style="text-decoration:none"><div style="text-align:center"><img src="'+WORKER+'/file/get?key='+encodeURIComponent(p.r2_key)+'" loading="lazy" style="width:84px;height:108px;object-fit:cover;border-radius:8px;border:1px solid var(--line)"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">'+esc(p.pose||'')+'</div></div></a>').join('');
+    return '<div style="margin-bottom:14px"><div style="font-weight:600;font-size:12.5px;margin-bottom:6px">'+esc(fmtDate(d))+'</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+thumbs+'</div></div>';
+  }).join('');
+}
+function mf(id,label,type){ return '<div class="fld"><label>'+label+'</label><input id="'+id+'" type="'+(type||'number')+'" step="0.1"></div>'; }
+function toggleMeasForm(){
+  const el=document.getElementById('measForm'); if(!el) return;
+  if(el.style.display==='none'){
+    el.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;padding:14px;background:var(--soft);border-radius:10px">'+
+      mf('mm_date','Date','date')+mf('mm_weight','Weight')+mf('mm_waist','Waist')+mf('mm_chest','Chest')+mf('mm_hips','Hips')+mf('mm_neck','Neck')+
+      mf('mm_larm','L Arm')+mf('mm_rarm','R Arm')+mf('mm_lthigh','L Thigh')+mf('mm_rthigh','R Thigh')+
+      '<div style="grid-column:1/4;display:flex;gap:8px;margin-top:4px"><button class="btn red" onclick="saveMeasurement()">Save</button><button class="btn" onclick="toggleMeasForm()">Cancel</button></div></div>';
+    const dd=document.getElementById('mm_date'); if(dd) dd.value=new Date().toISOString().slice(0,10);
+    el.style.display='block';
+  } else { el.style.display='none'; el.innerHTML=''; }
+}
+async function saveMeasurement(){
+  if(!CURRENT) return;
+  const g=id=>{ const e=document.getElementById(id); const v=e?e.value.trim():''; return v===''?null:v; };
+  const pf=v=>{ if(v==null) return null; const n=parseFloat(v); return isNaN(n)?null:n; };
+  const row={client_id:CURRENT.id, measured_at:g('mm_date')||new Date().toISOString().slice(0,10),
+    weight:pf(g('mm_weight')), waist:pf(g('mm_waist')), chest:pf(g('mm_chest')), hips:pf(g('mm_hips')), neck:pf(g('mm_neck')),
+    left_arm:pf(g('mm_larm')), right_arm:pf(g('mm_rarm')), left_thigh:pf(g('mm_lthigh')), right_thigh:pf(g('mm_rthigh')), source:'profile'};
+  Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; }); row.client_id=CURRENT.id;
+  try{ const ins=await db({op:'insert',table:'measurements',values:row}); if(ins&&ins.error) throw new Error(ins.error); loadProfile(CURRENT.id); }
+  catch(e){ alert('Save failed: '+e.message); }
 }
 
 // ---------- uploads + AI extraction ----------
