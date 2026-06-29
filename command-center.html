@@ -159,9 +159,6 @@
     <div class="toolcard" onclick="openTool('coach-dashboard.html')">
       <span class="ic">👟</span><div class="eb">Coach · Manager</div><div class="tt">Coach &amp; Manager View</div>
       <div class="td">Coaching communication log, client tactics, leaderboard.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="openTool('progress-capture.html')">
-      <span class="ic">📸</span><div class="eb">Photos · Measurements</div><div class="tt">Progress Capture</div>
-      <div class="td">Front, side, back photos and body measurements per client.</div><span class="arrow">→</span></div>
     <div class="toolcard" onclick="openTool('meal-plans.html')">
       <span class="ic">🥗</span><div class="eb">Complete · Complete+</div><div class="tt">Meal Plans</div>
       <div class="td">Build weekly plans and shopping lists, then send by Gmail.</div><span class="arrow">→</span></div>
@@ -396,10 +393,13 @@ const APPT_TYPES=[
 function classifyAppt(typePart){ for(const t of APPT_TYPES){ if(t.rx.test(typePart||'')) return t; } return null; }
 function parseAppt(summary){
   const s=(summary||'').trim();
-  const dash=s.indexOf('-');                 // Club OS format: "Name-Type"
-  let name='', typePart=s;
-  if(dash>0){ name=s.slice(0,dash).trim(); typePart=s.slice(dash+1).trim(); }
-  return { name, typePart, t: classifyAppt(typePart) };
+  let name='', rest=s;
+  const dash=s.indexOf('-');                 // Club OS format: "Name-Type" (Type may contain hyphens)
+  if(dash>0){
+    const left=s.slice(0,dash).trim();
+    if(!classifyAppt(left)){ name=left; rest=s.slice(dash+1).trim(); }
+  }
+  return { name, typePart: rest, t: classifyAppt(s) };
 }
 function fmtAppt(start){
   if(!start) return '';
@@ -427,7 +427,7 @@ function buildNBA(){
     if((a.start||'').slice(0,10)!==today) return;
     const p=parseAppt(a.summary);
     if(p.t) items.push({prio:1,cat:'Today',pill:'p-new',title:(p.name||'Appointment')+' \u00b7 '+p.t.label,reason:'Scheduled today',act:'Start',fn:()=>openTool(p.t.file+'?name='+encodeURIComponent(p.name||'')+'&appt='+p.t.key+'&date='+today)});
-    else items.push({prio:2,cat:'Today',pill:'p-declined',title:(p.name||p.typePart||a.summary||'Session'),reason:'On your calendar today',act:null});
+    else { const dt=a.start||''; items.push({prio:2,cat:'Today',pill:'p-declined',title:(p.name||p.typePart||a.summary||'Session'),reason:'On your calendar today',act:'Log',fn:()=>openTool('session-log.html?client='+encodeURIComponent(p.name||'')+'&date='+dt.slice(0,10)+(dt.slice(11,16)?('&time='+dt.slice(11,16)):'')+'&coach=Ted')}); }
   });
   CLIENTS.forEach(c=>{
     if(!c.training_start_date) return;
@@ -476,13 +476,13 @@ function renderAppts(){
     const p=parseAppt(a.summary); const when=fmtAppt(a.start);
     if(p.t){
       return '<div class="row" onclick="openAppt('+i+')">'+
-        '<div class="main"><div class="name">'+esc(p.name||'(no name)')+'</div>'+
+        '<div class="main"><div class="name">'+esc(p.name||p.t.label)+'</div>'+
         '<div class="meta">'+esc(when)+' \u00b7 '+esc(p.t.label)+(a.location?' \u00b7 '+esc(a.location):'')+'</div></div>'+
         '<span class="pill '+p.t.pill+'">'+esc(p.t.key)+'</span></div>';
     }
     const title=p.name||p.typePart||a.summary||'(untitled)';
     const sub=p.name?esc(p.typePart):'Session / class';
-    return '<div class="row static">'+
+    return '<div class="row" onclick="openSession('+i+')">'+
       '<div class="main"><div class="name">'+esc(title)+'</div>'+
       '<div class="meta">'+esc(when)+' \u00b7 '+sub+'</div></div>'+
       '<span class="pill p-declined">session</span></div>';
@@ -493,6 +493,13 @@ function openAppt(i){
   const p=parseAppt(a.summary); if(!p.t) return;
   const q='?name='+encodeURIComponent(p.name)+'&appt='+p.t.key+'&date='+encodeURIComponent((a.start||'').slice(0,10));
   openTool(p.t.file+q);
+}
+function openSession(i){
+  const a=APPTS[i]; if(!a) return;
+  const p=parseAppt(a.summary);
+  const dt=(a.start||''); const date=dt.slice(0,10); const time=dt.slice(11,16);
+  const q='?client='+encodeURIComponent(p.name||'')+'&date='+date+(time?('&time='+time):'')+'&coach=Ted';
+  openTool('session-log.html'+q);
 }
 
 /* ---------- charts ---------- */

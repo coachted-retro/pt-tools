@@ -842,7 +842,7 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   const idx = ['prospects','bc'].indexOf(tab);
   document.querySelectorAll('.tab-btn')[idx].classList.add('active');
-  if (tab === 'bc') { renderBC(); renderCalendar(); }
+  if (tab === 'bc') { renderBC(); renderCalendar(); loadGcalAppts().then(renderCalendar); }
 }
 
 // ══════════════════════════════════════════════════
@@ -1546,6 +1546,36 @@ function initCalendar() {
 function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
 function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
 
+// ---- Google Calendar (Club OS) feed overlay ----
+const CAL_BASE = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let gcalAppts = [];
+const GCAL_TYPES = [
+  {key:'followup', label:'6-Week Follow-Up', file:'fitness-followup-tool.html', rx:/6[\s-]*week|six[\s-]*week|follow[\s-]*up|re[\s-]*engage/i},
+  {key:'monthly',  label:'Monthly Check-In', file:'fitness-monthly-checkin.html', rx:/monthly|check[\s-]*in|progress/i},
+  {key:'consult',  label:'Initial Consultation', file:'fitness-consultation-tool.html', rx:/new member|inbody|initial|consult|intake|assessment|scan/i}
+];
+function gcalClassify(str){ for (const t of GCAL_TYPES) if (t.rx.test(str||'')) return t; return null; }
+function gcalParse(summary){
+  const str=(summary||'').trim(); let name='';
+  const dash=str.indexOf('-');
+  if (dash>0){ const left=str.slice(0,dash).trim(); if(!gcalClassify(left)) name=left; }
+  return { name, t: gcalClassify(str) };
+}
+async function loadGcalAppts(){
+  try {
+    const r = await fetch(CAL_BASE + '/calendar');
+    if (!r.ok) return;
+    const d = await r.json();
+    const evs = (d && d.events) || [];
+    gcalAppts = evs.map(e => {
+      const p = gcalParse(e.summary);
+      const start = e.start || '';
+      return { date: start.slice(0,10), time: start.slice(11,16), name: p.name, t: p.t };
+    }).filter(x => x.date);
+  } catch(e){}
+}
+function openGcal(file, name, date){ location.href = file + '?name=' + name + '&date=' + date; }
+
 function renderCalendar() {
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   document.getElementById('cal-title').textContent = monthNames[calMonth] + ' ' + calYear;
@@ -1565,6 +1595,14 @@ function renderCalendar() {
       evMap[day].push(b);
     }
   });
+  gcalAppts.forEach(a => {
+    if (!a.date) return;
+    const [y, mo, day] = a.date.split('-').map(Number);
+    if (y === calYear && (mo - 1) === calMonth) {
+      if (!evMap[day]) evMap[day] = [];
+      evMap[day].push({ _gcal:true, name:a.name, time:a.time, t:a.t, date:a.date });
+    }
+  });
 
   const grid = document.getElementById('cal-grid');
   const dayHeaders = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1577,6 +1615,13 @@ function renderCalendar() {
     const isToday = d === today.getDate() && calMonth === today.getMonth() && calYear === today.getFullYear();
     const events = evMap[d] || [];
     let evHtml = events.slice(0,3).map(b => {
+      if (b._gcal) {
+        const lbl = b.t ? b.t.label : 'Session';
+        const nm = (b.name||'').split(' ')[0] || (b.t ? 'Assessment' : 'Class');
+        const sty = b.t ? 'background:#E7EEFE;color:#2563EB' : 'background:#EEF0F3;color:#6B7280';
+        const clk = b.t ? (' onclick="openGcal(\''+b.t.file+'\',\''+encodeURIComponent(b.name||'')+'\',\''+b.date+'\')" style="cursor:pointer;'+sty+'"') : (' style="'+sty+'"');
+        return '<div class="cal-event"'+clk+' title="'+(b.name?b.name+' - ':'')+lbl+'">'+(b.time?b.time+' ':'')+nm+'</div>';
+      }
       const cls = 'ev-' + b.status.toLowerCase().replace(/[\s-]/g,'');
       return '<div class="cal-event ' + cls + '" onclick="selectBC(\'' + b.id + '\')" title="' + b.name + ' — ' + b.status + '">' +
         formatTime(b.apptTime) + ' ' + b.name.split(' ')[0] +
