@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal Access Manager — Body Shoppe</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--soft:#F0F2F5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:30}
+  .topbar img{height:32px;border-radius:4px}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)}.spacer{flex:1}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:700;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.red:hover{background:var(--red-dk)}
+  .btn.green{background:var(--green);border-color:var(--green);color:#fff}
+  .btn.sm{padding:5px 10px;font-size:10px}
+  .wrap{max-width:900px;margin:0 auto;padding:20px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .panel h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 14px;color:var(--ink)}
+  .fld label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+  .fld input,.fld select{width:100%;font-family:'Inter';font-size:13px;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--soft)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border:none}
+  .row .main{flex:1}.row .name{font-weight:600}.row .meta{font-size:12px;color:var(--muted)}
+  .pill{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:12px}
+  .pill.active{background:#E3F5EC;color:var(--green)}.pill.revoked{background:#FDECEA;color:var(--red)}
+  .log{background:#0E1013;color:#CDE3D2;border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:12px;max-height:200px;overflow:auto;white-space:pre-wrap;margin-top:12px;display:none}
+  .log.show{display:block}
+  .challenge-box{background:var(--ink);border-radius:10px;padding:16px;color:#fff;margin-top:12px}
+  .challenge-box .ct{font-family:'Oswald';font-size:18px;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px}
+  .challenge-box .cs{font-size:12px;color:#9CA3AF}
+  .status{font-size:12px;color:var(--muted);margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness" onerror="this.style.display='none'">
+  <div class="t">Portal <span>Access Manager</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="command-center.html">← Command Center</a>
+</div>
+<div class="wrap">
+
+  <!-- GRANT ACCESS -->
+  <div class="panel">
+    <h3>Grant Client Portal Access</h3>
+    <div class="grid2">
+      <div class="fld"><label>Client</label>
+        <select id="ga-client"><option value="">Loading clients...</option></select></div>
+      <div class="fld"><label>Email (for login)</label>
+        <input id="ga-email" type="email" placeholder="client@email.com"></div>
+    </div>
+    <div class="grid2">
+      <div class="fld"><label>Temporary password</label>
+        <input id="ga-pass" value="BodyShoppe2024" type="text"></div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn red" onclick="grantAccess()">Grant Access</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin:8px 0 0">Client will be prompted to change their password on first sign-in. Portal URL: <b>coachted-retro.github.io/pt-tools/client-portal.html</b></p>
+    <div class="status" id="ga-status"></div>
+    <div class="log" id="ga-log"></div>
+  </div>
+
+  <!-- ACTIVE ACCESS -->
+  <div class="panel">
+    <h3>Active Portal Users</h3>
+    <div id="active-list"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+  </div>
+
+  <!-- MONTHLY CHALLENGE -->
+  <div class="panel">
+    <h3>Monthly Challenge</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">The AI generates a new challenge automatically at the start of each month. You can also generate or regenerate one manually at any time.</p>
+    <div id="current-challenge"><div style="color:var(--muted);font-size:13px">Loading current challenge...</div></div>
+    <button class="btn red" onclick="generateChallenge()" style="margin-top:14px">Generate New Challenge</button>
+    <div class="status" id="ch-status"></div>
+    <div class="log" id="ch-log"></div>
+  </div>
+
+</div>
+
+<script>
+const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+const ADMIN_KEY='retro-admin-2024';
+
+function log(id, msg, cls){
+  const el=document.getElementById(id); el.classList.add('show');
+  el.innerHTML+=(cls?'<span style="color:'+(cls==='ok'?'#7BE0A3':cls==='err'?'#F08A8A':'#E8C06A')+'">'+msg+'</span>':msg)+'\n';
+  el.scrollTop=el.scrollHeight;
+}
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function db(body){
+  const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+  return r.json();
+}
+
+async function loadClients(){
+  const d=await db({op:'select',table:'clients',orderBy:'first_name ASC',limit:2000});
+  const sel=document.getElementById('ga-client');
+  sel.innerHTML=(d.results||[]).map(c=>`<option value="${c.id}" data-email="${c.email||''}">${c.first_name||''} ${c.last_name||''}</option>`).join('');
+  sel.addEventListener('change',()=>{
+    const opt=sel.options[sel.selectedIndex];
+    const em=opt.getAttribute('data-email');
+    if(em) document.getElementById('ga-email').value=em;
+  });
+}
+
+async function loadActiveUsers(){
+  const el=document.getElementById('active-list');
+  try{
+    const d=await db({op:'select',table:'client_auth',orderBy:'created_at DESC',limit:200});
+    const rows=d.results||[];
+    if(!rows.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px">No portal accounts yet.</div>'; return; }
+    const clients=await db({op:'select',table:'clients',limit:2000});
+    const cmap={}; (clients.results||[]).forEach(c=>cmap[c.id]=c);
+    el.innerHTML=rows.map(r=>{
+      const c=cmap[r.client_id]||{}; const name=((c.first_name||'')+' '+(c.last_name||'')).trim()||'Client #'+r.client_id;
+      return '<div class="row"><div class="main"><div class="name">'+esc(name)+'</div><div class="meta">'+esc(r.email)+(r.last_login?' · Last login '+esc(r.last_login.slice(0,10)):'')+'</div></div>'+
+        '<span class="pill '+(r.active?'active':'revoked')+'">'+(r.active?'Active':'Revoked')+'</span>'+
+        (r.active?'<button class="btn sm" style="background:#FDECEA;color:var(--red);border-color:#FDECEA" onclick="revokeAccess(\''+esc(r.email)+'\', this)">Revoke</button>':
+                  '<button class="btn sm green" onclick="reGrantAccess('+r.client_id+',\''+esc(r.email)+'\', this)">Re-grant</button>')+
+        '</div>';
+    }).join('');
+  }catch(e){ el.innerHTML='<div style="color:var(--muted)">Could not load users.</div>'; }
+}
+
+async function grantAccess(){
+  const client_id=document.getElementById('ga-client').value;
+  const email=document.getElementById('ga-email').value.trim();
+  const password=document.getElementById('ga-pass').value.trim();
+  const st=document.getElementById('ga-status');
+  if(!client_id||!email||!password){ st.textContent='Fill all fields'; return; }
+  st.textContent='Provisioning...';
+  try{
+    const r=await fetch(WORKER+'/auth/provision',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({client_id:+client_id,email,password})});
+    const d=await r.json();
+    if(d.provisioned||d.ok){ st.textContent='Access granted. Share the portal URL and temp password with the client.'; log('ga-log','Granted: '+email+' (client #'+client_id+')','ok'); loadActiveUsers(); }
+    else{ st.textContent='Error: '+(d.error||'try again'); log('ga-log','Error: '+(d.error||'unknown'),'err'); }
+  }catch(e){ st.textContent='Connection error'; }
+}
+async function revokeAccess(email, btn){
+  if(!confirm('Revoke portal access for '+email+'?')) return;
+  btn.textContent='Revoking...'; btn.disabled=true;
+  try{
+    const r=await fetch(WORKER+'/auth/revoke',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({email})});
+    await r.json(); loadActiveUsers();
+  }catch(e){ btn.textContent='Revoke'; btn.disabled=false; }
+}
+async function reGrantAccess(client_id, email, btn){
+  const pw=prompt('Set a new temporary password for '+email+':','BodyShoppe2024'); if(!pw) return;
+  btn.textContent='Granting...'; btn.disabled=true;
+  try{
+    const r=await fetch(WORKER+'/auth/provision',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({client_id,email,password:pw})});
+    await r.json(); loadActiveUsers();
+  }catch(e){ btn.textContent='Re-grant'; btn.disabled=false; }
+}
+
+async function loadCurrentChallenge(){
+  const el=document.getElementById('current-challenge');
+  try{
+    const r=await fetch(WORKER+'/challenge/current'); const d=await r.json();
+    if(!d.challenge){ el.innerHTML='<div style="color:var(--muted);font-size:13px">No active challenge. Generate one below.</div>'; return; }
+    const ch=d.challenge; const lb=d.leaderboard||[];
+    el.innerHTML='<div class="challenge-box"><div class="ct">'+esc(ch.title)+'</div>'+
+      '<div class="cs">'+esc(ch.tagline||'')+'</div>'+
+      '<div style="font-size:12px;color:#D1D5DB;margin-top:8px">'+esc(ch.description||'')+'</div>'+
+      '<div style="font-size:11px;color:#9CA3AF;margin-top:6px">Month: '+esc(ch.month)+' · '+lb.length+' participants</div></div>';
+  }catch(e){ el.innerHTML='<div style="color:var(--muted)">Could not load challenge.</div>'; }
+}
+
+async function generateChallenge(){
+  const st=document.getElementById('ch-status'); const lg=document.getElementById('ch-log');
+  st.textContent='Generating... (takes about 10 seconds)';
+  try{
+    const r=await fetch(WORKER+'/challenge/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+    const d=await r.json();
+    if(d.ok&&d.challenge){ st.textContent='New challenge generated and activated.'; log('ch-log','Generated: '+d.challenge.title,'ok'); loadCurrentChallenge(); }
+    else{ st.textContent='Error: '+(d.error||'try again'); log('ch-log','Error: '+(d.error||''),'err'); }
+  }catch(e){ st.textContent='Connection error'; }
+}
+
+(async function(){ await Promise.all([loadClients(), loadActiveUsers(), loadCurrentChallenge()]); })();
+</script>
+</body>
+</html>

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Body Shoppe — Member Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F0F2F5;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--blue:#2563EB;--soft:#F5F6F8}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+
+  /* ── LOGIN ── */
+  #login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:var(--ink)}
+  .login-logo{width:220px;margin-bottom:32px;border-radius:8px}
+  .login-box{background:var(--card);border-radius:16px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,.22)}
+  .login-box h2{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:20px;margin:0 0 6px;color:var(--ink)}
+  .login-box p{font-size:13px;color:var(--muted);margin:0 0 20px}
+  .fld{margin-bottom:14px}
+  .fld label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:5px}
+  .fld input{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;font-family:'Inter';font-size:14px;background:var(--soft)}
+  .fld input:focus{outline:none;border-color:var(--red)}
+  .btn{display:block;width:100%;font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:700;font-size:14px;padding:13px;border-radius:9px;border:none;cursor:pointer;text-align:center;text-decoration:none}
+  .btn-red{background:var(--red);color:#fff}
+  .btn-red:hover{background:var(--red-dk)}
+  .btn-outline{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+  .login-err{color:var(--red);font-size:12px;margin-top:8px;text-align:center;min-height:18px}
+
+  /* ── PORTAL SHELL ── */
+  #portal-screen{display:none;min-height:100vh}
+  .pbar{background:var(--ink);padding:0 16px;display:flex;align-items:center;gap:12px;height:52px;position:sticky;top:0;z-index:30}
+  .pbar img{height:30px;border-radius:4px}
+  .pbar .ptitle{font-family:'Oswald';color:#fff;font-size:16px;text-transform:uppercase;letter-spacing:.5px;flex:1}
+  .pbar .pname{font-size:12px;color:#9CA3AF}
+  .pbar .logout{font-size:11px;color:#9CA3AF;cursor:pointer;text-decoration:underline;white-space:nowrap}
+  .tabs{display:flex;background:var(--card);border-bottom:2px solid var(--line);overflow-x:auto;position:sticky;top:52px;z-index:20}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:13px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);cursor:pointer;white-space:nowrap;border-bottom:2.5px solid transparent;margin-bottom:-2px}
+  .tab.active{color:var(--red);border-bottom-color:var(--red)}
+  .wrap{max-width:600px;margin:0 auto;padding:16px}
+  .panel{display:none}.panel.active{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 10px;color:var(--ink)}
+  .stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .stat{flex:1;min-width:80px;background:var(--soft);border-radius:10px;padding:12px;text-align:center}
+  .stat .n{font-family:'Oswald';font-size:24px;font-weight:700;line-height:1}
+  .stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-top:4px}
+  .delta{font-size:11px;font-weight:600}.delta.up{color:var(--green)}.delta.dn{color:var(--red)}.delta.flat{color:var(--muted)}
+  .badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;background:var(--soft);color:var(--muted)}
+  .badge.red{background:#FDECEA;color:var(--red)}
+  .badge.green{background:#E3F5EC;color:var(--green)}
+  canvas{max-height:200px;margin-top:8px}
+  .recipe-item{border-top:1px solid var(--line);padding:10px 0;font-size:13px}
+  .recipe-item:first-child{border-top:none;padding-top:0}
+  .recipe-item .rname{font-weight:600;margin-bottom:3px}
+  .recipe-item .rmeta{font-size:11px;color:var(--muted)}
+  .lb-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .lb-row:last-child{border:none}
+  .lb-rank{font-family:'Oswald';font-size:18px;font-weight:700;color:var(--muted);width:28px;text-align:center}
+  .lb-rank.gold{color:#D97706}.lb-rank.silver{color:#6B7280}.lb-rank.bronze{color:#92400E}
+  .lb-name{flex:1;font-weight:600}
+  .lb-pts{font-family:'Oswald';font-size:16px;font-weight:700;color:var(--red)}
+  .you-badge{font-size:10px;background:var(--red);color:#fff;padding:1px 6px;border-radius:8px;margin-left:4px}
+  .log-form{display:grid;gap:10px;margin-top:12px}
+  .log-form input,.log-form textarea,.log-form select{width:100%;font-family:'Inter';font-size:13px;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;background:var(--soft)}
+  .log-form textarea{min-height:70px;resize:vertical}
+  .scores{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .score-btn{text-align:center;padding:8px 4px;border:1.5px solid var(--line);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;background:var(--soft)}
+  .score-btn.sel{background:var(--red);color:#fff;border-color:var(--red)}
+  .exercise-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .exercise-row input{flex:1;font-family:'Inter';font-size:13px;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;background:var(--soft)}
+  .exercise-row .small{width:64px}
+  .add-ex{font-size:12px;color:var(--blue);cursor:pointer;margin-top:4px;display:inline-block}
+  .rm-ex{font-size:15px;color:var(--muted);cursor:pointer;padding:0 4px}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0}
+  .week-plan{font-size:13px;line-height:1.6}
+  .shop-list{font-size:13px;column-count:2;column-gap:16px;line-height:1.8}
+  @media(max-width:400px){.shop-list{column-count:1}}
+  .challenge-banner{background:var(--ink);border-radius:14px;padding:18px;margin-bottom:14px;color:#fff}
+  .challenge-banner .ct{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:18px;margin:0 0 4px}
+  .challenge-banner .cs{font-size:12.5px;color:#9CA3AF;margin-bottom:12px}
+  .challenge-banner .log-btn{display:inline-block;background:var(--red);color:#fff;font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:9px 18px;border-radius:8px;border:none;cursor:pointer}
+  .prog-bar-wrap{background:#2D2D2D;border-radius:6px;height:8px;margin-top:10px}
+  .prog-bar{background:var(--red);border-radius:6px;height:8px;transition:width .4s}
+  .my-pts{font-family:'Oswald';font-size:28px;font-weight:700;color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <img class="login-logo" src="Retro_FH_Logo.jpg" alt="Retro Fitness" onerror="this.style.display='none'">
+  <div class="login-box" id="login-box">
+    <h2>Member Portal</h2>
+    <p>Body Shoppe — Retro Fitness Fairless Hills</p>
+    <div class="fld"><label>Email</label><input id="li-email" type="email" autocomplete="email" placeholder="you@email.com"></div>
+    <div class="fld"><label>Password</label><input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn btn-red" onclick="doLogin()" style="margin-top:8px">Sign In</button>
+  </div>
+  <!-- Change password on first login -->
+  <div class="login-box" id="change-box" style="display:none">
+    <h2>Set Your Password</h2>
+    <p>Create a new password to secure your account.</p>
+    <div class="fld"><label>New password</label><input id="cp-new" type="password" placeholder="At least 8 characters"></div>
+    <div class="fld"><label>Confirm password</label><input id="cp-confirm" type="password" placeholder="Repeat new password"></div>
+    <div class="login-err" id="cp-err"></div>
+    <button class="btn btn-red" onclick="doChangePassword()" style="margin-top:8px">Save Password</button>
+  </div>
+</div>
+
+<!-- ── PORTAL ── -->
+<div id="portal-screen">
+  <div class="pbar">
+    <img src="Retro_FH_Logo.jpg" alt="" onerror="this.style.display='none'">
+    <div class="ptitle">Body Shoppe</div>
+    <div class="pname" id="p-name"></div>
+    <div class="logout" onclick="doLogout()">Sign out</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('home')">Home</div>
+    <div class="tab" onclick="showTab('meal')">Meal Plan</div>
+    <div class="tab" onclick="showTab('progress')">Progress</div>
+    <div class="tab" onclick="showTab('challenge')">Challenge</div>
+    <div class="tab" onclick="showTab('train')">My Training</div>
+    <div class="tab" onclick="showTab('log')">Daily Log</div>
+  </div>
+
+  <!-- HOME -->
+  <div class="wrap panel active" id="tab-home">
+    <div class="card" id="home-welcome"></div>
+    <div class="card" id="home-stats"></div>
+    <div class="card" id="home-appt"></div>
+    <div class="card" id="home-challenge-snap"></div>
+  </div>
+
+  <!-- MEAL PLAN -->
+  <div class="wrap panel" id="tab-meal">
+    <div class="card" id="meal-plan-card">
+      <h3>This Week's Meal Plan</h3>
+      <div id="meal-plan-body"><div class="empty">Loading your meal plan...</div></div>
+    </div>
+    <div class="card" id="shopping-card">
+      <h3>Shopping List</h3>
+      <div id="shopping-body"></div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="wrap panel" id="tab-progress">
+    <div class="card">
+      <h3>Body Composition</h3>
+      <div id="prog-stats" class="stat-row"></div>
+      <canvas id="bodyChart"></canvas>
+      <div id="bodyChartEmpty"></div>
+    </div>
+    <div class="card">
+      <h3>Wellness Scores</h3>
+      <canvas id="scoreChart"></canvas>
+      <div id="scoreChartEmpty"></div>
+    </div>
+    <div class="card">
+      <h3>Check-In History</h3>
+      <div id="checkin-hist"></div>
+    </div>
+  </div>
+
+  <!-- CHALLENGE -->
+  <div class="wrap panel" id="tab-challenge">
+    <div id="challenge-main"></div>
+  </div>
+
+  <!-- MY TRAINING -->
+  <div class="wrap panel" id="tab-train">
+    <div class="card">
+      <h3>Log a Self-Guided Workout</h3>
+      <div class="log-form">
+        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Date</label><input type="date" id="sw-date"></div>
+        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Workout title</label><input type="text" id="sw-title" placeholder="e.g. Upper body push, Cardio day"></div>
+        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Duration (minutes)</label><input type="number" id="sw-dur" placeholder="45"></div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:8px">Exercises</label>
+          <div id="ex-list"></div>
+          <span class="add-ex" onclick="addExRow()">+ Add exercise</span>
+        </div>
+        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Notes</label><textarea id="sw-notes" placeholder="How did it feel? Any PRs?"></textarea></div>
+        <button class="btn btn-red" onclick="logWorkout()">Save Workout</button>
+        <div id="sw-status" style="font-size:12px;color:var(--muted);text-align:center"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Recent Training</h3>
+      <div id="train-hist"></div>
+    </div>
+  </div>
+
+  <!-- DAILY LOG -->
+  <div class="wrap panel" id="tab-log">
+    <div class="card">
+      <h3>Today's Check-In</h3>
+      <div class="log-form">
+        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Date</label><input type="date" id="dl-date"></div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:6px">Energy level (1-10)</label>
+          <div class="scores" id="energy-scores"></div>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:6px">Nutrition today (1-10)</label>
+          <div class="scores" id="nutrition-scores"></div>
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:6px">Hydration (cups of water)</label>
+          <div class="scores" id="hydration-scores"></div>
+        </div>
+        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Sleep last night (hours)</label><input type="number" id="dl-sleep" placeholder="7.5" step="0.5" min="0" max="14"></div>
+        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Today's win</label><input type="text" id="dl-wins" placeholder="Hit all my meals, skipped the elevator..."></div>
+        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Notes for Coach Ted</label><textarea id="dl-notes" placeholder="Anything you want your coach to know..."></textarea></div>
+        <button class="btn btn-red" onclick="logDay()">Save Today's Log</button>
+        <div id="dl-status" style="font-size:12px;color:var(--muted);text-align:center"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+let SESSION=null;
+
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+async function doLogin(){
+  const email=document.getElementById('li-email').value.trim();
+  const pass=document.getElementById('li-pass').value;
+  const err=document.getElementById('login-err');
+  err.textContent='';
+  if(!email||!pass){ err.textContent='Enter email and password'; return; }
+  err.textContent='Signing in...';
+  try{
+    const r=await fetch(WORKER+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d=await r.json();
+    if(!d.ok||d.error){ err.textContent=d.error||'Sign in failed'; return; }
+    if(d.must_change){
+      SESSION={token:d.token,client_id:d.client_id,email};
+      document.getElementById('login-box').style.display='none';
+      document.getElementById('change-box').style.display='block';
+      return;
+    }
+    SESSION={token:d.token,client_id:d.client_id,email};
+    localStorage.setItem('bsp_session',JSON.stringify(SESSION));
+    err.textContent='';
+    await openPortal();
+  }catch(e){ err.textContent='Connection error. Try again.'; }
+}
+async function doChangePassword(){
+  const np=document.getElementById('cp-new').value;
+  const cp=document.getElementById('cp-confirm').value;
+  const err=document.getElementById('cp-err');
+  err.textContent='';
+  if(np.length<8){ err.textContent='Password must be at least 8 characters'; return; }
+  if(np!==cp){ err.textContent='Passwords do not match'; return; }
+  err.textContent='Saving...';
+  try{
+    const r=await fetch(WORKER+'/auth/change-password',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({email:SESSION.email,old_password:document.getElementById('li-pass').value,new_password:np})});
+    const d=await r.json();
+    if(!d.ok){ err.textContent=d.error||'Failed'; return; }
+    localStorage.setItem('bsp_session',JSON.stringify(SESSION));
+    err.textContent='';
+    await openPortal();
+  }catch(e){ err.textContent='Connection error'; }
+}
+function doLogout(){ localStorage.removeItem('bsp_session'); SESSION=null; location.reload(); }
+
+// ── PORTAL ───────────────────────────────────────────────────────────────────
+async function openPortal(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('portal-screen').style.display='block';
+  setupScoreButtons('energy-scores','energy',10);
+  setupScoreButtons('nutrition-scores','nutrition',10);
+  setupScoreButtons('hydration-scores','hydration',12,true);
+  document.getElementById('sw-date').value=document.getElementById('dl-date').value=new Date().toISOString().slice(0,10);
+  addExRow();
+  await Promise.all([loadPortalData(), loadChallenge()]);
+}
+
+async function loadPortalData(){
+  try{
+    const r=await fetch(WORKER+'/portal/me?client_id='+SESSION.client_id);
+    const d=await r.json();
+    if(!d.ok) return;
+    SESSION.data=d;
+    document.getElementById('p-name').textContent=(d.client&&d.client.first_name)||'';
+    renderHome(d);
+    renderMealPlan(d.mealPlan);
+    renderProgress(d.checkins||[], d.scans||[]);
+    renderTrainHist([...(d.sessions||[]),...(d.selfWorkouts||[])].sort((a,b)=>(b.session_date||b.workout_date||'').localeCompare(a.session_date||a.workout_date||'')));
+  }catch(e){}
+}
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtDate(s){ if(!s) return ''; const d=new Date(s.length<=10?s+'T00:00:00':s); return isNaN(d)?s:d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function num(v){ const n=parseFloat(v); return isNaN(n)?null:n; }
+
+function renderHome(d){
+  const c=d.client||{};
+  const ci=d.checkins||[];
+  const last=ci[0]||null;
+  document.getElementById('home-welcome').innerHTML=
+    '<h3>Welcome back, '+esc(c.first_name||'')+'</h3>'+
+    '<div style="font-size:13px;color:var(--muted)">Goal: <b style="color:var(--ink)">'+esc(c.goal_primary||'—')+'</b>'+
+    (c.training_start_date?' · Training since <b style="color:var(--ink)">'+esc(fmtDate(c.training_start_date))+'</b>':'')+
+    '</div>'+(last?'<div style="font-size:12px;color:var(--muted);margin-top:6px">Last check-in: '+esc(fmtDate(last.checkin_date))+'</div>':'');
+  if(last){
+    document.getElementById('home-stats').innerHTML=
+      '<h3>Your Stats</h3>'+
+      '<div class="stat-row">'+
+      statPill('Weight',last.now_weight,'lb')+
+      statPill('Lean',last.now_lean,'lb')+
+      statPill('Body Fat',last.now_body_fat_pct,'%')+
+      statPill('BMI',last.now_bmi,'')+
+      '</div>';
+  } else { document.getElementById('home-stats').innerHTML='<h3>Your Stats</h3><div class="empty">Stats appear after your first monthly check-in.</div>'; }
+}
+function statPill(l,v,u){ const n=num(v); return '<div class="stat"><div class="n">'+(n!==null?n+(u?'<span style="font-size:12px;color:var(--muted)">'+u+'</span>':''):'—')+'</div><div class="l">'+l+'</div></div>'; }
+
+function renderMealPlan(mp){
+  if(!mp||!mp.plan_html){ document.getElementById('meal-plan-body').innerHTML='<div class="empty">Your meal plan will appear here once Coach Ted builds it for you.</div>'; document.getElementById('shopping-body').innerHTML=''; return; }
+  document.getElementById('meal-plan-body').innerHTML='<div class="week-plan">'+mp.plan_html+'</div>';
+  document.getElementById('shopping-body').innerHTML=mp.shopping_list?'<div class="shop-list">'+esc(mp.shopping_list).replace(/\n/g,'<br>')+'</div>':'<div class="empty">Shopping list will appear here.</div>';
+}
+
+function renderProgress(checkins, scans){
+  const pts=[];
+  checkins.slice().reverse().forEach(c=>pts.push({d:c.checkin_date,w:c.now_weight,l:c.now_lean,b:c.now_body_fat_pct}));
+  scans.slice().reverse().forEach(sc=>pts.push({d:sc.scan_date,w:sc.weight,l:sc.lean_mass,b:sc.body_fat_pct}));
+  pts.sort((a,b)=>(a.d||'').localeCompare(b.d||''));
+  const el=document.getElementById('bodyChart');
+  if(pts.length>=2){
+    el.style.display='block'; document.getElementById('bodyChartEmpty').innerHTML='';
+    new Chart(el,{type:'line',data:{labels:pts.map(p=>fmtDate(p.d)),datasets:[
+      {label:'Weight',data:pts.map(p=>num(p.w)),borderColor:'#E0192B',backgroundColor:'rgba(224,25,43,.07)',tension:.3,spanGaps:true},
+      {label:'Lean',data:pts.map(p=>num(p.l)),borderColor:'#1E9E5A',backgroundColor:'rgba(30,158,90,.07)',tension:.3,spanGaps:true},
+      {label:'BF%',data:pts.map(p=>num(p.b)),borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.07)',tension:.3,spanGaps:true,yAxisID:'y1'}
+    ]},options:{plugins:{legend:{labels:{font:{family:'Inter'},boxWidth:10}}},scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
+  } else { el.style.display='none'; document.getElementById('bodyChartEmpty').innerHTML='<div class="empty">Charts fill in after two or more check-ins.</div>'; }
+
+  const ci=checkins.slice().reverse();
+  const sel=document.getElementById('scoreChart');
+  if(ci.length>=1){
+    sel.style.display='block'; document.getElementById('scoreChartEmpty').innerHTML='';
+    new Chart(sel,{type:'line',data:{labels:ci.map(c=>fmtDate(c.checkin_date)),datasets:[
+      {label:'Session',data:ci.map(c=>num(c.session_score)),borderColor:'#1E9E5A',tension:.3,spanGaps:true},
+      {label:'Diet',data:ci.map(c=>num(c.diet_score)),borderColor:'#D98A0B',tension:.3,spanGaps:true},
+      {label:'Sleep',data:ci.map(c=>num(c.sleep_score)),borderColor:'#2563EB',tension:.3,spanGaps:true},
+      {label:'Stress',data:ci.map(c=>num(c.stress_score)),borderColor:'#E0192B',tension:.3,spanGaps:true}
+    ]},options:{plugins:{legend:{labels:{font:{family:'Inter'},boxWidth:10}}},scales:{y:{min:0,max:10}}}});
+  } else { sel.style.display='none'; document.getElementById('scoreChartEmpty').innerHTML='<div class="empty">Wellness scores chart after your first check-in.</div>'; }
+
+  const hist=checkins.slice(0,6);
+  document.getElementById('checkin-hist').innerHTML=hist.length?hist.map(c=>{
+    const wDelta=num(c.now_weight)!==null&&num(c.prev_weight)!==null?(num(c.now_weight)-num(c.prev_weight)).toFixed(1):null;
+    const bDelta=num(c.now_body_fat_pct)!==null&&num(c.prev_body_fat_pct)!==null?(num(c.now_body_fat_pct)-num(c.prev_body_fat_pct)).toFixed(1):null;
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="font-weight:600;margin-bottom:3px">'+esc(fmtDate(c.checkin_date))+'</div>'+
+      '<div style="font-size:12px;color:var(--muted)">'+
+      (c.now_weight!=null?'Wt '+c.now_weight+' lb':'')+(wDelta!==null?' <span class="delta '+(wDelta<=0?'up':'dn')+'">'+( wDelta<=0?'▼':'▲')+Math.abs(wDelta)+'</span>':'')+
+      (c.now_body_fat_pct!=null?' · BF '+c.now_body_fat_pct+'%':'')+
+      (bDelta!==null?' <span class="delta '+(bDelta<=0?'up':'dn')+'">'+( bDelta<=0?'▼':'▲')+Math.abs(bDelta)+'%</span>':'')+
+      (c.wins?' · '+esc(String(c.wins).slice(0,50)):'')+'</div></div>';
+  }).join(''):'<div class="empty">Your check-in history will appear here.</div>';
+}
+
+// ── CHALLENGE ────────────────────────────────────────────────────────────────
+let CHALLENGE=null;
+async function loadChallenge(){
+  try{
+    const r=await fetch(WORKER+'/challenge/current'); const d=await r.json();
+    CHALLENGE=d;
+    renderChallenge(d);
+    renderChallengeSnap(d);
+  }catch(e){}
+}
+function renderChallengeSnap(d){
+  const el=document.getElementById('home-challenge-snap');
+  if(!d||!d.challenge){ el.innerHTML=''; return; }
+  const ch=d.challenge;
+  const lb=d.leaderboard||[];
+  const mine=lb.find(x=>x.client_id===SESSION.client_id);
+  el.innerHTML='<h3>Active Challenge</h3><div style="font-weight:700;margin-bottom:3px">'+esc(ch.title)+'</div>'+
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">'+esc(ch.tagline||'')+'</div>'+
+    (mine?'<div>Your points: <span class="my-pts">'+mine.total+'</span></div>':'<div style="font-size:12px;color:var(--muted)">Log activities to earn points</div>')+
+    '<div style="margin-top:8px"><button class="btn btn-red" style="width:auto;padding:8px 16px;font-size:11px" onclick="showTab(\'challenge\')">View Challenge →</button></div>';
+}
+function renderChallenge(d){
+  const el=document.getElementById('challenge-main');
+  if(!d||!d.challenge){ el.innerHTML='<div class="card"><div class="empty">No active challenge right now. Check back at the start of next month.</div></div>'; return; }
+  const ch=d.challenge; const lb=d.leaderboard||[];
+  const mine=lb.find(x=>x.client_id===SESSION.client_id);
+  const myPts=mine?mine.total:0; const maxPts=lb.length?lb[0].total:1;
+  const rules=(ch.rules||'').split('|').map(r=>r.trim()).filter(Boolean);
+  el.innerHTML='<div class="challenge-banner">'+
+    '<div class="ct">'+esc(ch.title)+'</div>'+
+    '<div class="cs">'+esc(ch.tagline||'')+'</div>'+
+    (mine?'<div style="font-size:13px;margin-bottom:4px">Your points: <span style="font-family:Oswald;font-size:22px;font-weight:700;color:var(--red)">'+myPts+'</span></div>':'<div style="font-size:13px;color:#9CA3AF;margin-bottom:4px">Start earning points below</div>')+
+    '<div class="prog-bar-wrap"><div class="prog-bar" style="width:'+Math.min(100,Math.round(myPts/Math.max(maxPts,1)*100))+'%"></div></div>'+
+    '<button class="log-btn" style="margin-top:14px" onclick="openChallengeLog()">Log Activity +</button></div>'+
+    '<div class="card"><h3>'+esc(ch.description||'')+'</h3>'+
+    (rules.length?'<ul style="font-size:13px;color:var(--muted);padding-left:18px;margin:8px 0">'+rules.map(r=>'<li style="margin-bottom:4px">'+esc(r)+'</li>').join('')+'</ul>':'')+
+    '<div style="font-size:12px;color:var(--muted);margin-top:8px"><b>Points:</b> '+esc(ch.points_system||'')+'</div></div>'+
+    '<div class="card"><h3>Leaderboard</h3>'+
+    (lb.length?lb.map((row,i)=>{
+      const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const isYou=row.client_id===SESSION.client_id;
+      return '<div class="lb-row"><div class="lb-rank '+rankClass+'">'+(i+1)+'</div>'+
+        '<div class="lb-name">'+esc(row.first_name||'Member')+(isYou?'<span class="you-badge">You</span>':'')+'</div>'+
+        '<div class="lb-pts">'+row.total+' pts</div></div>';
+    }).join(''):'<div class="empty">No entries yet. Be the first to log.</div>')+'</div>'+
+    '<div class="card" id="ch-log-form" style="display:none"><h3>Log an Activity</h3>'+
+    '<div class="log-form">'+
+    '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">What did you do?</label><input type="text" id="ch-act" placeholder="30 min walk, hit all meals, drank 8 cups..."></div>'+
+    '<div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Notes (optional)</label><input type="text" id="ch-notes" placeholder="How it went..."></div>'+
+    '<button class="btn btn-red" onclick="submitChallengeLog()">Submit +1 Point</button>'+
+    '<div id="ch-status" style="font-size:12px;color:var(--muted);text-align:center"></div></div></div>';
+}
+function openChallengeLog(){
+  const f=document.getElementById('ch-log-form'); if(f) f.style.display=f.style.display==='none'?'block':'none';
+}
+async function submitChallengeLog(){
+  const act=(document.getElementById('ch-act')||{}).value||'';
+  const notes=(document.getElementById('ch-notes')||{}).value||'';
+  const st=document.getElementById('ch-status'); if(st) st.textContent='Saving...';
+  if(!CHALLENGE||!CHALLENGE.challenge) return;
+  try{
+    const r=await fetch(WORKER+'/challenge/log',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({client_id:SESSION.client_id,challenge_id:CHALLENGE.challenge.id,entry_date:new Date().toISOString().slice(0,10),activity:act,points:1,notes})});
+    const d=await r.json();
+    if(st) st.textContent='Logged! Total points: '+d.total;
+    if(document.getElementById('ch-act')) document.getElementById('ch-act').value='';
+    setTimeout(()=>loadChallenge(),1000);
+  }catch(e){ if(st) st.textContent='Failed. Try again.'; }
+}
+
+// ── TRAINING LOG ─────────────────────────────────────────────────────────────
+let exCount=0;
+function addExRow(){
+  const list=document.getElementById('ex-list'); if(!list) return;
+  const id=++exCount;
+  const div=document.createElement('div'); div.className='exercise-row'; div.id='exr-'+id;
+  div.innerHTML='<input type="text" placeholder="Exercise name" id="ex-name-'+id+'">'+
+    '<input type="text" class="small" placeholder="Sets" id="ex-sets-'+id+'">'+
+    '<input type="text" class="small" placeholder="Reps" id="ex-reps-'+id+'">'+
+    '<input type="text" class="small" placeholder="Wt" id="ex-wt-'+id+'">'+
+    '<span class="rm-ex" onclick="document.getElementById(\'exr-'+id+'\').remove()">✕</span>';
+  list.appendChild(div);
+}
+function collectExercises(){
+  const rows=document.querySelectorAll('.exercise-row'); const out=[];
+  rows.forEach(row=>{
+    const id=row.id.replace('exr-','');
+    const name=(document.getElementById('ex-name-'+id)||{}).value||'';
+    if(!name) return;
+    out.push({name,sets:(document.getElementById('ex-sets-'+id)||{}).value,reps:(document.getElementById('ex-reps-'+id)||{}).value,weight:(document.getElementById('ex-wt-'+id)||{}).value});
+  });
+  return out;
+}
+async function logWorkout(){
+  const st=document.getElementById('sw-status'); st.textContent='Saving...';
+  const ex=collectExercises();
+  try{
+    const r=await fetch(WORKER+'/portal/log-workout',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({client_id:SESSION.client_id,workout_date:document.getElementById('sw-date').value,title:document.getElementById('sw-title').value,duration_min:document.getElementById('sw-dur').value||null,exercises:ex,notes:document.getElementById('sw-notes').value})});
+    const d=await r.json();
+    if(d.ok){ st.textContent='Saved!'; document.getElementById('sw-title').value=''; document.getElementById('sw-notes').value=''; document.getElementById('ex-list').innerHTML=''; exCount=0; addExRow(); setTimeout(()=>{ st.textContent=''; },2000); loadPortalData(); }
+    else st.textContent='Error: '+(d.error||'try again');
+  }catch(e){ st.textContent='Connection error'; }
+}
+function renderTrainHist(entries){
+  const el=document.getElementById('train-hist');
+  if(!entries.length){ el.innerHTML='<div class="empty">Your training sessions and self-guided workouts appear here.</div>'; return; }
+  el.innerHTML=entries.slice(0,15).map(e=>{
+    const date=e.session_date||e.workout_date||'';
+    const title=e.workout_name||e.focus_areas||e.title||'Session';
+    const tag=e.source==='client_self_log'||e.exercises_json?'Self-guided':'With Coach';
+    let exNames='';
+    try{ exNames=JSON.parse(e.exercises_json||'[]').slice(0,3).map(x=>x.name).filter(Boolean).join(', '); }catch(er){}
+    return '<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600">'+esc(title)+'</span><span class="badge '+(tag==='Self-guided'?'':'green')+'">'+tag+'</span></div>'+
+      '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+esc(fmtDate(date))+(exNames?' · '+esc(exNames):'')+'</div></div>';
+  }).join('');
+}
+
+// ── DAILY LOG ────────────────────────────────────────────────────────────────
+let scoreVals={energy:null,nutrition:null,hydration:null};
+function setupScoreButtons(containerId, key, max, startAt1=false){
+  const el=document.getElementById(containerId); if(!el) return;
+  el.innerHTML='';
+  const vals=max<=12?Array.from({length:max},(_,i)=>startAt1?i+1:i+1):[];
+  vals.forEach(v=>{
+    const b=document.createElement('div'); b.className='score-btn'; b.textContent=v;
+    b.onclick=()=>{ scoreVals[key]=v; el.querySelectorAll('.score-btn').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); };
+    el.appendChild(b);
+  });
+}
+async function logDay(){
+  const st=document.getElementById('dl-status'); st.textContent='Saving...';
+  try{
+    const r=await fetch(WORKER+'/portal/log-day',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({client_id:SESSION.client_id,log_date:document.getElementById('dl-date').value,energy:scoreVals.energy,nutrition:scoreVals.nutrition,hydration:scoreVals.hydration,sleep:document.getElementById('dl-sleep').value||null,wins:document.getElementById('dl-wins').value,notes:document.getElementById('dl-notes').value})});
+    const d=await r.json();
+    if(d.ok){ st.textContent='Saved! Keep it up.'; setTimeout(()=>{ st.textContent=''; },2500); }
+    else st.textContent='Error: '+(d.error||'try again');
+  }catch(e){ st.textContent='Connection error'; }
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const panel=document.getElementById('tab-'+id); if(panel) panel.classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>{ if(t.textContent.toLowerCase().replace(/\s/g,'')===id||t.getAttribute('onclick')===`showTab('${id}')`) t.classList.add('active'); });
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.getElementById('li-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+(function(){
+  try{ const saved=JSON.parse(localStorage.getItem('bsp_session')||'null'); if(saved&&saved.token&&saved.client_id){ SESSION=saved; openPortal(); } }catch(e){}
+})();
+</script>
+</body>
+</html>
