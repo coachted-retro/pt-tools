@@ -745,7 +745,7 @@ async function _logToD1(clientName, e){
     let c=all.find(x=>(((x.first_name||'')+' '+(x.last_name||'')).trim().toLowerCase())===key);
     let clientId;
     if(c){ clientId=c.id; }
-    else{ const p=name.split(/\s+/); const ins=await db({op:'insert',table:'clients',values:{first_name:p[0]||'',last_name:p.slice(1).join(' '),status:'active_pt',source:'session_log'}}); clientId=ins.id; }
+    else{ const p=name.split(/\s+/); const ins=await db({op:'insert',table:'clients',values:{first_name:p[0]||'',last_name:p.slice(1).join(' '),status:'active_pt'}}); clientId=(ins&&ins.id!=null)?ins.id:(ins&&ins.meta&&ins.meta.last_row_id); }
     if(!clientId) return;
     const vals={
       client_id:clientId, session_date:e.date, completed:1, source:'session_log',

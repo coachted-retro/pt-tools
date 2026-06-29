@@ -115,7 +115,7 @@ async function saveClient(){
   const vals={
     first_name:getF('m_first'), last_name:getF('m_last'), email:getF('m_email'), phone:getF('m_phone'),
     gender:getF('m_gender'), status:getF('m_status'), coach:getF('m_coach'), advisor:getF('m_advisor'),
-    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start')
+    goal_primary:getF('m_goal'), training_start_date:getF('m_start')
   };
   if(!vals.first_name && !vals.last_name){ alert('Enter a name'); btn.disabled=false; btn.textContent='Save'; return; }
   try{

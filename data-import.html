@@ -143,12 +143,18 @@ async function runImport(){
       let row=existing[c.key], clientId;
       if(row){ clientId=row.id; skippedClients++; log('• '+c.name+' — exists (#'+clientId+')'); }
       else{
-        const vals={first_name:c.first,last_name:c.last,status:'active_pt',source:'sheets_import'};
+        const vals={first_name:c.first,last_name:c.last,status:'active_pt'};
         if(c.gender) vals.gender=c.gender;
         if(c.advisor) vals.advisor=c.advisor;
         if(c.start) vals.training_start_date=c.start;
         const ins=await db({op:'insert',table:'clients',values:vals});
-        clientId=ins.id; newClients++; log('• '+c.name+' — created (#'+clientId+')','ok');
+        if(ins && ins.error){ log('  insert error for '+c.name+': '+ins.error,'err'); errors++; continue; }
+        clientId=(ins && ins.id!=null) ? ins.id : (ins && ins.meta && ins.meta.last_row_id);
+        if(clientId==null){
+          try{ const re=await db({op:'select',table:'clients',limit:5000}); const ff=(re.results||[]).find(x=>(((x.first_name||'')+' '+(x.last_name||'')).trim().toLowerCase())===c.key); if(ff) clientId=ff.id; }catch(e){}
+        }
+        if(clientId==null){ log('  could not resolve id for '+c.name,'err'); errors++; continue; }
+        newClients++; log('• '+c.name+' — created (#'+clientId+')','ok');
         existing[c.key]={id:clientId};
       }
       // existing check-in dates for this client (skip dupes)
@@ -159,7 +165,7 @@ async function runImport(){
         const vals={client_id:clientId};
         Object.keys(ci).forEach(k=>{ const v=ci[k]; if(v!==null && v!=='' && v!==undefined) vals[k]=v; });
         if(Object.keys(vals).length<=1){ continue; }
-        try{ await db({op:'insert',table:'checkins',values:vals}); newCheckins++; }
+        try{ const rr=await db({op:'insert',table:'checkins',values:vals}); if(rr && rr.error){ errors++; } else { newCheckins++; } }
         catch(e){ errors++; }
       }
     }catch(e){ errors++; log('  error on '+c.name+': '+e.message,'err'); }
