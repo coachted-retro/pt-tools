@@ -1280,57 +1280,114 @@
           <!-- PACKAGE TIERS -->
           <div class="package-section" id="package-section" style="display:none;">
             <div class="package-section-title">Choose a Training Program</div>
-            <div class="package-section-sub">Select the package that fits the member's goals and schedule. Packages with ★ include Coach Ted's personalized meal plans.</div>
-            <div class="package-grid">
-              <div class="package-card" id="pkg-1" onclick="selectPkg(1)">
-                <div class="pkg-name">Coach Ted Training</div>
-                <div class="pkg-price">$180<span>/mo</span></div>
-                <div class="pkg-freq">4 sessions &middot; 1x per week</div>
+            <!-- AI recommendation banner -->
+            <div id="pkg-rec-wrap" style="display:none;background:var(--accent-light);border:1.5px solid var(--accent);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px">
+              <div style="font-weight:700;color:var(--accent);margin-bottom:4px">Recommended for this member</div>
+              <div id="pkg-rec-text" style="color:var(--text);line-height:1.5"></div>
+            </div>
+            <div id="pkg-rec-loading" style="font-size:12px;color:var(--text2);margin-bottom:12px;display:none">Analyzing goals and body composition...</div>
+
+            <!-- Frequency packages -->
+            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Session Frequency</div>
+            <div class="package-grid" id="pkg-grid-freq" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px">
+              <div class="package-card" id="pkg-f1" onclick="selectPkg('f1')">
+                <div class="pkg-name">Every 2 Weeks</div>
+                <div class="pkg-freq">2 sessions / month</div>
+                <ul class="pkg-features">
+                  <li>Structured check-in sessions</li>
+                  <li>Program adjustments monthly</li>
+                  <li>Trainerize app access</li>
+                  <li>Progress tracking</li>
+                </ul>
+                <button class="pkg-select-btn">Select</button>
+              </div>
+              <div class="package-card" id="pkg-f2" onclick="selectPkg('f2')">
+                <div class="pkg-name">1x Per Week</div>
+                <div class="pkg-freq">4 sessions / month</div>
+                <ul class="pkg-features">
+                  <li>Weekly accountability session</li>
+                  <li>Personalized program</li>
+                  <li>Monthly InBody review</li>
+                  <li>Trainerize app access</li>
+                  <li>Session notes &amp; tracking</li>
+                </ul>
+                <button class="pkg-select-btn">Select</button>
+              </div>
+              <div class="package-card" id="pkg-f3" onclick="selectPkg('f3')">
+                <div class="pkg-name">2x Per Week</div>
+                <div class="pkg-freq">8 sessions / month</div>
+                <ul class="pkg-features">
+                  <li>Twice-weekly training momentum</li>
+                  <li>Faster adaptation and results</li>
+                  <li>Full program periodization</li>
+                  <li>Monthly InBody review</li>
+                  <li>Trainerize app access</li>
+                </ul>
+                <button class="pkg-select-btn">Select</button>
+              </div>
+              <div class="package-card" id="pkg-f4" onclick="selectPkg('f4')">
+                <div class="pkg-name">3x Per Week</div>
+                <div class="pkg-freq">12 sessions / month</div>
+                <ul class="pkg-features">
+                  <li>High-frequency coaching</li>
+                  <li>Full periodized program</li>
+                  <li>Maximum accountability</li>
+                  <li>Bi-weekly InBody check</li>
+                  <li>Trainerize app access</li>
+                </ul>
+                <button class="pkg-select-btn">Select</button>
+              </div>
+              <div class="package-card" id="pkg-f5" onclick="selectPkg('f5')">
+                <div class="pkg-name">4x Per Week</div>
+                <div class="pkg-freq">16 sessions / month</div>
+                <ul class="pkg-features">
+                  <li>Elite daily coaching structure</li>
+                  <li>Full periodized split programming</li>
+                  <li>Weekly InBody monitoring</li>
+                  <li>Maximum results track</li>
+                  <li>Trainerize app access</li>
+                </ul>
+                <button class="pkg-select-btn">Select</button>
+              </div>
+            </div>
+
+            <!-- Complete packages -->
+            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Complete Packages <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">— includes weekly chef-crafted meal plan, recipes &amp; shopping list emailed every Saturday</span></div>
+            <div class="package-grid" id="pkg-grid-complete">
+              <div class="package-card" id="pkg-c1" onclick="selectPkg('c1')">
+                <div class="pkg-name">Complete</div>
+                <div class="pkg-freq">4 sessions / month</div>
                 <ul class="pkg-features">
                   <li>4 one-on-one training sessions</li>
                   <li>Personalized workout program</li>
                   <li>Monthly InBody scan review</li>
                   <li>Trainerize app access</li>
-                  <li>Session notes &amp; progress tracking</li>
+                  <li class="chef">Weekly AI + chef meal plan</li>
+                  <li class="chef">Recipes + grocery list</li>
+                  <li class="chef">Macro targets from InBody</li>
+                  <li class="chef">Emailed every Saturday</li>
                 </ul>
                 <button class="pkg-select-btn">Select</button>
               </div>
-              <div class="package-card" id="pkg-2" onclick="selectPkg(2)">
-                <div class="pkg-badge">Most Popular</div>
-                <div class="pkg-name">Coach Ted Complete</div>
-                <div class="pkg-price">$249<span>/mo</span></div>
-                <div class="pkg-freq">4 sessions &middot; 1x per week</div>
-                <ul class="pkg-features">
-                  <li>4 one-on-one training sessions</li>
-                  <li>Personalized workout program</li>
-                  <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
-                  <li class="chef">Weekly personalized meal plan</li>
-                  <li class="chef">Chef-crafted recipes + grocery list</li>
-                  <li class="chef">Macro targets from InBody data</li>
-                  <li class="chef">1st Phorm supplement stack</li>
-                </ul>
-                <button class="pkg-select-btn">Select</button>
-              </div>
-              <div class="package-card" id="pkg-3" onclick="selectPkg(3)">
-                <div class="pkg-name">Coach Ted Complete+</div>
-                <div class="pkg-price">$349<span>/mo</span></div>
-                <div class="pkg-freq">8 sessions &middot; 2x per week</div>
+              <div class="package-card" id="pkg-c2" onclick="selectPkg('c2')">
+                <div class="pkg-badge">Best Value</div>
+                <div class="pkg-name">Complete+</div>
+                <div class="pkg-freq">8 sessions / month</div>
                 <ul class="pkg-features">
                   <li>8 one-on-one training sessions</li>
                   <li>Personalized workout program</li>
                   <li>Monthly InBody scan review</li>
                   <li>Trainerize app access</li>
-                  <li class="chef">Weekly personalized meal plan</li>
-                  <li class="chef">Chef-crafted recipes + grocery list</li>
-                  <li class="chef">Macro targets from InBody data</li>
-                  <li class="chef">1st Phorm supplement stack</li>
+                  <li class="chef">Weekly AI + chef meal plan</li>
+                  <li class="chef">Recipes + grocery list</li>
+                  <li class="chef">Macro targets from InBody</li>
+                  <li class="chef">Emailed every Saturday</li>
                   <li>Faster results track</li>
                 </ul>
                 <button class="pkg-select-btn">Select</button>
               </div>
             </div>
-            <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;">★ Chef-built nutrition features included in Complete and Complete+ only.</div>
+            <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;">Chef-crafted nutrition included in Complete packages only.</div>
           </div>
 
           <div id="decision-row" class="decision-row">
@@ -2489,6 +2546,20 @@ function showDecline() {
   document.getElementById('followup-panel').style.display = 'block';
   document.getElementById('terms-panel').style.display = 'none';
   document.getElementById('followup-panel').scrollIntoView({ behavior:'smooth' });
+
+  // Immediately open calendar for 6-week follow-up
+  const calDate = followDate.toISOString().slice(0,10).replace(/-/g,'');
+  const calEnd  = followDate.toISOString().slice(0,10).replace(/-/g,'');
+  const calUrl  = 'https://calendar.google.com/calendar/render?action=TEMPLATE'+
+    '&text='+encodeURIComponent('6-Week Follow-Up: '+gv('name'))+
+    '&dates='+calDate+'/'+calEnd+
+    '&details='+encodeURIComponent('Phone: '+gv('phone')+' | Email: '+gv('email')+' | Goals: '+gv('goals'))+
+    '&add='+(gender&&gender.toLowerCase().includes('female')?'healthylifewithdani1%40gmail.com':'tedscholl%40gmail.com');
+  setTimeout(function(){ window.open(calUrl,'_blank'); }, 400);
+
+  // Immediately generate Thank You email
+  const stage=document.getElementById('thankyou-stage');
+  if(stage){ stage.style.display='block'; generateThankYouEmail(); }
 }
 
 // ===========================================
@@ -3153,23 +3224,55 @@ function showPackages() {
   document.getElementById('package-section').style.display = 'block';
   document.getElementById('decision-row').style.display = 'none';
   document.getElementById('package-section').scrollIntoView({ behavior:'smooth' });
+  generatePkgRecommendation();
+}
+async function generatePkgRecommendation(){
+  const wrap=document.getElementById('pkg-rec-wrap');
+  const loading=document.getElementById('pkg-rec-loading');
+  const text=document.getElementById('pkg-rec-text');
+  if(!wrap||!loading||!text) return;
+  loading.style.display='block';
+  const prompt='A new PT client just completed a fitness consultation and InBody assessment. Based on their data, decide which training package fits best from: Every-2-weeks (f1), 1x-per-week (f2), 2x-per-week (f3), 3x-per-week (f4), 4x-per-week (f5), Complete 1x/week with weekly chef meal plan (c1), Complete+ 2x/week with weekly chef meal plan (c2). Return ONLY valid JSON with keys pkg, name, reason. No markdown. Example: {"pkg":"f3","name":"2x Per Week","reason":"..."}. Recommend Complete/Complete+ if nutrition needs are significant. Goals: '+(gv('goals')||'not specified')+'. BMI '+(gv('bmi')||'n/a')+', BF '+(gv('pbf')||'n/a')+'%, Lean '+(gv('lean-mass')||'n/a')+' lb. Medical: '+(gv('medical')||'none')+'.';
+  try{
+    const r=await fetch(getApiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:400,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();
+    const raw=(d.content||[]).map(b=>b.text||'').join('').trim();
+    let j; try{ j=JSON.parse(raw.replace(/```json|```/g,'').trim()); }catch(e){}
+    if(j&&j.pkg){
+      text.textContent=j.reason||'';
+      wrap.style.display='block';
+      // highlight recommended card
+      document.querySelectorAll('.package-card').forEach(c=>c.classList.remove('pkg-selected','pkg-recommended'));
+      const el=document.getElementById('pkg-'+j.pkg);
+      if(el){ el.classList.add('pkg-recommended'); el.scrollIntoView({behavior:'smooth',block:'center'}); }
+      wrap._recPkg=j.pkg;
+    }
+  }catch(e){}
+  loading.style.display='none';
 }
 
-function selectPkg(num) {
-  selectedPkg = num;
-  document.querySelectorAll('.package-card').forEach(function(c) { c.classList.remove('pkg-selected'); });
-  document.getElementById('pkg-' + num).classList.add('pkg-selected');
-  var p = pkgPricing[num];
-  // Update enroll summary
+var PKG_META={
+  f1:{name:'Every 2 Weeks',sessions:'2/mo',nutrition:false,value:'biweekly'},
+  f2:{name:'1x Per Week',sessions:'4/mo',nutrition:false,value:'weekly_1x'},
+  f3:{name:'2x Per Week',sessions:'8/mo',nutrition:false,value:'weekly_2x'},
+  f4:{name:'3x Per Week',sessions:'12/mo',nutrition:false,value:'weekly_3x'},
+  f5:{name:'4x Per Week',sessions:'16/mo',nutrition:false,value:'weekly_4x'},
+  c1:{name:'Complete',sessions:'4/mo',nutrition:true,value:'complete'},
+  c2:{name:'Complete+',sessions:'8/mo',nutrition:true,value:'complete_plus'},
+  1:{name:'Coach Ted Training',sessions:'4/mo',nutrition:false,value:'training'},
+  2:{name:'Coach Ted Complete',sessions:'4/mo',nutrition:true,value:'complete'},
+  3:{name:'Coach Ted Complete+',sessions:'8/mo',nutrition:true,value:'complete_plus'}
+};
+function selectPkg(id) {
+  selectedPkg = id;
+  document.querySelectorAll('.package-card').forEach(function(c) { c.classList.remove('pkg-selected','pkg-recommended'); });
+  var el=document.getElementById('pkg-'+(typeof id==='number'?id:id));
+  if(el) el.classList.add('pkg-selected');
+  var p = PKG_META[id] || pkgPricing[id] || {};
   var sum = document.getElementById('enroll-pkg-summary');
-  if (sum) sum.textContent = p.name + ' — ' + p.sessions + ' sessions/mo';
-  // Auto-proceed after short delay
+  if (sum) sum.textContent = (p.name||'') + ' — ' + (p.sessions||p.sessions||'') + ' sessions/mo';
   setTimeout(function() {
-    if (p.hasNutrition) {
-      showNutritionPanel();
-    } else {
-      showMeasurements();
-    }
+    if (p.nutrition||p.hasNutrition) { showNutritionPanel(); } else { showMeasurements(); }
   }, 300);
 }
 
