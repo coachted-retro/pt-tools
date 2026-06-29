@@ -4,34 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Monthly PT Check-In v1780078195</title>
-<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f0f4f0;
+    --bg: #F5F6F8;
     --surface: #ffffff;
-    --surface2: #e8ede8;
-    --surface3: #dde5dd;
-    --border: #d0d8d0;
-    --border2: #b8c4b8;
-    --text: #161e16;
-    --text2: #526052;
-    --text3: #8a9e8a;
-    --accent: #2e5e38;
-    --accent-light: #e4f0e6;
-    --accent2: #1a4472;
-    --accent2-light: #e4eef8;
-    --gold: #8a6a1e;
-    --gold-light: #f8f0dc;
-    --danger: #943030;
-    --danger-light: #fceee8;
-    --warning: #7a5a10;
-    --warning-light: #fdf4dc;
+    --surface2: #F0F2F5;
+    --surface3: #E9ECEF;
+    --border: #E4E7EC;
+    --border2: #D7DBE0;
+    --text: #15171A;
+    --text2: #6B7280;
+    --text3: #9AA1AC;
+    --accent: #E0192B;
+    --accent-light: #FCE8EA;
+    --accent2: #2563EB;
+    --accent2-light: #EEF2FF;
+    --gold: #D98A0B;
+    --gold-light: #FEF3E0;
+    --danger: #DC2626;
+    --danger-light: #FDECEC;
+    --warning: #D98A0B;
+    --warning-light: #FEF3E0;
     --radius: 10px;
     --radius-lg: 16px;
     --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 14px rgba(0,0,0,0.05);
-    --font: 'Cabinet Grotesk', 'DM Sans', sans-serif;
+    --font: 'Inter', sans-serif;
     --mono: 'DM Mono', monospace;
+    --font-display: 'Oswald', sans-serif;
   }
+  h1,h2,h3,.card-title,.section-title,.panel-title,.seg-title{font-family:'Oswald',sans-serif}
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
@@ -676,7 +678,7 @@
         <button class="btn btn-primary btn-lg btn-full" id="save-btn" onclick="saveCheckin()" style="margin-top:14px">📊 Save to progress tracker & notify team</button>
         <div id="confirm-save" class="confirm-box">✅ Saved to PT Member Progress Tracker. Next check-in scheduled. Team notified.</div>
         <div id="report-monthly-wrap" style="display:none;margin-top:14px;">
-          <button class="btn btn-primary btn-lg btn-full" onclick="runMonthlyReport()" style="background:#1a6b3c;border-color:#1a6b3c;">
+          <button class="btn btn-primary btn-lg btn-full" onclick="runMonthlyReport()" style="background:#E0192B;border-color:#E0192B;">
             📄 Generate Monthly Progress Report PDF &amp; Email Client
           </button>
           <div id="report-monthly-status" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
@@ -1442,7 +1444,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 </script>
-<a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#2d5a3d;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
+<a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#E0192B;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
 
 <script>
 /* ---------- Client record: training start date pull + remember ---------- */

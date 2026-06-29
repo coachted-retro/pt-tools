@@ -7,34 +7,36 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PT Consultation v1780688350</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f5f4f0;
-    --surface: #ffffff;
-    --surface2: #f0efe9;
-    --border: #e2e0d8;
-    --border2: #ccc9bc;
-    --text: #1a1917;
-    --text2: #6b6860;
-    --text3: #9c9a93;
-    --accent: #2d5a3d;
-    --accent-light: #e8f0eb;
-    --accent2: #8b4513;
-    --danger: #c0392b;
-    --danger-light: #fdf0ef;
-    --warning: #b8860b;
-    --warning-light: #fdf8e8;
-    --success: #2d5a3d;
-    --success-light: #e8f0eb;
-    --info: #1a4a7a;
-    --info-light: #e8f0f8;
+    --bg: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface2: #F0F2F5;
+    --border: #E4E7EC;
+    --border2: #D7DBE0;
+    --text: #15171A;
+    --text2: #6B7280;
+    --text3: #9AA1AC;
+    --accent: #E0192B;
+    --accent-light: #FCE8EA;
+    --accent2: #15171A;
+    --danger: #DC2626;
+    --danger-light: #FDECEC;
+    --warning: #D98A0B;
+    --warning-light: #FEF3E0;
+    --success: #1E9E5A;
+    --success-light: #E3F5EC;
+    --info: #2563EB;
+    --info-light: #EEF2FF;
     --radius: 10px;
     --radius-lg: 14px;
     --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
-    --font: 'DM Sans', sans-serif;
+    --font: 'Inter', sans-serif;
+    --font-display: 'Oswald', sans-serif;
     --mono: 'DM Mono', monospace;
   }
+  h1,h2,h3,.card-title,.section-title,.step-title,.panel-title,.seg-title { font-family: var(--font-display); }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1582,7 +1584,7 @@
             &#x2705; Saved to All Intakes and email sent to tedscholl@gmail.com &amp; healthylifewithdani1@gmail.com. Welcome aboard!
           </div>
           <div id="report-enrolled-wrap" style="display:none;margin-top:14px;">
-            <button class="btn btn-primary btn-full" onclick="runConsultReport('welcome')" style="background:#1a6b3c;border-color:#1a6b3c;">
+            <button class="btn btn-primary btn-full" onclick="runConsultReport('welcome')" style="background:#E0192B;border-color:#B0121F;">
               📄 Generate Welcome Packet PDF &amp; Email Client
             </button>
             <div id="report-enrolled-status" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
@@ -2952,7 +2954,7 @@ function renderDraftPanel() {
 
     var loadBtn = document.createElement('button');
     loadBtn.textContent = 'Load';
-    loadBtn.style.cssText = 'background:#00e5a0;color:#000;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700';
+    loadBtn.style.cssText = 'background:#E0192B;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700';
     loadBtn.onclick = (function(id) { return function(e) { e.stopPropagation(); loadDraftById(id); }; })(d._id);
 
     var delBtn = document.createElement('button');
@@ -3058,7 +3060,7 @@ function filterClients(query) {
     
     var loadBtn = document.createElement('button');
     loadBtn.textContent = 'Open Intake';
-    loadBtn.style.cssText = 'background:#00e5a0;color:#000;border:none;padding:7px 16px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;margin-left:12px';
+    loadBtn.style.cssText = 'background:#E0192B;color:#fff;border:none;padding:7px 16px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;margin-left:12px';
     loadBtn.onclick = (function(id){ return function(e){ e.stopPropagation(); loadDraftById(id); closeClientSearch(); }; })(d._id);
     
     top.appendChild(info);
@@ -3558,11 +3560,11 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
         }, 1200);
 
       } catch(e) {
-        if (statusEl) statusEl.innerHTML = '<span style="color:#c0392b">❌ Error: ' + e.message + '</span>';
+        if (statusEl) statusEl.innerHTML = '<span style="color:#DC2626">❌ Error: ' + e.message + '</span>';
       }
     });
   } catch(e) {
-    if (statusEl) statusEl.innerHTML = '<span style="color:#c0392b">❌ ' + e.message + '</span>';
+    if (statusEl) statusEl.innerHTML = '<span style="color:#DC2626">❌ ' + e.message + '</span>';
   }
 }
 
