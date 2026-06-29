@@ -1624,6 +1624,21 @@
           <div id="confirm-decline" class="confirm-box" style="background:var(--success-light); border-color:#a8d0b8;">
             ✅ Saved to database and follow-up sheet. Results emailed to tedscholl@gmail.com & healthylifewithdani1@gmail.com.
           </div>
+          <div id="thankyou-stage" style="display:none;margin-top:16px;border:1px solid var(--border2);border-radius:10px;padding:16px;background:var(--surface)">
+            <div style="font-weight:700;font-size:14px;margin-bottom:2px">Thank You email <span style="font-weight:400;color:var(--text2);font-size:12px">— staged for the member</span></div>
+            <div id="ty-status" style="font-size:12px;color:var(--text2);margin-bottom:12px">Generating from the assessment...</div>
+            <label style="font-size:11px;font-weight:600;color:var(--text2)">To</label>
+            <input id="ty-to" type="email" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;margin:4px 0 10px;font-size:13px;background:var(--bg);color:var(--text)">
+            <label style="font-size:11px;font-weight:600;color:var(--text2)">Subject</label>
+            <input id="ty-subject" type="text" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;margin:4px 0 10px;font-size:13px;background:var(--bg);color:var(--text)">
+            <label style="font-size:11px;font-weight:600;color:var(--text2)">Message</label>
+            <textarea id="ty-body" rows="14" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:7px;margin:4px 0 12px;font-size:13px;line-height:1.5;font-family:inherit;resize:vertical;background:var(--bg);color:var(--text)"></textarea>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-primary" onclick="openThankYouGmail()">Open in Gmail</button>
+              <button class="btn btn-outline" onclick="copyThankYou()">Copy</button>
+              <button class="btn btn-ghost" onclick="generateThankYouEmail()">Regenerate</button>
+            </div>
+          </div>
         </div>
 
         <div class="nav-row">
@@ -2744,6 +2759,45 @@ async function finalizeDecline() {
     confirm.innerHTML = '[!] Could not write to ' + tabName + ' (check that the tab exists in your Sheet and your API key is correct). Try adding the tab manually. Email sent.';
   }
   confirm.scrollIntoView({ behavior:'smooth' });
+  generateThankYouEmail();
+}
+
+// ===========================================
+// THANK YOU EMAIL (member-facing, on decline)
+// ===========================================
+async function generateThankYouEmail(){
+  const stage=document.getElementById('thankyou-stage'); if(stage) stage.style.display='block';
+  const st=document.getElementById('ty-status'); if(st) st.textContent='Generating from the assessment...';
+  const name=(gv('name')||'').trim();
+  const firstName=name.split(' ')[0]||'there';
+  const advisor=(gv('advisor-name')||getCfg('advisor')||'Coach Ted');
+  const toEl=document.getElementById('ty-to'); if(toEl) toEl.value=gv('email')||'';
+  const prompt="Write a warm, professional follow-up email from a personal trainer to a prospective client who just completed a fitness consultation and InBody assessment but decided NOT to start personal training right now. Return ONLY the plain-text email body. No subject line, no markdown, no asterisks, no symbols, no bullet characters. Use natural paragraphs with line breaks.\n\n"+
+    "Address them by first name: "+firstName+". Sign off as "+advisor+", Retro Fitness of Fairless Hills, 215-295-2004.\n\n"+
+    "Cover these in order, woven naturally, not as a numbered list: (1) a brief, genuine thank-you for coming in and completing their assessment; (2) a clear, detailed, plain-language summary of their assessment findings and what their numbers actually mean for their body and health, drawn from the assessment below; (3) based on their physical condition and goals, caring and compelling reasons why their health is worth prioritizing now, framed around them, not pressure; (4) why personal training is a smart, supported path to their goals, and the honest point that without accountability, consistency, and proper support, the time and effort they put in at the gym is easily wasted or can even lead to injury or burnout, and that coaching protects that investment; (5) a low-pressure, encouraging close inviting them to start whenever they're ready, making clear you are here to help. Keep it human and sincere, not salesy. Around 250 to 350 words.\n\n"+
+    "MEMBER GOALS: "+(gv('goals')||'not specified')+"\n"+
+    "INBODY: BMI "+(gv('bmi')||'n/a')+", body fat "+(gv('pbf')||'n/a')+"%, lean mass "+(gv('lean-mass')||'n/a')+" lb, fat mass "+(gv('fat-mass')||'n/a')+" lb\n"+
+    "MEDICAL NOTES: "+(gv('medical')||'none noted')+"\n\n"+
+    "ASSESSMENT FINDINGS:\n"+(assessmentText||'(no written assessment was generated; base the summary on the InBody numbers and goals above)');
+  try{
+    const r=await fetch(getApiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1300,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();
+    if(d.error) throw new Error((d.error.message)||'AI error');
+    const body=(d.content||[]).map(b=>b.text||'').join('').trim();
+    const subEl=document.getElementById('ty-subject'); if(subEl) subEl.value='Your Retro Fitness assessment, and a thought on your next step';
+    const bodyEl=document.getElementById('ty-body'); if(bodyEl) bodyEl.value=body;
+    if(st) st.textContent='Ready. Review and edit if you like, then Open in Gmail or Copy.';
+  }catch(e){ if(st) st.textContent='Could not generate ('+e.message+'). You can still write the email below.'; }
+}
+function openThankYouGmail(){
+  const to=encodeURIComponent((document.getElementById('ty-to')||{}).value||'');
+  const su=encodeURIComponent((document.getElementById('ty-subject')||{}).value||'');
+  const bo=encodeURIComponent((document.getElementById('ty-body')||{}).value||'');
+  window.open('https://mail.google.com/mail/?view=cm&fs=1&to='+to+'&su='+su+'&body='+bo,'_blank');
+}
+function copyThankYou(){
+  const t=((document.getElementById('ty-subject')||{}).value||'')+'\n\n'+((document.getElementById('ty-body')||{}).value||'');
+  if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ const st=document.getElementById('ty-status'); if(st) st.textContent='Copied to clipboard.'; });
 }
 
 // ===========================================
