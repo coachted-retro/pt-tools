@@ -84,6 +84,32 @@
   .prog-bar-wrap{background:#2D2D2D;border-radius:6px;height:8px;margin-top:10px}
   .prog-bar{background:var(--red);border-radius:6px;height:8px;transition:width .4s}
   .my-pts{font-family:'Oswald';font-size:28px;font-weight:700;color:var(--red)}
+
+  .wo-header{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .wo-meta-box{background:var(--soft);border-radius:10px;padding:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid var(--line)}
+  .wo-meta-box .wm-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px}
+  .wo-meta-box input{border:none;background:transparent;font-family:'Oswald';font-size:22px;font-weight:700;color:var(--ink);width:100%;text-align:center;outline:none}
+  .wo-meta-box input::placeholder{color:#D1D5DB}
+  .wo-meta-box .wm-unit{font-size:11px;color:var(--muted);margin-top:2px}
+  .ex-block{background:var(--card);border:1.5px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+  .ex-block-head{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--soft);border-bottom:1px solid var(--line)}
+  .ex-block-head input{flex:1;border:none;background:transparent;font-family:'Inter';font-size:14px;font-weight:700;color:var(--ink);outline:none}
+  .ex-block-head .rm-ex{font-size:14px;color:var(--muted);cursor:pointer;padding:3px 7px;border-radius:6px;background:var(--line)}
+  .set-table{width:100%;border-collapse:collapse}
+  .set-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:7px 10px;text-align:center;border-bottom:1px solid var(--line)}
+  .set-table td{padding:5px 6px;border-bottom:1px solid var(--line);text-align:center}
+  .set-table tr:last-child td{border-bottom:none}
+  .set-table input{width:100%;border:none;background:transparent;font-family:'Inter';font-size:13px;font-weight:600;color:var(--ink);text-align:center;outline:none;padding:4px}
+  .set-table input::placeholder{color:#D1D5DB;font-weight:400}
+  .set-table .set-num{font-size:11px;font-weight:700;color:var(--muted);width:28px}
+  .add-set{font-size:12px;color:var(--blue);cursor:pointer;padding:8px 13px;display:block;text-align:left}
+  .add-ex{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--blue);cursor:pointer;padding:10px;border:1.5px dashed var(--line);border-radius:10px;justify-content:center;margin-top:4px}
+  .wo-type-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .wo-type-btn{flex:1;min-width:80px;padding:9px 6px;border:1.5px solid var(--line);border-radius:9px;text-align:center;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);background:var(--soft)}
+  .wo-type-btn.sel{border-color:var(--red);color:var(--red);background:#FEF2F2}
+  .wo-rating{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .wo-rating-btn{width:36px;height:36px;border:1.5px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);background:var(--soft)}
+  .wo-rating-btn.sel{background:var(--red);color:#fff;border-color:var(--red)}
 </style>
 </head>
 <body>
@@ -174,21 +200,44 @@
 
   <!-- MY TRAINING -->
   <div class="wrap panel" id="tab-train">
-    <div class="card">
-      <h3>Log a Self-Guided Workout</h3>
-      <div class="log-form">
-        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Date</label><input type="date" id="sw-date"></div>
-        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Workout title</label><input type="text" id="sw-title" placeholder="e.g. Upper body push, Cardio day"></div>
-        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Duration (minutes)</label><input type="number" id="sw-dur" placeholder="45"></div>
-        <div>
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);display:block;margin-bottom:8px">Exercises</label>
-          <div id="ex-list"></div>
-          <span class="add-ex" onclick="addExRow()">+ Add exercise</span>
+    <div class="card" style="padding:16px">
+      <!-- Date + Duration header bar (Trainerize-style) -->
+      <div class="wo-header">
+        <div class="wo-meta-box">
+          <div class="wm-label">Date</div>
+          <input type="date" id="sw-date">
+          <div class="wm-unit">workout date</div>
         </div>
-        <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Notes</label><textarea id="sw-notes" placeholder="How did it feel? Any PRs?"></textarea></div>
-        <button class="btn btn-red" onclick="logWorkout()">Save Workout</button>
-        <div id="sw-status" style="font-size:12px;color:var(--muted);text-align:center"></div>
+        <div class="wo-meta-box">
+          <div class="wm-label">Duration</div>
+          <input type="number" id="sw-dur" placeholder="45" min="1" max="300">
+          <div class="wm-unit">minutes</div>
+        </div>
       </div>
+      <!-- Workout name as big title input -->
+      <input type="text" id="sw-title" placeholder="Workout name — e.g. Upper Body Push"
+        style="width:100%;font-family:Oswald;font-size:18px;font-weight:700;border:none;border-bottom:2px solid var(--line);padding:6px 2px 10px;background:transparent;color:var(--ink);outline:none;margin-bottom:14px">
+      <!-- Type selector -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px">Workout type</div>
+      <div class="wo-type-row">
+        <div class="wo-type-btn sel" onclick="selectWoType(this,'Strength')">&#x1F4AA; Strength</div>
+        <div class="wo-type-btn" onclick="selectWoType(this,'Cardio')">&#x1F3C3; Cardio</div>
+        <div class="wo-type-btn" onclick="selectWoType(this,'HIIT')">&#x26A1; HIIT</div>
+        <div class="wo-type-btn" onclick="selectWoType(this,'Flexibility')">&#x1F9D8; Flex</div>
+        <div class="wo-type-btn" onclick="selectWoType(this,'Other')">&#x1F3CB; Other</div>
+      </div>
+      <!-- Exercise blocks (one per exercise, sets as rows inside) -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Exercises</div>
+      <div id="ex-list"></div>
+      <div class="add-ex" onclick="addExBlock()">+ Add Exercise</div>
+      <!-- Rating -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:16px;margin-bottom:6px">How was the workout? (1 = rough, 10 = crushed it)</div>
+      <div class="wo-rating" id="wo-rating"></div>
+      <!-- Notes -->
+      <textarea id="sw-notes" placeholder="Notes, PRs, how it felt, anything worth remembering..."
+        style="width:100%;font-family:Inter;font-size:13px;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;background:var(--soft);min-height:60px;resize:vertical;margin-top:12px"></textarea>
+      <button class="btn btn-red" onclick="logWorkout()" style="width:100%;margin-top:12px;padding:14px">Save Workout</button>
+      <div id="sw-status" style="font-size:12px;color:var(--muted);text-align:center;margin-top:6px"></div>
     </div>
     <div class="card">
       <h3>Recent Training</h3>
@@ -280,7 +329,7 @@ async function openPortal(){
   setupScoreButtons('nutrition-scores','nutrition',10);
   setupScoreButtons('hydration-scores','hydration',12,true);
   document.getElementById('sw-date').value=document.getElementById('dl-date').value=new Date().toISOString().slice(0,10);
-  addExRow();
+  addExBlock(); setupWoRating();
   await Promise.all([loadPortalData(), loadChallenge()]);
 }
 
@@ -441,37 +490,88 @@ async function submitChallengeLog(){
 }
 
 // ── TRAINING LOG ─────────────────────────────────────────────────────────────
-let exCount=0;
-function addExRow(){
+// ── WORKOUT LOG (Trainerize-style) ─────────────────────────────────────────
+let exCount=0; let woType='Strength'; let woRating=null;
+
+function selectWoType(btn, type){
+  woType=type;
+  document.querySelectorAll('.wo-type-btn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function addExBlock(){
   const list=document.getElementById('ex-list'); if(!list) return;
   const id=++exCount;
-  const div=document.createElement('div'); div.className='exercise-row'; div.id='exr-'+id;
-  div.innerHTML='<input type="text" placeholder="Exercise name" id="ex-name-'+id+'">'+
-    '<input type="text" class="small" placeholder="Sets" id="ex-sets-'+id+'">'+
-    '<input type="text" class="small" placeholder="Reps" id="ex-reps-'+id+'">'+
-    '<input type="text" class="small" placeholder="Wt" id="ex-wt-'+id+'">'+
-    '<span class="rm-ex" onclick="document.getElementById(\'exr-'+id+'\').remove()">✕</span>';
+  const div=document.createElement('div'); div.className='ex-block'; div.id='exb-'+id;
+  div.innerHTML='<div class="ex-block-head">'+
+    '<input type="text" placeholder="Exercise name" id="ex-name-'+id+'">'+
+    '<span class="rm-ex" title="Remove" onclick="document.getElementById(\'exb-'+id+'\').remove()">&#x2715;</span></div>'+
+    '<table class="set-table">'+
+    '<thead><tr><th>SET</th><th>REPS</th><th>WEIGHT (lb)</th><th>REST</th></tr></thead>'+
+    '<tbody id="sets-'+id+'"></tbody></table>'+
+    '<span class="add-set" onclick="addSetRow('+id+')">+ Add set</span>';
   list.appendChild(div);
+  addSetRow(id);
 }
+
+let setCount=0;
+function addSetRow(exId){
+  const tbody=document.getElementById('sets-'+exId); if(!tbody) return;
+  const setNum=tbody.querySelectorAll('tr').length+1;
+  const sid=++setCount;
+  const tr=document.createElement('tr'); tr.id='str-'+sid;
+  tr.innerHTML='<td class="set-num">'+setNum+'</td>'+
+    '<td><input type="number" id="s-reps-'+sid+'" placeholder="10" min="1"></td>'+
+    '<td><input type="number" id="s-wt-'+sid+'" placeholder="0" min="0" step="2.5"></td>'+
+    '<td><input type="text" id="s-rest-'+sid+'" placeholder="60s" style="width:52px"></td>';
+  tbody.appendChild(tr);
+}
+
+function setupWoRating(){
+  const el=document.getElementById('wo-rating'); if(!el) return;
+  el.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>'<div class="wo-rating-btn" onclick="selectWoRating(this,'+n+')">'+n+'</div>').join('');
+}
+function selectWoRating(btn,n){ woRating=n; document.querySelectorAll('.wo-rating-btn').forEach(b=>b.classList.remove('sel')); btn.classList.add('sel'); }
+
 function collectExercises(){
-  const rows=document.querySelectorAll('.exercise-row'); const out=[];
-  rows.forEach(row=>{
-    const id=row.id.replace('exr-','');
-    const name=(document.getElementById('ex-name-'+id)||{}).value||'';
+  const out=[];
+  document.querySelectorAll('.ex-block').forEach(function(block){
+    var id=block.id.replace('exb-','');
+    var name=(document.getElementById('ex-name-'+id)||{}).value||'';
     if(!name) return;
-    out.push({name,sets:(document.getElementById('ex-sets-'+id)||{}).value,reps:(document.getElementById('ex-reps-'+id)||{}).value,weight:(document.getElementById('ex-wt-'+id)||{}).value});
+    var sets=[]; block.querySelectorAll('tbody tr').forEach(function(tr){
+      var sid=tr.id.replace('str-','');
+      sets.push({reps:(document.getElementById('s-reps-'+sid)||{}).value||'',weight:(document.getElementById('s-wt-'+sid)||{}).value||'',rest:(document.getElementById('s-rest-'+sid)||{}).value||''});
+    });
+    out.push({name:name,sets:sets,type:woType});
   });
   return out;
 }
+
 async function logWorkout(){
   const st=document.getElementById('sw-status'); st.textContent='Saving...';
+  const date=document.getElementById('sw-date').value;
+  const dur=document.getElementById('sw-dur').value||null;
+  const title=document.getElementById('sw-title').value||(woType+' Workout');
   const ex=collectExercises();
+  const notesEl=document.getElementById('sw-notes');
+  const notes=(woRating?'Rating: '+woRating+'/10. ':'')+((notesEl&&notesEl.value)||'');
+  if(!date){ st.textContent='Pick a date first'; return; }
   try{
     const r=await fetch(WORKER+'/portal/log-workout',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({client_id:SESSION.client_id,workout_date:document.getElementById('sw-date').value,title:document.getElementById('sw-title').value,duration_min:document.getElementById('sw-dur').value||null,exercises:ex,notes:document.getElementById('sw-notes').value})});
+      body:JSON.stringify({client_id:SESSION.client_id,workout_date:date,title:title,duration_min:dur,exercises:ex,notes:notes})});
     const d=await r.json();
-    if(d.ok){ st.textContent='Saved!'; document.getElementById('sw-title').value=''; document.getElementById('sw-notes').value=''; document.getElementById('ex-list').innerHTML=''; exCount=0; addExRow(); setTimeout(()=>{ st.textContent=''; },2000); loadPortalData(); }
-    else st.textContent='Error: '+(d.error||'try again');
+    if(d.ok){
+      st.textContent='Workout saved!';
+      document.getElementById('sw-title').value='';
+      if(notesEl) notesEl.value='';
+      document.getElementById('ex-list').innerHTML='';
+      exCount=0; setCount=0; woRating=null;
+      document.querySelectorAll('.wo-rating-btn').forEach(b=>b.classList.remove('sel'));
+      addExBlock(); setupWoRating();
+      setTimeout(function(){ st.textContent=''; },2500);
+      loadPortalData();
+    } else { st.textContent='Error: '+(d.error||'try again'); }
   }catch(e){ st.textContent='Connection error'; }
 }
 function renderTrainHist(entries){
