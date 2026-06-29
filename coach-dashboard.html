@@ -694,6 +694,34 @@ let charts = {};
 var calCurrentDate = new Date();
 var scheduledSessions = JSON.parse(localStorage.getItem('coach_scheduled_sessions') || '[]');
 
+// ── Google Calendar (Club OS) feed overlay ──
+const CAL_BASE = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+var feedAppts = [];
+const FEED_TYPES = [
+  {rx:/6[\s-]*week|six[\s-]*week|follow[\s-]*up|re[\s-]*engage/i, file:'fitness-followup-tool.html'},
+  {rx:/monthly|check[\s-]*in|progress/i, file:'fitness-monthly-checkin.html'},
+  {rx:/new member|inbody|initial|consult|intake|assessment|scan/i, file:'fitness-consultation-tool.html'}
+];
+function feedClassify(str){ for(const t of FEED_TYPES) if(t.rx.test(str||'')) return t; return null; }
+function feedParse(summary){
+  const str=(summary||'').trim(); let name='';
+  const dash=str.indexOf('-');
+  if(dash>0){ const left=str.slice(0,dash).trim(); if(!feedClassify(left)) name=left; }
+  const t=feedClassify(str);
+  return { name, file: t ? t.file : 'session-log.html' };
+}
+async function loadFeedAppts(){
+  try{
+    const r=await fetch(CAL_BASE+'/calendar'); if(!r.ok) return;
+    const d=await r.json(); const evs=(d&&d.events)||[];
+    feedAppts = evs.map(e=>{ const p=feedParse(e.summary); const st=e.start||''; return {date:st.slice(0,10), time:st.slice(11,16), name:p.name, file:p.file}; }).filter(x=>x.date);
+  }catch(e){}
+}
+function openFeedAppt(ev, file, encName, date, time){
+  if(ev) ev.stopPropagation();
+  window.open(file+'?client='+encName+'&date='+date+(time?('&time='+time):'')+'&coach=Ted','_blank');
+}
+
 function saveScheduledSessions() {
   localStorage.setItem('coach_scheduled_sessions', JSON.stringify(scheduledSessions));
 }
@@ -754,12 +782,20 @@ function renderCalendar() {
         formatTime12(s.time) + ' ' + (s.clientName || '') + '</div>';
     }).join('');;
 
+    var feedForDay = feedAppts.filter(function(a){ return a.date===dateStr; });
+    var feedPills = feedForDay.map(function(a){
+      var isSession=(a.file==='session-log.html');
+      var bg=isSession?'rgba(63,119,192,0.16)':'rgba(184,120,12,0.16)';
+      var col=isSession?'#3F77C0':'#B8780C';
+      return '<div class="cal-feed-pill" onclick="openFeedAppt(event,\''+a.file+'\',\''+encodeURIComponent(a.name||'')+'\',\''+a.date+'\',\''+(a.time||'')+'\')" style="font-size:9px;font-weight:600;background:'+bg+';color:'+col+';border-radius:3px;padding:2px 4px;margin-top:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(a.name||'Session')+'">'+(a.time||'')+' '+(a.name||(isSession?'Session':'Appt'))+'</div>';
+    }).join('');
+
     html += '<div style="min-height:60px;border-radius:6px;background:' +
       (isToday ? 'rgba(76,175,125,0.08)' : 'rgba(255,255,255,0.02)') +
       ';border:1px solid ' + (isToday ? 'var(--accent)' : 'rgba(255,255,255,0.05)') +
       ';padding:5px;overflow:hidden">' +
       '<div style="font-size:11px;font-weight:' + (isToday ? '800' : '500') + ';color:' + (isToday ? 'var(--accent)' : 'var(--text3)') + ';margin-bottom:1px">' + d + '</div>' +
-      sessionPills +
+      sessionPills + feedPills +
       '</div>';
   }
 
@@ -903,6 +939,7 @@ async function loadAll() {
   document.getElementById('lastUpdated').textContent = 'Loading...';
   try {
     await loadCheckins();
+    await loadFeedAppts();
   renderCalendar();
   initCalendarClicks();
     populateMonthSelector();
