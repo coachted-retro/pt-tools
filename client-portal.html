@@ -313,6 +313,24 @@
 
 <script>
 const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+
+// ── DEMO MODE ── (see command-center.html for the matching shim)
+(function(){
+  const params = new URLSearchParams(location.search);
+  if (params.get('demo') === '1') sessionStorage.setItem('retro_demo_mode', '1');
+  const isDemo = sessionStorage.getItem('retro_demo_mode') === '1';
+  if (isDemo) {
+    const realFetch = window.fetch;
+    window.fetch = function(input, init){
+      if (typeof input === 'string' && input.indexOf(WORKER) === 0 && input.indexOf('demo=') === -1) {
+        input += (input.indexOf('?') === -1 ? '?' : '&') + 'demo=1';
+      }
+      return realFetch(input, init);
+    };
+  }
+  window._retroDemoMode = isDemo;
+})();
+
 let SESSION=null;
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────

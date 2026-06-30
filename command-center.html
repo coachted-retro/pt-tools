@@ -276,6 +276,30 @@
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+// ── DEMO MODE ──────────────────────────────────────────────────
+// If this page was reached via demo-command-center.html (or demo=1
+// is already in this page's own URL), every call to the Worker gets
+// ?demo=1 appended automatically, so the entire session stays on the
+// isolated demo database. Persists across clicks within the demo via
+// sessionStorage, and openTool() carries the flag into every linked
+// page so nothing ever silently falls back to live data mid-walkthrough.
+(function(){
+  const params = new URLSearchParams(location.search);
+  if (params.get('demo') === '1') sessionStorage.setItem('retro_demo_mode', '1');
+  const isDemo = sessionStorage.getItem('retro_demo_mode') === '1';
+  if (isDemo) {
+    const realFetch = window.fetch;
+    window.fetch = function(input, init){
+      if (typeof input === 'string' && input.indexOf(WORKER) === 0 && input.indexOf('demo=') === -1) {
+        input += (input.indexOf('?') === -1 ? '?' : '&') + 'demo=1';
+      }
+      return realFetch(input, init);
+    };
+  }
+  window._retroDemoMode = isDemo;
+})();
+
 let CLIENTS = [], LEADS = [], APPTS = [], MEAL_PROFILES = [], MEAL_PLANS = [], tab = 'nba';
 let charts = {};
 
@@ -284,7 +308,12 @@ async function db(body){
   return r.json();
 }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
-function openTool(file){ location.href = file; }
+function openTool(file){
+  if (window._retroDemoMode) {
+    file += (file.indexOf('?') === -1 ? '?' : '&') + 'demo=1';
+  }
+  location.href = file;
+}
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function daysFromNow(d){ if(!d) return null; const ms=new Date(d+'T00:00:00')-new Date(); return Math.ceil(ms/86400000); }
 
