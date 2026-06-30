@@ -1545,7 +1545,7 @@
                 <div class="pkg-benefit" id="pkg-c2-benefit"></div>
               </div>
             </div>
-            <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;">Chef-crafted nutrition included in Complete packages only.</div>
+            <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;"></div>
           </div>
 
           <div id="decision-row" class="decision-row">
@@ -3482,8 +3482,19 @@ function goPage(n) {
 async function generatePkgRecommendation(){
   const loading=document.getElementById('pkg-rec-loading');
   if(!loading) return;
+
+  // Default to f3 (2x per week) immediately while AI loads
+  (function(){
+    var badge=document.getElementById('pkg-f3-rec');
+    var card=document.getElementById('pkg-f3');
+    var benefit=document.getElementById('pkg-f3-benefit');
+    if(badge) badge.style.display='block';
+    if(card) card.classList.add('pkg-recommended');
+    if(benefit) benefit.textContent='Training twice weekly is the proven sweet spot for building consistency and seeing real results.';
+  })();
+
   loading.style.display='block';
-  const prompt='A new PT client just completed a fitness consultation and InBody assessment. Based on their data, decide which training package fits best from: Every-2-weeks (f1), 1x-per-week (f2), 2x-per-week (f3), 3x-per-week (f4), 4x-per-week (f5), Complete 1x/week with weekly chef meal plan (c1), Complete+ 2x/week with weekly chef meal plan (c2). Return ONLY valid JSON with keys pkg, reason, where reason is a single sentence (under 22 words) written directly to the member explaining why this package fits their specific goal and condition. No markdown. Example: {"pkg":"f3","reason":"..."}. Recommend Complete/Complete+ if nutrition needs are significant. Goals: '+(gv('goals')||'not specified')+'. BMI '+(gv('bmi')||'n/a')+', BF '+(gv('pbf')||'n/a')+'%, Lean '+(gv('lean-mass')||'n/a')+' lb. Medical: '+(gv('medical')||'none')+'.';
+  const prompt='A new PT client just completed a fitness consultation and InBody assessment. Based on their data, decide which training package fits best. Default to 2x-per-week (f3) unless the member\'s schedule, budget, or physical condition clearly points elsewhere. Options: Every-2-weeks (f1), 1x-per-week (f2), 2x-per-week (f3), 3x-per-week (f4), 4x-per-week (f5), Complete-4-sessions-with-meal-plan (c1), Complete-plus-8-sessions-with-meal-plan (c2). Return ONLY valid JSON with keys pkg, reason, where reason is a single sentence under 22 words written directly to the member about why this frequency fits their specific goal and condition. No markdown. Example: {"pkg":"f3","reason":"..."}. Recommend c1 or c2 only if nutrition is a clearly stated barrier. Goals: '+(gv('goals')||'not specified')+'. BMI '+(gv('bmi')||'n/a')+', BF '+(gv('pbf')||'n/a')+'%, Lean '+(gv('lean-mass')||'n/a')+' lb. Medical: '+(gv('medical')||'none')+'.';
   try{
     const r=await fetch(getApiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:400,messages:[{role:'user',content:prompt}]})});
     const d=await r.json();
