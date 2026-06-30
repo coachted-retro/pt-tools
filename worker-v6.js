@@ -61,8 +61,19 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
     const url = new URL(request.url);
 
+    // DEMO MODE ROUTING. Pass ?demo=1 on any request, or header
+    // X-Demo-Mode: 1, to point every env.DB call at the isolated demo
+    // database instead of the live one. Nothing downstream needs to
+    // know which database it is, every existing handler keeps using
+    // env.DB exactly as before.
+    const isDemo = url.searchParams.get('demo') === '1' || request.headers.get('X-Demo-Mode') === '1';
+    if (isDemo) {
+      if (!env.DB_DEMO) return bad('Demo database binding DB_DEMO not found. Add it in Worker Settings Bindings before using demo mode.', cors);
+      env = { ...env, DB: env.DB_DEMO };
+    }
+
     try {
-      if (url.pathname === '/health') return ok({ db: !!env.DB }, cors);
+      if (url.pathname === '/health') return ok({ db: !!env.DB, demo: isDemo }, cors);
 
       if (url.pathname === '/db') {
         if (!env.DB) return bad('D1 binding "DB" not found.', cors);
