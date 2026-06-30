@@ -174,7 +174,7 @@
 <div id="portal-screen">
   <div class="pbar">
     <img src="Retro_FH_Logo.jpg" alt="" onerror="this.style.display='none'">
-    <div class="ptitle">Body Shoppe</div>
+    <div class="ptitle" id="pageTitle">Body Shoppe</div>
     <div class="pname" id="p-name"></div>
     <div class="logout" onclick="doLogout()">Sign out</div>
   </div>
@@ -329,6 +329,13 @@ const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
     };
   }
   window._retroDemoMode = isDemo;
+  if (isDemo) {
+    document.addEventListener('DOMContentLoaded', function(){
+      document.title = 'Retro Fitness, The Body Shoppe, Member Portal';
+      const t = document.getElementById('pageTitle');
+      if (t && t.textContent.trim() === 'Body Shoppe') t.textContent = 'Retro Fitness, The Body Shoppe';
+    });
+  }
 })();
 
 let SESSION=null;

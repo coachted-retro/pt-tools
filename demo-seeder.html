@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Demo Data Seeder, Retro Fitness PT</title>
+<title>Demo Data Seeder, Retro Fitness, The Body Shoppe</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--soft:#F0F2F5;--gold:#D4AF37}
@@ -165,15 +165,71 @@ async function seedOneClient(c){
     log('Created '+c.first+' '+c.last+' (client #'+clientId+'), '+c.pkgLabel, 'ok');
   }
 
-  // Seed a recent check-in so stats and charts have something to show
+  // Seed a real progress story: 4 checkins spaced over the last ~3 months
+  // showing steady improvement, so the progress chart actually has a
+  // trend line worth showing instead of one flat data point.
   const checkinExists = await db({ op:'select', table:'checkins', where:{ client_id: clientId }, limit:1 });
   if (!checkinExists.results || !checkinExists.results.length) {
-    const baseW = 140 + Math.floor(Math.random()*70);
-    await db({ op:'insert', table:'checkins', values:{
-      client_id: clientId, checkin_date: new Date().toISOString().slice(0,10),
-      now_weight: baseW, prev_weight: baseW+4, now_lean: Math.round(baseW*0.78), now_body_fat_pct: 14+Math.floor(Math.random()*12),
-      prev_body_fat_pct: 18+Math.floor(Math.random()*12), session_score:8, diet_score:7, sleep_score:7, stress_score:6
-    }});
+    const startW = 150 + Math.floor(Math.random()*60);
+    const startBF = 26 + Math.floor(Math.random()*8);
+    const checkinPoints = 4;
+    for (let i = 0; i < checkinPoints; i++) {
+      const daysAgo = (checkinPoints - 1 - i) * 21; // every 3 weeks, most recent last
+      const date = new Date(Date.now() - daysAgo*86400000).toISOString().slice(0,10);
+      const wLoss = i * (1.5 + Math.random()*1.5);
+      const bfLoss = i * (0.7 + Math.random()*0.6);
+      const nowW = Math.round((startW - wLoss) * 10) / 10;
+      const prevW = i === 0 ? startW : Math.round((startW - (i-1)*(1.5+wLoss/checkinPoints)) * 10) / 10;
+      const nowBF = Math.round((startBF - bfLoss) * 10) / 10;
+      const prevBF = i === 0 ? startBF : nowBF + (1+Math.random());
+      await db({ op:'insert', table:'checkins', values:{
+        client_id: clientId, checkin_date: date,
+        now_weight: nowW, prev_weight: prevW, now_lean: Math.round(nowW*0.78), now_body_fat_pct: nowBF,
+        prev_body_fat_pct: prevBF, session_score: 7+Math.floor(Math.random()*3), diet_score: 6+Math.floor(Math.random()*4),
+        sleep_score: 6+Math.floor(Math.random()*3), stress_score: 5+Math.floor(Math.random()*4),
+        wins: i === checkinPoints-1 ? 'Hit a new consistency streak this month' : ''
+      }});
+    }
+    log('  4 progress check-ins seeded for '+c.first+' showing real trend', 'ok');
+  }
+
+  // Seed training sessions across the last 6 weeks so the activity history,
+  // tier calculation, and command center stats all have real volume to show.
+  const sessionsExist = await db({ op:'select', table:'training_sessions', where:{ client_id: clientId }, limit:1 });
+  if (!sessionsExist.results || !sessionsExist.results.length) {
+    const perWeek = c.pkg === 'c2' ? 2 : c.pkg === 'c1' ? 1 : c.pkg === 'f5' ? 4 : c.pkg === 'f4' ? 3 : c.pkg === 'f3' ? 2 : 1;
+    const sessionNotes = ['Strong session, hit all target reps', 'Pushed through a tough set, good form', 'Focused on technique today', 'Great energy, increased weight on main lifts', 'Solid effort, working through some fatigue', 'Personal best on the main lift today'];
+    let sessionCount = 0;
+    for (let week = 5; week >= 0; week--) {
+      for (let s = 0; s < perWeek; s++) {
+        const dayOffset = week*7 + Math.floor(Math.random()*6);
+        const date = new Date(Date.now() - dayOffset*86400000).toISOString().slice(0,10);
+        await db({ op:'insert', table:'training_sessions', values:{
+          client_id: clientId, session_date: date, notes: sessionNotes[Math.floor(Math.random()*sessionNotes.length)]
+        }});
+        sessionCount++;
+      }
+    }
+    log('  '+sessionCount+' training sessions seeded for '+c.first+' over the last 6 weeks', 'ok');
+  }
+
+  // Seed self-logged workouts for the last 2-3 weeks, this is what
+  // drives the member tier (Bronze/Silver/Gold) and streak detection
+  // in The Circle, so without this every demo member looks brand new.
+  const workoutsExist = await db({ op:'select', table:'self_workouts', where:{ client_id: clientId }, limit:1 });
+  if (!workoutsExist.results || !workoutsExist.results.length) {
+    const workoutTitles = ['Upper Body Push', 'Lower Body Strength', 'Full Body Circuit', 'Conditioning', 'Upper Body Pull'];
+    const isHighActivity = c.pkg === 'c2' || c.pkg === 'f5' || c.pkg === 'f4';
+    const workoutCount = isHighActivity ? 9 : 5;
+    for (let w = 0; w < workoutCount; w++) {
+      const dayOffset = Math.floor(w * (21/workoutCount)) + Math.floor(Math.random()*2);
+      const date = new Date(Date.now() - dayOffset*86400000).toISOString().slice(0,10);
+      await db({ op:'insert', table:'self_workouts', values:{
+        client_id: clientId, workout_date: date, title: workoutTitles[w % workoutTitles.length],
+        exercises_json: JSON.stringify([]), duration_min: 40+Math.floor(Math.random()*30), notes:''
+      }});
+    }
+    log('  '+workoutCount+' self-logged workouts seeded for '+c.first, 'ok');
   }
 
   // Nutrition profile + meal plan, only for Complete/Complete+
@@ -211,15 +267,51 @@ async function seedOneClient(c){
   return clientId;
 }
 
+async function seedChallenge(clientIds){
+  const now = new Date();
+  const month = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const existing = await db({ op:'select', table:'challenges', where:{ month }, limit:1 });
+  let challengeId;
+  if (existing.results && existing.results.length) {
+    challengeId = existing.results[0].id;
+  } else {
+    const ins = await db({ op:'insert', table:'challenges', values:{
+      month, title:'30 Day Push', tagline:'Show up, log it, earn it.',
+      description:'A month of consistency challenges across training, nutrition, and recovery. Every logged session and check-in earns points toward the leaderboard.',
+      rules:'Log a workout = 2 points|Complete a weekly check-in = 5 points|Hit a meal plan goal = 3 points|7 day streak bonus = 10 points',
+      points_system:'Points accumulate automatically as activity is logged, no manual entry required.',
+      badge_label:'Push Champion', active:1
+    }});
+    challengeId = ins.id;
+    log('Demo monthly challenge created: 30 Day Push', 'ok');
+  }
+  for (let i = 0; i < clientIds.length; i++) {
+    const cid = clientIds[i];
+    const dupe = await db({ op:'select', table:'challenge_entries', where:{ client_id: cid, challenge_id: challengeId }, limit:1 });
+    if (dupe.results && dupe.results.length) continue;
+    const entries = 3 + Math.floor(Math.random()*8);
+    for (let e = 0; e < entries; e++) {
+      await db({ op:'insert', table:'challenge_entries', values:{
+        client_id: cid, challenge_id: challengeId, entry_date: new Date(Date.now()-e*86400000).toISOString().slice(0,10),
+        activity:'Logged activity', points: 2+Math.floor(Math.random()*4), notes:''
+      }});
+    }
+  }
+  log('Leaderboard entries seeded across demo members', 'ok');
+}
+
 async function runSeed(){
   const btn=document.getElementById('seed-btn'); const st=document.getElementById('seed-status');
   btn.disabled=true; st.textContent='Seeding demo clients...';
   logEl().innerHTML='';
   try{
+    const clientIds = [];
     for (const c of DEMO_CLIENTS) {
-      await seedOneClient(c);
+      const id = await seedOneClient(c);
+      clientIds.push(id);
     }
-    st.textContent='Done. '+DEMO_CLIENTS.length+' demo clients ready, including Complete and Complete+ with meal plans.';
+    await seedChallenge(clientIds);
+    st.textContent='Done. '+DEMO_CLIENTS.length+' demo clients ready: progress charts, training sessions, self-logged workouts, monthly challenge leaderboard, and Complete/Complete+ meal plans.';
     log('Seed complete.', 'ok');
   }catch(e){
     st.textContent='Error during seeding, see log.';
@@ -243,6 +335,9 @@ async function runCleanup(){
       await db({ op:'delete', table:'meal_plans', where:{ client_id: clientId } });
       await db({ op:'delete', table:'meal_profiles', where:{ client_id: clientId } });
       await db({ op:'delete', table:'checkins', where:{ client_id: clientId } });
+      await db({ op:'delete', table:'training_sessions', where:{ client_id: clientId } });
+      await db({ op:'delete', table:'self_workouts', where:{ client_id: clientId } });
+      await db({ op:'delete', table:'challenge_entries', where:{ client_id: clientId } });
       await db({ op:'delete', table:'clients', where:{ id: clientId } });
       log('Removed '+c.first+' '+c.last+' (client #'+clientId+')', 'ok');
       removed++;

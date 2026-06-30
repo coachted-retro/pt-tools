@@ -127,7 +127,7 @@
 
 <div class="topbar">
   <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" onerror="this.style.display='none'">
-  <div class="title">Command <span>Center</span></div>
+  <div class="title" id="pageTitle">Command <span>Center</span></div>
   <div class="spacer"></div>
   <div class="search"><input id="q" placeholder="Search clients and leads..." oninput="render()"></div>
   <button class="btn" onclick="loadAll()">Refresh</button>
@@ -298,6 +298,17 @@ const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
     };
   }
   window._retroDemoMode = isDemo;
+  if (isDemo) {
+    document.addEventListener('DOMContentLoaded', function(){
+      document.title = document.title.replace(/Retro Fitness( PT)?/i, 'Retro Fitness, The Body Shoppe');
+      const t = document.getElementById('pageTitle');
+      if (t) {
+        const rest = t.innerHTML.replace(/^Command\s*/i, '');
+        t.innerHTML = '<span style="font-size:.55em;display:block;letter-spacing:1px;color:var(--gold,#D4AF37);margin-bottom:1px">RETRO FITNESS, THE BODY SHOPPE</span>' + (rest.trim() ? 'Command ' + rest : t.innerHTML);
+      }
+      document.querySelectorAll('img[alt*="Retro Fitness"]').forEach(img => { img.alt = 'Retro Fitness, The Body Shoppe'; });
+    });
+  }
 })();
 
 let CLIENTS = [], LEADS = [], APPTS = [], MEAL_PROFILES = [], MEAL_PLANS = [], tab = 'nba';
