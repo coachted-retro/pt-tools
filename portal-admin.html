@@ -83,6 +83,56 @@
     <div class="log" id="ch-log"></div>
   </div>
 
+  <!-- COACH'S EDGE / DAILY CONTENT -->
+  <div class="panel">
+    <h3>Coach's Edge, Word of the Day, Inside Retro</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Regenerates automatically each day on first load. Use the button below to refresh today's content manually.</p>
+    <div id="current-daily"><div style="color:var(--muted);font-size:13px">Loading today's content...</div></div>
+    <button class="btn red" onclick="regenerateDaily()" style="margin-top:14px">Regenerate Today's Content</button>
+    <div class="status" id="dc-status"></div>
+  </div>
+
+  <!-- THE CIRCLE -->
+  <div class="panel">
+    <h3>The Circle, Member Recognition</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Post a shoutout for a member's win. Streaks and milestones from check-in and workout data post automatically when you run detection below.</p>
+    <div class="grid2">
+      <div class="fld"><label>Member (optional)</label>
+        <select id="cw-client"><option value="">No specific member</option></select></div>
+      <div class="fld"><label>Win type</label>
+        <select id="cw-type">
+          <option value="manual">Shoutout</option>
+          <option value="milestone">Milestone</option>
+          <option value="pr">Personal Record</option>
+        </select></div>
+    </div>
+    <div class="fld" style="margin-bottom:12px"><label>Headline</label>
+      <input id="cw-headline" type="text" placeholder="e.g. Sarah hit a 200 lb deadlift PR this morning"></div>
+    <div class="fld" style="margin-bottom:12px"><label>Detail (optional)</label>
+      <input id="cw-detail" type="text" placeholder="A short line of context or congratulations"></div>
+    <button class="btn red" onclick="postWin()">Post to The Circle</button>
+    <button class="btn" onclick="detectWins()" style="margin-left:8px">Run Auto-Detection</button>
+    <div class="status" id="cw-status"></div>
+    <div id="circle-list" style="margin-top:14px"></div>
+  </div>
+
+  <!-- HAPPENING AT RETRO -->
+  <div class="panel">
+    <h3>Happening at Retro</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Post upcoming events and announcements. They appear on every member's home screen, soonest first.</p>
+    <div class="grid2">
+      <div class="fld"><label>Event title</label>
+        <input id="ev-title" type="text" placeholder="e.g. Member Appreciation Saturday"></div>
+      <div class="fld"><label>Date (optional)</label>
+        <input id="ev-date" type="date"></div>
+    </div>
+    <div class="fld" style="margin-bottom:12px"><label>Details</label>
+      <input id="ev-blurb" type="text" placeholder="What's happening, who it's for, anything members need to know"></div>
+    <button class="btn red" onclick="postEvent()">Post Event</button>
+    <div class="status" id="ev-status"></div>
+    <div id="events-list" style="margin-top:14px"></div>
+  </div>
+
 </div>
 
 <script>
@@ -110,6 +160,8 @@ async function loadClients(){
     const em=opt.getAttribute('data-email');
     if(em) document.getElementById('ga-email').value=em;
   });
+  const cwSel=document.getElementById('cw-client');
+  if(cwSel){ cwSel.innerHTML='<option value="">No specific member</option>'+(d.results||[]).map(c=>`<option value="${c.id}">${c.first_name||''} ${c.last_name||''}</option>`).join(''); }
 }
 
 async function loadActiveUsers(){
@@ -186,7 +238,121 @@ async function generateChallenge(){
   }catch(e){ st.textContent='Connection error'; }
 }
 
-(async function(){ await Promise.all([loadClients(), loadActiveUsers(), loadCurrentChallenge()]); })();
+(async function(){ await Promise.all([loadClients(), loadActiveUsers(), loadCurrentChallenge(), loadDailyContent(), loadCircleList(), loadEventsList()]); })();
+
+// ── COACH'S EDGE / DAILY CONTENT ──
+async function loadDailyContent(){
+  const el=document.getElementById('current-daily');
+  try{
+    const r=await fetch(WORKER+'/daily/content'); const d=await r.json();
+    if(!d.ok||!d.content){ el.innerHTML='<div style="color:var(--muted);font-size:13px">No content yet for today.</div>'; return; }
+    const c=d.content;
+    el.innerHTML='<div class="challenge-box">'+
+      '<div class="cs" style="text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Coach\'s Edge</div>'+
+      '<div style="font-size:13px;color:#D1D5DB;margin-bottom:10px">'+esc(c.health_tip||'')+'</div>'+
+      '<div class="cs" style="text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Word of the Day</div>'+
+      '<div style="font-size:13px;color:#D1D5DB;font-style:italic;margin-bottom:2px">\u201c'+esc(c.quote||'')+'\u201d</div>'+
+      '<div style="font-size:11px;color:#9CA3AF;margin-bottom:10px">'+esc(c.quote_author||'Unknown')+'</div>'+
+      '<div class="cs" style="text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Inside Retro</div>'+
+      '<div style="font-weight:700;font-size:13px;color:#fff;margin-bottom:2px">'+esc(c.news_headline||'')+'</div>'+
+      '<div style="font-size:12px;color:#D1D5DB">'+esc(c.news_blurb||'')+'</div>'+
+      '</div>';
+  }catch(e){ el.innerHTML='<div style="color:var(--muted)">Could not load content.</div>'; }
+}
+async function regenerateDaily(){
+  const st=document.getElementById('dc-status');
+  st.textContent='Generating...';
+  try{
+    const r=await fetch(WORKER+'/daily/generate',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:'{}'});
+    const d=await r.json();
+    if(d.ok){ st.textContent='Refreshed.'; loadDailyContent(); }
+    else{ st.textContent='Error: '+(d.error||'try again'); }
+  }catch(e){ st.textContent='Connection error'; }
+}
+
+// ── THE CIRCLE ──
+async function loadCircleList(){
+  const el=document.getElementById('circle-list');
+  try{
+    const r=await fetch(WORKER+'/wins/feed?limit=10'); const d=await r.json();
+    const wins=d.wins||[];
+    if(!wins.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px">Nothing posted yet.</div>'; return; }
+    el.innerHTML=wins.map(w=>{
+      const name=w.client_id?((w.first_name||'')+' '+(w.last_name||'')).trim():'';
+      return '<div class="row"><div class="main"><div class="name">'+esc(w.headline)+'</div>'+
+        '<div class="meta">'+(name?esc(name)+' &middot; ':'')+esc(w.win_type||'')+(w.source==='auto'?' &middot; auto-detected':'')+'</div></div>'+
+        '<button class="btn sm" style="background:#FDECEA;color:var(--red);border-color:#FDECEA" onclick="hideWin('+w.id+', this)">Hide</button></div>';
+    }).join('');
+  }catch(e){ el.innerHTML='<div style="color:var(--muted)">Could not load The Circle.</div>'; }
+}
+async function postWin(){
+  const client_id=document.getElementById('cw-client').value;
+  const win_type=document.getElementById('cw-type').value;
+  const headline=document.getElementById('cw-headline').value.trim();
+  const detail=document.getElementById('cw-detail').value.trim();
+  const st=document.getElementById('cw-status');
+  if(!headline){ st.textContent='Headline required'; return; }
+  st.textContent='Posting...';
+  try{
+    const r=await fetch(WORKER+'/wins/post',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({client_id:client_id?+client_id:null,headline,detail,win_type})});
+    const d=await r.json();
+    if(d.ok){ st.textContent='Posted to The Circle.'; document.getElementById('cw-headline').value=''; document.getElementById('cw-detail').value=''; loadCircleList(); }
+    else{ st.textContent='Error: '+(d.error||'try again'); }
+  }catch(e){ st.textContent='Connection error'; }
+}
+async function detectWins(){
+  const st=document.getElementById('cw-status');
+  st.textContent='Scanning recent activity...';
+  try{
+    const r=await fetch(WORKER+'/wins/detect',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:'{}'});
+    const d=await r.json();
+    if(d.ok){ st.textContent=d.created+' new win'+(d.created===1?'':'s')+' detected and posted.'; loadCircleList(); }
+    else{ st.textContent='Error: '+(d.error||'try again'); }
+  }catch(e){ st.textContent='Connection error'; }
+}
+async function hideWin(id, btn){
+  btn.textContent='Hiding...'; btn.disabled=true;
+  try{
+    await fetch(WORKER+'/wins/hide',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({id})});
+    loadCircleList();
+  }catch(e){ btn.textContent='Hide'; btn.disabled=false; }
+}
+
+// ── HAPPENING AT RETRO ──
+async function loadEventsList(){
+  const el=document.getElementById('events-list');
+  try{
+    const r=await fetch(WORKER+'/events/list'); const d=await r.json();
+    const events=d.events||[];
+    if(!events.length){ el.innerHTML='<div style="color:var(--muted);font-size:13px">No upcoming events posted.</div>'; return; }
+    el.innerHTML=events.map(ev=>{
+      return '<div class="row"><div class="main"><div class="name">'+esc(ev.title)+'</div>'+
+        '<div class="meta">'+(ev.event_date?esc(ev.event_date)+' &middot; ':'')+esc(ev.blurb||'')+'</div></div>'+
+        '<button class="btn sm" style="background:#FDECEA;color:var(--red);border-color:#FDECEA" onclick="hideEvent('+ev.id+', this)">Hide</button></div>';
+    }).join('');
+  }catch(e){ el.innerHTML='<div style="color:var(--muted)">Could not load events.</div>'; }
+}
+async function postEvent(){
+  const title=document.getElementById('ev-title').value.trim();
+  const event_date=document.getElementById('ev-date').value;
+  const blurb=document.getElementById('ev-blurb').value.trim();
+  const st=document.getElementById('ev-status');
+  if(!title){ st.textContent='Title required'; return; }
+  st.textContent='Posting...';
+  try{
+    const r=await fetch(WORKER+'/events/post',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({title,event_date:event_date||null,blurb})});
+    const d=await r.json();
+    if(d.ok){ st.textContent='Posted.'; document.getElementById('ev-title').value=''; document.getElementById('ev-blurb').value=''; document.getElementById('ev-date').value=''; loadEventsList(); }
+    else{ st.textContent='Error: '+(d.error||'try again'); }
+  }catch(e){ st.textContent='Connection error'; }
+}
+async function hideEvent(id, btn){
+  btn.textContent='Hiding...'; btn.disabled=true;
+  try{
+    await fetch(WORKER+'/events/hide',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({id})});
+    loadEventsList();
+  }catch(e){ btn.textContent='Hide'; btn.disabled=false; }
+}
 </script>
 </body>
 </html>

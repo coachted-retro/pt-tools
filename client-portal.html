@@ -50,6 +50,40 @@
   .badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;background:var(--soft);color:var(--muted)}
   .badge.red{background:#FDECEA;color:var(--red)}
   .badge.green{background:#E3F5EC;color:var(--green)}
+
+  /* ── ELITE / PREMIUM CARDS (Circle, Coach's Edge, Word of the Day, Inside Retro) ── */
+  :root{--gold:#D4AF37;--gold-dk:#A6841E;--ink2:#0D0E10}
+  .elite-card{background:linear-gradient(155deg,#1A1D21 0%,#0D0E10 100%);border:1px solid #2B2E33;border-radius:14px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden}
+  .elite-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .elite-label{font-family:'Oswald';font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .elite-label .ln{flex:1;height:1px;background:linear-gradient(90deg,#2B2E33,transparent)}
+  .elite-card h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 8px;color:#fff}
+  .elite-card p, .elite-card .body-text{font-size:13px;color:#C8CCD2;line-height:1.6}
+  .elite-quote{font-family:'Oswald';font-size:16px;font-weight:600;color:#fff;line-height:1.4;font-style:italic;margin:4px 0 6px}
+  .elite-quote-author{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.5px}
+
+  .circle-post{padding:11px 0;border-bottom:1px solid #2B2E33}
+  .circle-post:last-child{border-bottom:none}
+  .circle-post-head{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+  .circle-post-name{font-weight:700;color:#fff;font-size:13px}
+  .circle-post-detail{font-size:12px;color:#9CA3AF;margin-top:2px}
+  .tier-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:20px}
+  .tier-badge.bronze{background:#3A2A1A;color:#CD7F32}
+  .tier-badge.silver{background:#2A2D31;color:#C0C0C0}
+  .tier-badge.gold{background:#3A2F0F;color:var(--gold)}
+  .circle-meta{display:flex;align-items:center;justify-content:space-between;margin-top:2px;padding-top:10px;border-top:1px solid #2B2E33}
+  .circle-meta-count{font-size:11px;color:#9CA3AF}
+  .circle-meta-count b{color:var(--gold)}
+
+  .my-tier-card{background:linear-gradient(155deg,#1A1D21 0%,#0D0E10 100%);border:1px solid var(--gold-dk);border-radius:14px;padding:16px;margin-bottom:14px;text-align:center}
+  .my-tier-card .tier-badge{font-size:11px;padding:5px 14px;margin-bottom:6px}
+  .my-tier-card .tier-sub{font-size:11px;color:#9CA3AF;margin-top:4px}
+
+  .events-card .event-row{padding:10px 0;border-bottom:1px solid var(--line)}
+  .events-card .event-row:last-child{border-bottom:none}
+  .events-card .event-title{font-weight:700;font-size:13px;color:var(--ink)}
+  .events-card .event-date{font-size:11px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-top:1px}
+  .events-card .event-blurb{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
   canvas{max-height:200px;margin-top:8px}
   .recipe-item{border-top:1px solid var(--line);padding:10px 0;font-size:13px}
   .recipe-item:first-child{border-top:none;padding-top:0}
@@ -157,9 +191,13 @@
   <!-- HOME -->
   <div class="wrap panel active" id="tab-home">
     <div class="card" id="home-welcome"></div>
+    <div class="my-tier-card" id="home-tier"></div>
+    <div class="elite-card" id="home-coachs-edge"></div>
     <div class="card" id="home-stats"></div>
     <div class="card" id="home-appt"></div>
     <div class="card" id="home-challenge-snap"></div>
+    <div class="elite-card" id="home-circle"></div>
+    <div class="card events-card" id="home-events"></div>
   </div>
 
   <!-- MEAL PLAN -->
@@ -330,7 +368,7 @@ async function openPortal(){
   setupScoreButtons('hydration-scores','hydration',12,true);
   document.getElementById('sw-date').value=document.getElementById('dl-date').value=new Date().toISOString().slice(0,10);
   addExBlock(); setupWoRating();
-  await Promise.all([loadPortalData(), loadChallenge()]);
+  await Promise.all([loadPortalData(), loadChallenge(), loadDailyContent(), loadCircle(), loadEvents()]);
 }
 
 async function loadPortalData(){
@@ -341,10 +379,98 @@ async function loadPortalData(){
     SESSION.data=d;
     document.getElementById('p-name').textContent=(d.client&&d.client.first_name)||'';
     renderHome(d);
+    renderTier(d.tier);
     renderMealPlan(d.mealPlan);
     renderProgress(d.checkins||[], d.scans||[]);
     renderTrainHist([...(d.sessions||[]),...(d.selfWorkouts||[])].sort((a,b)=>(b.session_date||b.workout_date||'').localeCompare(a.session_date||a.workout_date||'')));
   }catch(e){}
+}
+
+function renderTier(tier){
+  const el=document.getElementById('home-tier');
+  if(!el) return;
+  if(!tier){ el.innerHTML=''; return; }
+  const labels={bronze:'Bronze Member',silver:'Silver Member',gold:'Gold Member'};
+  const sub = tier.streak_weeks>=3
+    ? tier.streak_weeks+'-week streak. This is what consistency looks like.'
+    : tier.activity_count_30d>0
+      ? tier.activity_count_30d+' logged sessions in the last 30 days. Keep building.'
+      : 'Your tier grows with every session you log. Show up, and it shows.';
+  el.innerHTML='<div class="tier-badge '+tier.level+'">'+(labels[tier.level]||'Member')+'</div>'+
+    '<div class="tier-sub">'+esc(sub)+'</div>';
+}
+
+async function loadDailyContent(){
+  try{
+    const r=await fetch(WORKER+'/daily/content'); const d=await r.json();
+    if(!d.ok || !d.content) return;
+    renderCoachsEdge(d.content);
+  }catch(e){}
+}
+
+function renderCoachsEdge(c){
+  const el=document.getElementById('home-coachs-edge');
+  if(!el) return;
+  el.innerHTML=
+    '<div class="elite-label">Coach\u2019s Edge<span class="ln"></span></div>'+
+    '<p class="body-text" style="margin-bottom:14px">'+esc(c.health_tip||'')+'</p>'+
+    '<div class="elite-label">Word of the Day<span class="ln"></span></div>'+
+    '<div class="elite-quote">\u201c'+esc(c.quote||'')+'\u201d</div>'+
+    '<div class="elite-quote-author">'+esc(c.quote_author||'Unknown')+'</div>'+
+    (c.news_headline?(
+      '<div class="elite-label" style="margin-top:14px">Inside Retro<span class="ln"></span></div>'+
+      '<div style="font-weight:700;color:#fff;font-size:13px;margin-bottom:3px">'+esc(c.news_headline)+'</div>'+
+      '<p class="body-text">'+esc(c.news_blurb||'')+'</p>'
+    ):'');
+}
+
+async function loadCircle(){
+  try{
+    const r=await fetch(WORKER+'/wins/feed?limit=8'); const d=await r.json();
+    if(!d.ok) return;
+    renderCircle(d.wins||[], d.active_members_30d||0);
+  }catch(e){}
+}
+
+function renderCircle(wins, activeCount){
+  const el=document.getElementById('home-circle');
+  if(!el) return;
+  const tierBadge = w => w.tier ? '<span class="tier-badge '+w.tier.level+'">'+w.tier.level+'</span>' : '';
+  const posts = wins.length
+    ? wins.map(w=>{
+        const name = w.client_id ? ((w.first_name||'')+(w.last_name?' '+w.last_name.charAt(0)+'.':'')).trim() : '';
+        return '<div class="circle-post">'+
+          '<div class="circle-post-head">'+(name?'<span class="circle-post-name">'+esc(name)+'</span>':'')+tierBadge(w)+'</div>'+
+          '<div style="color:#fff;font-size:13px;font-weight:600">'+esc(w.headline)+'</div>'+
+          (w.detail?'<div class="circle-post-detail">'+esc(w.detail)+'</div>':'')+
+        '</div>';
+      }).join('')
+    : '<div style="color:#9CA3AF;font-size:12px">The Circle fills up as members log wins. Be the first this week.</div>';
+  el.innerHTML=
+    '<div class="elite-label">The Circle<span class="ln"></span></div>'+
+    posts+
+    (activeCount?'<div class="circle-meta"><div class="circle-meta-count"><b>'+activeCount+'</b> members active this month</div></div>':'');
+}
+
+async function loadEvents(){
+  try{
+    const r=await fetch(WORKER+'/events/list'); const d=await r.json();
+    if(!d.ok) return;
+    renderEvents(d.events||[]);
+  }catch(e){}
+}
+
+function renderEvents(events){
+  const el=document.getElementById('home-events');
+  if(!el) return;
+  if(!events.length){ el.innerHTML=''; return; }
+  el.innerHTML='<h3>Happening at Retro</h3>'+events.map(ev=>{
+    return '<div class="event-row">'+
+      '<div class="event-title">'+esc(ev.title)+'</div>'+
+      (ev.event_date?'<div class="event-date">'+esc(fmtDate(ev.event_date))+'</div>':'')+
+      (ev.blurb?'<div class="event-blurb">'+esc(ev.blurb)+'</div>':'')+
+    '</div>';
+  }).join('');
 }
 
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
