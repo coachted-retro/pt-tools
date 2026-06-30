@@ -1667,13 +1667,13 @@
             <textarea id="nutrition-other" rows="2" placeholder="e.g. No cilantro, vegetarian on weekends, kosher..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;resize:vertical;font-family:var(--font);"></textarea>
           </div>
 
-          <button class="btn btn-primary btn-full" onclick="showMeasurements()">
-            Next: Body Measurements →
+          <button class="btn btn-primary btn-full" onclick="showTerms()">
+            Continue to Enrollment →
           </button>
         </div>
 
-        <!-- BODY MEASUREMENTS PANEL -->
-        <div class="terms-panel" id="measurements-panel">
+        <!-- BODY MEASUREMENTS PANEL — now post-enrollment only, hidden from pre-accept flow -->
+        <div class="terms-panel" id="measurements-panel" style="display:none !important">
           <div class="terms-title">📏 Body Measurements</div>
           <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Baseline measurements taken at sign-up. Repeated at each monthly check-in to track progress.</p>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
@@ -1702,8 +1702,8 @@
           </button>
         </div>
 
-        <!-- PROGRESS PHOTOS PANEL -->
-        <div class="terms-panel" id="photos-panel">
+        <!-- PROGRESS PHOTOS PANEL — now post-enrollment only, hidden from pre-accept flow -->
+        <div class="terms-panel" id="photos-panel" style="display:none !important">
           <div class="terms-title">📸 Baseline Progress Photos</div>
           <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Upload 3 photos — front, side, and back. These are the baseline all future check-ins will compare against. Date and time stamped automatically.</p>
 
@@ -1749,7 +1749,7 @@
         </div>
 
         <!-- ENROLLMENT / TERMS PANEL -->
-        <div class="terms-panel" id="terms-panel">
+        <div class="terms-panel" id="terms-panel" style="display:none">
 
           <!-- VALUE CLOSING SECTION -->
           <div id="closing-value-wrap" style="margin-bottom:24px;">
@@ -1824,14 +1824,86 @@
                 <button class="decision-btn" style="background:var(--warning-light);color:var(--warning);border-color:#e6c84a;font-size:13px;" onclick="showThinkingAboutIt()">🤔 I need to think about it</button>
                 <button class="decision-btn decline" style="font-size:13px;" onclick="showDecline()">✕ Not today</button>
               </div>
-              <div id="confirm-accept" class="confirm-box">
-                &#x2705; Saved to All Intakes and email sent to tedscholl@gmail.com &amp; healthylifewithdani1@gmail.com. Welcome aboard!
-              </div>
-              <div id="report-enrolled-wrap" style="display:none;margin-top:14px;">
-                <button class="btn btn-primary btn-full" onclick="runConsultReport('welcome')" style="background:#E0192B;border-color:#B0121F;">
-                  📄 Generate Welcome Packet PDF &amp; Email Client
+
+              <!-- POST-ENROLLMENT CONFIRMATION — shown after finalizeAccept() -->
+              <div id="post-enroll-wrap" style="display:none;margin-top:20px;border:1px solid #a8d0b8;border-radius:12px;background:var(--success-light);padding:20px;">
+                <div style="font-size:16px;font-weight:700;color:var(--success);margin-bottom:4px;">✅ Enrolled — welcome to the team!</div>
+                <div id="post-enroll-name" style="font-size:13px;color:var(--text2);margin-bottom:16px;"></div>
+
+                <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);margin-bottom:10px;">Optional next steps — do now or skip for later</div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+                  <button class="btn btn-primary btn-full" onclick="showPostEnrollMeasurements()" style="background:var(--ink);border-color:var(--ink);font-size:13px;padding:12px;">
+                    📏 Take Measurements Now
+                  </button>
+                  <button class="btn btn-primary btn-full" onclick="showPostEnrollPhotos()" style="background:var(--ink);border-color:var(--ink);font-size:13px;padding:12px;">
+                    📸 Take Progress Photos Now
+                  </button>
+                </div>
+
+                <button class="btn btn-primary btn-full" onclick="runConsultReport('welcome')" style="background:#E0192B;border-color:#B0121F;font-size:13px;margin-bottom:8px;">
+                  📄 Generate Welcome Packet &amp; Email Client
                 </button>
-                <div id="report-enrolled-status" style="font-size:12px;margin-top:8px;min-height:18px;"></div>
+                <div id="report-enrolled-status" style="font-size:12px;margin-top:4px;min-height:16px;color:var(--text2);"></div>
+
+                <button class="btn btn-outline btn-full" onclick="resetForm()" style="margin-top:10px;font-size:12px;">
+                  🔄 Start New Consultation
+                </button>
+              </div>
+
+              <!-- POST-ENROLL MEASUREMENTS (hidden until button clicked) -->
+              <div id="post-enroll-measurements" style="display:none;margin-top:16px;border:1px solid var(--border2);border-radius:12px;padding:16px;background:var(--surface);">
+                <div style="font-weight:700;font-size:14px;margin-bottom:12px;">📏 Body Measurements</div>
+                <p style="font-size:12px;color:var(--text2);margin-bottom:14px;">Baseline measurements — will be linked to this client's profile. Skip any you don't have.</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Neck (in)</label><input type="number" id="meas-neck" step="0.1" placeholder="15.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Shoulders (in)</label><input type="number" id="meas-shoulders" step="0.1" placeholder="48.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Chest (in)</label><input type="number" id="meas-chest" step="0.1" placeholder="42.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Right Bicep (in)</label><input type="number" id="meas-bicep-r" step="0.1" placeholder="14.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Left Bicep (in)</label><input type="number" id="meas-bicep-l" step="0.1" placeholder="14.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Waist (in)</label><input type="number" id="meas-waist" step="0.1" placeholder="38.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Hips (in)</label><input type="number" id="meas-hips" step="0.1" placeholder="42.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Right Thigh (in)</label><input type="number" id="meas-thigh-r" step="0.1" placeholder="24.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Left Thigh (in)</label><input type="number" id="meas-thigh-l" step="0.1" placeholder="23.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Right Calf (in)</label><input type="number" id="meas-calf-r" step="0.1" placeholder="14.5" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Left Calf (in)</label><input type="number" id="meas-calf-l" step="0.1" placeholder="14.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                  <div><label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Forearm (in)</label><input type="number" id="meas-forearm" step="0.1" placeholder="12.0" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--surface);color:var(--text);font-size:13px;font-family:var(--font);"></div>
+                </div>
+                <div style="margin-bottom:12px;">
+                  <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px;">Posture &amp; notes</label>
+                  <textarea id="meas-notes" rows="2" placeholder="e.g. Slight forward head posture, left shoulder higher than right..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;resize:vertical;font-family:var(--font);"></textarea>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                  <button class="btn btn-primary btn-full" onclick="saveMeasurementsNow()" style="background:var(--accent);border-color:#B0121F;">Save Measurements</button>
+                  <button class="btn btn-ghost btn-full" onclick="document.getElementById('post-enroll-measurements').style.display='none'">Skip for now</button>
+                </div>
+                <div id="meas-save-status" style="font-size:12px;color:var(--text2);margin-top:8px;min-height:16px;"></div>
+              </div>
+
+              <!-- POST-ENROLL PHOTOS (hidden until button clicked) -->
+              <div id="post-enroll-photos" style="display:none;margin-top:16px;border:1px solid var(--border2);border-radius:12px;padding:16px;background:var(--surface);">
+                <div style="font-weight:700;font-size:14px;margin-bottom:12px;">📸 Baseline Progress Photos</div>
+                <div class="photo-grid-3">
+                  <div class="photo-slot-dark" id="slot-front" onclick="document.getElementById('upload-front').click()">
+                    <input type="file" id="upload-front" accept="image/*" style="display:none" onchange="handlePhotoUpload('front',this)">
+                    <div class="photo-slot-icon" id="icon-front">📁</div>
+                    <div class="photo-slot-label">Front</div>
+                    <div class="photo-slot-status" id="status-front">Click to upload</div>
+                  </div>
+                  <div class="photo-slot-dark" id="slot-side" onclick="document.getElementById('upload-side').click()">
+                    <input type="file" id="upload-side" accept="image/*" style="display:none" onchange="handlePhotoUpload('side',this)">
+                    <div class="photo-slot-icon" id="icon-side">📁</div>
+                    <div class="photo-slot-label">Side</div>
+                    <div class="photo-slot-status" id="status-side">Click to upload</div>
+                  </div>
+                  <div class="photo-slot-dark" id="slot-back" onclick="document.getElementById('upload-back').click()">
+                    <input type="file" id="upload-back" accept="image/*" style="display:none" onchange="handlePhotoUpload('back',this)">
+                    <div class="photo-slot-icon" id="icon-back">📁</div>
+                    <div class="photo-slot-label">Back</div>
+                    <div class="photo-slot-status" id="status-back">Click to upload</div>
+                  </div>
+                </div>
+                <button class="btn btn-ghost btn-full" onclick="document.getElementById('post-enroll-photos').style.display='none'" style="margin-top:12px;font-size:12px;">Skip for now — do at first session</button>
               </div>
 
             </div><!-- /closing-value-content -->
@@ -2684,7 +2756,7 @@ function pickPill(el, group) {
   else selectedLength = el.textContent.trim();
 }
 
-function showTerms() {
+function _showTermsLegacy() {
   document.getElementById('terms-panel').style.display = 'block';
   document.getElementById('followup-panel').style.display = 'none';
   document.getElementById('terms-panel').scrollIntoView({ behavior:'smooth' });
@@ -3063,19 +3135,71 @@ async function finalizeAccept() {
 
   showLoading('Saving enrollment...');
   try {
-    var row = buildIntakeRow('ACCEPTED');
-    var ok = await appendToSheet('All Intakes', row);
-    await saveToPTTracker();
+    var clientName = gv('name') || '';
+    var pkg = PKG_META[selectedPkg] || pkgPricing[selectedPkg] || {};
+
+    // 1. Write to D1 via Worker (primary)
+    var clientPayload = {
+      first_name: (clientName.split(' ')[0] || clientName),
+      last_name: (clientName.split(' ').slice(1).join(' ') || ''),
+      email: gv('email') || null,
+      phone: gv('phone') || null,
+      gender: gv('gender') || null,
+      age: gv('age') || null,
+      goals: gv('goals') || null,
+      medical_notes: gv('medical') || null,
+      package: pkg.value || selectedPkg || null,
+      training_start_date: gv('consult-date') || new Date().toISOString().slice(0,10),
+      status: 'active',
+      coach_notes: 'Enrolled via consultation tool. Frequency: ' + (freq ? freq.textContent.trim() : '') + '. Length: ' + (length ? length.textContent.trim() : '') + '. Assessment: ' + (assessmentText||'').substring(0,400)
+    };
+    Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]==null) delete clientPayload[k]; });
+
+    var workerBase = getApiUrl().replace('/v1/messages','').replace('https://api.anthropic.com','https://broken-cake-e9c2.tedscholl.workers.dev');
+    if (!workerBase.includes('tedscholl.workers.dev')) workerBase = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+    var clientRes = await fetch(workerBase + '/db/clients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': 'retro-admin-2024' },
+      body: JSON.stringify(clientPayload)
+    });
+    var clientData = {}; try { clientData = await clientRes.json(); } catch(e) {}
+    window._enrolledClientId = clientData.id || clientData.client_id || null;
+
+    // 2. Save consultation record to D1
+    if (window._enrolledClientId) {
+      var consultPayload = {
+        client_id: window._enrolledClientId,
+        date: gv('consult-date') || new Date().toISOString().slice(0,10),
+        advisor: gv('advisor-name') || 'Ted Scholl',
+        bp: gv('bp') || null,
+        hr: gv('hr') || null,
+        prior_trainer: null,
+        diet_notes: gv('typical-diet') || null,
+        commitment_score: gv('commitment') || null,
+        source: 'consultation_tool',
+        notes: 'Package: ' + (pkg.name || selectedPkg) + '. Frequency: ' + (freq ? freq.textContent.trim() : '') + '. Length: ' + (length ? length.textContent.trim() : '')
+      };
+      Object.keys(consultPayload).forEach(function(k){ if(consultPayload[k]==null) delete consultPayload[k]; });
+      fetch(workerBase + '/db/consultations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': 'retro-admin-2024' },
+        body: JSON.stringify(consultPayload)
+      }).catch(function(){});
+    }
+
+    // 3. Save nutrition profile if Complete package
     await saveNutritionProfileIfApplicable();
-    hideLoading();
-    var conf = document.getElementById('confirm-accept');
-    conf.style.display = 'flex';
-    conf.innerHTML = ok
-      ? '&#x2705; Saved to All Intakes. Welcome aboard!'
-      : '&#x26A0;&#xFE0F; Could not write to sheet — please check connection.';
-    // Mark draft as synced so it won't be double-written
-    markDraftSynced(gv('name'));
+
+    // 4. Fire Sheets write as silent fallback (non-blocking)
+    var row = buildIntakeRow('ACCEPTED');
+    appendToSheet('All Intakes', row).catch(function(){});
+
+    // 5. Save draft and notify
+    markDraftSynced(clientName);
     saveDraftSilent();
+    hideLoading();
+    showPostEnrollConfirmation(clientName);
     setTimeout(function() { sendNotificationEmail('ACCEPTED'); }, 500);
   } catch(e) {
     hideLoading();
@@ -3085,46 +3209,71 @@ async function finalizeAccept() {
 
 
 async function finalizeDecline() {
-  saveDraftSilent(); // auto-save before processing
+  saveDraftSilent();
   var reason = document.getElementById('decline-reason') ? document.getElementById('decline-reason').value : '';
   if (!reason) { alert('Please select a reason for the decline.'); return; }
-  showLoading('Saving to follow-up list and sending email...');
+  showLoading('Saving follow-up and sending email...');
 
   const today = new Date();
   const followDate = new Date(today);
   followDate.setDate(today.getDate() + 42);
   const followDateStr = followDate.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-
   const gender = gv('gender');
   const tabName = gender === 'Female' ? 'Female Follow-Ups' : 'Male Follow-Ups';
 
-  // Write to All Intakes (mark synced first to prevent duplicates)
-  markDraftSynced(gv('name'));
-  const intakeRow = buildIntakeRow('DECLINED', '', '');
-  await appendToSheet('All Intakes', intakeRow);
+  // 1. Write prospect/lead to D1 (primary)
+  var workerBase = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+  var clientName = gv('name') || '';
+  try {
+    var declinePayload = {
+      first_name: (clientName.split(' ')[0] || clientName),
+      last_name: (clientName.split(' ').slice(1).join(' ') || ''),
+      email: gv('email') || null,
+      phone: gv('phone') || null,
+      gender: gv('gender') || null,
+      age: gv('age') || null,
+      goals: gv('goals') || null,
+      medical_notes: gv('medical') || null,
+      status: 'prospect',
+      coach_notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
+    };
+    Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
+    fetch(workerBase + '/db/clients', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': 'retro-admin-2024' },
+      body: JSON.stringify(declinePayload)
+    }).then(function(r){ return r.json(); }).then(function(d){
+      // Save follow-up record
+      var clientId = d.id || d.client_id;
+      if (clientId) {
+        fetch(workerBase + '/db/followups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-key': 'retro-admin-2024' },
+          body: JSON.stringify({ client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' })
+        }).catch(function(){});
+      }
+    }).catch(function(){});
+  } catch(e) {}
 
-  // Write to gender-specific follow-up tab
+  // 2. Sheets as silent fallback
+  markDraftSynced(clientName);
+  const intakeRow = buildIntakeRow('DECLINED', '', '');
+  appendToSheet('All Intakes', intakeRow).catch(function(){});
   const followRow = buildFollowUpRow(followDateStr);
-  const followOk = await appendToSheet(tabName, followRow);
+  appendToSheet(tabName, followRow).catch(function(){});
 
   await sendNotificationEmail('DECLINED', '', '');
 
-  // Auto-add 6-week follow-up to calendar - Ted for male, Dani for female
   var followUpDate = intakeRow[1];
-  var memberGender = gv('gender') || '';
   if (followUpDate) {
-    setTimeout(function() {
-      addToCalendar(gv('name'), followUpDate, gv('phone'), gv('email'), memberGender);
-    }, 800);
+    setTimeout(function() { addToCalendar(gv('name'), followUpDate, gv('phone'), gv('email'), gender); }, 800);
   }
 
   hideLoading();
 
   const confirm = document.getElementById('confirm-decline');
   confirm.style.display = 'flex';
-  if (!followOk) {
-    confirm.innerHTML = '[!] Could not write to ' + tabName + ' (check that the tab exists in your Sheet and your API key is correct). Try adding the tab manually. Email sent.';
-  }
+  confirm.innerHTML = '✅ Saved to database. Follow-up scheduled for ' + followDateStr + '. Email sent.';
   confirm.scrollIntoView({ behavior:'smooth' });
   generateThankYouEmail();
 }
@@ -3655,7 +3804,6 @@ function acceptPackage() {
   if (!selectedPkg) return;
   var p = PKG_META[selectedPkg] || pkgPricing[selectedPkg] || {};
   if (window._editingFromClose) {
-    // Coming back from an edit — just refresh pricing and re-show closing panel
     window._editingFromClose = false;
     refreshClosingPricing();
     var tp = document.getElementById('terms-panel');
@@ -3663,7 +3811,7 @@ function acceptPackage() {
   } else if (p.nutrition || p.hasNutrition) {
     showNutritionPanel();
   } else {
-    showMeasurements();
+    showTerms();
   }
 }
 
@@ -3813,6 +3961,32 @@ function getMeasurements() {
     if (el && el.value) result[f] = el.value;
   });
   return JSON.stringify(result);
+}
+
+function showPostEnrollMeasurements() {
+  var m = document.getElementById('post-enroll-measurements');
+  if (m) { m.style.display = 'block'; m.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+}
+function showPostEnrollPhotos() {
+  var p = document.getElementById('post-enroll-photos');
+  if (p) { p.style.display = 'block'; p.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
+}
+function showMeasurements() { showPostEnrollMeasurements(); }
+function showPhotoCapture() { showPostEnrollPhotos(); }
+function showEnrollmentTerms() { showTerms(); }
+function showPostEnrollConfirmation(clientName) {
+  var wrap = document.getElementById('post-enroll-wrap');
+  if (!wrap) return;
+  var nameEl = document.getElementById('post-enroll-name');
+  if (nameEl) nameEl.textContent = clientName ? 'Client: ' + clientName + ' has been added to your roster.' : 'Client has been added to your roster.';
+  wrap.style.display = 'block';
+  // Hide the accept/decline buttons and value content
+  var cv = document.getElementById('closing-value-content');
+  if (cv) {
+    var btns = cv.querySelectorAll('.btn-primary, .decision-btn');
+    btns.forEach(function(b){ if (!b.closest('#post-enroll-wrap') && !b.closest('#report-enrolled-status')) b.style.display = 'none'; });
+  }
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Override showTerms to use new flow

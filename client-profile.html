@@ -64,6 +64,73 @@
   .modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
   .x{cursor:pointer;color:var(--muted);font-size:20px;background:none;border:none}
   @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.search input{width:150px}}
+
+  /* ── WORKOUT LOGGER ── */
+  .wo-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);}
+  .wo-view-tabs{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+  .wo-view-tab{padding:6px 14px;font-size:12px;font-weight:700;font-family:Oswald;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;background:var(--soft);color:var(--muted);border:none;}
+  .wo-view-tab.active{background:var(--ink);color:#fff;}
+  .wo-cal{padding:14px 18px;}
+  .wo-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .wo-cal-title{font-family:Oswald;font-size:17px;font-weight:700;letter-spacing:.5px;}
+  .wo-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .wo-cal-dow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center;padding:4px 0;}
+  .wo-day{min-height:54px;border:1px solid var(--line);border-radius:8px;padding:4px 6px;cursor:pointer;transition:background .1s;position:relative;}
+  .wo-day:hover{background:var(--soft);}
+  .wo-day.today{border-color:var(--red);border-width:2px;}
+  .wo-day.has-workout{background:#E3F5EC;}
+  .wo-day.has-workout:hover{background:#d0eddf;}
+  .wo-day.other-month{opacity:.35;}
+  .wo-day-num{font-size:11px;font-weight:700;color:var(--muted);}
+  .wo-day.today .wo-day-num{color:var(--red);}
+  .wo-day-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;margin-right:2px;}
+  .wo-day-label{font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.3px;display:block;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .wo-list-view{padding:0 18px 14px;}
+  .wo-session-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .wo-session-row:last-child{border-bottom:none;}
+  .wo-session-date{font-family:Oswald;font-size:13px;font-weight:700;color:var(--muted);width:72px;flex-shrink:0;padding-top:2px;}
+  .wo-session-body{flex:1;}
+  .wo-session-title{font-weight:700;font-size:14px;}
+  .wo-session-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+  .wo-ex-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+  .wo-ex-table th{background:var(--soft);font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;padding:5px 8px;text-align:left;}
+  .wo-ex-table td{padding:5px 8px;border-bottom:1px solid var(--line);}
+  .wo-ex-table tr:last-child td{border-bottom:none;}
+
+  /* session logger modal */
+  .wo-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:16px;overflow-y:auto;}
+  .wo-modal.open{display:flex;}
+  .wo-box{background:var(--card);border-radius:14px;width:100%;max-width:640px;border:1px solid var(--line);margin:auto;}
+  .wo-box-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .wo-box-head h3{font-family:Oswald;text-transform:uppercase;letter-spacing:.5px;font-size:16px;margin:0;}
+  .wo-box-body{padding:16px 18px;}
+  .wo-box-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;}
+  .wo-field{margin-bottom:12px;}
+  .wo-field label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-bottom:4px;}
+  .wo-field input,.wo-field select{width:100%;font-family:Inter;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--soft);}
+  .wo-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ex-search-wrap{position:relative;}
+  .ex-search-wrap input{width:100%;font-family:Inter;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--soft);}
+  .ex-dropdown{position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--line);border-radius:8px;z-index:70;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.12);display:none;}
+  .ex-dropdown.open{display:block;}
+  .ex-opt{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line);}
+  .ex-opt:last-child{border-bottom:none;}
+  .ex-opt:hover{background:var(--soft);}
+  .ex-opt .cat{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-left:6px;}
+  .ex-block{background:var(--soft);border-radius:10px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--line);}
+  .ex-block-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .ex-name{font-weight:700;font-size:13px;}
+  .ex-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;}
+  .set-row{display:grid;grid-template-columns:30px 1fr 1fr 1fr 28px;gap:6px;align-items:center;margin-bottom:4px;}
+  .set-num{font-size:11px;font-weight:700;color:var(--muted);text-align:center;}
+  .set-inp{font-family:Inter;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:var(--card);width:100%;text-align:center;}
+  .set-inp::placeholder{color:var(--muted);}
+  .set-del{background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:0;line-height:1;}
+  .set-hdr{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;text-align:center;}
+  .add-set-btn{font-size:11px;font-weight:700;color:var(--red);background:none;border:none;cursor:pointer;padding:0;margin-top:4px;}
+  .drop-zone{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:12.5px;cursor:pointer;transition:border-color .15s,background .15s;}
+  .drop-zone.over{border-color:var(--red);background:var(--soft);}
+  .wo-status{font-size:12px;color:var(--muted);margin-top:6px;min-height:16px;}
 </style>
 </head>
 <body>
@@ -268,11 +335,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<label class="btn red" style="cursor:pointer">Upload InBody PDF<input type="file" accept="application/pdf,image/*" style="display:none" onchange="uploadInbody(event)"></label>'+
     '<span id="ibStatus" style="font-size:12px;color:var(--muted)"></span></div>'+
     '<div id="scansList"></div></div></div>';
-  html+='<div class="panel"><div class="ph"><h3>Workouts</h3><span class="pill">'+(workouts||[]).length+'</span></div><div class="pb">'+
-    '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'+
-    '<label class="btn red" style="cursor:pointer">Upload Workout<input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadWorkout(event)"></label>'+
-    '<span id="woStatus" style="font-size:12px;color:var(--muted)"></span></div>'+
-    '<div id="workoutsList"></div></div></div>';
+  html+='<div class="panel"><div class="ph"><h3>Workouts</h3><span class="pill" id="woPill">'+(workouts||[]).length+'</span></div><div class="pb" style="padding:0" id="woPanel">'+buildWorkoutPanel(workouts||[])+'</div></div>';
   html+='<div class="panel"><div class="ph"><h3>Progress Photos</h3><span class="pill">'+(photos||[]).length+'</span></div><div class="pb">'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'+
     '<label class="btn red" style="cursor:pointer">Front<input type="file" accept="image/*" style="display:none" onchange="uploadPhoto(event,&quot;front&quot;)"></label>'+
@@ -465,22 +528,314 @@ async function uploadInbody(ev){
     st.textContent='Saved. Reloading...'; loadProfile(CURRENT.id);
   }catch(e){ st.textContent='Failed: '+e.message; }
 }
+// ── EXERCISE LIBRARY ──
+const EXERCISES = [
+  // Chest
+  {n:'Barbell Bench Press',c:'Chest'},{n:'Dumbbell Bench Press',c:'Chest'},{n:'Incline Barbell Press',c:'Chest'},{n:'Incline Dumbbell Press',c:'Chest'},{n:'Decline Bench Press',c:'Chest'},{n:'Machine Chest Press',c:'Chest'},{n:'Cable Chest Fly',c:'Chest'},{n:'Dumbbell Fly',c:'Chest'},{n:'Pec Deck',c:'Chest'},{n:'Push-up',c:'Chest'},{n:'Smith Machine Press',c:'Chest'},{n:'Dips (Chest)',c:'Chest'},
+  // Back
+  {n:'Barbell Row',c:'Back'},{n:'Dumbbell Row',c:'Back'},{n:'Lat Pulldown',c:'Back'},{n:'Wide Grip Lat Pulldown',c:'Back'},{n:'Seated Cable Row',c:'Back'},{n:'Pull-up',c:'Back'},{n:'Chin-up',c:'Back'},{n:'T-Bar Row',c:'Back'},{n:'Machine Row',c:'Back'},{n:'Face Pull',c:'Back'},{n:'Straight Arm Pulldown',c:'Back'},{n:'Smith Machine Deadlift',c:'Back'},
+  // Shoulders
+  {n:'Barbell Overhead Press',c:'Shoulders'},{n:'Dumbbell Shoulder Press',c:'Shoulders'},{n:'Arnold Press',c:'Shoulders'},{n:'Lateral Raise',c:'Shoulders'},{n:'Front Raise',c:'Shoulders'},{n:'Rear Delt Fly',c:'Shoulders'},{n:'Face Pull',c:'Shoulders'},{n:'Upright Row',c:'Shoulders'},{n:'Machine Shoulder Press',c:'Shoulders'},{n:'Cable Lateral Raise',c:'Shoulders'},
+  // Arms
+  {n:'Barbell Bicep Curl',c:'Arms'},{n:'Dumbbell Bicep Curl',c:'Arms'},{n:'Hammer Curl',c:'Arms'},{n:'Preacher Curl',c:'Arms'},{n:'Cable Curl',c:'Arms'},{n:'Machine Bicep Curl',c:'Arms'},{n:'Tricep Pushdown',c:'Arms'},{n:'Skull Crusher',c:'Arms'},{n:'Overhead Tricep Extension',c:'Arms'},{n:'Dips (Triceps)',c:'Arms'},{n:'Cable Rope Tricep Extension',c:'Arms'},{n:'Close Grip Bench Press',c:'Arms'},
+  // Legs
+  {n:'Barbell Back Squat',c:'Legs'},{n:'Barbell Front Squat',c:'Legs'},{n:'Goblet Squat',c:'Legs'},{n:'Leg Press',c:'Legs'},{n:'Leg Extension',c:'Legs'},{n:'Leg Curl',c:'Legs'},{n:'Romanian Deadlift',c:'Legs'},{n:'Stiff Leg Deadlift',c:'Legs'},{n:'Deadlift',c:'Legs'},{n:'Lunges',c:'Legs'},{n:'Bulgarian Split Squat',c:'Legs'},{n:'Calf Raise',c:'Legs'},{n:'Seated Calf Raise',c:'Legs'},{n:'Hack Squat',c:'Legs'},{n:'Farmer Walk',c:'Legs'},
+  // Core
+  {n:'Plank',c:'Core'},{n:'Crunch',c:'Core'},{n:'Reverse Crunch',c:'Core'},{n:'Ab Wheel Rollout',c:'Core'},{n:'Hanging Leg Raise',c:'Core'},{n:'Russian Twist',c:'Core'},{n:'Cable Crunch',c:'Core'},{n:'Hollow Hold',c:'Core'},{n:'Dead Bug',c:'Core'},{n:'Pallof Press',c:'Core'},{n:'Heel Touches',c:'Core'},{n:'Seated Ab Crunch Machine',c:'Core'},{n:'Wall Sit',c:'Core'},
+  // Cardio
+  {n:'Treadmill',c:'Cardio'},{n:'Elliptical',c:'Cardio'},{n:'Stationary Bike',c:'Cardio'},{n:'Rowing Machine',c:'Cardio'},{n:'Stair Climber',c:'Cardio'},{n:'Jump Rope',c:'Cardio'},{n:'Walking',c:'Cardio'},{n:'Running',c:'Cardio'},{n:'Cycling',c:'Cardio'},
+  // Compound / Other
+  {n:'Barbell Deadlift',c:'Full Body'},{n:'Power Clean',c:'Full Body'},{n:'Kettlebell Swing',c:'Full Body'},{n:'Medicine Ball Slam',c:'Full Body'},{n:'TRX Row',c:'Full Body'},{n:'Battle Ropes',c:'Full Body'},{n:'Box Jump',c:'Full Body'},{n:'Sled Push',c:'Full Body'},{n:'Farmer Carry',c:'Full Body'}
+];
+
+// ── WORKOUT PANEL BUILDER ──
+let woView='calendar'; // 'calendar' | 'list'
+let woCalYear=new Date().getFullYear(), woCalMonth=new Date().getMonth();
+let woAllWorkouts=[];
+
+function buildWorkoutPanel(workouts){
+  woAllWorkouts=workouts;
+  return '<div class="wo-toolbar">'+
+    '<div class="wo-view-tabs">'+
+      '<button class="wo-view-tab '+(woView==='calendar'?'active':'')+'" onclick="setWoView(\'calendar\')">Calendar</button>'+
+      '<button class="wo-view-tab '+(woView==='list'?'active':'')+'" onclick="setWoView(\'list\')">Log</button>'+
+    '</div>'+
+    '<button class="btn red" onclick="openSessionLogger(null)">+ Log Session</button>'+
+    '<label class="btn" style="cursor:pointer">📷 Upload Screenshot<input type="file" accept="image/*" style="display:none" onchange="uploadWorkout(event)"></label>'+
+    '<label class="btn" style="cursor:pointer">📄 Import CSV<input type="file" accept=".csv,text/csv" style="display:none" onchange="importCSV(event)"></label>'+
+    '<span class="wo-status" id="woStatus"></span>'+
+  '</div>'+
+  '<div id="woViewArea">'+renderWoView(workouts)+'</div>';
+}
+
+function setWoView(v){
+  woView=v;
+  document.querySelectorAll('.wo-view-tab').forEach(t=>t.classList.toggle('active',t.textContent.toLowerCase()===v.toLowerCase().replace('list','log')||t.textContent.toLowerCase()===v));
+  document.getElementById('woViewArea').innerHTML=renderWoView(woAllWorkouts);
+}
+
+function renderWoView(workouts){
+  return woView==='calendar'?renderWoCal(workouts):renderWoList(workouts);
+}
+
+function renderWoCal(workouts){
+  const byDate={};
+  workouts.forEach(w=>{ if(w.workout_date){ const d=w.workout_date.slice(0,10); if(!byDate[d]) byDate[d]=[]; byDate[d].push(w); }});
+  const today=new Date(); const todayStr=today.toISOString().slice(0,10);
+  const first=new Date(woCalYear,woCalMonth,1);
+  const lastDay=new Date(woCalYear,woCalMonth+1,0).getDate();
+  const startDow=first.getDay();
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  let html='<div class="wo-cal">'+
+    '<div class="wo-cal-nav">'+
+      '<button class="btn" onclick="woCalNav(-1)">← Prev</button>'+
+      '<div class="wo-cal-title">'+months[woCalMonth]+' '+woCalYear+'</div>'+
+      '<button class="btn" onclick="woCalNav(1)">Next →</button>'+
+    '</div>'+
+    '<div class="wo-cal-grid">'+
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>'<div class="wo-cal-dow">'+d+'</div>').join('');
+  // empty cells before start
+  for(let i=0;i<startDow;i++) html+='<div class="wo-day other-month"></div>';
+  for(let d=1;d<=lastDay;d++){
+    const ds=woCalYear+'-'+String(woCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const ws=byDate[ds]||[];
+    const isToday=ds===todayStr;
+    const hasWo=ws.length>0;
+    html+='<div class="wo-day'+(isToday?' today':'')+(hasWo?' has-workout':'')+'" onclick="calDayClick(\''+ds+'\')">'+'<div class="wo-day-num">'+d+'</div>'+
+      (hasWo?'<div class="wo-day-label">'+esc(ws[0].title||'Workout')+(ws.length>1?' +'+( ws.length-1):'')+'</div>':'')+
+    '</div>';
+  }
+  html+='</div></div>';
+  return html;
+}
+
+function renderWoList(workouts){
+  if(!workouts.length) return '<div class="empty"><div class="big">No sessions logged yet</div>Tap + Log Session or import a Trainerize CSV to get started.</div>';
+  const sorted=[...workouts].sort((a,b)=>(b.workout_date||'').localeCompare(a.workout_date||''));
+  return '<div class="wo-list-view">'+sorted.map(w=>{
+    let ex=[]; try{ ex=JSON.parse(w.exercises_json||'[]'); }catch(e){}
+    const vol=w.total_volume?Math.round(w.total_volume).toLocaleString()+' lb vol':'';
+    const rpe=w.rpe?'RPE '+w.rpe:'';
+    return '<div class="wo-session-row">'+
+      '<div class="wo-session-date">'+fmtDateShort(w.workout_date)+'</div>'+
+      '<div class="wo-session-body">'+
+        '<div class="wo-session-title">'+esc(w.title||'Workout')+'</div>'+
+        '<div class="wo-session-meta">'+(ex.length?ex.length+' exercise'+(ex.length!==1?'s':''):'')+[vol,rpe].filter(Boolean).map(s=>' · '+s).join('')+'</div>'+
+        (ex.length?'<table class="wo-ex-table"><thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight</th></tr></thead><tbody>'+
+          ex.map(e=>'<tr><td>'+esc(e.name||'')+'</td><td>'+esc(String(e.sets||''))+'</td><td>'+esc(String(e.reps||''))+'</td><td>'+esc(String(e.weight||''))+'</td></tr>').join('')+
+        '</tbody></table>':'')+
+      '</div>'+
+      '<button class="btn" onclick="deleteWorkout('+w.id+')">Del</button>'+
+    '</div>';
+  }).join('')+'</div>';
+}
+
+function fmtDateShort(d){ if(!d) return '—'; const dt=new Date(d+'T12:00:00'); return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+
+function woCalNav(dir){
+  woCalMonth+=dir;
+  if(woCalMonth>11){ woCalMonth=0; woCalYear++; }
+  if(woCalMonth<0){ woCalMonth=11; woCalYear--; }
+  document.getElementById('woViewArea').innerHTML=renderWoView(woAllWorkouts);
+}
+
+function calDayClick(dateStr){
+  const ws=woAllWorkouts.filter(w=>w.workout_date&&w.workout_date.slice(0,10)===dateStr);
+  if(ws.length) openSessionLogger(dateStr,ws[0]);
+  else openSessionLogger(dateStr);
+}
+
+async function deleteWorkout(id){
+  if(!confirm('Delete this workout session?')) return;
+  await db({op:'delete',table:'workouts',where:{id}});
+  loadProfile(CURRENT.id);
+}
+
+// ── SESSION LOGGER ──
+let woExercises=[]; // [{name, sets:[{sets,reps,weight}]}]
+let woEditId=null;
+
+function openSessionLogger(date, existing){
+  woExercises=[];
+  woEditId=existing?existing.id:null;
+  document.getElementById('woDate').value=date||new Date().toISOString().slice(0,10);
+  document.getElementById('woTitle').value=existing?existing.title||'':(date?'Session '+fmtDateShort(date):'');
+  document.getElementById('woRpe').value=existing?existing.rpe||'':6;
+  document.getElementById('woNotes').value=existing?existing.session_notes||'':'';
+  document.getElementById('exSearch').value='';
+  document.getElementById('exDropdown').classList.remove('open');
+  if(existing){ try{ woExercises=JSON.parse(existing.exercises_json||'[]').map(e=>({name:e.name,sets:[{sets:e.sets||3,reps:e.reps||'',weight:e.weight||''}]})); }catch(e){} }
+  renderExerciseBlocks();
+  document.getElementById('woModal').classList.add('open');
+}
+
+function closeWoModal(){ document.getElementById('woModal').classList.remove('open'); }
+
+function renderExerciseBlocks(){
+  const wrap=document.getElementById('exBlocksWrap');
+  if(!woExercises.length){ wrap.innerHTML='<div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">Search above to add exercises, or drop a CSV to auto-fill.</div>'; return; }
+  wrap.innerHTML=woExercises.map((ex,ei)=>`
+    <div class="ex-block">
+      <div class="ex-block-head">
+        <span class="ex-name">${esc(ex.name)}</span>
+        <button class="ex-del" onclick="removeExercise(${ei})">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:30px 1fr 1fr 1fr 28px;gap:6px;margin-bottom:4px;">
+        <div></div><div class="set-hdr">Sets</div><div class="set-hdr">Reps</div><div class="set-hdr">Weight (lb)</div><div></div>
+      </div>
+      ${(ex.sets||[]).map((s,si)=>`
+        <div class="set-row">
+          <div class="set-num">${si+1}</div>
+          <input class="set-inp" type="number" placeholder="3" value="${esc(String(s.sets||3))}" oninput="updateSet(${ei},${si},'sets',this.value)">
+          <input class="set-inp" type="text" placeholder="10" value="${esc(String(s.reps||''))}" oninput="updateSet(${ei},${si},'reps',this.value)">
+          <input class="set-inp" type="text" placeholder="135" value="${esc(String(s.weight||''))}" oninput="updateSet(${ei},${si},'weight',this.value)">
+          <button class="set-del" onclick="removeSet(${ei},${si})">✕</button>
+        </div>`).join('')}
+      <button class="add-set-btn" onclick="addSet(${ei})">+ Add Set</button>
+    </div>`).join('');
+}
+
+function updateSet(ei,si,field,val){
+  if(woExercises[ei]&&woExercises[ei].sets[si]) woExercises[ei].sets[si][field]=val;
+}
+function addSet(ei){
+  if(!woExercises[ei]) return;
+  const prev=woExercises[ei].sets.slice(-1)[0]||{sets:3,reps:'',weight:''};
+  woExercises[ei].sets.push({...prev});
+  renderExerciseBlocks();
+}
+function removeSet(ei,si){ woExercises[ei].sets.splice(si,1); renderExerciseBlocks(); }
+function removeExercise(ei){ woExercises.splice(ei,1); renderExerciseBlocks(); }
+
+function addExercise(name){
+  woExercises.push({name,sets:[{sets:3,reps:'',weight:''}]});
+  renderExerciseBlocks();
+  document.getElementById('exSearch').value='';
+  document.getElementById('exDropdown').classList.remove('open');
+  // scroll to bottom of modal
+  setTimeout(()=>{ document.getElementById('exBlocksWrap').lastElementChild&&document.getElementById('exBlocksWrap').lastElementChild.scrollIntoView({behavior:'smooth',block:'nearest'}); },100);
+}
+
+function exSearchInput(val){
+  const dd=document.getElementById('exDropdown');
+  if(!val.trim()){ dd.classList.remove('open'); return; }
+  const q=val.toLowerCase();
+  const matches=EXERCISES.filter(e=>e.n.toLowerCase().includes(q)).slice(0,12);
+  if(!matches.length){ dd.classList.remove('open'); return; }
+  dd.innerHTML=matches.map(e=>`<div class="ex-opt" onclick="addExercise('${e.n.replace(/'/g,"\\'")}')"><b>${esc(e.n)}</b><span class="cat">${esc(e.c)}</span></div>`).join('');
+  dd.classList.add('open');
+}
+
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.ex-search-wrap')) document.getElementById('exDropdown').classList.remove('open');
+});
+
+async function saveSession(){
+  const date=document.getElementById('woDate').value;
+  const title=document.getElementById('woTitle').value||'Session '+fmtDateShort(date);
+  const rpe=document.getElementById('woRpe').value;
+  const notes=document.getElementById('woNotes').value;
+  if(!CURRENT) return;
+  const flat=woExercises.map(ex=>({name:ex.name,sets:parseInt(ex.sets[0]&&ex.sets[0].sets)||ex.sets.length,reps:ex.sets[0]&&ex.sets[0].reps,weight:ex.sets[0]&&ex.sets[0].weight,all_sets:ex.sets}));
+  let vol=0;
+  woExercises.forEach(ex=>ex.sets.forEach(s=>{ const sets=parseFloat(s.sets)||1,reps=parseFloat(s.reps)||0,w=parseFloat(s.weight)||0; vol+=sets*reps*w; }));
+  const row={client_id:CURRENT.id,workout_date:date,title,rpe:rpe||null,exercises_json:JSON.stringify(flat),total_volume:vol||null,session_notes:notes||null,source:'manual'};
+  Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; });
+  if(woEditId){
+    await db({op:'update',table:'workouts',values:row,where:{id:woEditId}});
+  } else {
+    await db({op:'insert',table:'workouts',values:row});
+  }
+  closeWoModal();
+  loadProfile(CURRENT.id);
+}
+
+// ── CSV IMPORT ──
+async function importCSV(ev){
+  const file=ev.target.files[0]; ev.target.value=''; if(!file||!CURRENT) return;
+  const st=document.getElementById('woStatus'); st.textContent='Parsing CSV...';
+  try{
+    const text=await file.text();
+    const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+    const title=lines[0]||'Imported Workout';
+    // date range line: lines[1] — extract last date
+    const dateMatch=(lines[1]||'').match(/(\d{4}-\d{2}-\d{2})/g);
+    const dateRange=dateMatch?dateMatch:[]; 
+    // Find all date columns from line 2
+    const headerLine=lines[2]||'';
+    const dateCols=headerLine.split(',').map(c=>c.trim()).filter(c=>/^\d{1,2}\s\w{3}\s\d{4}$/.test(c)||/^\d{4}-\d{2}-\d{2}$/.test(c));
+    // group sessions by date
+    const sessions={};
+    const exMap={};
+    for(let i=4;i<lines.length;i++){
+      const cols=lines[i].split(',');
+      const exName=cols[0].trim(); const setLabel=cols[1]?.trim();
+      if(!exName||exName.toLowerCase().startsWith('rpe')||exName.toLowerCase().startsWith('comments')) continue;
+      if(!exMap[exName]) exMap[exName]={};
+      // cols 2+ are date values
+      for(let ci=2;ci<cols.length;ci++){
+        const val=cols[ci]?.trim();
+        if(!val||val==='false'||val==='true'||!val) continue;
+        const dateKey=dateCols[ci-2]||'Unknown date';
+        if(!sessions[dateKey]) sessions[dateKey]=[];
+        // find or create exercise entry
+        let entry=sessions[dateKey].find(e=>e.name===exName);
+        if(!entry){ entry={name:exName,sets:[]}; sessions[dateKey].push(entry); }
+        if(setLabel&&setLabel.startsWith('SET')){
+          // parse "10 X 135 lbs" or "3 X 135"
+          const m=val.match(/(\d+)\s*[Xx]\s*([\d.]+)/);
+          if(m) entry.sets.push({sets:1,reps:m[1],weight:m[2]});
+        }
+      }
+    }
+    // pick most recent date or all — save each as a workout
+    const dateKeys=Object.keys(sessions);
+    if(!dateKeys.length){ st.textContent='No session data found in CSV.'; return; }
+    let saved=0;
+    for(const dk of dateKeys){
+      const exs=sessions[dk]; if(!exs.length) continue;
+      let vol=0; exs.forEach(ex=>ex.sets.forEach(s=>{ vol+=parseFloat(s.reps||0)*parseFloat(s.weight||0); }));
+      // parse date
+      let ds=''; const dm=dk.match(/(\d{1,2})\s(\w{3})\s(\d{4})/);
+      if(dm){ const months={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'}; ds=dm[3]+'-'+(months[dm[2]]||'01')+'-'+String(dm[1]).padStart(2,'0'); }
+      else ds=dk;
+      const row={client_id:CURRENT.id,workout_date:ds||new Date().toISOString().slice(0,10),title,exercises_json:JSON.stringify(exs),total_volume:vol||null,source:'trainerize_csv'};
+      Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; });
+      await db({op:'insert',table:'workouts',values:row}); saved++;
+    }
+    st.textContent=saved+' session'+(saved!==1?'s':'')+' imported from CSV. Reloading...';
+    setTimeout(()=>loadProfile(CURRENT.id),800);
+  }catch(e){ st.textContent='CSV parse failed: '+e.message; }
+}
+
+// ── DROP ZONE ──
+function setupDropZone(){
+  const dz=document.getElementById('csvDropZone');
+  if(!dz) return;
+  dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('over'); const f=e.dataTransfer.files[0]; if(f) { const ev={target:{files:[f],value:''}}; f.text?importCSV(ev):uploadWorkout({target:{files:[f],value:''}}); } });
+}
+setTimeout(setupDropZone,400);
+
+// ── EXISTING IMAGE UPLOAD (kept, now secondary) ──
 const WO_PROMPT='You are reading a workout log screenshot (such as Trainerize). Return ONLY JSON, no prose, no fences. Shape: {"workout_date":"YYYY-MM-DD" or null,"title":"short name or null","exercises":[{"name":"...","sets":number,"reps":"as written","weight":"as written"}]}. Pull every exercise visible.';
 async function uploadWorkout(ev){
   const file=ev.target.files[0]; ev.target.value=''; if(!file||!CURRENT) return;
-  const st=document.getElementById('woStatus'); st.textContent='Uploading and reading the workout...';
+  const st=document.getElementById('woStatus'); st.textContent='Reading workout screenshot...';
   try{
     const b64=await fileToB64(file);
     const key=await uploadFile(file,'workout');
     const j=await aiExtract(file,b64,WO_PROMPT);
-    let vol=0; (j.exercises||[]).forEach(x=>{ const s=parseFloat(x.sets), rp=parseFloat(x.reps), w=parseFloat(x.weight); if(!isNaN(s)&&!isNaN(rp)&&!isNaN(w)) vol+=s*rp*w; });
-    const row={client_id:CURRENT.id, workout_date:j.workout_date||new Date().toISOString().slice(0,10), title:j.title||'Workout', file_url:key, exercises_json:JSON.stringify(j.exercises||[]), total_volume:vol||null, source:'trainerize_screenshot'};
+    let vol=0; (j.exercises||[]).forEach(x=>{ const s=parseFloat(x.sets),rp=parseFloat(x.reps),w=parseFloat(x.weight); if(!isNaN(s)&&!isNaN(rp)&&!isNaN(w)) vol+=s*rp*w; });
+    const row={client_id:CURRENT.id,workout_date:j.workout_date||new Date().toISOString().slice(0,10),title:j.title||'Workout',file_url:key,exercises_json:JSON.stringify(j.exercises||[]),total_volume:vol||null,source:'trainerize_screenshot'};
     Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; }); row.client_id=CURRENT.id;
     const ins=await db({op:'insert',table:'workouts',values:row});
-    if(ins && ins.error) throw new Error(ins.error);
+    if(ins&&ins.error) throw new Error(ins.error);
     st.textContent='Saved. Reloading...'; loadProfile(CURRENT.id);
   }catch(e){ st.textContent='Failed: '+e.message; }
 }
+function renderWorkouts(){}
 function renderScans(scans){
   const el=document.getElementById('scansList'); if(!el) return;
   const real=scans.filter(s=>s.source!=='inbody_history').slice().reverse();
@@ -488,16 +843,6 @@ function renderScans(scans){
   el.innerHTML=real.map(s=>'<div class="row"><div class="main"><div class="name">'+esc(fmtDate(s.scan_date))+'</div><div class="meta">'+
     [s.weight!=null?'Wt '+s.weight:'', s.skeletal_muscle!=null?'SMM '+s.skeletal_muscle:'', s.body_fat_pct!=null?'BF '+s.body_fat_pct+'%':'', s.bmi!=null?'BMI '+s.bmi:''].filter(Boolean).join(' · ')+
     '</div></div>'+(s.file_url?'<a class="btn" target="_blank" href="'+WORKER+'/file/get?key='+encodeURIComponent(s.file_url)+'">View</a>':'')+'</div>').join('');
-}
-function renderWorkouts(workouts){
-  const el=document.getElementById('workoutsList'); if(!el) return;
-  if(!workouts.length){ el.innerHTML='<div class="empty">No workouts yet. Snap a Trainerize screenshot and the exercises read in automatically.</div>'; return; }
-  el.innerHTML=workouts.map(w=>{ let ex=[]; try{ ex=JSON.parse(w.exercises_json||'[]'); }catch(e){}
-    const names=ex.slice(0,4).map(x=>x.name).filter(Boolean).join(', ');
-    return '<div class="row"><div class="main"><div class="name">'+esc(w.title||'Workout')+'</div><div class="meta">'+
-      esc(fmtDate(w.workout_date))+(names?' · '+esc(names):'')+(w.total_volume?' · vol '+Math.round(w.total_volume):'')+
-      '</div></div>'+(w.file_url?'<a class="btn" target="_blank" href="'+WORKER+'/file/get?key='+encodeURIComponent(w.file_url)+'">View</a>':'')+'</div>';
-  }).join('');
 }
 
 // init
@@ -509,6 +854,59 @@ function renderWorkouts(workouts){
   else if(q.get('add')) openAdd();
 })();
 </script>
+
+<!-- WORKOUT SESSION LOGGER MODAL -->
+<div class="wo-modal" id="woModal">
+  <div class="wo-box">
+    <div class="wo-box-head">
+      <h3>Log Workout Session</h3>
+      <button class="x" onclick="closeWoModal()">&times;</button>
+    </div>
+    <div class="wo-box-body">
+      <div class="wo-row2">
+        <div class="wo-field">
+          <label>Date</label>
+          <input type="date" id="woDate">
+        </div>
+        <div class="wo-field">
+          <label>RPE (1–10)</label>
+          <input type="number" id="woRpe" min="1" max="10" placeholder="6">
+        </div>
+      </div>
+      <div class="wo-field">
+        <label>Session / Program Name</label>
+        <input type="text" id="woTitle" placeholder="e.g. Chest and Triceps — Tuesday">
+      </div>
+
+      <div class="wo-field">
+        <label>Add Exercise</label>
+        <div class="ex-search-wrap">
+          <input type="text" id="exSearch" placeholder="Search squat, bench, pulldown..." oninput="exSearchInput(this.value)" autocomplete="off">
+          <div class="ex-dropdown" id="exDropdown"></div>
+        </div>
+      </div>
+
+      <div id="exBlocksWrap" style="max-height:340px;overflow-y:auto;">
+        <div style="font-size:12px;color:var(--muted);text-align:center;padding:12px">Search above to add exercises, or drop a CSV to auto-fill.</div>
+      </div>
+
+      <div class="wo-field" style="margin-top:12px;">
+        <label>Session Notes</label>
+        <input type="text" id="woNotes" placeholder="Optional — form cues, observations, energy level...">
+      </div>
+
+      <label class="drop-zone" id="csvDropZone" style="margin-top:10px;">
+        <div>📄 Drop a Trainerize CSV here to auto-fill exercises</div>
+        <div style="font-size:11px;margin-top:4px;">or click to browse</div>
+        <input type="file" accept=".csv" style="display:none" onchange="importCSV(event)">
+      </label>
+    </div>
+    <div class="wo-box-foot">
+      <button class="btn" onclick="closeWoModal()">Cancel</button>
+      <button class="btn red" onclick="saveSession()">Save Session</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal" id="clientModal">
   <div class="box">
