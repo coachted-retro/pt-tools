@@ -3,18 +3,20 @@ const OUTSCRAPER_BASE = "https://api.outscraper.com/maps/search-v3";
 // --- Gym location: Retro Fitness of Fairless Hills, 516 Lincoln Hwy, 19030 ---
 const GYM_LAT = 40.1762, GYM_LON = -74.8530, RADIUS_MI = 10;
 
-// --- What to harvest. Edit freely. ---
+// --- What to harvest. Edit freely. "near {LOC}" gets filled with the
+// target gym's city/state at query time, defaulting to Fairless Hills
+// PA when no gym is specified. ---
 const HARVEST_QUERIES = [
-  { query: "chiropractor near Fairless Hills PA",            lead_type: "referral_partner", category: "chiropractor" },
-  { query: "physical therapy near Fairless Hills PA",         lead_type: "referral_partner", category: "physical_therapy" },
-  { query: "med spa near Fairless Hills PA",                  lead_type: "referral_partner", category: "med_spa" },
-  { query: "nutritionist dietitian near Fairless Hills PA",   lead_type: "referral_partner", category: "nutritionist" },
-  { query: "fire department near Fairless Hills PA",          lead_type: "corporate", category: "fire_department" },
-  { query: "police department near Fairless Hills PA",        lead_type: "corporate", category: "police" },
-  { query: "ambulance EMS near Fairless Hills PA",            lead_type: "corporate", category: "ems" },
-  { query: "corporate office near Fairless Hills PA",         lead_type: "corporate", category: "employer" },
-  { query: "manufacturing company near Fairless Hills PA",    lead_type: "corporate", category: "employer" },
-  { query: "warehouse distribution near Fairless Hills PA",   lead_type: "corporate", category: "employer" }
+  { queryTpl: "chiropractor near {LOC}",            lead_type: "referral_partner", category: "chiropractor" },
+  { queryTpl: "physical therapy near {LOC}",         lead_type: "referral_partner", category: "physical_therapy" },
+  { queryTpl: "med spa near {LOC}",                  lead_type: "referral_partner", category: "med_spa" },
+  { queryTpl: "nutritionist dietitian near {LOC}",   lead_type: "referral_partner", category: "nutritionist" },
+  { queryTpl: "fire department near {LOC}",          lead_type: "corporate", category: "fire_department" },
+  { queryTpl: "police department near {LOC}",        lead_type: "corporate", category: "police" },
+  { queryTpl: "ambulance EMS near {LOC}",            lead_type: "corporate", category: "ems" },
+  { queryTpl: "corporate office near {LOC}",         lead_type: "corporate", category: "employer" },
+  { queryTpl: "manufacturing company near {LOC}",    lead_type: "corporate", category: "employer" },
+  { queryTpl: "warehouse distribution near {LOC}",   lead_type: "corporate", category: "employer" }
 ];
 
 const ALLOWED_TABLES = new Set([
@@ -24,7 +26,8 @@ const ALLOWED_TABLES = new Set([
   'meal_profiles','meal_plans',
   'inbody_scans','workouts',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts',
-  'daily_content','client_wins','gym_events'
+  'daily_content','client_wins','gym_events',
+  'gyms','pt_reps','pt_sales','gym_quotas'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -85,6 +88,42 @@ export default {
         if (!env.OUTSCRAPER_KEY) return bad('OUTSCRAPER_KEY variable not set.', cors);
         const opt = await request.json().catch(() => ({}));
         return await runHarvest(opt, env, cors);
+      }
+
+      // ── REGIONAL: GYMS / REPS / SALES / QUOTAS ──────────────────────
+      if (url.pathname === '/region/summary' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const month = url.searchParams.get('month') || new Date().toISOString().slice(0,7);
+        return ok(await getRegionSummary(env, month), cors);
+      }
+
+      if (url.pathname === '/region/gym' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const gymId = url.searchParams.get('gym_id');
+        if (!gymId) return bad('gym_id required', cors);
+        const month = url.searchParams.get('month') || new Date().toISOString().slice(0,7);
+        return ok(await getGymDetail(env, gymId, month), cors);
+      }
+
+      if (url.pathname === '/region/forecast' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const gymId = url.searchParams.get('gym_id'); // omit for region-wide forecast
+        return ok(await getForecast(env, gymId), cors);
+      }
+
+      if (url.pathname === '/quota/set' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const body = await request.json();
+        if (!body.gym_id || !body.month || body.goal_amount == null) return bad('gym_id, month, goal_amount required', cors);
+        const existing = await env.DB.prepare('SELECT id FROM gym_quotas WHERE gym_id=? AND month=?').bind(body.gym_id, body.month).first();
+        if (existing) {
+          await env.DB.prepare('UPDATE gym_quotas SET goal_amount=?, set_by=?, updated_at=? WHERE id=?')
+            .bind(body.goal_amount, body.set_by||'Keelin', new Date().toISOString(), existing.id).run();
+        } else {
+          await env.DB.prepare('INSERT INTO gym_quotas (gym_id,month,goal_amount,set_by,updated_at) VALUES (?,?,?,?,?)')
+            .bind(body.gym_id, body.month, body.goal_amount, body.set_by||'Keelin', new Date().toISOString()).run();
+        }
+        return ok({ set: true }, cors);
       }
 
       if (url.pathname === '/calendar' && request.method === 'GET') {
@@ -422,29 +461,43 @@ async function runHarvest(opt, env, cors) {
   const limit = Math.min(parseInt(opt.limit, 10) || 20, 100);
   const onlyCategory = opt.category || null;
   const queries = HARVEST_QUERIES.filter(q => !onlyCategory || q.category === onlyCategory);
+
+  // Gym-aware: if a gym_id is provided, harvest around that gym's real
+  // location and build search queries using its actual address. Falls
+  // back to Fairless Hills PA if no gym_id is given.
+  let lat = GYM_LAT, lon = GYM_LON, gymId = opt.gym_id || null, locationLabel = 'Fairless Hills PA';
+  if (gymId) {
+    const gym = await env.DB.prepare('SELECT name, address, lat, lon FROM gyms WHERE id=?').bind(gymId).first();
+    if (gym) {
+      if (gym.lat != null && gym.lon != null) { lat = gym.lat; lon = gym.lon; }
+      locationLabel = gym.address || gym.name || locationLabel;
+    }
+  }
+
   const sourceId = await getOrCreateSource(env, 'Google Maps Harvest', 'corporate');
   let found = 0, inserted = 0, dupes = 0, tooFar = 0, noGeo = 0;
   const perQuery = [];
   for (const q of queries) {
-    const places = await outscraperSearch(q.query, limit, env.OUTSCRAPER_KEY);
+    const queryText = q.queryTpl.replace('{LOC}', locationLabel);
+    const places = await outscraperSearch(queryText, limit, env.OUTSCRAPER_KEY);
     let qIns = 0;
     for (const p of places) {
       found++;
-      const lat = num(p.latitude), lon = num(p.longitude);
-      if (lat == null || lon == null) { noGeo++; continue; }
-      const dist = haversineMi(GYM_LAT, GYM_LON, lat, lon);
+      const plat = num(p.latitude), plon = num(p.longitude);
+      if (plat == null || plon == null) { noGeo++; continue; }
+      const dist = haversineMi(lat, lon, plat, plon);
       if (dist > RADIUS_MI) { tooFar++; continue; }
       const name = (p.name || '').trim();
       const phone = (p.phone || '').trim();
       if (!name) continue;
       if (await leadExists(env, name, phone)) { dupes++; continue; }
       await env.DB.prepare(
-        `INSERT INTO leads (lead_type,business_name,email,phone,address,city,state,zip,category,distance_mi,source_id,status)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'new')`
+        `INSERT INTO leads (lead_type,business_name,email,phone,address,city,state,zip,category,distance_mi,source_id,status,gym_id)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?, 'new', ?)`
       ).bind(
         q.lead_type, name, (p.email_1 || p.email || ''), phone,
         p.full_address || '', p.city || '', p.us_state || p.state || '', p.postal_code || '',
-        q.category, Math.round(dist * 10) / 10, sourceId
+        q.category, Math.round(dist * 10) / 10, sourceId, gymId
       ).run();
       inserted++; qIns++;
     }
@@ -483,6 +536,112 @@ function haversineMi(la1, lo1, la2, lo2){
   const R = 3958.8, dLa = (la2-la1)*Math.PI/180, dLo = (lo2-lo1)*Math.PI/180;
   const a = Math.sin(dLa/2)**2 + Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ---------------- Regional dashboard (Keelin, Regional Director) ----------------
+
+// All gyms, this month's goal vs actual, percent to goal. This is the
+// live version of the whiteboard, every gym, ranked, with a real
+// quota number behind it instead of dry-erase marker.
+async function getRegionSummary(env, month){
+  const gyms = await env.DB.prepare('SELECT * FROM gyms WHERE active=1 ORDER BY name ASC').all();
+  const rows = [];
+  let totalGoal = 0, totalActual = 0;
+  for (const gym of (gyms.results||[])) {
+    const quota = await env.DB.prepare('SELECT goal_amount FROM gym_quotas WHERE gym_id=? AND month=?').bind(gym.id, month).first();
+    const sales = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total, COUNT(*) n FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gym.id, month).first();
+    const goal = (quota && quota.goal_amount) || 0;
+    const actual = (sales && sales.total) || 0;
+    const pct = goal > 0 ? Math.round((actual/goal)*100) : null;
+    totalGoal += goal; totalActual += actual;
+    rows.push({ gym_id: gym.id, name: gym.name, region: gym.region, manager_name: gym.manager_name, goal, actual, pct, sale_count: sales?.n || 0, safe_zone: pct != null && pct >= 90 });
+  }
+  rows.sort((a,b) => (b.pct||0) - (a.pct||0));
+  return { month, gyms: rows, region_goal: totalGoal, region_actual: totalActual, region_pct: totalGoal>0 ? Math.round((totalActual/totalGoal)*100) : null };
+}
+
+// Single gym drill-down: rep-level breakdown (several PT reps can sell
+// at the same gym), plus recent sales and the trailing 6-month trend
+// for that gym specifically.
+async function getGymDetail(env, gymId, month){
+  const gym = await env.DB.prepare('SELECT * FROM gyms WHERE id=?').bind(gymId).first();
+  const reps = await env.DB.prepare('SELECT * FROM pt_reps WHERE gym_id=? AND active=1 ORDER BY first_name ASC').bind(gymId).all();
+  const repRows = [];
+  for (const rep of (reps.results||[])) {
+    const sales = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total, COUNT(*) n FROM pt_sales WHERE rep_id=? AND substr(sale_date,1,7)=?").bind(rep.id, month).first();
+    repRows.push({ rep_id: rep.id, name: ((rep.first_name||'')+' '+(rep.last_name||'')).trim(), total: sales?.total||0, sale_count: sales?.n||0 });
+  }
+  repRows.sort((a,b) => b.total - a.total);
+
+  const quota = await env.DB.prepare('SELECT goal_amount FROM gym_quotas WHERE gym_id=? AND month=?').bind(gymId, month).first();
+  const monthSales = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total, COUNT(*) n FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, month).first();
+
+  // trailing 6 months trend for this gym
+  const trend = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const m = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const s = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, m).first();
+    const q = await env.DB.prepare('SELECT goal_amount FROM gym_quotas WHERE gym_id=? AND month=?').bind(gymId, m).first();
+    trend.push({ month: m, actual: s?.total||0, goal: (q&&q.goal_amount)||null });
+  }
+
+  const recentSales = await env.DB.prepare('SELECT * FROM pt_sales WHERE gym_id=? ORDER BY sale_date DESC LIMIT 20').bind(gymId).all();
+
+  return {
+    gym, reps: repRows,
+    goal: (quota&&quota.goal_amount)||0, actual: monthSales?.total||0, sale_count: monthSales?.n||0,
+    trend, recent_sales: recentSales.results||[]
+  };
+}
+
+// Trend-based forecast. Honest framing: this projects forward from the
+// gym's own trailing months, it is not a seasonal or ML model. With
+// only a few months of real data it will be rough, and gets sharper
+// as more months accumulate. gymId omitted = region-wide forecast.
+async function getForecast(env, gymId){
+  const monthsBack = 6;
+  const history = [];
+  const now = new Date();
+  for (let i = monthsBack-1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const m = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    let total;
+    if (gymId) {
+      const s = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, m).first();
+      total = s?.total||0;
+    } else {
+      const s = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE substr(sale_date,1,7)=?").bind(m).first();
+      total = s?.total||0;
+    }
+    history.push({ month: m, actual: total });
+  }
+
+  // Simple linear trend over months with actual data, project 3 months forward
+  const withData = history.filter(h => h.actual > 0);
+  let slope = 0, intercept = 0, hasTrend = false;
+  if (withData.length >= 2) {
+    const n = withData.length;
+    const xs = withData.map((_,i)=>i);
+    const ys = withData.map(h=>h.actual);
+    const xMean = xs.reduce((a,b)=>a+b,0)/n, yMean = ys.reduce((a,b)=>a+b,0)/n;
+    let num=0, den=0;
+    for (let i=0;i<n;i++){ num += (xs[i]-xMean)*(ys[i]-yMean); den += (xs[i]-xMean)**2; }
+    slope = den !== 0 ? num/den : 0;
+    intercept = yMean - slope*xMean;
+    hasTrend = true;
+  }
+
+  const projection = [];
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+    const m = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const projected = hasTrend ? Math.max(0, Math.round(intercept + slope*(withData.length-1+i))) : null;
+    projection.push({ month: m, projected });
+  }
+
+  return { history, projection, confidence: withData.length >= 4 ? 'moderate' : withData.length >= 2 ? 'low' : 'insufficient_data', months_of_data: withData.length };
 }
 
 // ---------------- Meal-plan generator ----------------

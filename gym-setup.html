@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gym & Rep Setup, Retro Fitness, The Body Shoppe</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--soft:#F0F2F5;--gold:#D4AF37}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:30}
+  .topbar img{height:32px;border-radius:4px}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)}.spacer{flex:1}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:700;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.red:hover{background:var(--red-dk)}
+  .btn.sm{padding:5px 10px;font-size:10px}
+  .wrap{max-width:1000px;margin:0 auto;padding:20px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .panel h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 10px;color:var(--ink)}
+  .panel p{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 14px}
+  .fld label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+  .fld input,.fld select{width:100%;font-family:'Inter';font-size:13px;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--soft)}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-family:'Oswald';font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:8px 6px;border-bottom:2px solid var(--line)}
+  td{padding:9px 6px;border-bottom:1px solid var(--line)}
+  .status{font-size:12px;color:var(--muted);margin-top:8px;min-height:18px}
+  .pill{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:20px}
+  .pill.safe{background:#E3F5EC;color:var(--green)}
+  .pill.behind{background:#FDECEA;color:var(--red)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness, The Body Shoppe" onerror="this.style.display='none'">
+  <div class="t">Gym & Rep <span>Setup</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="regional-dashboard.html">View Regional Dashboard &rarr;</a>
+</div>
+<div class="wrap">
+
+  <div class="panel">
+    <h3>Quick-Load the 16 Body Shoppe Gyms</h3>
+    <p>Loads the real region with this month's goals exactly as tracked on the whiteboard. Safe to run once, existing gyms (matched by name) are skipped, not duplicated.</p>
+    <button class="btn red" onclick="quickLoadGyms()" id="quickload-btn">Load Gyms & June 2026 Goals</button>
+    <div class="status" id="quickload-status"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Add / Edit a Gym</h3>
+    <div class="grid3">
+      <div class="fld"><label>Gym name</label><input id="g-name" type="text" placeholder="e.g. Forest Hills, NYC"></div>
+      <div class="fld"><label>Region</label><input id="g-region" type="text" placeholder="e.g. NYC, NJ, PA"></div>
+      <div class="fld"><label>Manager</label><input id="g-manager" type="text" placeholder="Gym manager name"></div>
+    </div>
+    <div class="grid2">
+      <div class="fld"><label>Address (for harvester)</label><input id="g-address" type="text" placeholder="Street, City, State"></div>
+      <div class="fld"><label>This month's goal ($)</label><input id="g-goal" type="number" placeholder="e.g. 40000"></div>
+    </div>
+    <button class="btn red" onclick="saveGym()">Save Gym</button>
+    <div class="status" id="gym-status"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Gyms (<span id="gym-count">0</span>)</h3>
+    <table>
+      <thead><tr><th>Gym</th><th>Region</th><th>Manager</th><th>This Month's Goal</th><th>% to Goal</th><th></th></tr></thead>
+      <tbody id="gym-table"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>Add a PT Rep</h3>
+    <p>Several reps can sell PT at the same gym. Add each one here so sales can be tracked and ranked per person.</p>
+    <div class="grid3">
+      <div class="fld"><label>Gym</label><select id="r-gym"><option value="">Select a gym</option></select></div>
+      <div class="fld"><label>First name</label><input id="r-first" type="text"></div>
+      <div class="fld"><label>Last name</label><input id="r-last" type="text"></div>
+    </div>
+    <button class="btn red" onclick="saveRep()">Add Rep</button>
+    <div class="status" id="rep-status"></div>
+  </div>
+
+  <div class="panel">
+    <h3>PT Reps</h3>
+    <table>
+      <thead><tr><th>Rep</th><th>Gym</th></tr></thead>
+      <tbody id="rep-table"></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h3>Log a Sale</h3>
+    <p>One row per closed PT sale or enrollment. This is what the regional dashboard, quotas, and forecasting all read from.</p>
+    <div class="grid3">
+      <div class="fld"><label>Gym</label><select id="s-gym" onchange="loadRepsForGymSelect()"><option value="">Select a gym</option></select></div>
+      <div class="fld"><label>Rep (optional)</label><select id="s-rep"><option value="">No specific rep</option></select></div>
+      <div class="fld"><label>Date</label><input id="s-date" type="date"></div>
+    </div>
+    <div class="grid3">
+      <div class="fld"><label>Package</label><input id="s-package" type="text" placeholder="e.g. Complete, Training 2x"></div>
+      <div class="fld"><label>Amount ($)</label><input id="s-amount" type="number" placeholder="e.g. 2400"></div>
+      <div class="fld"><label>Source</label><input id="s-source" type="text" placeholder="e.g. Walk-in, Referral, Harvester"></div>
+    </div>
+    <button class="btn red" onclick="logSale()">Log Sale</button>
+    <div class="status" id="sale-status"></div>
+  </div>
+
+</div>
+
+<script>
+const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+const DEMO_FLAG='?demo=1'; // Locked to demo database until Keelin signs off and this goes live
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+async function db(body){
+  const r=await fetch(WORKER+'/db'+DEMO_FLAG,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+  return r.json();
+}
+
+document.getElementById('s-date').value = new Date().toISOString().slice(0,10);
+
+// Real gym list and June 2026 goals, transcribed from the whiteboard.
+// No address/lat/lon yet for most, those should be filled in as each
+// gym's exact location is confirmed, the harvester needs them to run
+// gym-specific prospecting, the dashboard works fine without them.
+const REAL_GYMS = [
+  { name:'Wallington, NJ', region:'NJ', goal:40000 },
+  { name:'Forest Hills, NYC', region:'NYC', goal:47500 },
+  { name:'Fairfield, NJ', region:'NJ', goal:38500 },
+  { name:'Park Slope, NYC', region:'NYC', goal:17500 },
+  { name:'Lacey, NJ', region:'NJ', goal:27500 },
+  { name:'Astoria, NYC', region:'NYC', goal:30000 },
+  { name:'Cedar City, UT', region:'UT', goal:35000 },
+  { name:'Glendale, NYC', region:'NYC', goal:47500 },
+  { name:'Fair Lawn, NJ', region:'NJ', goal:42500 },
+  { name:'Stroudsburg, PA', region:'PA', goal:22500 },
+  { name:'Whippany, NJ', region:'NJ', goal:15500 },
+  { name:'Mt Olive, NJ', region:'NJ', goal:45000 },
+  { name:'Fairless Hills, PA', region:'PA', goal:10800, address:'516 Lincoln Hwy, Fairless Hills PA 19030', lat:40.1762, lon:-74.8530 },
+  { name:'Sayreville, NJ', region:'NJ', goal:15500 },
+  { name:'Jersey City, NJ', region:'NJ', goal:10500 },
+  { name:'Tottenville, NYC', region:'NYC', goal:15500 },
+];
+
+async function quickLoadGyms(){
+  const btn=document.getElementById('quickload-btn'); const st=document.getElementById('quickload-status');
+  btn.disabled=true; st.textContent='Loading...';
+  const month = new Date().toISOString().slice(0,7);
+  let created=0, skipped=0;
+  for (const g of REAL_GYMS) {
+    const existing = await db({ op:'select', table:'gyms', where:{ name:g.name }, limit:1 });
+    let gymId;
+    if (existing.results && existing.results.length) {
+      gymId = existing.results[0].id; skipped++;
+    } else {
+      const ins = await db({ op:'insert', table:'gyms', values:{
+        name:g.name, region:g.region, address:g.address||'', lat:g.lat||null, lon:g.lon||null,
+        manager_name:'', active:1, created_at:new Date().toISOString()
+      }});
+      gymId = ins.id; created++;
+    }
+    const quotaExists = await db({ op:'select', table:'gym_quotas', where:{ gym_id:gymId, month }, limit:1 });
+    if (!quotaExists.results || !quotaExists.results.length) {
+      await db({ op:'insert', table:'gym_quotas', values:{ gym_id:gymId, month, goal_amount:g.goal, set_by:'Keelin', updated_at:new Date().toISOString() } });
+    }
+  }
+  st.textContent=created+' gyms created, '+skipped+' already existed, June 2026 goals set for all.';
+  btn.disabled=false;
+  loadGyms(); loadGymSelects();
+}
+
+async function loadGyms(){
+  const d = await db({ op:'select', table:'gyms', where:{ active:1 }, orderBy:'name ASC', limit:200 });
+  const gyms = d.results||[];
+  document.getElementById('gym-count').textContent = gyms.length;
+  const month = new Date().toISOString().slice(0,7);
+  const rows = [];
+  for (const g of gyms) {
+    const q = await db({ op:'select', table:'gym_quotas', where:{ gym_id:g.id, month }, limit:1 });
+    const goal = (q.results && q.results[0] && q.results[0].goal_amount) || 0;
+    const s = await db({ op:'select', table:'pt_sales', where:{ gym_id:g.id }, limit:500 });
+    const actual = (s.results||[]).filter(x=>String(x.sale_date||'').slice(0,7)===month).reduce((a,b)=>a+Number(b.amount||0),0);
+    const pct = goal>0 ? Math.round((actual/goal)*100) : null;
+    rows.push('<tr><td>'+esc(g.name)+'</td><td>'+esc(g.region||'')+'</td><td>'+esc(g.manager_name||'')+'</td>'+
+      '<td>$'+goal.toLocaleString()+'</td>'+
+      '<td>'+(pct!=null?'<span class="pill '+(pct>=90?'safe':'behind')+'">'+pct+'%</span>':'<span style="color:var(--muted)">no goal set</span>')+'</td>'+
+      '<td><button class="btn sm" onclick="document.getElementById(\'g-name\').value=\''+esc(g.name).replace(/'/g,"\\'")+'\'">Edit</button></td></tr>');
+  }
+  document.getElementById('gym-table').innerHTML = rows.join('') || '<tr><td colspan="6" style="color:var(--muted)">No gyms yet.</td></tr>';
+}
+
+async function loadGymSelects(){
+  const d = await db({ op:'select', table:'gyms', where:{ active:1 }, orderBy:'name ASC', limit:200 });
+  const opts = (d.results||[]).map(g=>'<option value="'+g.id+'">'+esc(g.name)+'</option>').join('');
+  document.getElementById('r-gym').innerHTML = '<option value="">Select a gym</option>'+opts;
+  document.getElementById('s-gym').innerHTML = '<option value="">Select a gym</option>'+opts;
+}
+
+async function saveGym(){
+  const name=document.getElementById('g-name').value.trim();
+  const region=document.getElementById('g-region').value.trim();
+  const manager=document.getElementById('g-manager').value.trim();
+  const address=document.getElementById('g-address').value.trim();
+  const goal=parseFloat(document.getElementById('g-goal').value||0);
+  const st=document.getElementById('gym-status');
+  if(!name){ st.textContent='Gym name required'; return; }
+  st.textContent='Saving...';
+  const existing = await db({ op:'select', table:'gyms', where:{ name }, limit:1 });
+  let gymId;
+  if (existing.results && existing.results.length) {
+    gymId = existing.results[0].id;
+    await db({ op:'update', table:'gyms', values:{ region, manager_name:manager, address }, where:{ id:gymId } });
+  } else {
+    const ins = await db({ op:'insert', table:'gyms', values:{ name, region, manager_name:manager, address, active:1, created_at:new Date().toISOString() } });
+    gymId = ins.id;
+  }
+  if (goal > 0) {
+    const month = new Date().toISOString().slice(0,7);
+    const q = await db({ op:'select', table:'gym_quotas', where:{ gym_id:gymId, month }, limit:1 });
+    if (q.results && q.results.length) await db({ op:'update', table:'gym_quotas', values:{ goal_amount:goal, updated_at:new Date().toISOString() }, where:{ gym_id:gymId, month } });
+    else await db({ op:'insert', table:'gym_quotas', values:{ gym_id:gymId, month, goal_amount:goal, set_by:'Keelin', updated_at:new Date().toISOString() } });
+  }
+  st.textContent='Saved.';
+  document.getElementById('g-name').value=document.getElementById('g-region').value=document.getElementById('g-manager').value=document.getElementById('g-address').value=document.getElementById('g-goal').value='';
+  loadGyms(); loadGymSelects();
+}
+
+async function loadReps(){
+  const d = await db({ op:'select', table:'pt_reps', where:{ active:1 }, limit:500 });
+  const gyms = await db({ op:'select', table:'gyms', limit:200 });
+  const gmap = {}; (gyms.results||[]).forEach(g=>gmap[g.id]=g.name);
+  const rows = (d.results||[]).map(r=>'<tr><td>'+esc(((r.first_name||'')+' '+(r.last_name||'')).trim())+'</td><td>'+esc(gmap[r.gym_id]||'')+'</td></tr>');
+  document.getElementById('rep-table').innerHTML = rows.join('') || '<tr><td colspan="2" style="color:var(--muted)">No reps yet.</td></tr>';
+}
+
+async function saveRep(){
+  const gymId=document.getElementById('r-gym').value;
+  const first=document.getElementById('r-first').value.trim();
+  const last=document.getElementById('r-last').value.trim();
+  const st=document.getElementById('rep-status');
+  if(!gymId||!first){ st.textContent='Gym and first name required'; return; }
+  st.textContent='Saving...';
+  await db({ op:'insert', table:'pt_reps', values:{ gym_id:gymId, first_name:first, last_name:last, active:1, created_at:new Date().toISOString() } });
+  st.textContent='Rep added.';
+  document.getElementById('r-first').value=document.getElementById('r-last').value='';
+  loadReps();
+}
+
+async function loadRepsForGymSelect(){
+  const gymId=document.getElementById('s-gym').value;
+  const sel=document.getElementById('s-rep');
+  if(!gymId){ sel.innerHTML='<option value="">No specific rep</option>'; return; }
+  const d = await db({ op:'select', table:'pt_reps', where:{ gym_id:gymId, active:1 }, limit:100 });
+  sel.innerHTML='<option value="">No specific rep</option>'+(d.results||[]).map(r=>'<option value="'+r.id+'">'+esc(((r.first_name||'')+' '+(r.last_name||'')).trim())+'</option>').join('');
+}
+
+async function logSale(){
+  const gymId=document.getElementById('s-gym').value;
+  const repId=document.getElementById('s-rep').value;
+  const date=document.getElementById('s-date').value;
+  const pkg=document.getElementById('s-package').value.trim();
+  const amount=parseFloat(document.getElementById('s-amount').value||0);
+  const source=document.getElementById('s-source').value.trim();
+  const st=document.getElementById('sale-status');
+  if(!gymId||!date||!amount){ st.textContent='Gym, date, and amount required'; return; }
+  st.textContent='Logging...';
+  await db({ op:'insert', table:'pt_sales', values:{ gym_id:gymId, rep_id:repId||null, sale_date:date, package:pkg, amount, source, notes:'' } });
+  st.textContent='Sale logged.';
+  document.getElementById('s-package').value=document.getElementById('s-amount').value=document.getElementById('s-source').value='';
+  loadGyms();
+}
+
+(async function(){ await Promise.all([loadGyms(), loadGymSelects(), loadReps()]); })();
+</script>
+</body>
+</html>

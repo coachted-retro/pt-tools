@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regional Dashboard, Retro Fitness, The Body Shoppe</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F0F2F5;--gold:#D4AF37}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--ink);padding:0 20px;height:56px;position:sticky;top:0;z-index:30}
+  .topbar img{height:32px;border-radius:4px}
+  .topbar .t{font-family:'Oswald';font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:1px;color:#fff}
+  .topbar .t .gold{color:var(--gold)}
+  .topbar .role{font-size:11px;color:#9CA3AF;margin-left:4px}
+  .spacer{flex:1}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:700;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}.btn.red:hover{background:var(--red-dk)}
+  .wrap{max-width:1280px;margin:0 auto;padding:22px}
+
+  .hero{background:linear-gradient(155deg,#1A1D21 0%,#0D0E10 100%);border-radius:16px;padding:24px 28px;margin-bottom:20px;color:#fff;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .hero-label{font-family:'Oswald';font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+  .hero h1{font-family:'Oswald';font-weight:800;font-size:26px;margin:0;text-transform:uppercase;letter-spacing:.5px}
+  .month-select{background:rgba(255,255,255,.08);border:1px solid #2B2E33;border-radius:8px;color:#fff;padding:8px 12px;font-family:'Inter';font-size:13px}
+  .hero-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px}
+  .hero-stat{background:rgba(255,255,255,.04);border:1px solid #2B2E33;border-radius:10px;padding:14px}
+  .hero-stat .n{font-family:'Oswald';font-size:26px;font-weight:800}
+  .hero-stat .l{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#9CA3AF;margin-top:3px}
+  .hero-stat.gold .n{color:var(--gold)}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+  .panel h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 4px;color:var(--ink)}
+  .panel .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-family:'Oswald';font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:9px 8px;border-bottom:2px solid var(--line)}
+  td{padding:11px 8px;border-bottom:1px solid var(--line)}
+  tr.clickable{cursor:pointer}
+  tr.clickable:hover{background:var(--soft)}
+  .gym-name{font-weight:700}
+  .bar-track{background:var(--soft);border-radius:6px;height:8px;width:100%;overflow:hidden;margin-top:4px}
+  .bar-fill{height:100%;border-radius:6px}
+  .pill{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+  .pill.safe{background:#E3F5EC;color:var(--green)}
+  .pill.behind{background:#FDECEA;color:var(--red)}
+  .pill.warn{background:#FFF3E0;color:var(--amber)}
+
+  .chart-wrap{position:relative;height:280px}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:24px}
+
+  .gym-detail{display:none}
+  .gym-detail.show{display:block}
+  .back-link{font-size:12px;color:var(--red);cursor:pointer;font-weight:700;margin-bottom:12px;display:inline-block}
+
+  .forecast-note{background:#FFF7E6;border:1px solid #F2D98A;border-radius:10px;padding:12px 14px;font-size:12px;color:#8A6A1A;margin-bottom:14px}
+  .confidence{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--soft);color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness, The Body Shoppe" onerror="this.style.display='none'">
+  <div class="t">Regional <span class="gold">Dashboard</span><span class="role">Keelin, Regional Director of Fitness</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="gym-setup.html">Manage Gyms & Reps</a>
+</div>
+
+<div class="wrap">
+
+  <!-- REGION-WIDE VIEW -->
+  <div id="region-view">
+
+    <div class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-label">Body Shoppe Region</div>
+          <h1 id="hero-month">Loading...</h1>
+        </div>
+        <select class="month-select" id="month-select" onchange="changeMonth()"></select>
+      </div>
+      <div class="hero-stats" id="hero-stats"></div>
+    </div>
+
+    <div class="panel">
+      <h3>All Gyms</h3>
+      <div class="sub">Ranked by percent to goal. Click any gym for the full drill-down, rep performance, trend, and recent sales.</div>
+      <table>
+        <thead><tr><th>Gym</th><th>Region</th><th>Goal</th><th>Month to Date</th><th>% to Goal</th><th></th></tr></thead>
+        <tbody id="gym-rows"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>Region Forecast</h3>
+      <div class="sub" id="region-forecast-sub"></div>
+      <div class="forecast-note" id="forecast-note"></div>
+      <div class="chart-wrap"><canvas id="regionForecastChart"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- SINGLE GYM DRILL-DOWN -->
+  <div id="gym-detail-view" class="gym-detail">
+    <span class="back-link" onclick="showRegionView()">&larr; Back to Region</span>
+
+    <div class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-label" id="gd-region">Gym</div>
+          <h1 id="gd-name">Loading...</h1>
+        </div>
+      </div>
+      <div class="hero-stats" id="gd-stats"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Sales by Rep</h3>
+      <div class="sub">Several reps can sell PT at one gym. Ranked by this month's closed revenue.</div>
+      <table>
+        <thead><tr><th>Rep</th><th>Sales</th><th>Revenue</th></tr></thead>
+        <tbody id="gd-reps"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>6 Month Trend</h3>
+      <div class="chart-wrap"><canvas id="gymTrendChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h3>Gym Forecast</h3>
+      <div class="forecast-note" id="gd-forecast-note"></div>
+      <div class="chart-wrap"><canvas id="gymForecastChart"></canvas></div>
+    </div>
+
+    <div class="panel">
+      <h3>Recent Sales</h3>
+      <table>
+        <thead><tr><th>Date</th><th>Package</th><th>Amount</th><th>Source</th></tr></thead>
+        <tbody id="gd-sales"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+const DEMO_FLAG='?demo=1';
+let _charts={};
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function money(n){ return '$'+Math.round(n||0).toLocaleString(); }
+function monthLabel(m){ const [y,mo]=m.split('-'); return new Date(+y,+mo-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'}); }
+
+async function api(path){
+  const r = await fetch(WORKER+path+(path.indexOf('?')===-1?DEMO_FLAG:'&demo=1'));
+  return r.json();
+}
+
+let currentMonth = new Date().toISOString().slice(0,7);
+
+function buildMonthOptions(){
+  const sel = document.getElementById('month-select');
+  const opts = [];
+  const now = new Date();
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const m = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    opts.push('<option value="'+m+'"'+(m===currentMonth?' selected':'')+'>'+monthLabel(m)+'</option>');
+  }
+  sel.innerHTML = opts.join('');
+}
+
+function changeMonth(){
+  currentMonth = document.getElementById('month-select').value;
+  loadRegion();
+}
+
+async function loadRegion(){
+  document.getElementById('hero-month').textContent = monthLabel(currentMonth)+' Region Overview';
+  const d = await api('/region/summary?month='+currentMonth);
+  if (!d.ok) return;
+  const gyms = d.gyms||[];
+
+  document.getElementById('hero-stats').innerHTML =
+    '<div class="hero-stat gold"><div class="n">'+money(d.region_actual)+'</div><div class="l">Region MTD</div></div>'+
+    '<div class="hero-stat"><div class="n">'+money(d.region_goal)+'</div><div class="l">Region Goal</div></div>'+
+    '<div class="hero-stat"><div class="n">'+(d.region_pct!=null?d.region_pct+'%':'-')+'</div><div class="l">% to Goal</div></div>'+
+    '<div class="hero-stat"><div class="n">'+gyms.filter(g=>g.safe_zone).length+' / '+gyms.length+'</div><div class="l">Gyms in Safe Zone</div></div>';
+
+  document.getElementById('gym-rows').innerHTML = gyms.length ? gyms.map(g=>{
+    const pct = g.pct!=null ? g.pct : 0;
+    const barColor = pct>=90?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+    const pillClass = g.pct==null?'':g.pct>=90?'safe':g.pct>=50?'warn':'behind';
+    return '<tr class="clickable" onclick="showGymDetail('+g.gym_id+')">'+
+      '<td><div class="gym-name">'+esc(g.name)+'</div></td>'+
+      '<td>'+esc(g.region||'')+'</td>'+
+      '<td>'+money(g.goal)+'</td>'+
+      '<td>'+money(g.actual)+'<div class="bar-track"><div class="bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+barColor+'"></div></div></td>'+
+      '<td>'+(g.pct!=null?'<span class="pill '+pillClass+'">'+g.pct+'%</span>':'<span style="color:var(--muted);font-size:11px">no goal set</span>')+'</td>'+
+      '<td style="color:var(--red);font-size:11px;font-weight:700">View &rarr;</td></tr>';
+  }).join('') : '<tr><td colspan="6" class="empty">No gyms set up yet. <a href="gym-setup.html">Add gyms</a> to get started.</td></tr>';
+
+  loadRegionForecast();
+}
+
+async function loadRegionForecast(){
+  const f = await api('/region/forecast');
+  if (!f.ok) return;
+  const confLabel = { insufficient_data:'Not enough data yet', low:'Low confidence', moderate:'Moderate confidence' }[f.confidence] || f.confidence;
+  document.getElementById('region-forecast-sub').innerHTML = 'Based on '+f.months_of_data+' month'+(f.months_of_data===1?'':'s')+' of actual sales history. <span class="confidence">'+confLabel+'</span>';
+  document.getElementById('forecast-note').textContent = 'This is a trend projection from actual sales, not a seasonal or machine learning model. Accuracy improves automatically as more months of real data accumulate.';
+
+  const labels = [...f.history.map(h=>monthLabel(h.month).split(' ')[0]), ...f.projection.map(p=>monthLabel(p.month).split(' ')[0])];
+  const actualData = [...f.history.map(h=>h.actual), ...f.projection.map(()=>null)];
+  const projData = [...f.history.map(()=>null), f.history[f.history.length-1]?.actual ?? null, ...f.projection.slice(1).map(p=>p.projected)];
+  if (_charts.regionForecast) _charts.regionForecast.destroy();
+  _charts.regionForecast = new Chart(document.getElementById('regionForecastChart'), {
+    type:'line', data:{ labels, datasets:[
+      { label:'Actual', data:actualData, borderColor:'#E0192B', backgroundColor:'rgba(224,25,43,.08)', tension:.3, spanGaps:false },
+      { label:'Projected', data:projData, borderColor:'#D4AF37', borderDash:[6,4], tension:.3, spanGaps:true }
+    ]}, options:{ plugins:{ legend:{ labels:{ font:{family:'Inter'}, boxWidth:10 } } } }
+  });
+}
+
+async function showGymDetail(gymId){
+  document.getElementById('region-view').style.display='none';
+  document.getElementById('gym-detail-view').classList.add('show');
+  const d = await api('/region/gym?gym_id='+gymId+'&month='+currentMonth);
+  if (!d.ok || !d.gym) return;
+  const pct = d.goal>0 ? Math.round((d.actual/d.goal)*100) : null;
+
+  document.getElementById('gd-region').textContent = d.gym.region || 'Gym';
+  document.getElementById('gd-name').textContent = d.gym.name;
+  document.getElementById('gd-stats').innerHTML =
+    '<div class="hero-stat gold"><div class="n">'+money(d.actual)+'</div><div class="l">'+monthLabel(currentMonth)+' MTD</div></div>'+
+    '<div class="hero-stat"><div class="n">'+money(d.goal)+'</div><div class="l">Goal</div></div>'+
+    '<div class="hero-stat"><div class="n">'+(pct!=null?pct+'%':'-')+'</div><div class="l">% to Goal</div></div>'+
+    '<div class="hero-stat"><div class="n">'+d.sale_count+'</div><div class="l">Sales This Month</div></div>'+
+    '<div class="hero-stat"><div class="n">'+d.reps.length+'</div><div class="l">Active Reps</div></div>';
+
+  document.getElementById('gd-reps').innerHTML = d.reps.length ? d.reps.map(r=>
+    '<tr><td>'+esc(r.name||'Unnamed rep')+'</td><td>'+r.sale_count+'</td><td>'+money(r.total)+'</td></tr>'
+  ).join('') : '<tr><td colspan="3" class="empty">No reps added for this gym yet.</td></tr>';
+
+  const trendLabels = d.trend.map(t=>monthLabel(t.month).split(' ')[0]);
+  if (_charts.gymTrend) _charts.gymTrend.destroy();
+  _charts.gymTrend = new Chart(document.getElementById('gymTrendChart'), {
+    type:'bar', data:{ labels:trendLabels, datasets:[
+      { label:'Actual', data:d.trend.map(t=>t.actual), backgroundColor:'#E0192B' },
+      { label:'Goal', data:d.trend.map(t=>t.goal), backgroundColor:'#D7DBE0' }
+    ]}, options:{ plugins:{ legend:{ labels:{ font:{family:'Inter'}, boxWidth:10 } } } }
+  });
+
+  document.getElementById('gd-sales').innerHTML = d.recent_sales.length ? d.recent_sales.map(s=>
+    '<tr><td>'+esc(s.sale_date)+'</td><td>'+esc(s.package||'')+'</td><td>'+money(s.amount)+'</td><td>'+esc(s.source||'')+'</td></tr>'
+  ).join('') : '<tr><td colspan="4" class="empty">No sales logged yet.</td></tr>';
+
+  loadGymForecast(gymId);
+}
+
+async function loadGymForecast(gymId){
+  const f = await api('/region/forecast?gym_id='+gymId);
+  if (!f.ok) return;
+  const confLabel = { insufficient_data:'Not enough data yet', low:'Low confidence', moderate:'Moderate confidence' }[f.confidence] || f.confidence;
+  document.getElementById('gd-forecast-note').textContent = 'Trend projection from '+f.months_of_data+' month'+(f.months_of_data===1?'':'s')+' of this gym\u2019s actual sales. '+confLabel+'.';
+
+  const labels = [...f.history.map(h=>monthLabel(h.month).split(' ')[0]), ...f.projection.map(p=>monthLabel(p.month).split(' ')[0])];
+  const actualData = [...f.history.map(h=>h.actual), ...f.projection.map(()=>null)];
+  const projData = [...f.history.map(()=>null), f.history[f.history.length-1]?.actual ?? null, ...f.projection.slice(1).map(p=>p.projected)];
+  if (_charts.gymForecast) _charts.gymForecast.destroy();
+  _charts.gymForecast = new Chart(document.getElementById('gymForecastChart'), {
+    type:'line', data:{ labels, datasets:[
+      { label:'Actual', data:actualData, borderColor:'#E0192B', backgroundColor:'rgba(224,25,43,.08)', tension:.3, spanGaps:false },
+      { label:'Projected', data:projData, borderColor:'#D4AF37', borderDash:[6,4], tension:.3, spanGaps:true }
+    ]}, options:{ plugins:{ legend:{ labels:{ font:{family:'Inter'}, boxWidth:10 } } } }
+  });
+}
+
+function showRegionView(){
+  document.getElementById('gym-detail-view').classList.remove('show');
+  document.getElementById('region-view').style.display='block';
+}
+
+buildMonthOptions();
+loadRegion();
+</script>
+</body>
+</html>

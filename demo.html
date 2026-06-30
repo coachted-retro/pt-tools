@@ -36,17 +36,19 @@
       <li>Complete and Complete+ clients with real AI-generated meal plans</li>
       <li>Member portal with progress tracking and recognition</li>
       <li>Monthly fitness challenge and member tiers</li>
+      <li>Regional dashboard across all Body Shoppe gyms, quotas, and forecasting</li>
     </ul>
   </div>
 
-  <a class="btn" href="#" onclick="enterDemo();return false;">Enter the Demo &rarr;</a>
+  <a class="btn" href="#" onclick="enterDemo('command-center.html');return false;">Enter the Coach Demo &rarr;</a>
+  <a class="btn" href="#" onclick="enterDemo('regional-dashboard.html');return false;" style="background:#0D0E10;border:1px solid #3A2F0F;color:var(--gold);margin-top:10px">Enter the Regional Dashboard &rarr;</a>
   <p class="note">This is a sample environment with demonstration data only. Nothing here reflects real client information.</p>
 </div>
 
 <script>
-function enterDemo(){
+function enterDemo(dest){
   sessionStorage.setItem('retro_demo_mode', '1');
-  location.href = 'command-center.html?demo=1';
+  location.href = (dest||'command-center.html') + '?demo=1';
 }
 </script>
 </body>
