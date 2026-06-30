@@ -1762,7 +1762,10 @@
 
               <!-- Investment block -->
               <div style="font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);">Your Investment</div>
-              <div id="enroll-pkg-summary" style="background:var(--accent-light);border:1px solid var(--accent);border-radius:var(--radius);padding:14px;margin-bottom:16px;font-size:13px;color:var(--accent);font-weight:600;">— No package selected —</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                <div id="enroll-pkg-summary" style="flex:1;background:var(--accent-light);border:1px solid var(--accent);border-radius:var(--radius);padding:14px;font-size:13px;color:var(--accent);font-weight:600;">— No package selected —</div>
+                <button onclick="editPackageSelection()" style="flex-shrink:0;padding:10px 14px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">✏️ Change</button>
+              </div>
 
               <label style="font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:6px;">Program length</label>
               <div class="pill-group" id="length-group">
@@ -3408,6 +3411,7 @@ function resetForm() {
   assessmentText = '';
   uploadedFiles = [];
   _closingGenerated = false;
+  window._editingFromClose = false;
   selectedPkg = null;
   var prl = document.getElementById('pkg-rec-loading');
   if (prl) prl._ran = false;
@@ -3608,12 +3612,47 @@ function selectPkg(id) {
   if (sum) sum.textContent = (p.name||'') + ' — ' + (p.sessions||'') + ' sessions/mo';
   var acceptBtn = document.getElementById('pkg-accept-btn');
   if (acceptBtn) acceptBtn.disabled = false;
+
+  // If closing panel already open (editing in progress), refresh pricing live
+  var tp = document.getElementById('terms-panel');
+  if (tp && tp.style.display === 'block') {
+    refreshClosingPricing();
+  }
+}
+
+function editPackageSelection() {
+  // Go back to package page without clearing closing content
+  goPage(6);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Mark a flag so acceptPackage knows to refresh rather than regenerate
+  window._editingFromClose = true;
+}
+
+function refreshClosingPricing() {
+  var p = PKG_META[selectedPkg] || pkgPricing[selectedPkg] || {};
+  var sum = document.getElementById('enroll-pkg-summary');
+  if (sum) sum.textContent = (p.name||'') + ' — ' + (p.sessions||'') + ' sessions/mo';
+  // Reset length selection so they repick for the new package
+  document.querySelectorAll('#length-group .pill').forEach(function(pill){ pill.classList.remove('selected'); });
+  document.getElementById('pricing-breakdown-enroll').style.display = 'none';
+  document.getElementById('enroll-commitment-display').style.display = 'none';
+  selectedLength = '';
 }
 
 function acceptPackage() {
   if (!selectedPkg) return;
   var p = PKG_META[selectedPkg] || pkgPricing[selectedPkg] || {};
-  if (p.nutrition || p.hasNutrition) { showNutritionPanel(); } else { showMeasurements(); }
+  if (window._editingFromClose) {
+    // Coming back from an edit — just refresh pricing and re-show closing panel
+    window._editingFromClose = false;
+    refreshClosingPricing();
+    var tp = document.getElementById('terms-panel');
+    if (tp) { tp.style.display = 'block'; tp.scrollIntoView({ behavior:'smooth' }); }
+  } else if (p.nutrition || p.hasNutrition) {
+    showNutritionPanel();
+  } else {
+    showMeasurements();
+  }
 }
 
 function showNutritionPanel() {
