@@ -40,15 +40,14 @@
     </ul>
   </div>
 
-  <a class="btn" href="#" onclick="enterDemo('command-center.html');return false;">Enter the Coach Demo &rarr;</a>
+  <a class="btn" href="#" onclick="enterDemo('demo-command-center.html');return false;">Enter the Coach Demo &rarr;</a>
   <a class="btn" href="#" onclick="enterDemo('regional-dashboard.html');return false;" style="background:#0D0E10;border:1px solid #3A2F0F;color:var(--gold);margin-top:10px">Enter the Regional Dashboard &rarr;</a>
   <p class="note">This is a sample environment with demonstration data only. Nothing here reflects real client information.</p>
 </div>
 
 <script>
 function enterDemo(dest){
-  sessionStorage.setItem('retro_demo_mode', '1');
-  location.href = (dest||'command-center.html') + '?demo=1';
+  location.href = dest || 'demo-command-center.html';
 }
 </script>
 </body>

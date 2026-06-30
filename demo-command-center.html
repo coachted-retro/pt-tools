@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Command Center — Retro Fitness PT</title>
+<title>Command Center, Retro Fitness, The Body Shoppe, Demo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -283,6 +283,33 @@
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 
+// ── DEMO MODE, hardcoded ─────────────────────────────────────────
+// This is a dedicated demo-only copy of the command center. Unlike
+// the real command-center.html, this file does not rely on a URL
+// flag or sessionStorage to decide whether to use the demo database,
+// it always does, no matter how the page is opened, refreshed, or
+// reached. Every Worker call automatically gets ?demo=1 appended.
+// This file should never show real Fairless Hills client data.
+window._retroDemoMode = true;
+(function(){
+  const realFetch = window.fetch;
+  window.fetch = function(input, init){
+    if (typeof input === 'string' && input.indexOf(WORKER) === 0 && input.indexOf('demo=') === -1) {
+      input += (input.indexOf('?') === -1 ? '?' : '&') + 'demo=1';
+    }
+    return realFetch(input, init);
+  };
+  document.addEventListener('DOMContentLoaded', function(){
+    document.title = document.title.replace(/Retro Fitness( PT)?/i, 'Retro Fitness, The Body Shoppe');
+    const t = document.getElementById('pageTitle');
+    if (t) {
+      const rest = t.innerHTML.replace(/^Command\s*/i, '');
+      t.innerHTML = '<span style="font-size:.55em;display:block;letter-spacing:1px;color:var(--gold,#D4AF37);margin-bottom:1px">RETRO FITNESS, THE BODY SHOPPE</span>' + (rest.trim() ? 'Command ' + rest : t.innerHTML);
+    }
+    document.querySelectorAll('img[alt*="Retro Fitness"]').forEach(img => { img.alt = 'Retro Fitness, The Body Shoppe'; });
+  });
+})();
+
 let CLIENTS = [], LEADS = [], APPTS = [], MEAL_PROFILES = [], MEAL_PLANS = [], tab = 'nba';
 let charts = {};
 
@@ -291,7 +318,12 @@ async function db(body){
   return r.json();
 }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
-function openTool(file){ location.href = file; }
+function openTool(file){
+  if (window._retroDemoMode) {
+    file += (file.indexOf('?') === -1 ? '?' : '&') + 'demo=1';
+  }
+  location.href = file;
+}
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function daysFromNow(d){ if(!d) return null; const ms=new Date(d+'T00:00:00')-new Date(); return Math.ceil(ms/86400000); }
 
