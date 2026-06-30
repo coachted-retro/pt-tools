@@ -2761,6 +2761,72 @@ async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   } catch(e) { console.error('PT Tracker failed:', e.message); return false; }
 }
 
+async function dbCall(body) {
+  try {
+    var resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+      method: 'POST', headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify(body)
+    });
+    return JSON.parse(await resp.text());
+  } catch(e) { console.error('D1 call failed:', e.message); return { ok:false, error: e.message }; }
+}
+
+// Writes a clients row (if one doesn't already exist for this email) and a
+// meal_profiles row, but ONLY when the selected package has nutrition enabled
+// (Complete / Complete+). Every other package skips this entirely, no row
+// is created and the client never appears on the meal plan tool.
+async function saveNutritionProfileIfApplicable() {
+  var pkgMeta = PKG_META[selectedPkg] || {};
+  if (!pkgMeta.nutrition) return; // not a Complete/Complete+ package, nothing to save
+
+  var email = (gv('email') || '').toLowerCase().trim();
+  if (!email) { console.warn('No email on file, skipping meal_profiles save.'); return; }
+
+  var nameParts = (gv('name') || '').trim().split(/\s+/);
+  var firstName = nameParts.shift() || '';
+  var lastName = nameParts.join(' ') || '';
+
+  // Find or create the D1 clients row for this email
+  var existing = await dbCall({ op:'select', table:'clients', where:{ email: email }, limit:1 });
+  var clientId = (existing.results && existing.results[0] && existing.results[0].id) || null;
+
+  if (!clientId) {
+    var ins = await dbCall({ op:'insert', table:'clients', values: {
+      first_name: firstName, last_name: lastName, email: email, phone: gv('phone') || '',
+      status: 'active', goal_primary: gv('goals') || '', age: gv('age') || '', gender: gv('gender') || ''
+    }});
+    clientId = ins.id || null;
+  } else {
+    // Keep status current on the existing client record
+    await dbCall({ op:'update', table:'clients', values:{ status:'active' }, where:{ id: clientId } });
+  }
+
+  if (!clientId) { console.warn('Could not resolve a client_id, skipping meal_profiles save.'); return; }
+
+  var byCat = getExcludedByCategory();
+  var otherNotes = (document.getElementById('nutrition-other') || {}).value || '';
+
+  // One row per client: replace if a profile already exists, insert if not
+  var existingProfile = await dbCall({ op:'select', table:'meal_profiles', where:{ client_id: clientId }, limit:1 });
+  var profileValues = {
+    client_id: clientId,
+    package: pkgMeta.value || '',
+    goal_type: gv('goals') || '',
+    excluded_proteins: byCat.proteins.join(', '),
+    excluded_vegetables: byCat.vegetables.join(', '),
+    excluded_fruits: byCat.fruits.join(', '),
+    conditions: byCat.conditions.join(', '),
+    allergies: otherNotes,
+    updated_at: new Date().toISOString()
+  };
+
+  if (existingProfile.results && existingProfile.results[0]) {
+    await dbCall({ op:'update', table:'meal_profiles', values: profileValues, where:{ client_id: clientId } });
+  } else {
+    await dbCall({ op:'insert', table:'meal_profiles', values: profileValues });
+  }
+}
+
 async function finalizeAccept() {
   var freq  = document.querySelector('#freq-group .pill.selected');
   var length = document.querySelector('#length-group .pill.selected');
@@ -2771,6 +2837,7 @@ async function finalizeAccept() {
     var row = buildIntakeRow('ACCEPTED');
     var ok = await appendToSheet('All Intakes', row);
     await saveToPTTracker();
+    await saveNutritionProfileIfApplicable();
     hideLoading();
     var conf = document.getElementById('confirm-accept');
     conf.style.display = 'flex';
@@ -3390,12 +3457,28 @@ function togglePref(el, type) {
   if (cb) cb.checked = el.classList.contains('excluded');
 }
 
-function getExcludedPrefs() {
-  var excluded = [];
-  document.querySelectorAll('#nutrition-panel .pref-item.excluded').forEach(function(el) {
-    excluded.push(el.textContent.trim());
+function getExcludedByCategory() {
+  var sections = document.querySelectorAll('#nutrition-panel .pref-section');
+  var result = { proteins: [], vegetables: [], fruits: [], conditions: [] };
+  sections.forEach(function(sec) {
+    var title = (sec.querySelector('.pref-section-title') || {}).textContent || '';
+    var bucket = title.indexOf('Protein') === 0 ? 'proteins'
+      : title.indexOf('Vegetable') === 0 ? 'vegetables'
+      : title.indexOf('Fruit') === 0 ? 'fruits'
+      : title.indexOf('Health') === 0 ? 'conditions'
+      : null;
+    if (!bucket) return;
+    sec.querySelectorAll('.pref-item.excluded').forEach(function(el) {
+      result[bucket].push(el.textContent.trim());
+    });
   });
-  return excluded.join(', ');
+  return result;
+}
+
+// Kept for any existing callers; now built from the category split above
+function getExcludedPrefs() {
+  var byCat = getExcludedByCategory();
+  return [].concat(byCat.proteins, byCat.vegetables, byCat.fruits, byCat.conditions).join(', ');
 }
 
 function getMeasurements() {
