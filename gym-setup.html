@@ -124,27 +124,31 @@ async function db(body){
 
 document.getElementById('s-date').value = new Date().toISOString().slice(0,10);
 
-// Real gym list and June 2026 goals, transcribed from the whiteboard.
-// No address/lat/lon yet for most, those should be filled in as each
-// gym's exact location is confirmed, the harvester needs them to run
-// gym-specific prospecting, the dashboard works fine without them.
+// Real gym list, June 2026 goals from the whiteboard, and addresses
+// confirmed against Retro Fitness's official location directory
+// (retrofitness.com/find-a-gym-near-me). Coordinates are approximate
+// town-level reference points, accurate enough for the harvester's
+// 10-mile radius search, not pinpoint-geocoded against the exact
+// street address. Good enough to find nearby prospects; worth a
+// quick sanity check against the map before relying on them for
+// anything more precise than that.
 const REAL_GYMS = [
-  { name:'Wallington, NJ', region:'NJ', goal:40000 },
-  { name:'Forest Hills, NYC', region:'NYC', goal:47500 },
-  { name:'Fairfield, NJ', region:'NJ', goal:38500 },
-  { name:'Park Slope, NYC', region:'NYC', goal:17500 },
-  { name:'Lacey, NJ', region:'NJ', goal:27500 },
-  { name:'Astoria, NYC', region:'NYC', goal:30000 },
-  { name:'Cedar City, UT', region:'UT', goal:35000 },
-  { name:'Glendale, NYC', region:'NYC', goal:47500 },
-  { name:'Fair Lawn, NJ', region:'NJ', goal:42500 },
-  { name:'Stroudsburg, PA', region:'PA', goal:22500 },
-  { name:'Whippany, NJ', region:'NJ', goal:15500 },
-  { name:'Mt Olive, NJ', region:'NJ', goal:45000 },
-  { name:'Fairless Hills, PA', region:'PA', goal:10800, address:'516 Lincoln Hwy, Fairless Hills PA 19030', lat:40.1762, lon:-74.8530 },
-  { name:'Sayreville, NJ', region:'NJ', goal:15500 },
-  { name:'Jersey City, NJ', region:'NJ', goal:10500 },
-  { name:'Tottenville, NYC', region:'NYC', goal:15500 },
+  { name:'Wallington, NJ', region:'NJ', goal:40000, address:'450 Main Ave, Wallington, NJ 07057', lat:40.8556, lon:-74.0974 },
+  { name:'Forest Hills, NYC', region:'NYC', goal:47500, address:'8989 Union Tpke, Glendale, NY 11385', lat:40.7048, lon:-73.8782 },
+  { name:'Fairfield, NJ', region:'NJ', goal:38500, address:'410 Rt 46 East, Fairfield, NJ 07004', lat:40.8851, lon:-74.2890 },
+  { name:'Park Slope, NYC', region:'NYC', goal:17500, address:'25 12th St, Brooklyn, NY 11215', lat:40.6717, lon:-73.9897 },
+  { name:'Lacey, NJ', region:'NJ', goal:27500, address:'410 S Main St, Forked River, NJ 08731', lat:39.8290, lon:-74.1985 },
+  { name:'Astoria, NYC', region:'NYC', goal:30000, address:'32-32 49th St, Astoria, NY 11103', lat:40.7637, lon:-73.9176 },
+  { name:'Cedar City, UT', region:'UT', goal:35000, address:'929 S Main St, Cedar City, UT 84720', lat:37.6680, lon:-113.0619 },
+  { name:'Glendale, NYC', region:'NYC', goal:47500, address:'65-45 Otto Rd, Glendale, NY 11385', lat:40.7012, lon:-73.8847 },
+  { name:'Fair Lawn, NJ', region:'NJ', goal:42500, address:'18-01 Pollitt Drive, Fair Lawn, NJ 07410', lat:40.9404, lon:-74.1196 },
+  { name:'Stroudsburg, PA', region:'PA', goal:22500, address:'1121 N 9th St, Stroudsburg, PA 18360', lat:40.9967, lon:-75.1949 },
+  { name:'Whippany, NJ', region:'NJ', goal:15500, address:'60 S Jefferson Rd, Hanover, NJ 07981', lat:40.8245, lon:-74.3865 },
+  { name:'Mt Olive, NJ', region:'NJ', goal:45000, address:'Mt. Olive, Hackettstown, NJ 07840', lat:40.8462, lon:-74.7796 },
+  { name:'Fairless Hills, PA', region:'PA', goal:10800, address:'516 Lincoln Hwy, Fairless Hills, PA 19030', lat:40.1762, lon:-74.8530 },
+  { name:'Sayreville, NJ', region:'NJ', goal:15500, address:'2909 Washington Rd, Sayreville, NJ 08859', lat:40.4593, lon:-74.3349 },
+  { name:'Jersey City, NJ', region:'NJ', goal:10500, address:'701 NJ-440, Jersey City, NJ 07304', lat:40.6845, lon:-74.0902 },
+  { name:'Tottenville, NYC', region:'NYC', goal:15500, address:'2965 Veterans Rd W, Staten Island, NY 10309', lat:40.5298, lon:-74.2390 },
 ];
 
 async function quickLoadGyms(){
