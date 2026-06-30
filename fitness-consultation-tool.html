@@ -1548,9 +1548,8 @@
             <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;"></div>
           </div>
 
-          <div id="decision-row" class="decision-row">
-            <button class="decision-btn accept" id="pkg-accept-btn" onclick="acceptPackage()" disabled>✓ Accept — enroll in this program</button>
-            <button class="decision-btn decline" onclick="showDecline()">✕ Decline — schedule follow-up</button>
+          <div id="decision-row" class="decision-row" style="display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px;">
+            <button class="decision-btn accept" id="pkg-accept-btn" onclick="acceptPackage()" disabled style="background:var(--accent);color:#fff;border-color:var(--accent);">Continue — Review your program →</button>
           </div>
         </div>
 
@@ -1811,9 +1810,13 @@
                 </label>
               </div>
 
-              <button class="btn btn-primary btn-full" style="margin-top:8px;" onclick="finalizeAccept()">
-                📤 Finalize enrollment &amp; save to database
+              <button class="btn btn-primary btn-full" style="margin-top:8px;background:var(--accent);border-color:#B0121F;font-size:15px;padding:16px;" onclick="finalizeAccept()">
+                ✓ Accept — let's get started
               </button>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
+                <button class="decision-btn" style="background:var(--warning-light);color:var(--warning);border-color:#e6c84a;font-size:13px;" onclick="showThinkingAboutIt()">🤔 I need to think about it</button>
+                <button class="decision-btn decline" style="font-size:13px;" onclick="showDecline()">✕ Not today</button>
+              </div>
               <div id="confirm-accept" class="confirm-box">
                 &#x2705; Saved to All Intakes and email sent to tedscholl@gmail.com &amp; healthylifewithdani1@gmail.com. Welcome aboard!
               </div>
@@ -2678,6 +2681,65 @@ function showTerms() {
   document.getElementById('terms-panel').style.display = 'block';
   document.getElementById('followup-panel').style.display = 'none';
   document.getElementById('terms-panel').scrollIntoView({ behavior:'smooth' });
+}
+
+function showThinkingAboutIt() {
+  var today = new Date();
+  var callbackDate = new Date(today);
+  callbackDate.setDate(today.getDate() + 3);
+  var opts = { year:'numeric', month:'long', day:'numeric' };
+
+  document.getElementById('followup-details').innerHTML =
+    '<strong>' + (gv('name')||'Member') + '</strong> is thinking it over.<br>' +
+    'Email: ' + (gv('email')||'—') + ' | Phone: ' + (gv('phone')||'—') + '<br>' +
+    'Package discussed: ' + (PKG_META[selectedPkg]||{}).name + '<br>' +
+    'Check-in call scheduled: <strong>' + callbackDate.toLocaleDateString('en-US', opts) + '</strong>';
+
+  // Pre-select reason
+  var sel = document.getElementById('decline-reason');
+  if (sel) sel.value = 'Wants to think about it';
+
+  document.getElementById('followup-panel').style.display = 'block';
+  document.getElementById('terms-panel').style.display = 'none';
+  document.getElementById('followup-panel').scrollIntoView({ behavior:'smooth' });
+
+  // 3-day callback calendar event
+  var calDate = callbackDate.toISOString().slice(0,10).replace(/-/g,'');
+  var calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + encodeURIComponent('Follow-up call: ' + (gv('name')||'Member')) +
+    '&dates=' + calDate + '/' + calDate +
+    '&details=' + encodeURIComponent('Discussed: ' + ((PKG_META[selectedPkg]||{}).name||'—') + ' | Phone: ' + (gv('phone')||'—') + ' | Goals: ' + (gv('goals')||'—'));
+  setTimeout(function(){ window.open(calUrl, '_blank'); }, 400);
+
+  // Generate warmer thank-you email
+  var stage = document.getElementById('thankyou-stage');
+  if (stage) { stage.style.display = 'block'; generateThinkingEmail(); }
+}
+
+async function generateThinkingEmail() {
+  var status = document.getElementById('ty-status');
+  var toEl = document.getElementById('ty-to');
+  var subEl = document.getElementById('ty-subject');
+  var bodyEl = document.getElementById('ty-body');
+  if (status) status.textContent = 'Generating follow-up email...';
+  if (toEl) toEl.value = gv('email') || '';
+  if (subEl) subEl.value = 'Great meeting you today, ' + (gv('name')||'') + ' — your program summary inside';
+
+  var prompt = 'Write a warm, brief follow-up email from Coach Ted at Retro Fitness to ' + (gv('name')||'a prospective member') + ' who just had a consultation and wants to think it over. Their goals: ' + (gv('goals')||'improve their health') + '. Package discussed: ' + ((PKG_META[selectedPkg]||{}).name||'personal training') + '. Tone: encouraging, zero pressure, remind them what they shared about their goals and why they came in, let them know the door is open. 3 short paragraphs. Sign off as Coach Ted, Retro Fitness Fairless Hills. No subject line in the body.';
+
+  try {
+    var r = await fetch(getApiUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
+    });
+    var d = await r.json();
+    var text = (d.content || []).map(function(b){ return b.text || ''; }).join('').trim();
+    if (bodyEl) bodyEl.value = text;
+    if (status) status.textContent = 'Ready to send or edit below.';
+  } catch(e) {
+    if (status) status.textContent = 'Could not generate — type manually.';
+  }
 }
 
 function showDecline() {
