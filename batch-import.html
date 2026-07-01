@@ -167,13 +167,21 @@ async function importClient(i){
   status.className = 'import-status';
 
   try {
-    // Check for existing client with same first+last name to avoid duplicates
-    const existing = await db({ op:'select', table:'clients', where:{ first_name:c.first_name, last_name:c.last_name }, limit:1 });
-    if (existing.results && existing.results.length) {
+    // Broader duplicate check: pull everyone with a matching first name,
+    // then compare normalized full names client-side. Catches whitespace,
+    // case, and blank-vs-null last name mismatches that an exact D1
+    // WHERE match would miss.
+    const candidates = await db({ op:'select', table:'clients', where:{ first_name:c.first_name }, limit:100 });
+    const targetName = (c.first_name+' '+(c.last_name||'')).trim().toLowerCase().replace(/\s+/g,' ');
+    const match = (candidates.results||[]).find(function(row){
+      const rowName = ((row.first_name||'')+' '+(row.last_name||'')).trim().toLowerCase().replace(/\s+/g,' ');
+      return rowName === targetName;
+    });
+    if (match) {
       importState[i] = 'done';
       badge.textContent = 'Already exists';
       badge.className = 'status-badge badge-done';
-      status.textContent = '✓ Already in D1 as client ID ' + existing.results[0].id + ' — skipped.';
+      status.textContent = '✓ Already in D1 as client ID ' + match.id + ' — skipped.';
       status.className = 'import-status ok';
       btn.textContent = '✓ Skipped';
       updateCounts();

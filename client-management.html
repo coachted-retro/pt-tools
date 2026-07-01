@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Management — Retro Fitness PT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--green-light:#ECFDF3;--amber:#D98A0B;--amber-light:#FFFBEB;--blue:#2563EB;--blue-light:#EFF6FF;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:30;}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:1px;}
+  .topbar .t span{color:var(--red);}
+  .topbar .spacer{flex:1;}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+  .btn:hover{background:var(--soft);}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff;}.btn.red:hover{background:var(--red-dk);}
+  .btn.blue{background:var(--blue);border-color:var(--blue);color:#fff;}.btn.blue:hover{background:#1d4ed8;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
+  .wrap{max-width:1200px;margin:0 auto;padding:24px 20px 60px;}
+  .page-head h1{font-family:'Oswald';font-size:26px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;}
+  .page-head p{font-size:13px;color:var(--muted);margin:0 0 20px;}
+  .tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);}
+  .tab{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:13px;padding:10px 16px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;}
+  .tab.active{color:var(--ink);border-color:var(--red);}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .dupe-banner{background:var(--amber-light);border:1px solid #fde68a;border-radius:12px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:12px;}
+  .dupe-banner.clear{background:var(--green-light);border-color:#a7f3d0;}
+  .dupe-banner strong{font-family:'Oswald';}
+
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--line);}
+  th{text-align:left;font-family:'Oswald';font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:2px solid var(--line);background:var(--soft);}
+  td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:13px;}
+  tr:last-child td{border-bottom:none;}
+  tr.flagged td{background:var(--amber-light);}
+  .pill{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:20px;}
+  .pill.active_pt{background:var(--green-light);color:var(--green);}
+  .pill.prospect{background:var(--blue-light);color:var(--blue);}
+  .pill.not_interested{background:#fee2e2;color:#991b1b;}
+  .pill.default{background:var(--soft);color:var(--muted);}
+  .empty{text-align:center;padding:40px;color:var(--muted);}
+
+  .merge-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:100;}
+  .merge-overlay.open{display:flex;}
+  .merge-box{background:var(--card);border-radius:14px;width:100%;max-width:640px;margin:auto;}
+  .merge-head{padding:16px 22px;border-bottom:1px solid var(--line);}
+  .merge-head h2{font-family:'Oswald';font-size:17px;text-transform:uppercase;letter-spacing:.5px;margin:0;}
+  .merge-body{padding:22px;}
+  .merge-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  .merge-card{border:2px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;}
+  .merge-card.selected{border-color:var(--green);background:var(--green-light);}
+  .merge-card h3{font-family:'Oswald';font-size:14px;margin:0 0 6px;}
+  .merge-card .id{font-size:11px;color:var(--muted);margin-bottom:8px;}
+  .merge-card .field{font-size:12px;color:var(--muted);margin-bottom:3px;}
+  .merge-warn{background:var(--amber-light);border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#92400e;line-height:1.6;margin-bottom:16px;}
+  .merge-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;}
+  .merge-status{font-size:12px;color:var(--muted);flex:1;align-self:center;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="t">Client <span>Management</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="command-center.html">← Command Center</a>
+</div>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>Client Management</h1>
+    <p>Unified roster, leads, and prospects — with duplicate detection and a safe merge tool.</p>
+  </div>
+
+  <div id="dupeBanner" class="dupe-banner">Checking for duplicates...</div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="roster" onclick="setTab('roster')">Clients</div>
+    <div class="tab" data-tab="leads" onclick="setTab('leads')">Leads &amp; Prospects</div>
+  </div>
+
+  <div id="view-roster" class="view active">
+    <table>
+      <thead><tr><th>Name</th><th>Status</th><th>Package</th><th>Start Date</th><th>Advisor</th><th></th></tr></thead>
+      <tbody id="rosterRows"></tbody>
+    </table>
+  </div>
+
+  <div id="view-leads" class="view">
+    <table>
+      <thead><tr><th>Business / Name</th><th>Type</th><th>Category</th><th>Contact</th><th>Status</th></tr></thead>
+      <tbody id="leadRows"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MERGE MODAL -->
+<div class="merge-overlay" id="mergeOverlay">
+  <div class="merge-box">
+    <div class="merge-head"><h2>Merge Duplicate Clients</h2></div>
+    <div class="merge-body">
+      <div class="merge-warn">Pick which record to <strong>keep</strong>. All history (measurements, sessions, consultations, check-ins, workouts, photos, meal plans) from the other record moves onto the one you keep. The duplicate is then deleted. This cannot be undone.</div>
+      <div class="merge-cards" id="mergeCards"></div>
+    </div>
+    <div class="merge-foot">
+      <span class="merge-status" id="mergeStatus"></span>
+      <button class="btn" onclick="closeMerge()">Cancel</button>
+      <button class="btn red" id="mergeConfirmBtn" onclick="confirmMerge()" disabled>Merge Selected</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let ALL_CLIENTS = [];
+let ALL_LEADS = [];
+let mergeGroup = null;
+let mergeKeeperId = null;
+
+const CLIENT_LINKED_TABLES = [
+  'measurements','consultations','checkins','followups','inbody_scans',
+  'meal_plans','meal_profiles','progress_photos','training_sessions',
+  'workouts','self_workouts','challenge_entries'
+];
+
+async function db(body){
+  const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function normName(c){ return ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase().replace(/\s+/g,' '); }
+
+function setTab(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===t));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+t).classList.add('active');
+}
+
+async function loadAll(){
+  const [c, l] = await Promise.all([
+    db({ op:'select', table:'clients', orderBy:'updated_at DESC', limit:2000 }),
+    db({ op:'select', table:'leads', orderBy:'created_at DESC', limit:2000 })
+  ]);
+  ALL_CLIENTS = c.results || [];
+  ALL_LEADS = l.results || [];
+  renderRoster();
+  renderLeads();
+  renderDupeBanner();
+}
+
+function findDuplicateGroups(){
+  const groups = {};
+  ALL_CLIENTS.forEach(c => {
+    const key = normName(c);
+    if (!key) return; // skip blank names, can't reliably compare
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(c);
+  });
+  return Object.values(groups).filter(g => g.length > 1);
+}
+
+function renderDupeBanner(){
+  const dupes = findDuplicateGroups();
+  const banner = document.getElementById('dupeBanner');
+  if (!dupes.length) {
+    banner.className = 'dupe-banner clear';
+    banner.innerHTML = '<strong>✓ No duplicates found.</strong> Your client roster is clean.';
+    return;
+  }
+  banner.className = 'dupe-banner';
+  banner.innerHTML = '<strong>⚠ ' + dupes.length + ' possible duplicate' + (dupes.length!==1?'s':'') + ' found</strong> — same name appears more than once. Look for the highlighted rows below and use Merge to combine them.';
+}
+
+function renderRoster(){
+  const dupes = findDuplicateGroups();
+  const dupeIds = new Set();
+  dupes.forEach(g => g.forEach(c => dupeIds.add(c.id)));
+
+  const el = document.getElementById('rosterRows');
+  if (!ALL_CLIENTS.length) { el.innerHTML = '<tr><td colspan="6" class="empty">No clients yet.</td></tr>'; return; }
+
+  el.innerHTML = ALL_CLIENTS.map(c => {
+    const name = ((c.first_name||'')+' '+(c.last_name||'')).trim() || '(no name)';
+    const statusClass = ['active_pt','prospect','not_interested'].includes(c.status) ? c.status : 'default';
+    const isDupe = dupeIds.has(c.id);
+    return '<tr'+(isDupe?' class="flagged"':'')+'>'+
+      '<td style="font-weight:600">'+esc(name)+(isDupe?' <span style="color:#92400e;font-size:11px;font-weight:700">⚠ possible duplicate</span>':'')+'</td>'+
+      '<td><span class="pill '+statusClass+'">'+esc((c.status||'—').replace('_',' '))+'</span></td>'+
+      '<td>'+esc(c.package||'—')+'</td>'+
+      '<td>'+esc(c.training_start_date||'—')+'</td>'+
+      '<td>'+esc(c.advisor||'—')+'</td>'+
+      '<td><a class="btn" href="client-profile.html?id='+c.id+'" style="padding:5px 10px;font-size:10.5px;">View</a></td>'+
+    '</tr>';
+  }).join('');
+
+  // Add merge buttons under dupe groups
+  if (dupes.length) {
+    const bannerAfter = document.getElementById('dupeBanner');
+    let mergeBtnsHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">';
+    dupes.forEach((g, i) => {
+      const name = ((g[0].first_name||'')+' '+(g[0].last_name||'')).trim();
+      mergeBtnsHtml += '<button class="btn red" onclick="openMerge('+i+')">Merge "'+esc(name)+'" ('+g.length+' records)</button>';
+    });
+    mergeBtnsHtml += '</div>';
+    let existing = document.getElementById('mergeBtnsRow');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.id = 'mergeBtnsRow';
+    div.innerHTML = mergeBtnsHtml;
+    bannerAfter.after(div);
+    window._dupeGroups = dupes;
+  } else {
+    let existing = document.getElementById('mergeBtnsRow');
+    if (existing) existing.remove();
+  }
+}
+
+function renderLeads(){
+  const el = document.getElementById('leadRows');
+  if (!ALL_LEADS.length) { el.innerHTML = '<tr><td colspan="5" class="empty">No leads yet.</td></tr>'; return; }
+  el.innerHTML = ALL_LEADS.map(l => {
+    const contact = [l.phone, l.email].filter(Boolean).join(' · ') || '—';
+    return '<tr>'+
+      '<td style="font-weight:600">'+esc(l.business_name||'—')+'</td>'+
+      '<td>'+esc((l.lead_type||'').replace(/_/g,' ')||'—')+'</td>'+
+      '<td>'+esc((l.category||'').replace(/_/g,' ')||'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+esc(contact)+'</td>'+
+      '<td><span class="pill default">'+esc(l.status||'new')+'</span></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function openMerge(groupIndex){
+  mergeGroup = window._dupeGroups[groupIndex];
+  mergeKeeperId = null;
+  document.getElementById('mergeConfirmBtn').disabled = true;
+  document.getElementById('mergeStatus').textContent = '';
+
+  document.getElementById('mergeCards').innerHTML = mergeGroup.map(c => {
+    const name = ((c.first_name||'')+' '+(c.last_name||'')).trim();
+    return '<div class="merge-card" id="mcard-'+c.id+'" onclick="pickKeeper('+c.id+')">'+
+      '<h3>'+esc(name)+'</h3>'+
+      '<div class="id">Client ID '+c.id+'</div>'+
+      '<div class="field"><strong>Status:</strong> '+esc(c.status||'—')+'</div>'+
+      '<div class="field"><strong>Package:</strong> '+esc(c.package||'—')+'</div>'+
+      '<div class="field"><strong>Start:</strong> '+esc(c.training_start_date||'—')+'</div>'+
+      '<div class="field"><strong>Notes:</strong> '+esc((c.notes||'').slice(0,80))+(c.notes && c.notes.length>80?'...':'')+'</div>'+
+    '</div>';
+  }).join('');
+
+  document.getElementById('mergeOverlay').classList.add('open');
+}
+
+function closeMerge(){
+  document.getElementById('mergeOverlay').classList.remove('open');
+  mergeGroup = null;
+  mergeKeeperId = null;
+}
+
+function pickKeeper(id){
+  mergeKeeperId = id;
+  mergeGroup.forEach(c => {
+    document.getElementById('mcard-'+c.id).classList.toggle('selected', c.id === id);
+  });
+  document.getElementById('mergeConfirmBtn').disabled = false;
+}
+
+async function confirmMerge(){
+  if (!mergeKeeperId || !mergeGroup) return;
+  const status = document.getElementById('mergeStatus');
+  const btn = document.getElementById('mergeConfirmBtn');
+  btn.disabled = true;
+
+  const duplicates = mergeGroup.filter(c => c.id !== mergeKeeperId);
+
+  for (const dupe of duplicates) {
+    status.textContent = 'Merging history for client ' + dupe.id + '...';
+
+    for (const table of CLIENT_LINKED_TABLES) {
+      try {
+        await db({ op:'update', table:table, values:{ client_id: mergeKeeperId }, where:{ client_id: dupe.id } });
+      } catch(e) { console.warn('Could not repoint', table, e); }
+    }
+
+    // Deactivate any login credential on the duplicate rather than merge it (one login per person)
+    try {
+      await db({ op:'update', table:'client_auth', values:{ active: 0 }, where:{ client_id: dupe.id } });
+    } catch(e) {}
+
+    status.textContent = 'Removing duplicate record ' + dupe.id + '...';
+    try {
+      await db({ op:'delete', table:'clients', where:{ id: dupe.id } });
+    } catch(e) {
+      status.textContent = 'Error deleting duplicate: ' + e.message;
+      btn.disabled = false;
+      return;
+    }
+  }
+
+  status.textContent = '✓ Merged successfully.';
+  setTimeout(async () => {
+    closeMerge();
+    await loadAll();
+  }, 1000);
+}
+
+loadAll();
+</script>
+</body>
+</html>

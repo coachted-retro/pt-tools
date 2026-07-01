@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backfill Client Data — Retro Fitness PT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--green-light:#ECFDF3;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:20}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)}
+  .topbar .spacer{flex:1}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 20px 60px}
+  .page-title{font-family:'Oswald';font-size:24px;font-weight:600;margin-bottom:6px}
+  .page-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+  .summary-bar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 20px;display:flex;gap:28px;margin-bottom:18px;font-size:13px}
+  .summary-bar strong{font-size:20px;display:block;font-family:'Oswald'}
+  .client-card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+  .card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-size:13px;font-weight:600;flex-shrink:0}
+  .card-header-left{display:flex;align-items:center;gap:10px}
+  .client-name{font-weight:700;font-size:14px}
+  .client-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .status-badge{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase}
+  .badge-ready{background:var(--green-light);color:var(--green)}
+  .badge-done{background:#e0f2fe;color:#0369a1}
+  .badge-error{background:#fee2e2;color:#991b1b}
+  .action-row{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:var(--soft)}
+  .import-status{font-size:12px;color:var(--muted);flex:1}
+  .import-status.ok{color:var(--green);font-weight:600}
+  .import-status.err{color:var(--red);font-weight:600}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="t">Backfill <span>Client Data</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="command-center.html">← Command Center</a>
+</div>
+<div class="wrap">
+  <div class="page-title">Backfill InBody Scans &amp; Consultation Notes</div>
+  <p class="page-sub">The first batch import only created basic client records. This writes the real InBody scan numbers and consultation notes for each — matched by name to the existing client already in D1.</p>
+  <div class="summary-bar">
+    <div><strong id="total-count">10</strong>Clients</div>
+    <div><strong id="done-count">0</strong>Backfilled</div>
+    <div><strong id="fail-count">0</strong>Errors</div>
+  </div>
+  <div style="margin-bottom:18px;">
+    <button class="btn red" onclick="backfillAll()">⬆ Backfill All</button>
+  </div>
+  <div id="cards"></div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+const DATA = [
+  { name:'Anthony Smith',
+    inbody: { scan_date:'2025-11-18', weight:204.9, lean_mass:156.1, body_fat_pct:23.8, fat_mass:48.8, bmi:29.4, skeletal_muscle:89.5, notes:'InBody270 scan. Age 20.' },
+    consult: { consult_date:'2025-11-18', advisor:'Ted Scholl', weight:204.9, lean_mass:156.1, body_fat_pct:23.8, fat_mass:48.8, bmi:29.4,
+      goals:'Lose 30 lbs, tone muscle, shoulder focus.', medical_notes:'No medications, no surgeries, no injuries. Non-smoker.',
+      diet_habits:'High-protein, self-prepared. Skips breakfast. Occasional alcohol.',
+      assessment_summary:'Machinist, works 7-5 M-F. Moderately active job. Stress 7/10. No prior trainer experience. Readiness 4.5/5.',
+      advisor_notes:'Hobbies: video games, D&D, Magic the Gathering. BP 144/75, HR 65.' } },
+  { name:'Anthony Mango',
+    inbody: { scan_date:'2026-04-07', weight:202.2, lean_mass:164.9, body_fat_pct:18.5, fat_mass:37.3, bmi:29.0, skeletal_muscle:95.0, notes:'InBody scan baseline for 12-month program.' },
+    consult: { consult_date:'2026-04-07', advisor:'Ted Scholl', weight:202.2, lean_mass:164.9, body_fat_pct:18.5, fat_mass:37.3, bmi:29.0,
+      goals:'12-month transformation. Build strength, confidence, long-term health. Target 12-15 lb fat loss.',
+      medical_notes:'No significant medical history noted.',
+      assessment_summary:'Strong muscle foundation at baseline. 4-phase program: Foundation, Strength, Recomposition, Optimization.',
+      advisor_notes:'Training 2-3 evenings/week. Nutrition: protein at each meal, 80-100oz water, balanced plates.' } },
+  { name:'Bill Dolbow',
+    inbody: { scan_date:'2026-05-19', weight:245.1, lean_mass:153.0, body_fat_pct:37.6, fat_mass:92.1, bmi:35.2, skeletal_muscle:85.8, notes:'InBody270 scan.' },
+    consult: { consult_date:'2026-05-19', advisor:'Ted Scholl', weight:245.1, lean_mass:153.0, body_fat_pct:37.6, fat_mass:92.1, bmi:35.2,
+      goals:'Reduce body fat, improve overall health and strength. Started active ~2 months ago.',
+      medical_notes:'MEDICAL: bilateral knee surgery, statin + blood pressure meds, Penicillin allergy.',
+      assessment_summary:'Age 68, retired. Sports background in youth.',
+      advisor_notes:'Bilateral knee surgery history — avoid high-impact lower body movements. On statin + BP meds — watch exertion, avoid Valsalva.' } },
+  { name:'Bill Richards',
+    inbody: { scan_date:'2026-06-08', weight:208.2, lean_mass:132.5, body_fat_pct:36.4, fat_mass:75.7, bmi:33.6, skeletal_muscle:74.5, notes:'InBody scan. Left leg 95.5% of standard - stability priority.' },
+    consult: { consult_date:'2026-06-08', advisor:'Ted Scholl', weight:208.2, lean_mass:132.5, body_fat_pct:36.4, fat_mass:75.7, bmi:33.6,
+      goals:'Reduce body fat 36.4% to 18-25%, improve strength and independence. 90-day target: 12-15 lb fat loss.',
+      medical_notes:'MEDICAL: cardiac history, stents, Repatha. HR monitoring every session, avoid Valsalva maneuver.',
+      assessment_summary:'Age 72. Coach Roman 1x/week, Ted advisor monthly. Left leg stability priority every session.',
+      advisor_notes:'12-month commitment starting June 8, 2026. Nutrition: 1800-2000 kcal/day, 130-145g protein daily.' } },
+  { name:'Christopher Baker',
+    inbody: { scan_date:'2026-05-07', weight:173.4, lean_mass:133.8, body_fat_pct:22.8, fat_mass:39.6, bmi:24.2, skeletal_muscle:75.4, notes:'InBody570 scan. Monthly check-in.' },
+    consult: { consult_date:'2026-01-13', advisor:'Ted Scholl', weight:null, lean_mass:null, body_fat_pct:null, fat_mass:null, bmi:null,
+      goals:'Return to structured training after travel breaks. Maintain body composition, build consistency.',
+      medical_notes:'No significant medical issues noted.',
+      assessment_summary:'18 sessions in May 2026, 0 missed. High energy and confidence.',
+      advisor_notes:'Nutrition: 1650 kcal actual vs 2300 target, needs more calories. Workout split: Legs, Chest+Triceps rotation.' } },
+  { name:'Chris Rowan',
+    inbody: { scan_date:'2026-05-09', weight:305.4, lean_mass:162.9, body_fat_pct:46.6, fat_mass:142.5, bmi:47.8, skeletal_muscle:93.0, notes:'InBody270 scan. Age 50, 5ft7in.' },
+    consult: { consult_date:'2026-05-10', advisor:'Coach Ted', weight:305.4, lean_mass:162.9, body_fat_pct:46.6, fat_mass:142.5, bmi:47.8,
+      goals:'Lose 120 lbs (305 to ~185 lb). Preserve lean mass during aggressive fat loss.',
+      medical_notes:'MEDICAL: pancreatic condition, strict 25% fat limit required. Anti-inflammatory fat sources only (omega-3s, avocado, olive oil).',
+      diet_habits:'Feb 2026 avg: 1988 kcal, 95g protein (critically low, target 225g), 82g fat, 223g carbs.',
+      assessment_summary:'Strength highlights: 225lb Incline Bench, 130lb Lat Pulldown. 18 days detailed nutrition logging Feb 2026.',
+      advisor_notes:'Key issues: liquid calories, fast food dependency. Action items: 40-50g protein per meal, whole food meal prep 3x/day.' } },
+  { name:'Gage Hines',
+    inbody: null,
+    consult: { consult_date:'', advisor:'Ted Scholl', weight:null, lean_mass:null, body_fat_pct:null, fat_mass:null, bmi:null,
+      goals:'Slim down and build muscle. Lose 20 lbs, arm focus.',
+      medical_notes:'No medications, no surgeries, no medical history, no current pain. Non-smoker. No alcohol.',
+      assessment_summary:'Age 30, Pet Care Tech, very active job. BP 134/82, HR 84. No InBody on file yet.',
+      advisor_notes:'4x/week plan at 11am or 2pm. No prior trainer. Readiness 4/5. Prior gym: Anytime Fitness Florida.' } },
+  { name:'Mark Berlin',
+    inbody: { scan_date:'2025-11-05', weight:140.3, lean_mass:105.6, body_fat_pct:24.8, fat_mass:34.7, bmi:22.7, skeletal_muscle:58.0, notes:'InBody270 scan. All limbs below standard - strengthening priority.' },
+    consult: { consult_date:'2025-11-05', advisor:'Ted Scholl', weight:140.3, lean_mass:105.6, body_fat_pct:24.8, fat_mass:34.7, bmi:22.7,
+      goals:'Post-surgery recovery and healthier living. Maintain current weight, arm and leg focus.',
+      medical_notes:'MEDICAL: bypass heart surgery within past 5 years - primary concern. Trigger finger. Monitor intensity, avoid Valsalva.',
+      assessment_summary:'Age 69, semi-retired photographer. Arms 86-87% of standard, legs 85-86% - strengthening priority.',
+      advisor_notes:'3x/week Mon/Wed/Fri 8am. Spouse also works out, mutual support confirmed. Readiness 5/5.' } },
+  { name:'Rick Cooper',
+    inbody: { scan_date:'2025-10-08', weight:193.6, lean_mass:148.2, body_fat_pct:23.4, fat_mass:45.5, bmi:28.6, skeletal_muscle:83.6, notes:'InBody270 scan. Improving from prior scan (Mar 2025: 194.4 lb, 25.4% BF).' },
+    consult: { consult_date:'2025-10-08', advisor:'Ted Scholl', weight:193.6, lean_mass:148.2, body_fat_pct:23.4, fat_mass:45.5, bmi:28.6,
+      goals:'Get back in shape. Keep weight down, increase core strength. Lose 10 lbs from 197.4 lb.',
+      medical_notes:'MEDICAL: prostate and hernia surgery, right shoulder and right knee history.',
+      assessment_summary:'Age 61, Consultant, sedentary job. Well-balanced segmentally (all limbs 100-113% of standard).',
+      advisor_notes:'2-3x/week, flexible timing. Prior trainer experience, good, stopped due to scheduling. Readiness 4/5.' } },
+  { name:'Sanjay',
+    inbody: null,
+    consult: { consult_date:'2025-07-09', advisor:'Ted Scholl', weight:170.1, lean_mass:null, body_fat_pct:23.0, fat_mass:null, bmi:null,
+      goals:'Body recomposition. Lost 6.8 lb and 4.5% body fat Jul-Sep 2025.',
+      medical_notes:'No conditions on file. Monitor: resting HR rose from 72 to 114 bpm between Jul and Sep 2025 measurements - confirm with client.',
+      assessment_summary:'Height 5ft10in. Sep 2025 measurements: 163.3 lb, 18.5% BF. Full tape measurements on file.',
+      advisor_notes:'8 Trainerize workout programs on file covering full body split. No InBody scan yet, only tape measurements.' } }
+];
+
+let backfillState = {};
+
+function initials(n){ const p=n.trim().split(/\s+/); return ((p[0]||'')[0]+((p[1]||'')[0]||'')).toUpperCase(); }
+
+function renderCards(){
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  DATA.forEach((d, i) => {
+    const state = backfillState[i] || 'ready';
+    const badgeClass = state==='done'?'badge-done':state==='error'?'badge-error':'badge-ready';
+    const badgeText = state==='done'?'Backfilled':state==='error'?'Error':'Ready';
+    const card = document.createElement('div');
+    card.className = 'client-card';
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="avatar">${initials(d.name)}</div>
+          <div>
+            <div class="client-name">${d.name}</div>
+            <div class="client-meta">${d.inbody ? 'InBody ' + d.inbody.scan_date : 'No InBody scan on file'} · Consultation notes ready</div>
+          </div>
+        </div>
+        <span class="status-badge ${badgeClass}" id="badge-${i}">${badgeText}</span>
+      </div>
+      <div class="action-row">
+        <button class="btn red" id="btn-${i}" onclick="backfillClient(${i})">Backfill</button>
+        <span class="import-status" id="status-${i}">Ready</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+async function db(body){
+  const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+async function findClientId(name){
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0];
+  const candidates = await db({ op:'select', table:'clients', where:{ first_name:first }, limit:50 });
+  const target = name.trim().toLowerCase();
+  const match = (candidates.results||[]).find(c => ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase() === target);
+  return match ? match.id : null;
+}
+
+async function backfillClient(i){
+  const d = DATA[i];
+  const btn = document.getElementById('btn-'+i);
+  const status = document.getElementById('status-'+i);
+  const badge = document.getElementById('badge-'+i);
+  btn.disabled = true;
+  status.textContent = 'Finding client...';
+  status.className = 'import-status';
+
+  try {
+    const clientId = await findClientId(d.name);
+    if (!clientId) throw new Error('Client not found in D1 — run the batch importer first.');
+
+    if (d.inbody) {
+      status.textContent = 'Writing InBody scan...';
+      const payload = Object.assign({ client_id: clientId }, d.inbody);
+      Object.keys(payload).forEach(k => { if (payload[k] == null) delete payload[k]; });
+      const r1 = await db({ op:'insert', table:'inbody_scans', values: payload });
+      if (r1.error) throw new Error('InBody: ' + r1.error);
+    }
+
+    status.textContent = 'Writing consultation notes...';
+    const cPayload = Object.assign({ client_id: clientId }, d.consult);
+    Object.keys(cPayload).forEach(k => { if (cPayload[k] == null || cPayload[k] === '') delete cPayload[k]; });
+    const r2 = await db({ op:'insert', table:'consultations', values: cPayload });
+    if (r2.error) throw new Error('Consultation: ' + r2.error);
+
+    backfillState[i] = 'done';
+    badge.textContent = 'Backfilled';
+    badge.className = 'status-badge badge-done';
+    status.textContent = '✓ Backfilled for client ID ' + clientId;
+    status.className = 'import-status ok';
+    btn.textContent = '✓ Done';
+  } catch(e) {
+    backfillState[i] = 'error';
+    badge.textContent = 'Error';
+    badge.className = 'status-badge badge-error';
+    status.textContent = '✗ ' + e.message;
+    status.className = 'import-status err';
+    btn.disabled = false;
+  }
+  updateCounts();
+}
+
+async function backfillAll(){
+  for (let i=0; i<DATA.length; i++){
+    if (backfillState[i]==='done') continue;
+    await backfillClient(i);
+    await new Promise(r=>setTimeout(r,300));
+  }
+}
+
+function updateCounts(){
+  document.getElementById('done-count').textContent = Object.values(backfillState).filter(s=>s==='done').length;
+  document.getElementById('fail-count').textContent = Object.values(backfillState).filter(s=>s==='error').length;
+}
+
+renderCards();
+</script>
+</body>
+</html>
