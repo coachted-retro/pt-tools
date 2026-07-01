@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Backfill Data — Batch 3</title>
+<style>
+  body{font-family:'Inter',sans-serif;background:#F5F6F8;margin:0;padding:24px;}
+  h1{font-family:'Oswald',sans-serif;font-size:22px;color:#E0192B;margin:0 0 4px;}
+  .sub{font-size:13px;color:#666;margin-bottom:24px;}
+  .card{background:#fff;border-radius:12px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+  .card h2{font-family:'Oswald',sans-serif;font-size:15px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.4px;}
+  .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;margin-left:8px;vertical-align:middle;}
+  .badge-new{background:#dcfce7;color:#166534;}
+  .badge-fix{background:#fef3c7;color:#92400e;}
+  .badge-update{background:#dbeafe;color:#1e40af;}
+  .status{font-size:12px;margin-top:8px;min-height:16px;color:#555;}
+  .status.ok{color:#166534;}
+  .status.err{color:#991b1b;}
+  .btn{background:#E0192B;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;}
+  .btn:disabled{opacity:.4;cursor:default;}
+  .btn-all{margin-bottom:20px;}
+  .counts{font-size:13px;color:#444;margin-bottom:16px;}
+  .warn{background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#92400e;margin-bottom:20px;}
+</style>
+</head>
+<body>
+<h1>Retro PT — Backfill Batch 3</h1>
+<p class="sub">Corrects Mark Berlin + Gage Hines InBody data (were swapped). Adds Sean Widjaja (5 scans) and Ryan Wilson.</p>
+<div class="warn">
+  <strong>Mark Berlin / Gage Hines:</strong> backfill-data.html loaded Gage's scan under Mark's name and vice versa. This batch fixes both records by updating InBody + consultation data to match the correct PDFs.
+  <br><br>
+  <strong>Sean Widjaja:</strong> 5 InBody scans (Feb–May 2026) loaded in chronological order. Earliest scan used as consultation baseline.
+</div>
+<div class="counts">Done: <span id="done-count">0</span> &nbsp;|&nbsp; Failed: <span id="fail-count">0</span></div>
+<button class="btn btn-all" onclick="backfillAll()">Run All</button>
+<div id="cards"></div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+async function db(payload){
+  const r = await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const j = await r.json();
+  if(!r.ok) throw new Error(j.error||JSON.stringify(j));
+  return j;
+}
+
+// Each entry: mode = 'fix_inbody' | 'new'
+// fix_inbody: looks up client by first+last, deletes old inbody_scans and consultations, inserts correct ones
+// new: creates client record if not exists, inserts inbody scans + consultation
+const DATA = [
+  {
+    name: 'Mark Berlin',
+    mode: 'fix_inbody',
+    first_name: 'Mark',
+    last_name: 'Berlin',
+    // Correct InBody: Dec 10, 2025, 190.4 lb, age 31, 5'8"
+    scans: [
+      { scan_date:'2025-12-10', weight:190.4, lean_mass:134.9, body_fat_pct:29.1, fat_mass:55.5, bmi:29.0,
+        skeletal_muscle:76.7, notes:'InBody270 scan. Upper body strong (arms 112-113%), legs near ideal (96-97%).' }
+    ],
+    consult: {
+      consult_date:'2025-12-10', advisor:'Ted Scholl', weight:190.4, lean_mass:134.9, body_fat_pct:29.1,
+      fat_mass:55.5, bmi:29.0,
+      goals:'Body recomposition. Lose body fat, build lean muscle, improve overall fitness.',
+      medical_notes:'No significant medical history noted on file. Age 31.',
+      assessment_summary:'Age 31, 5ft8in, InBody270 ID 2675668150. Upper body well-developed (arms 112-113% of standard, trunk 108%). Legs near ideal (96-97%). Primary opportunity: fat loss and lower body balance.',
+      advisor_notes:'Data corrected from prior import. Correct scan date Dec 10 2025.'
+    }
+  },
+  {
+    name: 'Gage Hines',
+    mode: 'fix_inbody',
+    first_name: 'Gage',
+    last_name: 'Hines',
+    // Correct InBody: Nov 5, 2025, 140.3 lb, age 69, 5'6"
+    scans: [
+      { scan_date:'2025-11-05', weight:140.3, lean_mass:105.6, body_fat_pct:24.8, fat_mass:34.7, bmi:22.7,
+        skeletal_muscle:58.0, notes:'InBody270 scan. All limbs below standard (arms 87%, legs 85-87%, trunk 91%) - full-body strengthening priority.' }
+    ],
+    consult: {
+      consult_date:'2025-11-05', advisor:'Ted Scholl', weight:140.3, lean_mass:105.6, body_fat_pct:24.8,
+      fat_mass:34.7, bmi:22.7,
+      goals:'Post-surgery recovery and healthier living. Maintain current weight, arm and leg focus.',
+      medical_notes:'MEDICAL: bypass heart surgery within past 5 years — primary concern. Trigger finger. Monitor intensity, avoid Valsalva.',
+      assessment_summary:'Age 69, 5ft6in, semi-retired photographer. InBody ID 2678828007. Arms 86-87% of standard, trunk 91%, legs 85-86% — full-body strengthening priority. BP and cardiac history requires conservative progression.',
+      advisor_notes:'3x/week Mon/Wed/Fri 8am. Spouse also works out, mutual support confirmed. Readiness 5/5. Corrected from prior import.'
+    }
+  },
+  {
+    name: 'Sean Widjaja',
+    mode: 'new',
+    first_name: 'Sean',
+    last_name: 'Widjaja',
+    client: {
+      gender:'Male', age:25, status:'active', advisor:'Ted Scholl', coach:'Ted Scholl',
+      goal_primary:'Body recomposition — lose fat, build muscle. Target: 20% BF.',
+      source_id:'retro_consult',
+      notes:'InBody ID 9254003554. 5ft6in. 5 scans on file Feb-May 2026. Textbook recomp: +4 lb SMM, -4.4 lb fat over 3 months. Protein intake (target 160-180g) is primary coaching focus. Perfect attendance record.',
+      package:'2x/week', training_start_date:'2026-02-05'
+    },
+    // All 5 scans in chronological order
+    scans: [
+      { scan_date:'2026-02-05', weight:172.2, lean_mass:124.6, body_fat_pct:27.7, fat_mass:47.6, bmi:27.8,
+        skeletal_muscle:70.1, notes:'InBody270. Baseline scan. First session.' },
+      { scan_date:'2026-03-07', weight:173.5, lean_mass:128.2, body_fat_pct:26.1, fat_mass:45.3, bmi:28.0,
+        skeletal_muscle:73.2, notes:'Month 1 re-test. +3.1 lb SMM, -2.4 lb fat. Strong initial adaptation.' },
+      { scan_date:'2026-04-04', weight:174.3, lean_mass:129.2, body_fat_pct:25.9, fat_mass:45.1, bmi:28.1,
+        skeletal_muscle:73.6, notes:'Month 2 re-test. +0.4 lb SMM, -0.2 lb fat. Steady progress.' },
+      { scan_date:'2026-05-02', weight:173.4, lean_mass:130.1, body_fat_pct:25.0, fat_mass:43.3, bmi:28.0,
+        skeletal_muscle:74.1, notes:'Month 3 re-test. +0.5 lb SMM, -1.7 lb fat. Upper body ahead of standard, legs 94-95%.' },
+      { scan_date:'2026-05-30', weight:173.6, lean_mass:129.0, body_fat_pct:25.6, fat_mass:44.6, bmi:28.0,
+        skeletal_muscle:73.6, notes:'Month 4 check-in. Slight lean mass dip (-0.9) due to low protein. Protein coaching priority for June.' }
+    ],
+    consult: {
+      consult_date:'2026-02-05', advisor:'Ted Scholl', weight:172.2, lean_mass:124.6, body_fat_pct:27.7,
+      fat_mass:47.6, bmi:27.8,
+      goals:'Body recomposition. Build muscle, lose fat. Target 20% BF. Wants visible fitness improvement.',
+      medical_notes:'No significant medical conditions. Age 25, generally healthy.',
+      assessment_summary:'Age 25, 5ft6in, Male. InBody ID 9254003554. Starting BF 27.7%, 172.2 lb. Protein intake well below target (110-120g vs 160-180g goal). Upper body developing well. Leg development is secondary priority.',
+      advisor_notes:'Perfect attendance through 3+ months. 10/10 session quality score. Key limiting factor: protein intake. Month 4 focus: 160g+ protein daily, core/hip strengthening progressions, mobility work.'
+    }
+  },
+  {
+    name: 'Ryan Wilson',
+    mode: 'new',
+    first_name: 'Ryan',
+    last_name: 'Wilson',
+    client: {
+      gender:'Male', age:32, status:'active', advisor:'Ted Scholl', coach:'Ted Scholl',
+      goal_primary:'Body recomposition. Reduce body fat, build lean mass.',
+      source_id:'retro_consult',
+      notes:'InBody ID 2676699080. 5ft7in. Nov 26 2025 baseline scan. 190.8 lb, 27.1% BF. Upper body very strong (arms 113-116%, trunk 110%).',
+      package:'2x/week', training_start_date:'2025-11-26'
+    },
+    scans: [
+      { scan_date:'2025-11-26', weight:190.8, lean_mass:139.1, body_fat_pct:27.1, fat_mass:51.7, bmi:29.9,
+        skeletal_muscle:79.4, notes:'InBody270. Baseline scan. InBody ID 2676699080. Upper body very strong (arms 113-116%, trunk 110%). Legs near ideal (97%). Primary opportunity: fat loss.' }
+    ],
+    consult: {
+      consult_date:'2025-11-26', advisor:'Ted Scholl', weight:190.8, lean_mass:139.1, body_fat_pct:27.1,
+      fat_mass:51.7, bmi:29.9,
+      goals:'Body recomposition. Reduce body fat, build lean mass. Improve overall fitness.',
+      medical_notes:'No significant medical history noted on file. Age 32.',
+      assessment_summary:'Age 32, 5ft7in, Male. InBody ID 2676699080. 190.8 lb, 27.1% BF. Upper body very strong (arms 113-116%, trunk 110%). Legs near ideal (97%). Estimated BMR 1733 kcal. Primary opportunity: sustained fat loss while preserving strong lean mass base.',
+      advisor_notes:'Strong muscular foundation. Fat loss is the primary lever. Nutrition structure and calorie management will drive results.'
+    }
+  }
+];
+
+let state = {};
+
+function renderCards(){
+  const el = document.getElementById('cards');
+  el.innerHTML = DATA.map((d,i) => {
+    const badge = d.mode==='fix_inbody'
+      ? '<span class="badge badge-fix">CORRECTION</span>'
+      : '<span class="badge badge-new">NEW CLIENT</span>';
+    const scanCount = d.scans ? d.scans.length : 0;
+    return `<div class="card" id="card-${i}">
+      <h2>${d.name}${badge}</h2>
+      <div style="font-size:12px;color:#555;margin-bottom:10px;">
+        ${d.mode==='fix_inbody'
+          ? 'Fix: delete old inbody+consult records, insert correct data'
+          : `Create client record + ${scanCount} InBody scan${scanCount!==1?'s':''} + consultation`}
+      </div>
+      <button class="btn" id="btn-${i}" onclick="runClient(${i})">Run</button>
+      <div class="status" id="status-${i}"></div>
+    </div>`;
+  }).join('');
+}
+
+async function runClient(i){
+  const d = DATA[i];
+  const btn = document.getElementById(`btn-${i}`);
+  const status = document.getElementById(`status-${i}`);
+  btn.disabled = true;
+  state[i] = 'running';
+
+  try {
+    if(d.mode === 'fix_inbody'){
+      // Look up client by name
+      status.textContent = 'Looking up client...';
+      const res = await db({ op:'select', table:'clients', where:{ first_name:d.first_name, last_name:d.last_name }, limit:5 });
+      const rows = res.results||res.data||[];
+      if(!rows.length) throw new Error(`Client "${d.name}" not found — check spelling or run backfill-data.html first`);
+      const clientId = rows[0].id;
+
+      // Delete existing inbody_scans for this client
+      status.textContent = 'Removing old InBody records...';
+      try { await db({ op:'delete', table:'inbody_scans', where:{ client_id:clientId } }); } catch(e){}
+      // Delete existing consultations
+      try { await db({ op:'delete', table:'consultations', where:{ client_id:clientId } }); } catch(e){}
+
+      // Insert correct scans
+      for(const sc of d.scans){
+        status.textContent = 'Inserting correct InBody...';
+        await db({ op:'insert', table:'inbody_scans', values:{ client_id:clientId, ...sc, source:'backfill-batch3-correction' }});
+      }
+
+      // Insert correct consultation
+      status.textContent = 'Inserting correct consultation...';
+      await db({ op:'insert', table:'consultations', values:{ client_id:clientId, ...d.consult }});
+
+      state[i] = 'done';
+      status.textContent = `Fixed — client ID ${clientId}`;
+      status.className = 'status ok';
+
+    } else {
+      // New client mode
+      // Check if exists
+      status.textContent = 'Checking for existing record...';
+      const res = await db({ op:'select', table:'clients', where:{ first_name:d.first_name, last_name:d.last_name }, limit:5 });
+      const rows = res.results||res.data||[];
+      let clientId;
+
+      if(rows.length){
+        clientId = rows[0].id;
+        status.textContent = `Found existing client ID ${clientId}, updating...`;
+        await db({ op:'update', table:'clients', values:d.client, where:{ id:clientId }});
+      } else {
+        status.textContent = 'Creating client record...';
+        const ins = await db({ op:'insert', table:'clients', values:{ first_name:d.first_name, last_name:d.last_name, ...d.client }});
+        clientId = ins.id || ins.lastInsertRowid || ins.data?.id;
+        if(!clientId) throw new Error('Insert returned no ID');
+      }
+
+      // Insert all scans
+      for(let s=0; s<d.scans.length; s++){
+        status.textContent = `Inserting scan ${s+1}/${d.scans.length}...`;
+        await db({ op:'insert', table:'inbody_scans', values:{ client_id:clientId, ...d.scans[s], source:'backfill-batch3' }});
+        await new Promise(r=>setTimeout(r,150));
+      }
+
+      // Insert consultation
+      status.textContent = 'Inserting consultation...';
+      await db({ op:'insert', table:'consultations', values:{ client_id:clientId, ...d.consult }});
+
+      state[i] = 'done';
+      status.textContent = `Done — client ID ${clientId}, ${d.scans.length} scan(s) written`;
+      status.className = 'status ok';
+    }
+
+  } catch(e){
+    state[i] = 'error';
+    status.textContent = 'Error: ' + e.message;
+    status.className = 'status err';
+    btn.disabled = false;
+  }
+  updateCounts();
+}
+
+async function backfillAll(){
+  for(let i=0;i<DATA.length;i++){
+    if(state[i]==='done') continue;
+    await runClient(i);
+    await new Promise(r=>setTimeout(r,400));
+  }
+}
+
+function updateCounts(){
+  document.getElementById('done-count').textContent = Object.values(state).filter(s=>s==='done').length;
+  document.getElementById('fail-count').textContent = Object.values(state).filter(s=>s==='error').length;
+}
+
+renderCards();
+</script>
+</body>
+</html>
