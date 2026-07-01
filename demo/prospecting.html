@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prospecting — Retro Fitness Fairless Hills</title>
+<title>Prospecting, Retro Fitness, The Body Shoppe</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--soft:#F0F2F5}
@@ -35,17 +35,18 @@
 </head>
 <body>
 <div class="topbar">
-  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" onerror="this.style.display='none'">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness, The Body Shoppe" onerror="this.style.display='none'">
   <div class="t">Prospecting <span>Pipeline</span></div>
   <div class="spacer"></div>
-  <a class="btn" href="command-center.html">← Command Center</a>
+  <a class="btn" href="regional-dashboard.html">Regional Dashboard</a>
 </div>
 <div class="wrap">
 
   <div class="panel">
     <h3>Run the Harvester</h3>
-    <p>Pulls nearby referral partners and corporate wellness prospects around Retro Fitness of Fairless Hills — chiropractors, physical therapy, med spas, nutritionists, fire/police/EMS, and local employers.</p>
+    <p>Pulls nearby referral partners and corporate wellness prospects around a gym's actual location, fire/police departments, employers, allied health practices, the same engine that has been finding leads for Fairless Hills. Run it for any gym in the region.</p>
     <div class="grid3">
+      <div class="fld"><label>Gym</label><select id="h-gym"></select></div>
       <div class="fld"><label>Category (optional)</label>
         <select id="h-category">
           <option value="">All categories</option>
@@ -66,17 +67,18 @@
   <div class="panel">
     <h3>Add a Prospect Manually</h3>
     <div class="grid3">
+      <div class="fld"><label>Gym</label><select id="m-gym"></select></div>
       <div class="fld"><label>Business name</label><input id="m-name" type="text" placeholder="e.g. Sunrise Physical Therapy"></div>
       <div class="fld"><label>Type</label>
         <select id="m-type">
           <option value="referral_partner">Referral Partner</option>
           <option value="corporate">Corporate / Employer</option>
         </select></div>
-      <div class="fld"><label>Phone</label><input id="m-phone" type="text"></div>
     </div>
     <div class="grid3">
+      <div class="fld"><label>Phone</label><input id="m-phone" type="text"></div>
       <div class="fld"><label>Email</label><input id="m-email" type="email"></div>
-      <div class="fld" style="grid-column:span 2"><label>Address</label><input id="m-address" type="text"></div>
+      <div class="fld"><label>Address</label><input id="m-address" type="text"></div>
     </div>
     <button class="btn red" onclick="addManualLead()">Add Prospect</button>
     <div class="status" id="manual-status"></div>
@@ -84,8 +86,9 @@
 
   <div class="panel">
     <h3>Pipeline (<span id="lead-count">0</span>)</h3>
+    <div class="fld" style="max-width:280px;margin-bottom:14px"><label>Filter by gym</label><select id="filter-gym" onchange="loadLeads()"></select></div>
     <table>
-      <thead><tr><th>Business</th><th>Type</th><th>Contact</th><th>Status</th></tr></thead>
+      <thead><tr><th>Business</th><th>Type</th><th>Gym</th><th>Contact</th><th>Status</th></tr></thead>
       <tbody id="lead-rows"></tbody>
     </table>
   </div>
@@ -94,21 +97,32 @@
 
 <script>
 const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+const DEMO_FLAG='?demo=1';
 
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 async function db(body){
-  const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+  const r=await fetch(WORKER+'/db'+DEMO_FLAG,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
   return r.json();
 }
 
+async function loadGymSelects(){
+  const d = await db({ op:'select', table:'gyms', where:{ active:1 }, orderBy:'name ASC', limit:200 });
+  const opts = (d.results||[]).map(g=>'<option value="'+g.id+'">'+esc(g.name)+'</option>').join('');
+  document.getElementById('h-gym').innerHTML = opts;
+  document.getElementById('m-gym').innerHTML = opts;
+  document.getElementById('filter-gym').innerHTML = '<option value="">All gyms</option>'+opts;
+}
+
 async function runHarvest(){
+  const gymId = document.getElementById('h-gym').value;
   const category = document.getElementById('h-category').value;
   const btn = document.getElementById('harvest-btn'); const st = document.getElementById('harvest-status');
+  if (!gymId) { st.textContent = 'Select a gym first.'; return; }
   btn.disabled = true; st.textContent = 'Searching nearby prospects, this can take a moment...';
   try {
-    const r = await fetch(WORKER+'/harvest/run', {
+    const r = await fetch(WORKER+'/harvest/run'+DEMO_FLAG, {
       method:'POST', headers:{'Content-Type':'text/plain'},
-      body: JSON.stringify({ category: category||undefined, limit: 20 })
+      body: JSON.stringify({ gym_id: +gymId, category: category||undefined, limit: 20 })
     });
     const d = await r.json();
     if (d.ok && d.summary) {
@@ -124,16 +138,17 @@ async function runHarvest(){
 }
 
 async function addManualLead(){
+  const gymId = document.getElementById('m-gym').value;
   const name = document.getElementById('m-name').value.trim();
   const type = document.getElementById('m-type').value;
   const phone = document.getElementById('m-phone').value.trim();
   const email = document.getElementById('m-email').value.trim();
   const address = document.getElementById('m-address').value.trim();
   const st = document.getElementById('manual-status');
-  if (!name) { st.textContent = 'Business name required.'; return; }
+  if (!gymId || !name) { st.textContent = 'Gym and business name required.'; return; }
   st.textContent = 'Adding...';
   await db({ op:'insert', table:'leads', values:{
-    lead_type: type, business_name: name, phone, email, address,
+    gym_id: gymId, lead_type: type, business_name: name, phone, email, address,
     category: 'manual', status: 'new'
   }});
   st.textContent = 'Added.';
@@ -142,20 +157,27 @@ async function addManualLead(){
 }
 
 async function loadLeads(){
-  const d = await db({ op:'select', table:'leads', orderBy:'id DESC', limit:300 });
+  const gymFilter = document.getElementById('filter-gym').value;
+  const query = gymFilter ? { op:'select', table:'leads', where:{ gym_id: gymFilter }, orderBy:'id DESC', limit:300 }
+                            : { op:'select', table:'leads', orderBy:'id DESC', limit:300 };
+  const d = await db(query);
   const leads = d.results||[];
   document.getElementById('lead-count').textContent = leads.length;
+
+  const gymsD = await db({ op:'select', table:'gyms', limit:200 });
+  const gmap = {}; (gymsD.results||[]).forEach(g=>gmap[g.id]=g.name);
 
   document.getElementById('lead-rows').innerHTML = leads.length ? leads.map(l=>{
     const contact = [l.phone, l.email].filter(Boolean).join(' \u00b7 ') || '\u2014';
     return '<tr><td style="font-weight:600">'+esc(l.business_name)+'</td>'+
       '<td>'+esc((l.lead_type||'').replace(/_/g,' '))+'</td>'+
+      '<td>'+esc(gmap[l.gym_id]||'\u2014')+'</td>'+
       '<td style="font-size:12px;color:var(--muted)">'+esc(contact)+'</td>'+
       '<td><span class="pill '+(l.status==='new'?'new':'')+'">'+esc(l.status||'new')+'</span></td></tr>';
-  }).join('') : '<tr><td colspan="4" class="empty">No prospects yet. Run the harvester or add one manually above.</td></tr>';
+  }).join('') : '<tr><td colspan="5" class="empty">No prospects yet. Run the harvester or add one manually above.</td></tr>';
 }
 
-loadLeads();
+(async function(){ await loadGymSelects(); await loadLeads(); })();
 </script>
 </body>
 </html>

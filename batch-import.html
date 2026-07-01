@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Batch Import Clients — Retro Fitness PT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--green-light:#ECFDF3;--amber:#D98A0B;--amber-light:#FFFBEB;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:20}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)}
+  .topbar .spacer{flex:1}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}
+  .btn.red:hover{background:var(--red-dk)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 20px 60px}
+  .page-head h1{font-family:'Oswald';font-size:26px;font-weight:700;text-transform:uppercase;margin:0 0 4px}
+  .page-head p{font-size:13px;color:var(--muted);margin:0 0 20px}
+  .summary-bar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 20px;display:flex;gap:28px;margin-bottom:18px;font-size:13px}
+  .summary-bar strong{font-size:22px;display:block;font-family:'Oswald'}
+  .client-card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
+  .card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .card-header-left{display:flex;align-items:center;gap:12px}
+  .avatar{width:38px;height:38px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-size:14px;font-weight:700;flex-shrink:0}
+  .client-name{font-weight:700;font-size:14px}
+  .client-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .status-badge{font-size:10.5px;font-weight:700;letter-spacing:.4px;padding:4px 10px;border-radius:20px;text-transform:uppercase}
+  .badge-ready{background:var(--green-light);color:var(--green)}
+  .badge-done{background:#e0f2fe;color:#0369a1}
+  .badge-error{background:#fee2e2;color:#991b1b}
+  .card-body{padding:14px 18px;font-size:12.5px;color:var(--muted);line-height:1.6;display:none}
+  .card-body.open{display:block}
+  .action-row{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:var(--soft)}
+  .import-status{font-size:12px;color:var(--muted);flex:1}
+  .import-status.ok{color:var(--green);font-weight:600}
+  .import-status.err{color:var(--red);font-weight:600}
+  .toggle-details{font-size:11.5px;color:var(--red);cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="t">Batch Import <span>Clients</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="command-center.html">← Command Center</a>
+</div>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>Batch Import Clients</h1>
+    <p>10 clients from consultation forms and InBody scans, ready to import into D1. Review, then import individually or all at once.</p>
+  </div>
+
+  <div class="summary-bar">
+    <div><strong id="total-count">0</strong>Clients</div>
+    <div><strong id="done-count">0</strong>Imported</div>
+    <div><strong id="fail-count">0</strong>Errors</div>
+  </div>
+
+  <div style="margin-bottom:18px;display:flex;gap:10px;">
+    <button class="btn red" onclick="importAll()">⬆ Import All</button>
+    <span style="font-size:12px;color:var(--muted);align-self:center;">Writes directly to your live D1 database via the Worker.</span>
+  </div>
+
+  <div id="cards"></div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+const CLIENTS = [
+  { first_name:'Anthony', last_name:'Smith', gender:'Male', status:'active_pt', package:'training', training_start_date:'2025-11-18',
+    goal_primary:'Lose 30 lbs, tone muscle, shoulder focus. Machinist, works 7-5 M-F. Readiness 4.5/5.',
+    coach_notes:'Age 20, InBody Nov 2025: 204.9 lb, 23.8% BF, SMM 89.5, BMI 29.4. High stress (7/10). High-protein diet, self-prepared meals. No prior trainer.' },
+  { first_name:'Anthony', last_name:'Mango', gender:'Male', status:'active_pt', package:'complete', training_start_date:'2026-04-07',
+    goal_primary:'12-month transformation. Build strength, confidence, long-term health. Target 12-15 lb fat loss.',
+    coach_notes:'InBody Apr 2026: 202.2 lb, 18.5% BF, SMM 95.0, BMI 29.0. Strong muscle baseline. 4-phase program: Foundation, Strength, Recomposition, Optimization.' },
+  { first_name:'Bill', last_name:'Dolbow', gender:'Male', status:'active_pt', package:'training', training_start_date:'2026-05-19',
+    goal_primary:'Reduce body fat, improve overall health and strength. Started active ~2 months ago.',
+    coach_notes:'Age 68, retired. InBody May 2026: 245.1 lb, 37.6% BF, SMM 85.8, BMI 35.2. MEDICAL: bilateral knee surgery, statin + blood pressure meds, Penicillin allergy.' },
+  { first_name:'Bill', last_name:'Richards', gender:'Male', status:'active_pt', package:'training', training_start_date:'2026-06-08',
+    goal_primary:'Reduce body fat 36.4% to 18-25%, improve strength and independence. 90-day target: 12-15 lb fat loss.',
+    coach_notes:'Age 72. InBody Jun 2026: 208.2 lb, 36.4% BF, SMM 74.5, BMI 33.6. MEDICAL: cardiac history, stents, Repatha. HR monitoring every session, avoid Valsalva. Coach Roman 1x/week, Ted advisor monthly. Left leg 95.5% - stability priority.' },
+  { first_name:'Christopher', last_name:'Baker', gender:'Male', status:'active_pt', package:'complete', training_start_date:'2026-01-13',
+    goal_primary:'Return to structured training after travel breaks. Maintain body composition, build consistency.',
+    coach_notes:'InBody May 2026: 173.4 lb, 22.8% BF, SMM 75.4, BMI 24.2. 18 sessions in May, 0 missed. High energy and confidence. Nutrition: 1650 kcal actual vs 2300 target, needs more calories.' },
+  { first_name:'Chris', last_name:'Rowan', gender:'Male', status:'active_pt', package:'complete', training_start_date:'2026-02-04',
+    goal_primary:'Lose 120 lbs (305 to ~185 lb). Preserve lean mass during aggressive fat loss.',
+    coach_notes:'Age 50, 5ft7in. InBody May 2026: 305.4 lb, 46.6% BF, SMM 93.0, BMI 47.8. MEDICAL: pancreatic condition, strict 25% fat limit required, anti-inflammatory fat sources only. Feb 2026 nutrition: 1988 kcal, only 95g protein (target 225g). Strength: 225lb Incline Bench, 130lb Lat Pulldown.' },
+  { first_name:'Gage', last_name:'Hines', gender:'Male', status:'active_pt', package:'training', training_start_date:'',
+    goal_primary:'Slim down and build muscle. Lose 20 lbs, arm focus.',
+    coach_notes:'Age 30, Pet Care Tech, very active job. BP 134/82, HR 84. No InBody on file yet. 4x/week plan. No prior trainer. Readiness 4/5.' },
+  { first_name:'Mark', last_name:'Berlin', gender:'Male', status:'active_pt', package:'training', training_start_date:'',
+    goal_primary:'Post-surgery recovery and healthier living. Maintain current weight, arm and leg focus.',
+    coach_notes:'Age 69, semi-retired photographer. InBody Nov 2025: 140.3 lb, 24.8% BF, SMM 58.0, BMI 22.7. MEDICAL: bypass heart surgery within past 5 years - primary concern, monitor intensity, avoid Valsalva. Trigger finger. All limbs below standard (arms 86-87%, legs 85-86%) - strengthening priority. 3x/week Mon/Wed/Fri 8am. Readiness 5/5.' },
+  { first_name:'Rick', last_name:'Cooper', gender:'Male', status:'active_pt', package:'training', training_start_date:'',
+    goal_primary:'Get back in shape. Keep weight down, increase core strength. Lose 10 lbs from 197.4 lb.',
+    coach_notes:'Age 61, Consultant, sedentary job. InBody Oct 2025: 193.6 lb, 23.4% BF, SMM 83.6, BMI 28.6 - improving from prior scan. MEDICAL: prostate and hernia surgery, right shoulder and right knee history. Well-balanced segmentally. Readiness 4/5.' },
+  { first_name:'Sanjay', last_name:'', gender:'Male', status:'active_pt', package:'training', training_start_date:'2025-07-09',
+    goal_primary:'Body recomposition. Lost 6.8 lb and 4.5% body fat Jul-Sep 2025.',
+    coach_notes:'Height 5ft10in. Sep 2025 measurements: 163.3 lb, 18.5% BF. Full tape measurements on file. RESTING HR jumped 72 to 114 bpm Jul-Sep - flag for follow-up conversation. 8 Trainerize workout programs on file covering full body split. No InBody scan yet, only tape measurements.' }
+];
+
+let importState = {};
+
+function initials(c){ return ((c.first_name[0]||'')+(c.last_name[0]||'')).toUpperCase() || c.first_name.slice(0,2).toUpperCase(); }
+
+function renderCards(){
+  document.getElementById('total-count').textContent = CLIENTS.length;
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  CLIENTS.forEach((c, i) => {
+    const state = importState[i] || 'ready';
+    const badgeClass = state === 'done' ? 'badge-done' : state === 'error' ? 'badge-error' : 'badge-ready';
+    const badgeText = state === 'done' ? 'Imported' : state === 'error' ? 'Error' : 'Ready';
+    const card = document.createElement('div');
+    card.className = 'client-card';
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="avatar">${initials(c)}</div>
+          <div>
+            <div class="client-name">${c.first_name} ${c.last_name}</div>
+            <div class="client-meta">${c.package} · ${c.training_start_date || 'no start date on file'}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="toggle-details" onclick="toggleCard(${i})">Details</span>
+          <span class="status-badge ${badgeClass}" id="badge-${i}">${badgeText}</span>
+        </div>
+      </div>
+      <div class="card-body" id="body-${i}">
+        <strong>Goal:</strong> ${c.goal_primary}<br><br>
+        <strong>Coach Notes:</strong> ${c.coach_notes}
+      </div>
+      <div class="action-row">
+        <button class="btn red" id="btn-${i}" onclick="importClient(${i})">Import</button>
+        <span class="import-status" id="status-${i}">Ready</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleCard(i){
+  document.getElementById('body-'+i).classList.toggle('open');
+}
+
+async function db(body){
+  const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+async function importClient(i){
+  const c = CLIENTS[i];
+  const btn = document.getElementById('btn-'+i);
+  const status = document.getElementById('status-'+i);
+  const badge = document.getElementById('badge-'+i);
+  btn.disabled = true;
+  status.textContent = 'Checking for duplicates...';
+  status.className = 'import-status';
+
+  try {
+    // Check for existing client with same first+last name to avoid duplicates
+    const existing = await db({ op:'select', table:'clients', where:{ first_name:c.first_name, last_name:c.last_name }, limit:1 });
+    if (existing.results && existing.results.length) {
+      importState[i] = 'done';
+      badge.textContent = 'Already exists';
+      badge.className = 'status-badge badge-done';
+      status.textContent = '✓ Already in D1 as client ID ' + existing.results[0].id + ' — skipped.';
+      status.className = 'import-status ok';
+      btn.textContent = '✓ Skipped';
+      updateCounts();
+      return;
+    }
+
+    status.textContent = 'Inserting...';
+    const payload = {
+      first_name: c.first_name,
+      last_name: c.last_name || '',
+      gender: c.gender,
+      status: c.status,
+      package: c.package,
+      goal_primary: c.goal_primary,
+      coach_notes: c.coach_notes,
+      advisor: 'Ted Scholl',
+      coach: 'Ted Scholl'
+    };
+    if (c.training_start_date) payload.training_start_date = c.training_start_date;
+
+    const res = await db({ op:'insert', table:'clients', values: payload });
+    if (res.error) throw new Error(res.error);
+
+    importState[i] = 'done';
+    badge.textContent = 'Imported';
+    badge.className = 'status-badge badge-done';
+    status.textContent = '✓ Imported — client ID ' + res.id;
+    status.className = 'import-status ok';
+    btn.textContent = '✓ Done';
+  } catch(e) {
+    importState[i] = 'error';
+    badge.textContent = 'Error';
+    badge.className = 'status-badge badge-error';
+    status.textContent = '✗ ' + e.message;
+    status.className = 'import-status err';
+    btn.disabled = false;
+  }
+  updateCounts();
+}
+
+async function importAll(){
+  for (let i = 0; i < CLIENTS.length; i++) {
+    if (importState[i] === 'done') continue;
+    await importClient(i);
+    await new Promise(r => setTimeout(r, 300));
+  }
+}
+
+function updateCounts(){
+  document.getElementById('done-count').textContent = Object.values(importState).filter(s => s === 'done').length;
+  document.getElementById('fail-count').textContent = Object.values(importState).filter(s => s === 'error').length;
+}
+
+renderCards();
+</script>
+</body>
+</html>
