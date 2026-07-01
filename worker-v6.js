@@ -22,7 +22,7 @@ const HARVEST_QUERIES = [
 const ALLOWED_TABLES = new Set([
   'clients','consultations','followups','checkins','programs','training_sessions',
   'lead_sources','leads','touchpoints','outreach_log',
-  'progress_photos','measurements','eod_reports',
+  'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans',
   'inbody_scans','workouts',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts',
