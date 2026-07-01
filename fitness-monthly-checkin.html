@@ -325,7 +325,7 @@
     <div style="background:#FFF4E5;border:1px solid #F0C98A;border-radius:10px;padding:12px 16px;margin:0 0 16px;font-size:13px;color:#8A5A0B;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-size:18px">📸</span>
       <span style="flex:1;min-width:200px"><b>Reminder:</b> capture front, side and back progress photos and take body measurements for this client.</span>
-      <a href="client-profile.html" target="_blank" style="color:#B0121F;font-weight:600;text-decoration:none;white-space:nowrap">Open client profile →</a>
+      <a id="profileLink" href="client-profile.html" target="_blank" style="color:#B0121F;font-weight:600;text-decoration:none;white-space:nowrap">Open client profile →</a>
     </div>
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:12px"><a href="command-center.html" style="font-size:12px;padding:6px 12px;border:1px solid #DADEE3;border-radius:6px;text-decoration:none;color:#444;white-space:nowrap">← Command Center</a><div class="breadcrumb">Monthly Check-In &rsaquo; <strong id="breadcrumb-label">Upload & pre-fill</strong></div></div>
@@ -1560,6 +1560,8 @@ async function _fillPrevFromLastCheckin(clientId){
 }
 function _fillFromClient(c){
   MATCHED_CLIENT=c;
+  const pl=document.getElementById('profileLink');
+  if(pl && c.id) pl.href='client-profile.html?client='+c.id;
   const set=(id,v)=>{ const e=document.getElementById(id); if(e&&!e.value&&v) e.value=v; };
   set('name',(((c.first_name||'')+' '+(c.last_name||'')).trim()));
   set('email',c.email); set('phone',c.phone); set('client-coach',c.coach);
