@@ -991,16 +991,8 @@
     <div class="config-field">
       <label>Google Sheets ID</label>
       <input type="text" id="cfg-sheet-id" value="1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g">
-      <div class="config-note">Already pre-filled with your database sheet.</div>
-      <a class="sheets-link" href="https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g/edit" target="_blank">📊 Open your Google Sheet ↗</a>
-    </div>
-
-    <div class="config-field">
-      <label>Google Sheets API Key</label>
-      <input type="password" id="cfg-gsheets-key" placeholder="AIza...">
-      <div class="config-note">
-        Get a free key: <a href="https://console.cloud.google.com/apis/library/sheets.googleapis.com" target="_blank" style="color:var(--accent)">Enable Sheets API ↗</a> → Credentials → Create API Key. Make sure Google Sheets API is enabled.
-      </div>
+      <div class="config-note">Data is saved to Cloudflare D1 via the Worker — no Sheets connection needed.</div>
+      <div style="background:#1a2a1a;border:1px solid #2a4a2a;border-radius:8px;padding:10px 14px;font-size:12px;color:#4ade80;">✓ Connected to D1 database via broken-cake-e9c2.tedscholl.workers.dev</div>
     </div>
 
     <div class="config-field">
@@ -1965,6 +1957,37 @@
   </main>
 </div><!-- /app -->
 
+<!-- ── DRAFT PANEL ── -->
+<div id="draft-panel" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;">
+  <div style="background:#1a1a1a;border-radius:16px;width:100%;max-width:540px;border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div style="padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-family:var(--font-display);font-size:17px;font-weight:700;color:#f0ede6;letter-spacing:.03em;">📂 Saved Drafts</div>
+      <button onclick="closeDraftPanel()" style="background:none;border:none;cursor:pointer;color:#888;font-size:22px;line-height:1;padding:0;">&times;</button>
+    </div>
+    <div id="draft-list" style="max-height:420px;overflow-y:auto;"></div>
+    <div style="padding:12px 22px;border-top:1px solid rgba(255,255,255,.08);">
+      <button onclick="closeDraftPanel()" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#888;font-size:13px;cursor:pointer;font-family:var(--font);">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CLIENT SEARCH PANEL ── -->
+<div id="client-search-panel" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;">
+  <div style="background:#1a1a1a;border-radius:16px;width:100%;max-width:540px;border:1px solid rgba(255,255,255,.1);box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div style="padding:18px 22px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-family:var(--font-display);font-size:17px;font-weight:700;color:#f0ede6;">🔍 Find Existing Client</div>
+      <button onclick="closeClientSearch()" style="background:none;border:none;cursor:pointer;color:#888;font-size:22px;line-height:1;padding:0;">&times;</button>
+    </div>
+    <div style="padding:14px 22px;border-bottom:1px solid rgba(255,255,255,.08);">
+      <input id="client-search-input" type="text" placeholder="Search by name, phone, or email..." oninput="filterClients(this.value)" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#f0ede6;font-size:13px;font-family:var(--font);">
+    </div>
+    <div id="client-search-results" style="max-height:340px;overflow-y:auto;"></div>
+    <div style="padding:12px 22px;border-top:1px solid rgba(255,255,255,.08);">
+      <button onclick="closeClientSearch()" style="width:100%;padding:10px;border-radius:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#888;font-size:13px;cursor:pointer;font-family:var(--font);">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 
 function getApiUrl() {
@@ -2012,7 +2035,7 @@ function openConfig() {
   const overlay = document.getElementById('config-overlay');
   overlay.style.display = 'flex';
   if (getCfg('apiKey')) document.getElementById('cfg-api-key').value = getCfg('apiKey');
-  if ('AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE') document.getElementById('cfg-gsheets-key').value = 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
+  // Sheets API key retired — D1 is primary
   if (getCfg('email')) document.getElementById('cfg-notify-email').value = getCfg('email');
 }
 
@@ -2442,310 +2465,8 @@ async function generateAssessment() {
 
 
 function renderBodyCompChart() {
-  var lean   = parseFloat(document.getElementById('lean-mass') ? document.getElementById('lean-mass').value : 0) || 0;
-  var fat    = parseFloat(document.getElementById('fat-mass') ? document.getElementById('fat-mass').value : 0) || 0;
-  var pbf    = parseFloat(document.getElementById('pbf') ? document.getElementById('pbf').value : 0) || 0;
-  var gender = document.getElementById('gender') ? (document.getElementById('gender').value || '').toLowerCase() : '';
-
-  if (!lean && !fat) return;
-
-  var totalWeight = lean + fat;
-  // Aggressive 12-month fat loss: higher BF% = more loss capacity
-  var fatLossPct  = pbf > 35 ? 0.55 : pbf > 30 ? 0.48 : pbf > 25 ? 0.42 : pbf > 20 ? 0.35 : 0.28;
-  var projFatLoss = Math.min(fat * fatLossPct, 65);
-  var projFat     = Math.max(fat - projFatLoss, totalWeight * 0.06);
-  // Check if goal is weight gain / bulking
-  var goalsText   = (document.getElementById('goals') ? document.getElementById('goals').value : '').toLowerCase();
-  var wantGain    = /bulk|gain weight|gain mass|weight gain|add weight|put on weight|heavier/.test(goalsText);
-  var isFem       = gender.indexOf('f') === 0 || gender === 'female';
-  // Lean mass: moderate gain for everyone; more if bulking goal
-  var leanGain    = wantGain ? (isFem ? 12 : 20) : (isFem ? 6 : 10);
-  var projLean    = lean + leanGain;
-  var projWeight  = projLean + projFat;
-  // If not a bulk goal and projected weight > current, cap it so we always show a decrease
-  if (!wantGain && projWeight >= totalWeight) {
-    projLean = Math.max(lean, totalWeight * 0.88 - projFat);
-    projWeight = projLean + projFat;
-  }
-  var projPbf     = ((projFat / projWeight) * 100).toFixed(1);
-  var currPbf     = pbf ? pbf.toFixed(1) : ((fat / totalWeight) * 100).toFixed(1);
-
-  var wrap = document.getElementById('body-comp-chart-wrap');
-  if (!wrap) return;
-  wrap.style.display = 'block';
-
-  var maxVal = Math.max(totalWeight, projWeight) * 1.15;
-
-  function barPct(val) { return Math.round((val / maxVal) * 100); }
-
-  function barRow(label, nowVal, projVal, nowColor, projColor) {
-    var diff    = projVal - nowVal;
-    var diffStr = (diff > 0 ? '+' : '') + diff.toFixed(1) + ' lb';
-    var diffColor = diff <= 0 ? '#4caf7d' : '#d4a843';
-    var nowPct  = barPct(nowVal);
-    var projPct = barPct(projVal);
-    return '<div style="margin-bottom:18px">' +
-      '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">' +
-        '<span style="font-size:13px;font-weight:600;color:var(--text)">' + label + '</span>' +
-        '<span style="font-size:11px;color:' + diffColor + ';font-family:var(--mono)">' + diffStr + '</span>' +
-      '</div>' +
-      '<div style="margin-bottom:5px">' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          '<span style="font-size:11px;color:var(--text3);width:60px;flex-shrink:0">Today</span>' +
-          '<div style="flex:1;height:22px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">' +
-            '<div style="height:100%;width:' + nowPct + '%;background:' + nowColor + ';border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px">' +
-              '<span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">' + nowVal.toFixed(1) + ' lb</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div>' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
-          '<span style="font-size:11px;color:var(--text3);width:60px;flex-shrink:0">12 Mo.</span>' +
-          '<div style="flex:1;height:22px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden">' +
-            '<div style="height:100%;width:' + projPct + '%;background:' + projColor + ';border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px">' +
-              '<span style="font-size:11px;font-weight:700;color:#fff;white-space:nowrap">' + projVal.toFixed(1) + ' lb</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }
-
-  function statCard(icon, label, now, after, color) {
-    return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px 16px">' +
-      '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">' + icon + ' ' + label + '</div>' +
-      '<div style="display:flex;align-items:baseline;gap:8px">' +
-        '<div>' +
-          '<div style="font-size:10px;color:var(--text3)">Today</div>' +
-          '<div style="font-size:20px;font-weight:700">' + now + '</div>' +
-        '</div>' +
-        '<div style="font-size:16px;color:var(--text3)">to</div>' +
-        '<div>' +
-          '<div style="font-size:10px;color:var(--text3)">12 Months</div>' +
-          '<div style="font-size:20px;font-weight:700;color:' + color + '">' + after + '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }
-
-  var barsEl = document.getElementById('body-comp-bars');
-  if (barsEl) {
-    barsEl.innerHTML =
-      barRow('Lean Mass',    lean,        projLean,   'rgba(90,142,200,0.8)',  'rgba(76,175,125,0.9)') +
-      barRow('Body Fat',     fat,         projFat,    'rgba(212,168,67,0.8)',  'rgba(76,175,125,0.6)') +
-      barRow(wantGain ? 'Total Weight' : 'Goal Weight', totalWeight, projWeight, 'rgba(155,111,212,0.7)', 'rgba(76,175,125,0.7)');
-  }
-
-  var stats = document.getElementById('body-comp-stats');
-  if (stats) {
-    stats.innerHTML =
-      statCard('BF%',    'Body Fat',   currPbf + '%',               projPbf + '%',                           '#4caf7d') +
-      statCard('Muscle', 'Lean Mass',  lean.toFixed(1) + ' lb',     projLean.toFixed(1) + ' lb',             '#4caf7d') +
-      statCard('Lost',   'Fat Loss',   fat.toFixed(1) + ' lb',      '-' + (fat - projFat).toFixed(1) + ' lb','#4caf7d') +
-      statCard('Weight', 'Body Wt.',   totalWeight.toFixed(1) + ' lb', projWeight.toFixed(1) + ' lb',        '#4caf7d');
-  }
-
-  // Silhouette side-by-side — realistic anatomical figures
-  var sil = document.getElementById('body-silhouette');
-  if (sil) {
-    var bfPctNow  = pbf ? parseFloat(pbf) : ((fat / totalWeight) * 100);
-    var bfPctProj = parseFloat(projPbf);
-    var isFemale  = (gender.indexOf('f') === 0 || gender === 'female' || gender === 'woman' || gender === 'w');
-
-    function lerp(a, b, t) { return a + (b - a) * t; }
-    function cl(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-    function bfT(pct, f) { return cl((pct - (f ? 14 : 8)) / ((f ? 42 : 36) - (f ? 14 : 8)), 0, 1); }
-
-    function buildFigureSVG(pct, f, col) {
-      var t = bfT(pct, f), t2 = t * t, cx = 54, W = 108;
-
-      var hRx = lerp(9.5, 12, t), hRy = lerp(12, 13.5, t), hCy = 14;
-      var skullPath = 'M' + (cx - hRx * 0.6) + ' ' + (hCy - hRy)
-        + ' Q' + (cx - hRx) + ' ' + (hCy - hRy * 0.9) + ' ' + (cx - hRx) + ' ' + (hCy - hRy * 0.1)
-        + ' Q' + (cx - hRx * 0.95) + ' ' + (hCy + hRy * 0.6) + ' ' + (cx - hRx * 0.5) + ' ' + (hCy + hRy)
-        + ' Q' + cx + ' ' + (hCy + hRy * 1.1) + ' ' + (cx + hRx * 0.5) + ' ' + (hCy + hRy)
-        + ' Q' + (cx + hRx * 0.95) + ' ' + (hCy + hRy * 0.6) + ' ' + (cx + hRx) + ' ' + (hCy - hRy * 0.1)
-        + ' Q' + (cx + hRx) + ' ' + (hCy - hRy * 0.9) + ' ' + (cx + hRx * 0.6) + ' ' + (hCy - hRy) + ' Z';
-      var jawPath = 'M' + (cx - hRx * 0.95) + ' ' + (hCy - hRy * 0.1)
-        + ' Q' + (cx - hRx * 0.92) + ' ' + (hCy + hRy * 0.6) + ' ' + (cx - hRx * 0.48) + ' ' + (hCy + hRy)
-        + ' Q' + cx + ' ' + (hCy + hRy * 1.12) + ' ' + (cx + hRx * 0.48) + ' ' + (hCy + hRy)
-        + ' Q' + (cx + hRx * 0.92) + ' ' + (hCy + hRy * 0.6) + ' ' + (cx + hRx * 0.95) + ' ' + (hCy - hRy * 0.1) + ' Z';
-
-      var nW = lerp(f ? 5.5 : 7, f ? 8 : 11, t);
-      var nTop = hCy + hRy * 0.82, nBot = nTop + lerp(8, 11, t);
-      var nPath = 'M' + (cx - nW * 0.8) + ' ' + nTop + ' L' + (cx - nW) + ' ' + nBot
-        + ' L' + (cx + nW) + ' ' + nBot + ' L' + (cx + nW * 0.8) + ' ' + nTop + ' Z';
-
-      var shlY = nBot + lerp(0, 2, t);
-      var shlW = lerp(f ? 17 : 21, f ? 23 : 29, t);
-      var trapPath = 'M' + (cx - nW) + ' ' + nBot
-        + ' Q' + (cx - shlW * 0.55) + ' ' + (shlY - 2) + ' ' + (cx - shlW) + ' ' + (shlY + lerp(3, 5, t))
-        + ' L' + (cx + shlW) + ' ' + (shlY + lerp(3, 5, t))
-        + ' Q' + (cx + shlW * 0.55) + ' ' + (shlY - 2) + ' ' + (cx + nW) + ' ' + nBot + ' Z';
-
-      var pectY = shlY + lerp(f ? 10 : 9, f ? 14 : 13, t);
-      var pectW = lerp(f ? 13 : 16, f ? 19 : 26, t);
-      var ribY  = shlY + lerp(f ? 16 : 15, f ? 21 : 20, t);
-      var ribW  = lerp(f ? 12 : 14, f ? 18 : 24, t);
-      var waistY = shlY + lerp(f ? 25 : 23, f ? 33 : 31, t);
-      var waistW = lerp(f ? 10 : 11, f ? 18 : 22, t);
-      var bellyT = cl(t * t * 1.6, 0, 1);
-      var bellyY = lerp(waistY, waistY + 5, t);
-      var bellyW = lerp(f ? 11 : 12, f ? 21 : 28, bellyT);
-      var hipTopY = waistY + lerp(f ? 4 : 3, f ? 8 : 6, t);
-      var hipW    = lerp(f ? 16 : 14, f ? 24 : 21, t);
-      var hipBotY = hipTopY + lerp(f ? 14 : 11, f ? 20 : 17, t);
-      var crotY   = hipBotY + lerp(3, 6, t);
-
-      var torso;
-      if (f) {
-        var bustW = lerp(14, 22, t), bustCp = lerp(4, 9, t), bustY = pectY + lerp(4, 8, t);
-        torso = 'M' + (cx - nW) + ' ' + nBot
-          + ' L' + (cx - shlW) + ' ' + (shlY + lerp(3, 5, t))
-          + ' C' + (cx - bustW - bustCp) + ' ' + bustY + ' ' + (cx - waistW * 1.1) + ' ' + (waistY - 5) + ' ' + (cx - waistW) + ' ' + waistY
-          + ' C' + (cx - hipW * 0.9) + ' ' + hipTopY + ' ' + (cx - hipW) + ' ' + (hipBotY - 5) + ' ' + (cx - hipW + 2) + ' ' + hipBotY
-          + ' L' + (cx - 5) + ' ' + crotY + ' L' + (cx + 5) + ' ' + crotY
-          + ' L' + (cx + hipW - 2) + ' ' + hipBotY
-          + ' C' + (cx + hipW) + ' ' + (hipBotY - 5) + ' ' + (cx + hipW * 0.9) + ' ' + hipTopY + ' ' + (cx + waistW) + ' ' + waistY
-          + ' C' + (cx + waistW * 1.1) + ' ' + (waistY - 5) + ' ' + (cx + bustW + bustCp) + ' ' + bustY + ' ' + (cx + shlW) + ' ' + (shlY + lerp(3, 5, t))
-          + ' L' + (cx + nW) + ' ' + nBot + ' Z';
-      } else {
-        torso = 'M' + (cx - nW) + ' ' + nBot
-          + ' L' + (cx - shlW) + ' ' + (shlY + lerp(3, 5, t))
-          + ' C' + (cx - pectW) + ' ' + (pectY + 4) + ' ' + (cx - bellyW) + ' ' + (bellyY - 5) + ' ' + (cx - bellyW) + ' ' + bellyY
-          + ' C' + (cx - bellyW) + ' ' + (bellyY + 5) + ' ' + (cx - hipW) + ' ' + hipTopY + ' ' + (cx - hipW) + ' ' + hipBotY
-          + ' L' + (cx - 5) + ' ' + crotY + ' L' + (cx + 5) + ' ' + crotY
-          + ' L' + (cx + hipW) + ' ' + hipBotY
-          + ' C' + (cx + hipW) + ' ' + hipTopY + ' ' + (cx + bellyW) + ' ' + (bellyY + 5) + ' ' + (cx + bellyW) + ' ' + bellyY
-          + ' C' + (cx + bellyW) + ' ' + (bellyY - 5) + ' ' + (cx + pectW) + ' ' + (pectY + 4) + ' ' + (cx + shlW) + ' ' + (shlY + lerp(3, 5, t))
-          + ' L' + (cx + nW) + ' ' + nBot + ' Z';
-      }
-
-      var uArmW = lerp(f ? 7 : 9, f ? 11 : 15, t);
-      var lArmW = lerp(f ? 6 : 7.5, f ? 9 : 12, t);
-      var elbLx  = cx - shlW - lerp(9, 13, t), elbRx = cx + shlW + lerp(9, 13, t);
-      var elbY   = shlY + lerp(22, 28, t);
-      var wristLx = cx - shlW - lerp(7, 10, t), wristRx = cx + shlW + lerp(7, 10, t);
-      var wristY  = elbY + lerp(22, 27, t);
-      var handY   = wristY + lerp(9, 12, t);
-      var handW   = lerp(f ? 7 : 8, f ? 10 : 12, t), handH = lerp(12, 15, t);
-
-      function armPath(side) {
-        var s = side < 0 ? -1 : 1;
-        var tx = cx + s * shlW - s * 2;
-        var mx = cx + s * (shlW + lerp(8, 12, t));
-        var wx = cx + s * (shlW + lerp(6, 9, t));
-        var aw2 = uArmW / 2, lw2 = lArmW / 2;
-        return 'M' + (tx - s * aw2) + ' ' + (shlY + 3)
-          + ' Q' + (mx - s * aw2 * 0.7) + ' ' + ((shlY + elbY) / 2) + ' ' + (mx - s * lw2 * 0.8) + ' ' + elbY
-          + ' L' + (wx - s * lw2 * 0.6) + ' ' + wristY
-          + ' L' + (wx + s * lw2 * 0.6) + ' ' + wristY
-          + ' Q' + (mx + s * lw2 * 0.8) + ' ' + elbY + ' ' + (mx + s * aw2 * 0.7) + ' ' + ((shlY + elbY) / 2)
-          + ' L' + (tx + s * aw2) + ' ' + (shlY + 3) + ' Z';
-      }
-      function handPath(side) {
-        var s = side < 0 ? -1 : 1;
-        var hx = cx + s * (shlW + lerp(6, 9, t));
-        return 'M' + (hx - handW / 2) + ' ' + wristY
-          + ' Q' + (hx - handW / 2 - s) + ' ' + (wristY + handH * 0.5) + ' ' + (hx - handW / 3) + ' ' + handY
-          + ' Q' + hx + ' ' + (handY + 4) + ' ' + (hx + handW / 3) + ' ' + handY
-          + ' Q' + (hx + handW / 2 + s) + ' ' + (wristY + handH * 0.5) + ' ' + (hx + handW / 2) + ' ' + wristY + ' Z';
-      }
-
-      var lgW = lerp(f ? 10 : 11, f ? 15 : 17, t);
-      var kneeXL = cx - lerp(8, 14, t), kneeXR = cx + lerp(8, 14, t);
-      var kneeY  = crotY + lerp(36, 42, t);
-      var ankXL  = cx - lerp(5, 9, t), ankXR = cx + lerp(5, 9, t);
-      var ankY   = kneeY + lerp(32, 37, t);
-      var calfBLx = cx - lerp(9, 14, t), calfBRx = cx + lerp(9, 14, t);
-
-      function legPath(side) {
-        var s = side < 0 ? -1 : 1;
-        var thX = cx + s * lerp(4, 6, t);
-        var kX  = side < 0 ? kneeXL : kneeXR;
-        var aX  = side < 0 ? ankXL  : ankXR;
-        var cX  = side < 0 ? calfBLx : calfBRx;
-        var lw2 = lgW / 2;
-        return 'M' + (thX - s * lw2 * 0.3) + ' ' + crotY
-          + ' C' + (thX - s * lw2) + ' ' + (crotY + 8) + ' ' + (kX - s * lw2 * 0.4) + ' ' + (kneeY - 6) + ' ' + (kX - s * lw2 * 0.35) + ' ' + kneeY
-          + ' C' + (cX - s * lw2 * 0.6) + ' ' + (kneeY + 8) + ' ' + (aX - s * lerp(2, 4, t)) + ' ' + (ankY - 6) + ' ' + (aX - s * lerp(2, 3, t)) + ' ' + ankY
-          + ' L' + (aX + s * lerp(2, 3, t)) + ' ' + ankY
-          + ' C' + (aX + s * lerp(2, 4, t)) + ' ' + (ankY - 6) + ' ' + (cX + s * lw2 * 0.6) + ' ' + (kneeY + 8) + ' ' + (kX + s * lw2 * 0.35) + ' ' + kneeY
-          + ' C' + (kX + s * lw2 * 0.4) + ' ' + (kneeY - 6) + ' ' + (thX + s * lw2) + ' ' + (crotY + 8) + ' ' + (thX + s * lw2 * 0.3) + ' ' + crotY + ' Z';
-      }
-      var footH = lerp(5, 7, t), footFwd = lerp(8, 11, t);
-      function footPath(side) {
-        var aX = side < 0 ? ankXL : ankXR;
-        var fwd = side < 0 ? -footFwd : footFwd;
-        return 'M' + (aX - lerp(3, 5, t)) + ' ' + ankY
-          + ' Q' + (aX + fwd * 0.3) + ' ' + (ankY + footH) + ' ' + (aX + fwd) + ' ' + (ankY + footH * 0.6)
-          + ' Q' + (aX + fwd * 1.2) + ' ' + (ankY + footH * 0.3) + ' ' + (aX + fwd * 0.8) + ' ' + ankY + ' Z';
-      }
-
-      var detail = '';
-      var mA = cl((0.6 - t) * 0.45, 0, 0.22);
-      if (!f && mA > 0.02) {
-        var pLY = pectY + lerp(6, 9, t);
-        detail += '<line x1="' + cx + '" y1="' + (shlY + 4) + '" x2="' + cx + '" y2="' + pLY + '" stroke="' + col + '" stroke-width="1.1" opacity="' + mA + '"/>';
-        detail += '<path d="M' + (cx - lerp(10, 7, t)) + ' ' + pLY + ' Q' + (cx - 5) + ' ' + (pLY + 4) + ' ' + cx + ' ' + pLY + '" stroke="' + col + '" stroke-width="1" fill="none" opacity="' + mA + '"/>';
-        detail += '<path d="M' + (cx + lerp(10, 7, t)) + ' ' + pLY + ' Q' + (cx + 5) + ' ' + (pLY + 4) + ' ' + cx + ' ' + pLY + '" stroke="' + col + '" stroke-width="1" fill="none" opacity="' + mA + '"/>';
-        detail += '<path d="M' + (cx - ribW) + ' ' + ribY + ' Q' + (cx - waistW * 1.1) + ' ' + (ribY + lerp(1, 3, t)) + ' ' + (cx - waistW) + ' ' + (waistY - 4) + '" stroke="' + col + '" stroke-width="0.8" fill="none" opacity="' + (mA * 0.6) + '"/>';
-        detail += '<path d="M' + (cx + ribW) + ' ' + ribY + ' Q' + (cx + waistW * 1.1) + ' ' + (ribY + lerp(1, 3, t)) + ' ' + (cx + waistW) + ' ' + (waistY - 4) + '" stroke="' + col + '" stroke-width="0.8" fill="none" opacity="' + (mA * 0.6) + '"/>';
-        var abY = lerp(waistY - 7, waistY - 4, t);
-        detail += '<line x1="' + (cx - lerp(5, 4, t)) + '" y1="' + abY + '" x2="' + (cx + lerp(5, 4, t)) + '" y2="' + abY + '" stroke="' + col + '" stroke-width="0.8" opacity="' + (mA * 0.8) + '"/>';
-      }
-      if (f && mA > 0.02) {
-        detail += '<path d="M' + (cx - nW * 0.9) + ' ' + (nBot + 2) + ' Q' + (cx - shlW * 0.6) + ' ' + (shlY + 4) + ' ' + (cx - shlW + 4) + ' ' + (shlY + 5) + '" stroke="' + col + '" stroke-width="0.9" fill="none" opacity="' + (mA * 0.9) + '"/>';
-        detail += '<path d="M' + (cx + nW * 0.9) + ' ' + (nBot + 2) + ' Q' + (cx + shlW * 0.6) + ' ' + (shlY + 4) + ' ' + (cx + shlW - 4) + ' ' + (shlY + 5) + '" stroke="' + col + '" stroke-width="0.9" fill="none" opacity="' + (mA * 0.9) + '"/>';
-      }
-      var kcA = cl((0.7 - t) * 0.3, 0, 0.18);
-      if (kcA > 0.02) {
-        detail += '<ellipse cx="' + kneeXL + '" cy="' + kneeY + '" rx="' + lerp(3, 2, t) + '" ry="' + lerp(2.5, 1.8, t) + '" fill="none" stroke="' + col + '" stroke-width="0.7" opacity="' + kcA + '"/>';
-        detail += '<ellipse cx="' + kneeXR + '" cy="' + kneeY + '" rx="' + lerp(3, 2, t) + '" ry="' + lerp(2.5, 1.8, t) + '" fill="none" stroke="' + col + '" stroke-width="0.7" opacity="' + kcA + '"/>';
-      }
-
-      var totalH = Math.round(ankY + footH + 10);
-      return '<svg width="' + W + '" height="' + totalH + '" viewBox="0 0 ' + W + ' ' + totalH + '" xmlns="http://www.w3.org/2000/svg">'
-        + '<ellipse cx="' + cx + '" cy="' + (totalH - 4) + '" rx="' + lerp(17, 24, t) + '" ry="4" fill="rgba(0,0,0,0.14)"/>'
-        + '<path d="' + armPath(-1) + '" fill="' + col + '" opacity="0.82"/>'
-        + '<path d="' + armPath(1)  + '" fill="' + col + '" opacity="0.82"/>'
-        + '<path d="' + handPath(-1) + '" fill="' + col + '" opacity="0.78"/>'
-        + '<path d="' + handPath(1)  + '" fill="' + col + '" opacity="0.78"/>'
-        + '<path d="' + legPath(-1) + '" fill="' + col + '" opacity="0.88"/>'
-        + '<path d="' + legPath(1)  + '" fill="' + col + '" opacity="0.88"/>'
-        + '<path d="' + footPath(-1) + '" fill="' + col + '" opacity="0.78"/>'
-        + '<path d="' + footPath(1)  + '" fill="' + col + '" opacity="0.78"/>'
-        + '<path d="' + torso + '" fill="' + col + '" opacity="0.9"/>'
-        + '<path d="' + trapPath + '" fill="' + col + '" opacity="0.88"/>'
-        + detail
-        + '<path d="' + nPath + '" fill="' + col + '" opacity="0.9"/>'
-        + '<path d="' + skullPath + '" fill="' + col + '" opacity="0.92"/>'
-        + '<path d="' + jawPath + '" fill="' + col + '" opacity="0.9"/>'
-        + '<path d="M' + (cx - hRx * 0.55) + ' ' + (hCy - 1) + ' Q' + cx + ' ' + (hCy - 3) + ' ' + (cx + hRx * 0.55) + ' ' + (hCy - 1) + '" stroke="' + col + '" stroke-width="' + (hRy * 0.18) + '" fill="none" opacity="0.2"/>'
-        + '</svg>';
-    }
-
-    var nowSVG  = buildFigureSVG(bfPctNow,  isFemale, 'rgba(212,168,67,0.92)');
-    var projSVG = buildFigureSVG(bfPctProj, isFemale, 'rgba(76,175,125,0.94)');
-
-    sil.innerHTML =
-      '<div style="font-size:9px;font-weight:700;color:var(--text3);text-align:center;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">Body Projection</div>' +
-      '<div style="display:flex;gap:6px;align-items:flex-end;justify-content:center">' +
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">' +
-          '<div style="font-size:9px;font-weight:700;color:rgba(212,168,67,0.95);letter-spacing:.06em;text-transform:uppercase">Now</div>' +
-          nowSVG +
-          '<div style="font-size:12px;font-weight:700;color:rgba(212,168,67,0.95)">' + bfPctNow.toFixed(1) + '%</div>' +
-          '<div style="font-size:9px;color:var(--text3)">body fat</div>' +
-        '</div>' +
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:2px">' +
-          '<div style="font-size:9px;font-weight:700;color:rgba(76,175,125,0.95);letter-spacing:.06em;text-transform:uppercase">12 Mo.</div>' +
-          projSVG +
-          '<div style="font-size:12px;font-weight:700;color:rgba(76,175,125,0.95)">' + bfPctProj.toFixed(1) + '%</div>' +
-          '<div style="font-size:9px;color:var(--text3)">body fat</div>' +
-        '</div>' +
-      '</div>';
-  }
+  // Body composition chart removed from consultation flow — data is in D1 client profile
+  return;
 }
 
 
@@ -2869,38 +2590,41 @@ function showDecline() {
 
 async function ensureSheetHeaders() { /* simplified */ }
 
+// Sheets write is retired — D1 is the primary store.
+// These stubs return true silently so existing call sites don't break.
 async function appendToSheet(tabName, rowValues) {
-  const url = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write';
+  console.log('[appendToSheet] retired — data written to D1. Tab was:', tabName);
+  return true;
+}
+async function ensureSheetTabs() { return; }
+async function appendRowIfTabExists() { return; }
+async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
+  console.log('[saveToPTTracker] retired — client saved to D1 via finalizeAccept.');
+  return true;
+}
+
+async function saveMeasurementsNow() {
+  var status = document.getElementById('meas-save-status');
+  if (status) status.textContent = 'Saving...';
+  var fields = ['neck','shoulders','chest','bicep-r','bicep-l','waist','hips','thigh-r','thigh-l','calf-r','calf-l','forearm'];
+  var payload = {
+    client_id: window._enrolledClientId || null,
+    measurement_date: new Date().toISOString().slice(0,10),
+    notes: (document.getElementById('meas-notes') || {}).value || ''
+  };
+  fields.forEach(function(f) {
+    var el = document.getElementById('meas-' + f);
+    if (el && el.value) payload[f.replace(/-/g,'_')] = parseFloat(el.value);
+  });
   try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({tab: tabName, row: rowValues})
-    });
-    const text = await resp.text();
-    const data = JSON.parse(text);
-    if (!data.ok) { console.error('Sheet error:', data.error); return false; }
-    console.log('Sheet write OK:', tabName);
-    return true;
-  } catch(e) { console.error('Sheet failed:', e.message); return false; }
+    var r = await dbCall({ op:'insert', table:'measurements', values: payload });
+    if (status) status.textContent = r && !r.error ? '✓ Measurements saved.' : 'Saved locally — sync later.';
+  } catch(e) {
+    if (status) status.textContent = 'Could not save: ' + e.message;
+  }
 }
 
-async function ensureSheetTabs() {
-  // We'll attempt to write headers to follow-up tabs on first load
-  // The main "Sheet1" already has All Intakes headers from creation
-  // We just ensure the tabs exist by writing headers if empty
-  const gKey = 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
-  if (!gKey) return;
-  const sheetId = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
 
-  const followHeaders = ['Follow-Up Date','Consultation Date','Member Name','Email','Phone','Age','Gender','Goals','Advisor','Status','Assessment Notes'];
-
-  // Try writing headers to Male Follow-Ups (will create row if tab exists, skip if not)
-  await appendRowIfTabExists(sheetId, gKey, 'Male Follow-Ups', followHeaders);
-  await appendRowIfTabExists(sheetId, gKey, 'Female Follow-Ups', followHeaders);
-}
-
-async function appendRowIfTabExists() { /* simplified */ }
 
 function buildIntakeRow(decision, freq, length, followUpDays) {
   // Calculate 6-week follow-up date
@@ -2966,102 +2690,10 @@ function buildFollowUpRow(followDate) {
 
 // ?? Google Drive: Create client folder + intake doc ??
 async function createClientFolder(name, gKey, assessmentContent) {
-  var parentName = 'PT Clients';
-  var driveBase = 'https://www.googleapis.com/drive/v3';
-  var uploadBase = 'https://www.googleapis.com/upload/drive/v3';
-
-  try {
-    // 1. Find or create "PT Clients" parent folder
-    var searchUrl = driveBase + '/files?q=' + encodeURIComponent(
-      'name="' + parentName + '" and mimeType="application/vnd.google-apps.folder" and trashed=false'
-    ) + '&key=' + gKey;
-    var searchResp = await fetch(searchUrl);
-    var searchData = await searchResp.json();
-    
-    var parentId = '';
-    if (searchData.files && searchData.files.length > 0) {
-      parentId = searchData.files[0].id;
-    } else {
-      // Create parent folder
-      var createResp = await fetch(driveBase + '/files?key=' + gKey, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: parentName,
-          mimeType: 'application/vnd.google-apps.folder'
-        })
-      });
-      var createData = await createResp.json();
-      parentId = createData.id;
-    }
-
-    if (!parentId) return null;
-
-    // 2. Create client subfolder
-    var clientResp = await fetch(driveBase + '/files?key=' + gKey, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: name,
-        mimeType: 'application/vnd.google-apps.folder',
-        parents: [parentId]
-      })
-    });
-    var clientData = await clientResp.json();
-    var clientFolderId = clientData.id;
-    if (!clientFolderId) return null;
-
-    // 3. Create intake assessment text file in folder
-    var docContent = assessmentContent;
-    var docResp = await fetch(uploadBase + '/files?uploadType=multipart&key=' + gKey, {
-      method: 'POST',
-      headers: { 'Content-Type': 'multipart/related; boundary=boundary123' },
-      body: '--boundary123\r\nContent-Type: application/json\r\n\r\n' +
-        JSON.stringify({
-          name: 'Intake Assessment - ' + new Date().toISOString().split('T')[0] + '.txt',
-          parents: [clientFolderId]
-        }) +
-        '\r\n--boundary123\r\nContent-Type: text/plain\r\n\r\n' +
-        docContent +
-        '\r\n--boundary123--'
-    });
-
-    var folderUrl = 'https://drive.google.com/drive/folders/' + clientFolderId;
-    return { folderId: clientFolderId, folderUrl: folderUrl };
-
-  } catch(e) {
-    console.error('Drive folder creation failed:', e);
-    return null;
-  }
+  // Google Drive folder creation retired — files stored in R2 via Worker
+  console.log('[createClientFolder] retired — use R2 via Worker for file storage');
+  return null;
 }
-
-// ?? Save to PT Member Progress Tracker ??
-async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
-  var row = [
-    new Date().toLocaleDateString('en-US'),
-    name || gv('name'),
-    gv('email'),
-    gv('phone'),
-    gv('gender'),
-    gv('age'),
-    gv('goals'),
-    length || '',
-    freq || '',
-    gv('advisor-name') || getCfg('advisor'),
-    nextCheckin || '',
-    assessmentText ? assessmentText.substring(0,500) : ''
-  ];
-  try {
-    var resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write', {
-      method: 'POST', headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({tab: 'Active Clients', row: row, sheetId: '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs'})
-    });
-    var data = JSON.parse(await resp.text());
-    console.log('PT Tracker write:', data.ok ? 'OK' : data.error);
-    return data.ok;
-  } catch(e) { console.error('PT Tracker failed:', e.message); return false; }
-}
-
 async function dbCall(body) {
   try {
     var resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
@@ -3562,11 +3194,12 @@ function resetForm() {
   document.getElementById('gender').value = '';
   document.querySelectorAll('.gender-opt').forEach(o => o.classList.remove('selected'));
   document.getElementById('assessment-box').style.display = 'none';
-  document.getElementById('decision-row').style.display = 'none';
+  var dr = document.getElementById('decision-row');
+  if (dr) dr.style.display = 'none';
   document.getElementById('terms-panel').style.display = 'none';
   document.getElementById('followup-panel').style.display = 'none';
-  document.getElementById('confirm-accept').style.display = 'none';
-  document.getElementById('confirm-decline').style.display = 'none';
+  var pe = document.getElementById('post-enroll-wrap');
+  if (pe) pe.style.display = 'none';
   document.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
   selectedFreq = ''; selectedLength = '';
   assessmentText = '';
@@ -4399,30 +4032,6 @@ function runConsultReport(type) {
 }
 
 // Show report buttons after finalize
-var _origFinalizeAccept = typeof finalizeAccept === 'function' ? finalizeAccept : null;
-document.addEventListener('DOMContentLoaded', function() {
-  // Patch finalizeAccept to show enrolled report button
-  var _fa = window.finalizeAccept;
-  if (_fa) {
-    window.finalizeAccept = async function() {
-      await _fa.apply(this, arguments);
-      setTimeout(function() {
-        var w = document.getElementById('report-enrolled-wrap');
-        if (w) w.style.display = 'block';
-      }, 800);
-    };
-  }
-  // Patch finalizeDecline to show decline report button
-  var _fd = window.finalizeDecline;
-  if (_fd) {
-    window.finalizeDecline = async function() {
-      await _fd.apply(this, arguments);
-      setTimeout(function() {
-        var w = document.getElementById('report-decline-wrap');
-        if (w) w.style.display = 'block';
-      }, 800);
-    };
-  }
-});
+// Enrollment and decline flows write to D1 directly — no report-wrap patches needed.
 
 </script>
