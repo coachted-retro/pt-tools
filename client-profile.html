@@ -144,6 +144,7 @@
   <div class="t">Client <span>Profile</span></div>
   <div class="spacer"></div>
   <div class="search"><input id="clientSearch" placeholder="Search a client..." list="clientList" onchange="pickClient(this.value)"><datalist id="clientList"></datalist></div>
+  <a class="btn" href="client-management.html">👥 All Clients</a>
   <button class="btn red" onclick="openAdd()">+ New Client</button>
   <a class="btn" href="command-center.html">← Command Center</a>
 </div>
@@ -215,6 +216,30 @@ function pickClient(v){
   if(m) loadProfile(+m[1]);
 }
 
+function sortedRosterIds(){
+  return [...ALL_CLIENTS]
+    .sort((a,b)=>{
+      const an=((a.first_name||'')+' '+(a.last_name||'')).trim().toLowerCase();
+      const bn=((b.first_name||'')+' '+(b.last_name||'')).trim().toLowerCase();
+      return an.localeCompare(bn);
+    })
+    .map(c=>c.id);
+}
+
+function renderRosterNav(currentId){
+  const el=document.getElementById('rosterNav');
+  if(!el || !ALL_CLIENTS.length) return;
+  const ids=sortedRosterIds();
+  const idx=ids.indexOf(currentId);
+  if(idx<0){ el.innerHTML=''; return; }
+  const prevId=idx>0?ids[idx-1]:null;
+  const nextId=idx<ids.length-1?ids[idx+1]:null;
+  el.innerHTML=
+    '<button class="btn" '+(prevId?('onclick="loadProfile('+prevId+')"'):'disabled style="opacity:.35"')+'>← Prev</button>'+
+    '<span style="font-size:11px;color:var(--muted);align-self:center;white-space:nowrap">'+(idx+1)+' of '+ids.length+'</span>'+
+    '<button class="btn" '+(nextId?('onclick="loadProfile('+nextId+')"'):'disabled style="opacity:.35"')+'>Next →</button>';
+}
+
 async function loadProfile(clientId){
   const wrap=document.getElementById('wrap');
   wrap.innerHTML='<div class="empty">Loading profile...</div>';
@@ -279,7 +304,10 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     (start?'<span>Started: <b>'+esc(fmtDate(start))+'</b> ('+tenure+')</span>':'<span>'+tenure+'</span>')+
     (client.email?'<span>'+esc(client.email)+'</span>':'')+
     (client.phone?'<span>'+esc(client.phone)+'</span>':'')+
-    '</div></div><button class="btn" onclick="openEdit()">Edit</button></div>';
+    '</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'+
+    '<div style="display:flex;gap:6px" id="rosterNav"></div>'+
+    '<button class="btn" onclick="openEdit()">Edit</button>'+
+    '</div></div>';
 
   // actions
   const q='?client='+encodeURIComponent(nm);
@@ -351,6 +379,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<div id="photosList"></div></div></div>';
 
   document.getElementById('wrap').innerHTML=html;
+  renderRosterNav(client.id);
 
   // build chart series from consultation (start) + checkins
   const pts=[];
