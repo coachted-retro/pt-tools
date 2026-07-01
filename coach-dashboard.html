@@ -490,18 +490,13 @@
       </div>
     </div>
 
-    <!-- Schedule Session Modal -->
-    <div id="schedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:440px;max-width:95vw">
-
     <!-- Appointment status marking popover -->
     <div id="appt-menu-box" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1100;align-items:center;justify-content:center">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;width:340px;max-width:92vw">
         <div id="appt-menu-title" style="font-family:var(--font-display,Oswald,sans-serif);font-size:15px;font-weight:700;margin-bottom:16px;">Appointment</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <button onclick="markApptStatus('show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(76,175,125,0.4);background:rgba(76,175,125,0.15);color:var(--green);font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">✓ Show — start intake</button>
+          <button onclick="markApptStatus('show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(76,175,125,0.4);background:rgba(76,175,125,0.15);color:var(--green);font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">✓ Show</button>
           <button onclick="markApptStatus('no_show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(217,138,11,0.4);background:rgba(217,138,11,0.15);color:#D98A0B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">✕ No-Show</button>
-          <button onclick="markApptStatus('cancelled')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(217,138,11,0.4);background:rgba(217,138,11,0.15);color:#D98A0B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">⊘ Cancelled</button>
           <button onclick="markApptStatus('rescheduled')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(90,142,200,0.4);background:rgba(90,142,200,0.15);color:#7eb3e8;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">↻ Rescheduled</button>
           <button onclick="markApptStatus('declined')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(224,25,43,0.4);background:rgba(224,25,43,0.15);color:#E0192B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">— Declined</button>
         </div>
@@ -511,6 +506,10 @@
         </div>
       </div>
     </div>
+
+    <!-- Schedule Session Modal -->
+    <div id="schedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:440px;max-width:95vw">
         <div style="font-size:16px;font-weight:700;margin-bottom:18px">Schedule a Session</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div>
@@ -718,7 +717,8 @@ var feedAppts = [];
 const FEED_TYPES = [
   {rx:/6[\s-]*week|six[\s-]*week|follow[\s-]*up|re[\s-]*engage/i, file:'fitness-followup-tool.html', kind:'followup'},
   {rx:/monthly|check[\s-]*in|progress/i, file:'fitness-monthly-checkin.html', kind:'checkin'},
-  {rx:/new member|inbody|initial|consult|intake|assessment|scan/i, file:'fitness-consultation-tool.html', kind:'consultation'}
+  {rx:/new member|inbody|initial|consult|intake|assessment|scan/i, file:'fitness-consultation-tool.html', kind:'consultation'},
+  {rx:/training|session|pt\b|personal training|workout/i, file:'session-log.html', kind:'training'}
 ];
 function feedClassify(str){ for(const t of FEED_TYPES) if(t.rx.test(str||'')) return t; return null; }
 function feedParse(summary){
@@ -767,11 +767,23 @@ function closeApptMenu(){
   if (box) box.style.display = 'none';
   apptMenuTarget = null;
 }
+async function lookupClientByName(name){
+  try {
+    const all = await fetch(CAL_BASE+'/db', {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({op:'select', table:'clients', limit:2000})});
+    const d = await all.json();
+    const key = (name||'').trim().toLowerCase();
+    return (d.results||[]).find(function(c){
+      return ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase() === key;
+    }) || null;
+  } catch(e) { return null; }
+}
+
 async function markApptStatus(status){
   if (!apptMenuTarget) return;
   var t = apptMenuTarget;
   closeApptMenu();
 
+  // Save status to D1
   try {
     var key = apptStatusKey(t.date, t.name);
     var existing = apptStatusMap[key];
@@ -785,14 +797,26 @@ async function markApptStatus(status){
   } catch(e) { console.warn('Could not save appointment status', e); }
 
   if (status === 'show') {
-    // Auto-open the matching intake tool, pre-filled, same as a direct click
-    openFeedAppt(null, t.file, t.encName, t.date, t.time);
-  } else if (status === 'no_show' || status === 'cancelled') {
-    alert((status === 'no_show' ? 'No-show' : 'Cancellation') + ' recorded for ' + t.name + '.\n\nReminder: add a reschedule note in ABC at the front desk, and flag this for manager review.');
-  } else if (status === 'rescheduled') {
-    alert('Marked as rescheduled for ' + t.name + '. Update the new time on the calendar when confirmed.');
+    if (t.kind === 'training') {
+      // PT session: open session-log.html, prefilled, ready to start
+      window.open('session-log.html?client='+t.encName+'&date='+t.date+(t.time?('&time='+t.time):'')+'&coach=Ted', '_blank');
+    } else {
+      // Intake type (consultation / followup / checkin): pull full profile, then open prefilled
+      var client = await lookupClientByName(t.name);
+      var params = 'client='+t.encName+'&date='+t.date+(t.time?('&time='+t.time):'')+'&coach=Ted';
+      if (client && client.id) params += '&client_id='+client.id;
+      window.open(t.file+'?'+params, '_blank');
+    }
+  } else if (status === 'no_show' || status === 'rescheduled') {
+    alert((status === 'no_show' ? 'No-show' : 'Reschedule') + ' recorded for ' + t.name + '.\n\nReminder: add a reschedule note in ABC at the front desk, and flag this for manager review.');
   } else if (status === 'declined') {
-    alert('Marked as declined for ' + t.name + '.');
+    var client2 = await lookupClientByName(t.name);
+    if (client2 && client2.id) {
+      try {
+        await fetch(CAL_BASE+'/db', {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({op:'update', table:'clients', values:{status:'not_interested'}, where:{id:client2.id}})});
+      } catch(e) { console.warn('Could not update client status', e); }
+    }
+    alert(t.name + ' marked as not interested. No further action needed.');
   }
 
   renderCalendar();
@@ -843,7 +867,7 @@ function renderCalendar() {
   let html = '';
   // Empty cells before first day
   for (let i = 0; i < firstDay; i++) {
-    html += '<div style="min-height:60px;border-radius:6px;background:rgba(255,255,255,0.01)"></div>';
+    html += '<div style="min-height:100px;border-radius:6px;background:rgba(255,255,255,0.01)"></div>';
   }
 
   for (let d = 1; d <= daysInMonth; d++) {
@@ -867,18 +891,17 @@ function renderCalendar() {
       var bg, col;
       if (status === 'show') { bg='rgba(76,175,125,0.28)'; col='var(--green)'; }
       else if (status === 'no_show') { bg='rgba(217,138,11,0.28)'; col='#D98A0B'; }
-      else if (status === 'cancelled') { bg='rgba(217,138,11,0.20)'; col='#D98A0B'; }
       else if (status === 'rescheduled') { bg='rgba(90,142,200,0.28)'; col='#7eb3e8'; }
       else if (status === 'declined') { bg='rgba(224,25,43,0.20)'; col='#E0192B'; }
       else { bg = isSession?'rgba(63,119,192,0.16)':'rgba(184,120,12,0.16)'; col = isSession?'#3F77C0':'#B8780C'; }
       var statusTag = status ? ' [' + status.replace('_',' ') + ']' : '';
-      return '<div class="cal-feed-pill" onclick="openApptMenu(event,\''+a.file+'\',\''+encodeURIComponent(a.name||'')+'\',\''+a.date+'\',\''+(a.time||'')+'\',\''+(a.kind||'session')+'\')" style="font-size:9px;font-weight:600;background:'+bg+';color:'+col+';border-radius:3px;padding:2px 4px;margin-top:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(a.name||'Session')+statusTag+'">'+(a.time||'')+' '+(a.name||(isSession?'Session':'Appt'))+statusTag+'</div>';
+      return '<div class="cal-feed-pill" onclick="openApptMenu(event,\''+a.file+'\',\''+encodeURIComponent(a.name||'')+'\',\''+a.date+'\',\''+(a.time||'')+'\',\''+(a.kind||'session')+'\')" style="font-size:10.5px;line-height:1.35;font-weight:600;background:'+bg+';color:'+col+';border-radius:4px;padding:3px 5px;margin-top:2px;cursor:pointer;white-space:normal;word-break:break-word;" title="'+(a.name||'Session')+statusTag+'">'+(a.time||'')+' '+(a.name||(isSession?'Session':'Appt'))+statusTag+'</div>';
     }).join('');
 
-    html += '<div style="min-height:60px;border-radius:6px;background:' +
+    html += '<div style="min-height:100px;border-radius:6px;background:' +
       (isToday ? 'rgba(76,175,125,0.08)' : 'rgba(255,255,255,0.02)') +
       ';border:1px solid ' + (isToday ? 'var(--accent)' : 'rgba(255,255,255,0.05)') +
-      ';padding:5px;overflow:hidden">' +
+      ';padding:5px">' +
       '<div style="font-size:11px;font-weight:' + (isToday ? '800' : '500') + ';color:' + (isToday ? 'var(--accent)' : 'var(--text3)') + ';margin-bottom:1px">' + d + '</div>' +
       sessionPills + feedPills +
       '</div>';
