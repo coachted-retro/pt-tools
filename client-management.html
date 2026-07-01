@@ -152,27 +152,53 @@ async function loadAll(){
   renderDupeBanner();
 }
 
+function normPhone(p){ return (p||'').replace(/[^0-9]/g,''); }
+function normEmail(e){ return (e||'').trim().toLowerCase(); }
+
 function findDuplicateGroups(){
-  const groups = {};
+  // Safe matching only: exact full name, exact phone, or exact email.
+  // Deliberately does NOT match on first-name-only or last-name-only —
+  // that would wrongly flag family members who share a last name
+  // (e.g. father and son both signed up) as duplicates.
+  const nameGroups = {}, phoneGroups = {}, emailGroups = {};
+
   ALL_CLIENTS.forEach(c => {
-    const key = normName(c);
-    if (!key) return; // skip blank names, can't reliably compare
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(c);
+    const nk = normName(c);
+    if (nk) { if (!nameGroups[nk]) nameGroups[nk]=[]; nameGroups[nk].push(c); }
+    const pk = normPhone(c.phone);
+    if (pk && pk.length >= 7) { if (!phoneGroups[pk]) phoneGroups[pk]=[]; phoneGroups[pk].push(c); }
+    const ek = normEmail(c.email);
+    if (ek) { if (!emailGroups[ek]) emailGroups[ek]=[]; emailGroups[ek].push(c); }
   });
-  return Object.values(groups).filter(g => g.length > 1);
+
+  // Merge overlapping groups (a pair might match on both name AND phone —
+  // count them once) using client id sets, keyed by sorted id list.
+  const seen = {};
+  const groups = [];
+  [nameGroups, phoneGroups, emailGroups].forEach(setOfGroups => {
+    Object.values(setOfGroups).forEach(g => {
+      if (g.length < 2) return;
+      const key = g.map(c=>c.id).sort((a,b)=>a-b).join(',');
+      if (seen[key]) return;
+      seen[key] = true;
+      groups.push(g);
+    });
+  });
+  return groups;
 }
 
 function renderDupeBanner(){
   const dupes = findDuplicateGroups();
   const banner = document.getElementById('dupeBanner');
+
   if (!dupes.length) {
     banner.className = 'dupe-banner clear';
-    banner.innerHTML = '<strong>✓ No duplicates found.</strong> Your client roster is clean.';
+    banner.innerHTML = '<strong>✓ No exact duplicates found</strong> (matching full name, phone, or email). This will not catch cases where the same person has a different amount of info on file — e.g. "Sanjay" vs "Sanjay Butalari". For those, use Compare &amp; Merge Two Clients below.';
     return;
   }
+
   banner.className = 'dupe-banner';
-  banner.innerHTML = '<strong>⚠ ' + dupes.length + ' possible duplicate' + (dupes.length!==1?'s':'') + ' found</strong> — same name appears more than once. Look for the highlighted rows below and use Merge to combine them.';
+  banner.innerHTML = '<strong>⚠ ' + dupes.length + ' likely duplicate' + (dupes.length!==1?'s':'') + ' found</strong> — same full name, phone, or email appears on more than one record. Review and merge below. Family members who share only a last name are never auto-flagged.';
 }
 
 function renderRoster(){
@@ -188,7 +214,7 @@ function renderRoster(){
     const statusClass = ['active_pt','prospect','not_interested'].includes(c.status) ? c.status : 'default';
     const isDupe = dupeIds.has(c.id);
     return '<tr'+(isDupe?' class="flagged"':'')+'>'+
-      '<td style="font-weight:600">'+esc(name)+(isDupe?' <span style="color:#92400e;font-size:11px;font-weight:700">⚠ possible duplicate</span>':'')+'</td>'+
+      '<td style="font-weight:600">'+esc(name)+(isDupe?' <span style="color:#92400e;font-size:11px;font-weight:700">⚠ likely duplicate</span>':'')+'</td>'+
       '<td><span class="pill '+statusClass+'">'+esc((c.status||'—').replace('_',' '))+'</span></td>'+
       '<td>'+esc(c.package||'—')+'</td>'+
       '<td>'+esc(c.training_start_date||'—')+'</td>'+
@@ -197,27 +223,25 @@ function renderRoster(){
     '</tr>';
   }).join('');
 
-  // Add merge buttons under dupe groups
-  if (dupes.length) {
-    const bannerAfter = document.getElementById('dupeBanner');
-    let mergeBtnsHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">';
-    dupes.forEach((g, i) => {
-      const name = ((g[0].first_name||'')+' '+(g[0].last_name||'')).trim();
-      mergeBtnsHtml += '<button class="btn red" onclick="openMerge('+i+')">Merge "'+esc(name)+'" ('+g.length+' records)</button>';
-    });
-    mergeBtnsHtml += '</div>';
-    let existing = document.getElementById('mergeBtnsRow');
-    if (existing) existing.remove();
-    const div = document.createElement('div');
-    div.id = 'mergeBtnsRow';
-    div.innerHTML = mergeBtnsHtml;
-    bannerAfter.after(div);
-    window._dupeGroups = dupes;
-  } else {
-    let existing = document.getElementById('mergeBtnsRow');
-    if (existing) existing.remove();
-  }
+  // Add merge buttons under confirmed dupe groups
+  let existing = document.getElementById('mergeBtnsRow');
+  if (existing) existing.remove();
+
+  const bannerAfter = document.getElementById('dupeBanner');
+  let mergeBtnsHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">';
+  dupes.forEach((g, i) => {
+    const name = ((g[0].first_name||'')+' '+(g[0].last_name||'')).trim();
+    mergeBtnsHtml += '<button class="btn red" onclick="openMerge('+i+')">Merge "'+esc(name)+'" ('+g.length+' records)</button>';
+  });
+  mergeBtnsHtml += '<button class="btn" style="border-color:var(--line);" onclick="openCompareTool()">🔍 Compare &amp; Merge Two Clients Manually</button>';
+  mergeBtnsHtml += '</div>';
+  const div = document.createElement('div');
+  div.id = 'mergeBtnsRow';
+  div.innerHTML = mergeBtnsHtml;
+  bannerAfter.after(div);
+  window._dupeGroups = dupes;
 }
+
 
 function renderLeads(){
   const el = document.getElementById('leadRows');
@@ -231,6 +255,54 @@ function renderLeads(){
       '<td style="font-size:12px;color:var(--muted)">'+esc(contact)+'</td>'+
       '<td><span class="pill default">'+esc(l.status||'new')+'</span></td>'+
     '</tr>';
+  }).join('');
+}
+
+function openCompareTool(){
+  const sorted = [...ALL_CLIENTS].sort((a,b) => {
+    const an=((a.first_name||'')+' '+(a.last_name||'')).trim().toLowerCase();
+    const bn=((b.first_name||'')+' '+(b.last_name||'')).trim().toLowerCase();
+    return an.localeCompare(bn);
+  });
+  const opts = sorted.map(c => {
+    const name = ((c.first_name||'')+' '+(c.last_name||'')).trim() || '(no name)';
+    return '<option value="'+c.id+'">'+esc(name)+' — ID '+c.id+'</option>';
+  }).join('');
+
+  document.getElementById('mergeCards').innerHTML =
+    '<div style="grid-column:1/-1;display:flex;flex-direction:column;gap:12px;">'+
+      '<div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;">First client</label>'+
+      '<select id="cmpA" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;"><option value="">Select...</option>'+opts+'</select></div>'+
+      '<div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;">Second client</label>'+
+      '<select id="cmpB" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:13px;"><option value="">Select...</option>'+opts+'</select></div>'+
+      '<button class="btn red" onclick="loadCompareGroup()">Compare These Two</button>'+
+    '</div>';
+  document.getElementById('mergeConfirmBtn').disabled = true;
+  document.getElementById('mergeStatus').textContent = '';
+  document.getElementById('mergeOverlay').classList.add('open');
+}
+
+function loadCompareGroup(){
+  const idA = parseInt(document.getElementById('cmpA').value, 10);
+  const idB = parseInt(document.getElementById('cmpB').value, 10);
+  if (!idA || !idB || idA === idB) { alert('Pick two different clients to compare.'); return; }
+  const cA = ALL_CLIENTS.find(c => c.id === idA);
+  const cB = ALL_CLIENTS.find(c => c.id === idB);
+  mergeGroup = [cA, cB];
+  mergeKeeperId = null;
+  document.getElementById('mergeConfirmBtn').disabled = true;
+
+  document.getElementById('mergeCards').innerHTML = mergeGroup.map(c => {
+    const name = ((c.first_name||'')+' '+(c.last_name||'')).trim();
+    return '<div class="merge-card" id="mcard-'+c.id+'" onclick="pickKeeper('+c.id+')">'+
+      '<h3>'+esc(name)+'</h3>'+
+      '<div class="id">Client ID '+c.id+'</div>'+
+      '<div class="field"><strong>Status:</strong> '+esc(c.status||'—')+'</div>'+
+      '<div class="field"><strong>Phone:</strong> '+esc(c.phone||'—')+'</div>'+
+      '<div class="field"><strong>Email:</strong> '+esc(c.email||'—')+'</div>'+
+      '<div class="field"><strong>Package:</strong> '+esc(c.package||'—')+'</div>'+
+      '<div class="field"><strong>Notes:</strong> '+esc((c.notes||'').slice(0,80))+(c.notes && c.notes.length>80?'...':'')+'</div>'+
+    '</div>';
   }).join('');
 }
 
