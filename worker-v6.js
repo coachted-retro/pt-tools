@@ -22,7 +22,7 @@ const HARVEST_QUERIES = [
 const ALLOWED_TABLES = new Set([
   'clients','consultations','followups','checkins','programs','training_sessions',
   'lead_sources','leads','touchpoints','outreach_log',
-  'progress_photos','measurements',
+  'progress_photos','measurements','eod_reports',
   'meal_profiles','meal_plans',
   'inbody_scans','workouts',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts',
@@ -441,6 +441,22 @@ export default {
         return new Response((await r.text()) || '{"ok":true}', { status:200, headers:cors });
       }
 
+      if (url.pathname === '/eod/generate' && request.method === 'POST') {
+        if (!env.DB) return bad('D1 binding "DB" not found.', cors);
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+        const body = await request.json().catch(() => ({}));
+        const dateStr = body.date || new Date().toISOString().slice(0,10);
+        const result = await generateEODReport(env, dateStr);
+        return ok(result, cors);
+      }
+
+      if (url.pathname === '/eod/list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const limit = Math.min(parseInt(url.searchParams.get('limit')||'30',10), 90);
+        const res = await env.DB.prepare('SELECT * FROM eod_reports ORDER BY report_date DESC LIMIT ?').bind(limit).all();
+        return ok({ reports: res.results||[] }, cors);
+      }
+
       if (request.method !== 'POST') return ok({}, cors);
       const payload = JSON.parse(await request.text());
       const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -453,8 +469,117 @@ export default {
     } catch (e) {
       return bad(e.message, cors);
     }
+  },
+
+  // ── NIGHTLY CRON: auto-generate EOD report for today, hands-off ──
+  // Wire this up in the Cloudflare dashboard under Worker Settings ->
+  // Triggers -> Cron Triggers, e.g. "0 1 * * *" (1am UTC = 9pm ET),
+  // adjust for daylight saving as needed.
+  async scheduled(event, env, ctx) {
+    const today = new Date().toISOString().slice(0,10);
+    ctx.waitUntil(generateEODReport(env, today));
   }
 };
+
+// ---------------- End of Day Report generator ----------------
+// Pulls the day's consultations, follow-ups, and monthly check-ins.
+// If the day is empty, no report is written, exactly as requested,
+// no blank clutter in the log. If there is real activity, AI writes
+// a plain-language recap and it is saved once, keyed by report_date.
+async function generateEODReport(env, dateStr) {
+  const [consults, checkins, followups, clients] = await Promise.all([
+    env.DB.prepare('SELECT * FROM consultations WHERE consult_date=?').bind(dateStr).all(),
+    env.DB.prepare('SELECT * FROM checkins WHERE checkin_date=?').bind(dateStr).all(),
+    env.DB.prepare('SELECT * FROM followups WHERE followup_date=?').bind(dateStr).all(),
+    env.DB.prepare('SELECT id,first_name,last_name FROM clients').all()
+  ]);
+
+  const consultRows = consults.results || [];
+  const checkinRows = checkins.results || [];
+  const followupRows = followups.results || [];
+  const total = consultRows.length + checkinRows.length + followupRows.length;
+
+  if (total === 0) {
+    return { generated: false, reason: 'No activity for this date, no report needed.', date: dateStr };
+  }
+
+  const clientMap = {};
+  (clients.results || []).forEach(c => clientMap[c.id] = ((c.first_name||'')+' '+(c.last_name||'')).trim() || 'Unknown');
+
+  const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+  function detectOutcome(c) {
+    const notes = (c.notes || '').toLowerCase();
+    const source = c.source || '';
+    if (notes.includes('no show') || notes.includes('no-show')) return 'no-show';
+    if (notes.includes('cancel')) return 'cancelled';
+    if (notes.includes('declined') || source.includes('decline')) return 'declined PT';
+    if (notes.includes('package') || notes.includes('enrolled') || notes.includes('accepted')) return 'enrolled';
+    return 'consultation completed';
+  }
+
+  const items = [];
+  consultRows.forEach(c => items.push({
+    type: 'consultation',
+    name: clientMap[c.client_id] || 'Unknown',
+    outcome: detectOutcome(c),
+    notes: c.notes || ''
+  }));
+  followupRows.forEach(f => items.push({
+    type: 'followup',
+    name: clientMap[f.client_id] || 'Unknown',
+    outcome: 'follow-up appointment',
+    notes: (f.reason || '') + ' ' + (f.notes || '')
+  }));
+  checkinRows.forEach(ck => items.push({
+    type: 'checkin',
+    name: clientMap[ck.client_id] || 'Unknown',
+    outcome: 'monthly review',
+    notes: 'Weight: ' + (ck.now_weight||'—') + ' lb, BF: ' + (ck.now_body_fat_pct||'—') + '%. ' + (ck.coach_notes||'')
+  }));
+
+  const prompt = `You are writing a brief end-of-day PT summary from Coach Ted Scholl at Retro Fitness of Fairless Hills for the corporate fitness director, Keelin. The tone should be professional but not stiff, this is a gym, not a boardroom. Write like you're giving a smart, confident verbal update at the end of the day. Use plain language, proper punctuation, complete sentences. No bullet points, no markdown, no asterisks, no emojis. Paragraph breaks between sections.
+
+Date: ${dateLabel}
+Location: Retro Fitness of Fairless Hills, 516 Lincoln Hwy, Fairless Hills, PA
+Advisor: Coach Ted Scholl
+
+Day's activity:
+
+${items.map(it => `TYPE: ${it.type.toUpperCase()}\nCLIENT: ${it.name}\nOUTCOME: ${it.outcome}\nNOTES: ${it.notes}`).join('\n\n')}
+
+RULES:
+- Lead with wins. If anyone signed up, mention it first, make it feel like a win.
+- For no-shows or cancellations, always state clearly that a reschedule reminder has been added in the scheduling system at the front desk.
+- For declines, mention the reason if known. Be matter-of-fact, not defeated.
+- For follow-ups, say whether they converted, are still deciding, or were rescheduled.
+- For monthly reviews, give a one-sentence progress highlight.
+- Close with one sentence on overall momentum.
+- 250-400 words total.
+- Sign off: Coach Ted Scholl, Retro Fitness of Fairless Hills
+
+Structure as natural paragraphs (not headers): overview, new enrollments (if any), follow-ups (if any), monthly reviews (if any), declines (if any), no-shows/cancellations (if any), closing thought.`;
+
+  const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json','x-api-key':env.ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
+    body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000, messages:[{role:'user',content:prompt}] })
+  });
+  const aiData = await aiResp.json();
+  const content = (aiData.content||[]).filter(b=>b.type==='text').map(b=>b.text||'').join('').trim();
+  if (!content) return { generated: false, reason: 'AI returned no content.', date: dateStr };
+
+  const existing = await env.DB.prepare('SELECT id FROM eod_reports WHERE report_date=?').bind(dateStr).first();
+  if (existing) {
+    await env.DB.prepare('UPDATE eod_reports SET content=?, generated_at=? WHERE id=?')
+      .bind(content, new Date().toISOString(), existing.id).run();
+    return { generated: true, updated: true, date: dateStr, id: existing.id, content };
+  } else {
+    const ins = await env.DB.prepare('INSERT INTO eod_reports (report_date,content,generated_at) VALUES (?,?,?)')
+      .bind(dateStr, content, new Date().toISOString()).run();
+    return { generated: true, updated: false, date: dateStr, id: ins.meta?.last_row_id, content };
+  }
+}
 
 // ---------------- HARVESTER ----------------
 async function runHarvest(opt, env, cors) {

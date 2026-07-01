@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>End of Day Report — Retro Fitness PT</title>
+<title>End of Day Reports — Retro Fitness PT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -19,73 +19,56 @@
   .btn.red{background:var(--red);border-color:var(--red);color:#fff;}.btn.red:hover{background:var(--red-dk);}
   .btn.blue{background:var(--blue);border-color:var(--blue);color:#fff;}.btn.blue:hover{background:#1d4ed8;}
   .btn:disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
-  .wrap{max-width:860px;margin:0 auto;padding:24px 20px 60px;}
-  .page-head{margin-bottom:22px;}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 20px 60px;}
+  .page-head{margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
   .page-head h1{font-family:'Oswald';font-size:26px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0 0 4px;}
   .page-head p{font-size:13px;color:var(--muted);margin:0;}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px;}
-  .card-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;}
-  .card-head h2{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0;}
-  .card-body{padding:18px;}
-  .date-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-  .date-row input[type=date]{font-family:'Inter';font-size:14px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--soft);color:var(--ink);}
-  .activity-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
-  .stat-box{background:var(--soft);border-radius:10px;padding:14px 16px;text-align:center;}
-  .stat-box .num{font-family:'Oswald';font-size:28px;font-weight:700;line-height:1;}
-  .stat-box .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;margin-top:4px;}
-  .stat-box.green .num{color:var(--green);}
-  .stat-box.red .num{color:var(--red);}
-  .stat-box.amber .num{color:var(--amber);}
-  .appt-list{display:flex;flex-direction:column;gap:8px;}
-  .appt-row{display:flex;align-items:flex-start;gap:12px;background:var(--soft);border-radius:10px;padding:12px 14px;}
-  .appt-badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;margin-top:2px;}
-  .badge-accepted{background:#D1FAE5;color:#065F46;}
-  .badge-declined{background:#FEE2E2;color:#991B1B;}
-  .badge-followup{background:#DBEAFE;color:#1E40AF;}
-  .badge-checkin{background:#EDE9FE;color:#5B21B6;}
-  .badge-noshow{background:#FEF3C7;color:#92400E;}
-  .badge-cancelled{background:#FEF3C7;color:#92400E;}
-  .appt-info{flex:1;}
-  .appt-name{font-weight:700;font-size:14px;}
-  .appt-detail{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5;}
-  .appt-notes{margin-top:6px;}
-  .appt-notes textarea{width:100%;font-family:'Inter';font-size:12px;border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--card);resize:vertical;min-height:52px;color:var(--ink);}
-  .appt-notes label{font-size:10px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px;}
-  .empty-day{text-align:center;padding:32px;color:var(--muted);}
-  .empty-day .big{font-family:'Oswald';font-size:18px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink);margin-bottom:6px;}
-  .report-area{white-space:pre-wrap;font-family:'Inter';font-size:13.5px;line-height:1.8;color:var(--ink);background:var(--soft);border-radius:10px;padding:20px;min-height:100px;border:1px solid var(--line);}
-  .generating{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:20px;}
-  .spinner{width:18px;height:18px;border:2px solid var(--line);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  .action-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 18px;border-top:1px solid var(--line);background:var(--soft);}
+  .info-note{background:var(--blue-light);border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;font-size:12.5px;color:#1e40af;margin-bottom:20px;line-height:1.6;}
+  .log-list{display:flex;flex-direction:column;gap:10px;}
+  .log-row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:box-shadow .15s;}
+  .log-row:hover{box-shadow:0 2px 10px rgba(0,0,0,.06);}
+  .log-date-badge{font-family:'Oswald';font-weight:700;font-size:13px;background:var(--soft);border-radius:8px;padding:8px 12px;text-align:center;min-width:64px;flex-shrink:0;}
+  .log-date-badge .dow{font-size:9px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);display:block;}
+  .log-info{flex:1;}
+  .log-title{font-weight:700;font-size:14px;}
+  .log-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .log-arrow{color:var(--muted);font-size:16px;}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-state .big{font-family:'Oswald';font-size:18px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink);margin-bottom:8px;}
+  .loading-row{text-align:center;padding:30px;color:var(--muted);font-size:13px;}
 
-  /* ── PRINT STYLES ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:100;}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:var(--card);border-radius:14px;width:100%;max-width:700px;margin:auto;}
+  .modal-head{padding:16px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+  .modal-head h2{font-family:'Oswald';font-size:17px;text-transform:uppercase;letter-spacing:.5px;margin:0;}
+  .modal-close{background:none;border:none;cursor:pointer;font-size:22px;color:var(--muted);line-height:1;}
+  .modal-body{padding:22px;}
+  .report-text{white-space:pre-wrap;font-size:13.5px;line-height:1.8;color:var(--ink);}
+  .modal-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;}
+
+  .print-header{display:none;margin-bottom:20px;}
   @media print {
     body{background:#fff;font-size:12px;}
-    .topbar,.action-row,.card-head button,.btn,.no-print{display:none !important;}
-    .card{border:none;box-shadow:none;border-radius:0;margin-bottom:0;}
-    .card-body{padding:0;}
-    .report-area{background:#fff;border:none;padding:0;font-size:12px;line-height:1.7;}
-    .wrap{padding:0;max-width:100%;}
+    .topbar,.modal-foot,.modal-close,.no-print{display:none !important;}
+    .modal-overlay{position:static;background:none;padding:0;display:block !important;}
+    .modal-box{border:none;box-shadow:none;max-width:100%;}
+    .modal-head{display:none;}
+    .modal-body{padding:0;}
+    .report-text{font-size:12px;}
     .print-header{display:block !important;}
   }
-  .print-header{display:none;margin-bottom:20px;}
   .print-header .ph-logo{font-family:'Oswald';font-size:22px;font-weight:700;text-transform:uppercase;color:#000;letter-spacing:.5px;}
   .print-header .ph-logo span{color:var(--red);}
   .print-header .ph-sub{font-size:11px;color:#666;margin-top:2px;}
   .print-header .ph-date{font-size:13px;font-weight:600;margin-top:8px;border-top:2px solid #000;padding-top:8px;}
-
-  .loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:99;}
-  .loading-overlay.open{display:flex;}
-  .loading-box{background:#fff;border-radius:14px;padding:28px 36px;text-align:center;font-family:'Oswald';font-size:16px;text-transform:uppercase;letter-spacing:.5px;}
-  .loading-box .spinner{width:28px;height:28px;margin:0 auto 14px;border-width:3px;}
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <img src="Retro_FH_Logo.jpg" alt="Retro Fitness" style="height:34px;border-radius:4px" onerror="this.style.display='none'">
-  <div class="t">End of Day <span>Report</span></div>
+  <div class="t">End of Day <span>Reports</span></div>
   <div class="spacer"></div>
   <a class="btn" href="command-center.html">← Command Center</a>
 </div>
@@ -93,370 +76,103 @@
 <div class="wrap">
 
   <div class="page-head">
-    <h1>End of Day Report</h1>
-    <p>Pull the day's PT activity, review it, and generate a summary for Keelin at Retro Corporate.</p>
+    <div>
+      <h1>End of Day Reports</h1>
+      <p>A running log of daily recaps. Reports generate automatically each night for any day with consultations, follow-ups, or monthly check-ins.</p>
+    </div>
+    <button class="btn" onclick="checkToday()" id="checkTodayBtn">↻ Check Today</button>
   </div>
 
-  <!-- DATE PICKER CARD -->
-  <div class="card">
-    <div class="card-head">
-      <h2>Select Date</h2>
-    </div>
-    <div class="card-body">
-      <div class="date-row">
-        <input type="date" id="reportDate">
-        <button class="btn red" onclick="loadDay()">Load Activity</button>
-        <button class="btn" onclick="setToday()">Today</button>
-      </div>
-    </div>
+  <div class="info-note">
+    Reports write themselves overnight for days with real activity. Empty days are skipped, nothing to review. Tap "Check Today" if you want to see today's report before the nightly run catches it.
   </div>
 
-  <!-- ACTIVITY CARD -->
-  <div class="card" id="activityCard" style="display:none">
-    <div class="card-head">
-      <h2 id="activityTitle">Day at a Glance</h2>
-    </div>
-    <div class="card-body">
-      <div class="activity-grid">
-        <div class="stat-box green"><div class="num" id="statAccepted">0</div><div class="lbl">Accepted</div></div>
-        <div class="stat-box red"><div class="num" id="statDeclined">0</div><div class="lbl">Declined</div></div>
-        <div class="stat-box"><div class="num" id="statFollowups">0</div><div class="lbl">Follow-Ups</div></div>
-        <div class="stat-box amber"><div class="num" id="statNoshow">0</div><div class="lbl">No-Shows</div></div>
-        <div class="stat-box"><div class="num" id="statCheckins">0</div><div class="lbl">Monthly Reviews</div></div>
-        <div class="stat-box blue" style="background:var(--blue-light);"><div class="num" id="statTotal" style="color:var(--blue)">0</div><div class="lbl">Total</div></div>
-      </div>
-
-      <div id="apptList" class="appt-list"></div>
-
-      <div id="emptyDay" class="empty-day" style="display:none">
-        <div class="big">Nothing logged for this date</div>
-        <p>No consultations, follow-ups, or monthly reviews were recorded. No report needed.</p>
-      </div>
-    </div>
-    <div class="action-row">
-      <button class="btn blue" id="generateBtn" onclick="generateReport()" disabled>✦ Generate Report for Keelin</button>
-      <span style="font-size:12px;color:var(--muted);" id="generateHint">Load activity first</span>
-    </div>
+  <div id="logList" class="log-list">
+    <div class="loading-row">Loading reports...</div>
   </div>
 
-  <!-- REPORT CARD -->
-  <div class="card" id="reportCard" style="display:none">
-    <div class="card-head">
-      <h2>Report Preview</h2>
-      <div style="display:flex;gap:8px;">
-        <button class="btn" onclick="copyReport()">📋 Copy</button>
-        <button class="btn blue" onclick="downloadPDF()">⬇ Download PDF</button>
-      </div>
-    </div>
-    <div class="card-body">
+</div>
 
-      <!-- Print header (only visible when printing) -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2 id="modalTitle">Report</h2>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
       <div class="print-header">
         <div class="ph-logo">Retro <span>Fitness</span> of Fairless Hills</div>
         <div class="ph-sub">516 Lincoln Hwy, Fairless Hills, PA 19030 · Personal Training · Coach Ted Scholl</div>
         <div class="ph-date" id="printDate"></div>
       </div>
-
-      <div id="reportContent" class="report-area"></div>
+      <div id="reportText" class="report-text"></div>
     </div>
-    <div class="action-row no-print">
+    <div class="modal-foot">
+      <button class="btn" onclick="copyReport()">📋 Copy</button>
       <button class="btn blue" onclick="downloadPDF()">⬇ Download PDF</button>
-      <button class="btn" onclick="copyReport()">📋 Copy to Clipboard</button>
-      <span style="font-size:12px;color:var(--muted);">For: keelin@retrofitness.com</span>
     </div>
-  </div>
-
-</div><!-- /wrap -->
-
-<!-- Loading overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="loading-box">
-    <div class="spinner"></div>
-    Writing report...
   </div>
 </div>
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
-const KEELIN_EMAIL = 'keelin@retrofitness.com';
+let currentReport = null;
 
-let dayData = { consultations: [], checkins: [], followups: [] };
-let generatedReport = '';
-
-async function db(body) {
-  const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
-  return r.json();
-}
-
-function setToday() {
-  const d = new Date();
-  document.getElementById('reportDate').value = d.toISOString().slice(0,10);
-}
-
-function clientName(c) {
-  if (!c) return 'Unknown';
-  return ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || c.email || 'Unknown';
-}
-
-async function loadDay() {
-  const date = document.getElementById('reportDate').value;
-  if (!date) { alert('Please select a date.'); return; }
-
-  document.getElementById('activityCard').style.display = 'block';
-  document.getElementById('reportCard').style.display = 'none';
-  document.getElementById('apptList').innerHTML = '<div class="generating"><div class="spinner"></div>Loading activity...</div>';
-  document.getElementById('emptyDay').style.display = 'none';
-  document.getElementById('generateBtn').disabled = true;
-  document.getElementById('generateHint').textContent = 'Loading...';
-
+async function loadLog() {
+  const listEl = document.getElementById('logList');
   try {
-    // Pull consultations, checkins, followups for this date
-    const [consults, checkins, followups, clients] = await Promise.all([
-      db({ op:'select', table:'consultations', where:{ date }, orderBy:'id ASC' }),
-      db({ op:'select', table:'checkins', where:{ checkin_date: date }, orderBy:'id ASC' }),
-      db({ op:'select', table:'followups', where:{ followup_date: date }, orderBy:'id ASC' }),
-      db({ op:'select', table:'clients', limit:500 })
-    ]);
+    const r = await fetch(WORKER + '/eod/list?limit=60');
+    const d = await r.json();
+    const reports = d.reports || [];
 
-    const clientMap = {};
-    (clients.results || []).forEach(c => clientMap[c.id] = c);
+    if (!reports.length) {
+      listEl.innerHTML = `<div class="empty-state">
+        <div class="big">No reports yet</div>
+        <p>Reports appear here automatically once you have consultations, follow-ups, or monthly check-ins logged for a day.</p>
+      </div>`;
+      return;
+    }
 
-    dayData = {
-      date,
-      consultations: (consults.results || []).map(r => ({ ...r, client: clientMap[r.client_id] })),
-      checkins: (checkins.results || []).map(r => ({ ...r, client: clientMap[r.client_id] })),
-      followups: (followups.results || []).map(r => ({ ...r, client: clientMap[r.client_id] }))
-    };
-
-    renderActivity();
+    listEl.innerHTML = reports.map(rep => {
+      const d = new Date(rep.report_date + 'T12:00:00');
+      const dow = d.toLocaleDateString('en-US', { weekday:'short' });
+      const dateNum = d.getDate();
+      const monthShort = d.toLocaleDateString('en-US', { month:'short' });
+      const fullDate = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+      const preview = (rep.content || '').replace(/\s+/g,' ').trim().slice(0, 90) + '...';
+      return `<div class="log-row" onclick='openReport(${JSON.stringify(rep.report_date)}, ${JSON.stringify(rep.content)})'>
+        <div class="log-date-badge"><span class="dow">${dow}</span>${monthShort} ${dateNum}</div>
+        <div class="log-info">
+          <div class="log-title">${fullDate}</div>
+          <div class="log-sub">${esc(preview)}</div>
+        </div>
+        <div class="log-arrow">→</div>
+      </div>`;
+    }).join('');
   } catch(e) {
-    document.getElementById('apptList').innerHTML = '<div style="padding:16px;color:#991B1B;font-size:13px;">Error loading data: ' + e.message + '</div>';
+    listEl.innerHTML = `<div class="empty-state"><div class="big">Could not load reports</div><p>${esc(e.message)}</p></div>`;
   }
-}
-
-function renderActivity() {
-  const { date, consultations, checkins, followups } = dayData;
-  const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
-  document.getElementById('activityTitle').textContent = dateLabel;
-  document.getElementById('printDate').textContent = 'End of Day Report — ' + dateLabel;
-
-  const accepted = consultations.filter(c => (c.notes||'').toLowerCase().includes('accept') || (c.source||'').includes('consultation_tool') && (c.notes||'').includes('Package'));
-  const noshow = consultations.filter(c => (c.outcome||'').toLowerCase().includes('no') || (c.status||'').toLowerCase().includes('no_show') || (c.notes||'').toLowerCase().includes('no show') || (c.notes||'').toLowerCase().includes('no-show'));
-  const cancelled = consultations.filter(c => (c.status||'').toLowerCase().includes('cancel') || (c.notes||'').toLowerCase().includes('cancel'));
-  const declined = consultations.filter(c => (c.source||'').includes('consultation_decline') || (c.notes||'').toLowerCase().includes('declined'));
-  const regular = consultations.filter(c => !noshow.includes(c) && !cancelled.includes(c) && !declined.includes(c));
-
-  document.getElementById('statAccepted').textContent = accepted.length;
-  document.getElementById('statDeclined').textContent = declined.length;
-  document.getElementById('statFollowups').textContent = followups.length;
-  document.getElementById('statNoshow').textContent = noshow.length + cancelled.length;
-  document.getElementById('statCheckins').textContent = checkins.length;
-  document.getElementById('statTotal').textContent = consultations.length + checkins.length + followups.length;
-
-  const total = consultations.length + checkins.length + followups.length;
-
-  if (!total) {
-    document.getElementById('apptList').innerHTML = '';
-    document.getElementById('emptyDay').style.display = 'block';
-    document.getElementById('generateBtn').disabled = true;
-    document.getElementById('generateHint').textContent = 'Nothing to report for this date.';
-    return;
-  }
-
-  document.getElementById('emptyDay').style.display = 'none';
-
-  let html = '';
-
-  // Consultations
-  consultations.forEach((c, i) => {
-    const name = clientName(c.client);
-    let badge = 'badge-accepted';
-    let badgeText = 'Consultation';
-    const notes = (c.notes || '').toLowerCase();
-    if (notes.includes('no show') || notes.includes('no-show')) { badge = 'badge-noshow'; badgeText = 'No-Show'; }
-    else if (notes.includes('cancel')) { badge = 'badge-cancelled'; badgeText = 'Cancelled'; }
-    else if (notes.includes('declined') || c.source === 'consultation_decline') { badge = 'badge-declined'; badgeText = 'Declined'; }
-    else if (notes.includes('package') || notes.includes('enrolled')) { badge = 'badge-accepted'; badgeText = 'Accepted'; }
-
-    html += `<div class="appt-row">
-      <span class="appt-badge ${badge}">${badgeText}</span>
-      <div class="appt-info">
-        <div class="appt-name">${esc(name)}</div>
-        <div class="appt-detail">${esc(c.notes || '—')}</div>
-        <div class="appt-notes">
-          <label>Additional context for report (optional)</label>
-          <textarea id="consult-note-${i}" placeholder="e.g. Was close to signing, main objection was cost. Very interested in 2x/week package..."></textarea>
-        </div>
-      </div>
-    </div>`;
-  });
-
-  // Follow-ups
-  followups.forEach((f, i) => {
-    const name = clientName(f.client);
-    html += `<div class="appt-row">
-      <span class="appt-badge badge-followup">6-Wk Follow-Up</span>
-      <div class="appt-info">
-        <div class="appt-name">${esc(name)}</div>
-        <div class="appt-detail">${esc(f.reason || '—')}${f.notes ? ' · ' + esc(f.notes) : ''}</div>
-        <div class="appt-notes">
-          <label>How did the follow-up go? (optional)</label>
-          <textarea id="followup-note-${i}" placeholder="e.g. Converted — signed up for 1x/week Training package. Still thinking about cost. Rescheduled for next week."></textarea>
-        </div>
-      </div>
-    </div>`;
-  });
-
-  // Monthly check-ins
-  checkins.forEach((ck, i) => {
-    const name = clientName(ck.client);
-    html += `<div class="appt-row">
-      <span class="appt-badge badge-checkin">Monthly Review</span>
-      <div class="appt-info">
-        <div class="appt-name">${esc(name)}</div>
-        <div class="appt-detail">Weight: ${ck.now_weight || '—'} lb · BF: ${ck.now_body_fat_pct || '—'}% · Lean: ${ck.now_lean || '—'} lb</div>
-        <div class="appt-notes">
-          <label>Highlights to include in report (optional)</label>
-          <textarea id="checkin-note-${i}" placeholder="e.g. Down 4 lbs this month, really motivated. Struggled with nutrition. Adjusted program to add more cardio."></textarea>
-        </div>
-      </div>
-    </div>`;
-  });
-
-  document.getElementById('apptList').innerHTML = html;
-  document.getElementById('generateBtn').disabled = false;
-  document.getElementById('generateHint').textContent = dayData.consultations.length + ' consult(s) · ' + dayData.followups.length + ' follow-up(s) · ' + dayData.checkins.length + ' review(s)';
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-async function generateReport() {
-  document.getElementById('loadingOverlay').classList.add('open');
-  document.getElementById('generateBtn').disabled = true;
-
-  const { date, consultations, checkins, followups } = dayData;
-  const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
-
-  // Collect extra notes entered by Ted
-  const consultNotes = consultations.map((c, i) => ({
-    name: clientName(c.client),
-    type: 'consultation',
-    systemNotes: c.notes || '',
-    tedNotes: (document.getElementById('consult-note-' + i) || {}).value || '',
-    outcome: detectOutcome(c)
-  }));
-
-  const followupNotes = followups.map((f, i) => ({
-    name: clientName(f.client),
-    type: 'followup',
-    systemNotes: (f.reason || '') + ' ' + (f.notes || ''),
-    tedNotes: (document.getElementById('followup-note-' + i) || {}).value || '',
-    outcome: 'follow-up appointment'
-  }));
-
-  const checkinNotes = checkins.map((ck, i) => ({
-    name: clientName(ck.client),
-    type: 'checkin',
-    systemNotes: 'Weight: ' + (ck.now_weight||'—') + ' lb, BF: ' + (ck.now_body_fat_pct||'—') + '%, Lean: ' + (ck.now_lean||'—') + ' lb. ' + (ck.coach_notes||''),
-    tedNotes: (document.getElementById('checkin-note-' + i) || {}).value || '',
-    outcome: 'monthly review'
-  }));
-
-  const allItems = [...consultNotes, ...followupNotes, ...checkinNotes];
-
-  const prompt = `You are writing a brief end-of-day PT summary from Coach Ted Scholl at Retro Fitness of Fairless Hills for the corporate fitness director, Keelin. The tone should be professional but not stiff — this is a gym, not a boardroom. Write like you're giving a smart, confident verbal update at the end of the day. Use plain language, proper punctuation, and complete sentences. No bullet points. No markdown. No asterisks. No emojis in the body. Paragraph breaks between sections.
-
-Date: ${dateLabel}
-Location: Retro Fitness of Fairless Hills, 516 Lincoln Hwy, Fairless Hills, PA
-Advisor: Coach Ted Scholl
-
-Here is the day's activity:
-
-${allItems.map(item => {
-  let block = `TYPE: ${item.type.toUpperCase()}\nCLIENT: ${item.name}\nOUTCOME: ${item.outcome}\nNOTES: ${item.systemNotes}`;
-  if (item.tedNotes) block += `\nCOACH NOTES: ${item.tedNotes}`;
-  return block;
-}).join('\n\n')}
-
-IMPORTANT RULES:
-- Lead with wins. If anyone signed up, mention it first and make it feel like a win.
-- For no-shows or cancellations, always state clearly that a reschedule reminder has been added in the scheduling system at the front desk.
-- For declines, mention the reason if known and the follow-up date if available. Be matter-of-fact, not defeated.
-- For follow-ups, say whether they converted, are still deciding, or were rescheduled.
-- For monthly reviews, give a one-sentence progress highlight.
-- Close with one sentence on overall momentum or anything to watch.
-- Total length should be 250-400 words. Concise but complete.
-- Sign off: Coach Ted Scholl, Retro Fitness of Fairless Hills
-
-Structure (use these as natural paragraph breaks, not bold headers):
-1. Day at a Glance (one sentence overview)
-2. New Enrollments (if any)
-3. Follow-Ups (if any)
-4. Monthly Reviews (if any)
-5. Declines (if any)
-6. No-Shows / Cancellations (if any)
-7. Closing thought`;
-
-  try {
-    const r = await fetch(WORKER + '/proxy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
-    const data = await r.json();
-    if (data.error) throw new Error(data.error.message || 'AI error');
-    const text = (data.content || []).map(b => b.text || '').join('').trim();
-    generatedReport = text;
-    document.getElementById('reportContent').textContent = text;
-    document.getElementById('reportCard').style.display = 'block';
-    document.getElementById('reportCard').scrollIntoView({ behavior:'smooth' });
-  } catch(e) {
-    // Fallback: manual template if AI call fails
-    generatedReport = buildFallbackReport(dateLabel, consultNotes, followupNotes, checkinNotes);
-    document.getElementById('reportContent').textContent = generatedReport;
-    document.getElementById('reportCard').style.display = 'block';
-    document.getElementById('reportCard').scrollIntoView({ behavior:'smooth' });
-  }
-
-  document.getElementById('loadingOverlay').classList.remove('open');
-  document.getElementById('generateBtn').disabled = false;
+function openReport(dateStr, content) {
+  currentReport = { date: dateStr, content };
+  const d = new Date(dateStr + 'T12:00:00');
+  const fullDate = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+  document.getElementById('modalTitle').textContent = fullDate;
+  document.getElementById('printDate').textContent = 'End of Day Report — ' + fullDate;
+  document.getElementById('reportText').textContent = content;
+  document.getElementById('detailModal').classList.add('open');
 }
 
-function detectOutcome(c) {
-  const notes = (c.notes || '').toLowerCase();
-  const source = c.source || '';
-  if (notes.includes('no show') || notes.includes('no-show')) return 'no-show';
-  if (notes.includes('cancel')) return 'cancelled';
-  if (notes.includes('declined') || source.includes('decline')) return 'declined PT';
-  if (notes.includes('package') || notes.includes('enrolled') || notes.includes('accepted')) return 'enrolled';
-  return 'consultation completed';
-}
-
-function buildFallbackReport(dateLabel, consultNotes, followupNotes, checkinNotes) {
-  const total = consultNotes.length + followupNotes.length + checkinNotes.length;
-  const accepted = consultNotes.filter(c => c.outcome === 'enrolled');
-  const declined = consultNotes.filter(c => c.outcome === 'declined PT');
-  const noshows = consultNotes.filter(c => c.outcome === 'no-show' || c.outcome === 'cancelled');
-
-  let out = `End of Day Report — ${dateLabel}\nRetro Fitness of Fairless Hills | Coach Ted Scholl\n\n`;
-  out += `We had ${total} appointment${total !== 1 ? 's' : ''} today`;
-  if (accepted.length) out += `, with ${accepted.length} new enrollment${accepted.length !== 1 ? 's' : ''}`;
-  out += '.\n\n';
-  if (accepted.length) { out += 'New Enrollments:\n'; accepted.forEach(c => { out += `${c.name} signed up today.${c.tedNotes ? ' ' + c.tedNotes : ''}\n`; }); out += '\n'; }
-  if (followupNotes.length) { out += 'Follow-Ups:\n'; followupNotes.forEach(f => { out += `${f.name} — follow-up completed.${f.tedNotes ? ' ' + f.tedNotes : ''}\n`; }); out += '\n'; }
-  if (checkinNotes.length) { out += 'Monthly Reviews:\n'; checkinNotes.forEach(ck => { out += `${ck.name} — ${ck.systemNotes}${ck.tedNotes ? ' ' + ck.tedNotes : ''}\n`; }); out += '\n'; }
-  if (declined.length) { out += 'Declines:\n'; declined.forEach(c => { out += `${c.name} passed on PT today.${c.tedNotes ? ' ' + c.tedNotes : ''}\n`; }); out += '\n'; }
-  if (noshows.length) { out += 'No-Shows / Cancellations:\n'; noshows.forEach(c => { out += `${c.name} — ${c.outcome}. A reschedule reminder has been added in the scheduling system at the front desk.\n`; }); out += '\n'; }
-  out += '\nCoach Ted Scholl\nRetro Fitness of Fairless Hills';
-  return out;
+function closeModal() {
+  document.getElementById('detailModal').classList.remove('open');
 }
 
 function copyReport() {
-  navigator.clipboard.writeText(generatedReport).then(() => {
+  if (!currentReport) return;
+  navigator.clipboard.writeText(currentReport.content).then(() => {
     const btn = event.target;
     btn.textContent = '✓ Copied';
     setTimeout(() => btn.textContent = '📋 Copy', 2000);
@@ -464,15 +180,36 @@ function copyReport() {
 }
 
 function downloadPDF() {
-  const date = document.getElementById('reportDate').value || new Date().toISOString().slice(0,10);
-  const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
-  document.getElementById('printDate').textContent = 'End of Day Report — ' + dateLabel;
-  document.title = 'EOD Report ' + date + ' — Coach Ted Scholl';
+  if (!currentReport) return;
+  document.title = 'EOD Report ' + currentReport.date + ' — Coach Ted Scholl';
   window.print();
 }
 
-// Pre-set to today on load
-window.addEventListener('DOMContentLoaded', setToday);
+async function checkToday() {
+  const btn = document.getElementById('checkTodayBtn');
+  btn.disabled = true;
+  btn.textContent = 'Checking...';
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const r = await fetch(WORKER + '/eod/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: today })
+    });
+    const d = await r.json();
+    if (d.generated) {
+      await loadLog();
+      btn.textContent = '✓ Updated';
+    } else {
+      btn.textContent = d.reason && d.reason.includes('No activity') ? 'Nothing today' : '✓ Checked';
+    }
+  } catch(e) {
+    btn.textContent = 'Error';
+  }
+  setTimeout(() => { btn.textContent = '↻ Check Today'; btn.disabled = false; }, 2500);
+}
+
+loadLog();
 </script>
 </body>
 </html>
