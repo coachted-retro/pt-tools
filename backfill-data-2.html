@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backfill Client Data 2 — Retro Fitness PT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--green-light:#ECFDF3;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:20}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)}
+  .topbar .spacer{flex:1}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 20px 60px}
+  .page-title{font-family:'Oswald';font-size:24px;font-weight:600;margin-bottom:6px}
+  .page-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
+  .summary-bar{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 20px;display:flex;gap:28px;margin-bottom:18px;font-size:13px}
+  .summary-bar strong{font-size:20px;display:block;font-family:'Oswald'}
+  .client-card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+  .card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-size:13px;font-weight:600;flex-shrink:0}
+  .card-header-left{display:flex;align-items:center;gap:10px}
+  .client-name{font-weight:700;font-size:14px}
+  .client-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .status-badge{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase}
+  .badge-ready{background:var(--green-light);color:var(--green)}
+  .badge-done{background:#e0f2fe;color:#0369a1}
+  .badge-error{background:#fee2e2;color:#991b1b}
+  .badge-update{background:#fef3c7;color:#92400e}
+  .action-row{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:var(--soft)}
+  .import-status{font-size:12px;color:var(--muted);flex:1}
+  .import-status.ok{color:var(--green);font-weight:600}
+  .import-status.err{color:var(--red);font-weight:600}
+  .note-pill{font-size:11px;background:#fef3c7;color:#92400e;border-radius:6px;padding:3px 8px;display:inline-block;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="t">Backfill <span>Client Data 2</span></div>
+  <div class="spacer"></div>
+  <a class="btn" href="command-center.html">← Command Center</a>
+</div>
+<div class="wrap">
+  <div class="page-title">Backfill Batch 2 — New Clients &amp; Updates</div>
+  <p class="page-sub">Writes InBody scans and consultation notes for new clients not covered in the original backfill. Also updates the Sanjay record with full last name. Do NOT re-run backfill-data.html after running this — overlap will cause duplicate scans.</p>
+  <div class="summary-bar">
+    <div><strong id="total-count">5</strong>Clients</div>
+    <div><strong id="done-count">0</strong>Done</div>
+    <div><strong id="fail-count">0</strong>Errors</div>
+  </div>
+  <div style="margin-bottom:18px;">
+    <button class="btn red" onclick="backfillAll()">&#11014; Backfill All</button>
+  </div>
+  <div id="cards"></div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+// mode: 'new' = insert client + inbody + consult
+//       'update' = find existing client by first name, update last_name, then insert inbody + consult
+const DATA = [
+
+  // 1. Connor Linton — new client, baseline InBody Jan 6 2026
+  { name: 'Connor Linton', mode: 'new',
+    client: {
+      first_name: 'Connor', last_name: 'Linton',
+      gender: 'M', age: 27, status: 'active',
+      advisor: 'Ted Scholl', coach: 'Ted Scholl',
+      goal_primary: 'Body recomposition — lose fat, build lean muscle',
+      notes: 'Firefighter (Yardley Fire/Makefield). Month 2 of 12 as of May 2026. 12-session monthly schedule.',
+      package: 'Elite Strength 12-Month'
+    },
+    inbody: {
+      scan_date: '2026-01-06', weight: 133.7, lean_mass: 96.8,
+      body_fat_pct: 27.6, fat_mass: 36.9, bmi: 22.3,
+      skeletal_muscle: 53.1,
+      notes: 'InBody270 baseline. Age 27, 5ft5in. Jan 2026 starting point.'
+    },
+    consult: {
+      consult_date: '2026-01-06', advisor: 'Ted Scholl',
+      weight: 133.7, lean_mass: 96.8, body_fat_pct: 27.6, fat_mass: 36.9, bmi: 22.3,
+      goals: 'Body recomposition — lose fat and build lean muscle. 12-month program Month 1 baseline.',
+      medical_notes: 'No significant medical history. Firefighter with high physical baseline.',
+      diet_habits: 'Calorie target 2050 kcal, protein ~130g (target 160g). Water ~72oz (target 96oz). 22/30 days on plan.',
+      assessment_summary: 'Month 2 InBody (May 2026): 136.9 lb, 56.0 SMM, 35.1 BF, 25.7% BF. Muscle gain +2.9 lb, fat loss -2.7 lb month-over-month.',
+      advisor_notes: 'Left arm lagging (80.1% vs right 88.5%). Unilateral work prescribed. Fire dept shifts require schedule flexibility. Program: 10-12 sessions/month.',
+      outcome: 'enrolled'
+    }
+  },
+
+  // 2. Paul Brahan — new client, InBody Jun 7 2026
+  { name: 'Paul Brahan', mode: 'new',
+    client: {
+      first_name: 'Paul', last_name: 'Brahan',
+      gender: 'M', age: 41, status: 'active',
+      advisor: 'Ted Scholl', coach: 'Ted Scholl',
+      goal_primary: 'Lose 45-55 lb fat, reach 190-200 lb, build lean muscle',
+      notes: '18 prior surgeries including cancer — no current limitations. 4 days/week: Mon 6pm + Tue 6:30pm coached, 2 self-guided. 12-month program.',
+      package: 'Elite Strength 12-Month'
+    },
+    inbody: {
+      scan_date: '2026-06-07', weight: 245.7, lean_mass: 149.9,
+      body_fat_pct: 39.0, fat_mass: 95.8, bmi: 33.3,
+      skeletal_muscle: 84.9,
+      notes: 'InBody270. Age 41, 6ft. Legs slightly underdeveloped (97-98%). Prior training experience.'
+    },
+    consult: {
+      consult_date: '2026-06-07', advisor: 'Ted Scholl',
+      weight: 245.7, lean_mass: 149.9, body_fat_pct: 39.0, fat_mass: 95.8, bmi: 33.3,
+      goals: 'Lose 45-55 lb fat, reach 190-200 lb target. 6-month primary / 12-month full. Reduce BF from 39% to 18-22%.',
+      medical_notes: 'MEDICAL: 18 prior surgeries including cancer battle — no current limitations stated. Full range of movements available.',
+      diet_habits: 'Currently 2 meals/day, no breakfast. Protein significantly below target. Nutrition is primary barrier, not training.',
+      assessment_summary: 'Prior training experience, knows foundational movement patterns. BMR 1839 kcal/day. Arms/trunk proportional (101-103%). Legs slightly underdeveloped (97-98%).',
+      advisor_notes: 'Macro targets: 180-200g protein, 180-220g carbs, 55-70g fat, 2100-2300 kcal/day. Add breakfast immediately (40g protein). First check-in July 7, 2026.',
+      outcome: 'enrolled'
+    }
+  },
+
+  // 3. Wayne Brooks — new client, InBody May 9 2026 (InBody ID 9083774286)
+  { name: 'Wayne Brooks', mode: 'new',
+    client: {
+      first_name: 'Wayne', last_name: 'Brooks',
+      gender: 'M', age: 41, status: 'active',
+      advisor: 'Ted Scholl', coach: 'Ted Scholl',
+      goal_primary: 'Fat loss and body recomposition',
+      notes: 'Age 41, 5ft8in. Athletic build. InBody history: May 9 and Jun 19 2026 on file.',
+      package: 'Elite Strength'
+    },
+    inbody: {
+      scan_date: '2026-05-09', weight: 153.1, lean_mass: 130.5,
+      body_fat_pct: 14.8, fat_mass: 22.6, bmi: 23.3,
+      skeletal_muscle: 75.0,
+      notes: 'InBody270. Age 41, 5ft8in. Strong lean base, very low body fat. All segments above 96%.'
+    },
+    consult: {
+      consult_date: '2026-05-09', advisor: 'Ted Scholl',
+      weight: 153.1, lean_mass: 130.5, body_fat_pct: 14.8, fat_mass: 22.6, bmi: 23.3,
+      goals: 'Fat loss and body recomposition. Maintain lean mass while improving conditioning.',
+      medical_notes: 'No significant medical issues noted on file.',
+      assessment_summary: 'Excellent lean base at 14.8% BF. Jun 19 2026 follow-up scan: 140.0 lb, 56.7 SMM, 26.7% BF — note significant weight change between scans may indicate different scan reference.',
+      advisor_notes: 'Jun 19 2026 InBody also on file showing updated composition. Strong segmental distribution.',
+      outcome: 'enrolled'
+    }
+  },
+
+  // 4. Sanjay Patel — UPDATE existing "Sanjay" record: add last name, then insert latest InBody + consult
+  { name: 'Sanjay', mode: 'update',
+    updateFields: { last_name: 'Patel' },
+    inbody: {
+      scan_date: '2026-05-29', weight: 167.8, lean_mass: 132.7,
+      body_fat_pct: 20.9, fat_mass: 35.1, bmi: 24.1,
+      skeletal_muscle: 75.2,
+      notes: 'InBody270. Month 8 of 12 scan. Lean mass -2.4 lb, fat +1.7 lb vs prior month — nutrition adjustment required.'
+    },
+    consult: {
+      consult_date: '2026-05-29', advisor: 'Ted Scholl',
+      weight: 167.8, lean_mass: 132.7, body_fat_pct: 20.9, fat_mass: 35.1, bmi: 24.1,
+      goals: 'Reverse lean mass decline, hit protein targets, complete 8 sessions/month. Target +2 lb lean mass by June 29.',
+      medical_notes: 'No conditions on file.',
+      diet_habits: 'Calories ~2000 (target 2200). Protein 90-100g (target 135-170g — critically below). Water 48-56oz (target 80oz). 18/30 days on plan.',
+      assessment_summary: 'Month 8 of 12. 6/8 sessions completed (2 missed travel). Session quality 8/10. Endurance and strength gains strong over 8 months. Sleep 5-6 hrs — primary recovery limiter.',
+      advisor_notes: 'InBody history (ID 7324294397): Jul 2025 170.1 lb 23% BF, Jan 2026 168.5 lb 21.3% BF, Mar 31 2026 168.5 lb 19.8% BF, May 29 2026 167.8 lb 20.9%. Month 9: hypertrophy focus arms/legs.',
+      outcome: 'enrolled'
+    }
+  },
+
+  // 5. Pranav Kanukollu — new client, InBody Apr 4 2026 baseline
+  { name: 'Pranav Kanukollu', mode: 'new',
+    client: {
+      first_name: 'Pranav', last_name: 'Kanukollu',
+      gender: 'M', age: 35, status: 'active',
+      advisor: 'Ted Scholl', coach: 'Ted Scholl',
+      goal_primary: 'Fat loss and body recomposition',
+      notes: 'Age 35, 5ft9in. Two InBody scans on file: Sep 2025 baseline and Apr 4 2026.',
+      package: 'Elite Strength'
+    },
+    inbody: {
+      scan_date: '2026-04-04', weight: 211.3, lean_mass: 162.5,
+      body_fat_pct: 23.1, fat_mass: 48.8, bmi: 31.2,
+      skeletal_muscle: 93.9,
+      notes: 'InBody270. Age 35, 5ft9in. Improved from Sep 2025 baseline (211.9 lb, 25.7% BF). Strong upper body (126-128% arms, 117% trunk). Legs 103-104%.'
+    },
+    consult: {
+      consult_date: '2026-04-04', advisor: 'Ted Scholl',
+      weight: 211.3, lean_mass: 162.5, body_fat_pct: 23.1, fat_mass: 48.8, bmi: 31.2,
+      goals: 'Fat loss and body recomposition. Reduce body fat percentage while maintaining strong lean base.',
+      medical_notes: 'No significant medical issues noted on file.',
+      diet_habits: 'No diet specifics on file. Strong lean mass suggests structured training background.',
+      assessment_summary: 'Sep 2025 InBody: 211.9 lb, 90.6 SMM, 25.7% BF. Apr 4 2026: 211.3 lb, 93.9 SMM, 23.1% BF. Net: +3.3 lb lean, -2.6% BF. Excellent recomposition trend.',
+      advisor_notes: 'Segmental Apr 2026: Left arm 126.1%, Right arm 128.4%, Trunk 117%, Legs 103-104%. Well-balanced, upper body dominant.',
+      outcome: 'enrolled'
+    }
+  }
+
+];
+
+let backfillState = {};
+
+function initials(n){ const p=n.trim().split(/\s+/); return ((p[0]||'')[0]+((p[1]||'')[0]||'')).toUpperCase(); }
+
+function renderCards(){
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  DATA.forEach((d, i) => {
+    const state = backfillState[i] || 'ready';
+    const isUpdate = d.mode === 'update';
+    const badgeClass = state==='done'?'badge-done':state==='error'?'badge-error':isUpdate?'badge-update':'badge-ready';
+    const badgeText = state==='done'?'Done':state==='error'?'Error':isUpdate?'Update':'Ready';
+    const card = document.createElement('div');
+    card.className = 'client-card';
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-header-left">
+          <div class="avatar">${initials(d.name)}</div>
+          <div>
+            <div class="client-name">${d.name}</div>
+            <div class="client-meta">${d.inbody ? 'InBody ' + d.inbody.scan_date : 'No InBody'} &middot; ${isUpdate ? 'UPDATE existing record + new scans' : 'New client insert'}</div>
+            ${isUpdate ? '<span class="note-pill">Updates last_name on existing record</span>' : ''}
+          </div>
+        </div>
+        <span class="status-badge ${badgeClass}" id="badge-${i}">${badgeText}</span>
+      </div>
+      <div class="action-row">
+        <button class="btn red" id="btn-${i}" onclick="backfillClient(${i})">Backfill</button>
+        <span class="import-status" id="status-${i}">Ready</span>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+async function db(body){
+  const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+async function findClientId(name){
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0];
+  const candidates = await db({ op:'select', table:'clients', where:{ first_name:first }, limit:50 });
+  const target = name.trim().toLowerCase();
+  const rows = candidates.results || [];
+  // exact full name match first
+  let match = rows.find(c => ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase() === target);
+  // fallback: first name only (for Sanjay)
+  if (!match && parts.length === 1) match = rows[0];
+  return match ? match.id : null;
+}
+
+async function backfillClient(i){
+  const d = DATA[i];
+  const btn = document.getElementById('btn-'+i);
+  const status = document.getElementById('status-'+i);
+  const badge = document.getElementById('badge-'+i);
+  btn.disabled = true;
+  status.textContent = 'Finding client...';
+  status.className = 'import-status';
+
+  try {
+    let clientId;
+
+    if (d.mode === 'update') {
+      // Find by first name
+      status.textContent = 'Looking up existing record...';
+      clientId = await findClientId(d.name);
+      if (!clientId) throw new Error('Client "' + d.name + '" not found in D1 — run original backfill first.');
+
+      // Update last_name (and any other updateFields)
+      if (d.updateFields && Object.keys(d.updateFields).length > 0) {
+        status.textContent = 'Updating client record...';
+        const upd = await db({ op:'update', table:'clients', where:{ id: clientId }, values: d.updateFields });
+        if (upd.error) throw new Error('Update client: ' + upd.error);
+      }
+
+    } else {
+      // New client — insert client row first
+      status.textContent = 'Creating client record...';
+      const clientPayload = Object.assign({}, d.client);
+      Object.keys(clientPayload).forEach(k => { if (clientPayload[k] == null || clientPayload[k] === '') delete clientPayload[k]; });
+      const rc = await db({ op:'insert', table:'clients', values: clientPayload });
+      if (rc.error) throw new Error('Client insert: ' + rc.error);
+      // Fetch the newly created client id
+      clientId = await findClientId(d.client.first_name + ' ' + d.client.last_name);
+      if (!clientId) throw new Error('Inserted client not found — check worker /db insert response.');
+    }
+
+    // Insert InBody scan
+    if (d.inbody) {
+      status.textContent = 'Writing InBody scan...';
+      const ibPayload = Object.assign({ client_id: clientId }, d.inbody);
+      Object.keys(ibPayload).forEach(k => { if (ibPayload[k] == null) delete ibPayload[k]; });
+      const r1 = await db({ op:'insert', table:'inbody_scans', values: ibPayload });
+      if (r1.error) throw new Error('InBody: ' + r1.error);
+    }
+
+    // Insert consultation
+    if (d.consult) {
+      status.textContent = 'Writing consultation notes...';
+      const cPayload = Object.assign({ client_id: clientId }, d.consult);
+      Object.keys(cPayload).forEach(k => { if (cPayload[k] == null || cPayload[k] === '') delete cPayload[k]; });
+      const r2 = await db({ op:'insert', table:'consultations', values: cPayload });
+      if (r2.error) throw new Error('Consultation: ' + r2.error);
+    }
+
+    backfillState[i] = 'done';
+    badge.textContent = 'Done';
+    badge.className = 'status-badge badge-done';
+    status.textContent = (d.mode === 'update' ? '✓ Updated client ID ' : '✓ Created client ID ') + clientId;
+    status.className = 'import-status ok';
+    btn.textContent = '✓ Done';
+  } catch(e) {
+    backfillState[i] = 'error';
+    badge.textContent = 'Error';
+    badge.className = 'status-badge badge-error';
+    status.textContent = '✗ ' + e.message;
+    status.className = 'import-status err';
+    btn.disabled = false;
+  }
+  updateCounts();
+}
+
+async function backfillAll(){
+  for (let i=0; i<DATA.length; i++){
+    if (backfillState[i]==='done') continue;
+    await backfillClient(i);
+    await new Promise(r=>setTimeout(r,300));
+  }
+}
+
+function updateCounts(){
+  document.getElementById('done-count').textContent = Object.values(backfillState).filter(s=>s==='done').length;
+  document.getElementById('fail-count').textContent = Object.values(backfillState).filter(s=>s==='error').length;
+}
+
+renderCards();
+</script>
+</body>
+</html>
