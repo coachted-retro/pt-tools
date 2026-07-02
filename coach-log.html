@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Coach Daily Log — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--blue:#2563EB;--lgreen:#E3F5EC;--lred:#FEF2F2;--lamber:#FFF7ED;--lblue:#EFF6FF;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;position:sticky;top:0;z-index:40;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .role-tag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9CA3AF;padding:3px 8px;border:1px solid #374151;border-radius:20px}
+.topbar .spacer{flex:1}
+.topbar .date-badge{font-size:11px;color:#D1D5DB}
+.topbar .submit-btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer}
+.topbar .submit-btn:hover{background:var(--red-dk)}
+
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+
+.coach-select{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.coach-select label{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.coach-select select{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:'Inter';font-size:14px;font-weight:600;color:var(--ink);background:var(--soft)}
+.coach-select select:focus{outline:none;border-color:var(--red)}
+
+.section{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.section-header{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.section-header:hover{background:var(--soft)}
+.section-num{font-family:'Oswald';font-size:10px;font-weight:800;letter-spacing:1px;color:var(--red);background:var(--lred);padding:3px 8px;border-radius:6px}
+.section-title{font-family:'Oswald';font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;flex:1}
+.section-status{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+.status-done{background:var(--lgreen);color:#065F46}
+.status-empty{background:var(--soft);color:var(--muted)}
+.chevron{color:var(--muted);font-size:14px;transition:transform .2s}
+.section.collapsed .chevron{transform:rotate(-90deg)}
+.section-body{padding:16px}
+.section.collapsed .section-body{display:none}
+
+label{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:'Inter';font-size:13px;color:var(--ink);background:var(--soft)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red);background:#fff}
+textarea{resize:vertical;min-height:72px}
+.field{margin-bottom:12px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+
+table.log-table{width:100%;border-collapse:collapse;font-size:12px}
+table.log-table th{text-align:left;font-family:'Oswald';font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:8px 8px 6px;border-bottom:2px solid var(--line)}
+table.log-table td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.log-table tr:last-child td{border-bottom:none}
+table.log-table input,table.log-table select{background:#fff;padding:5px 7px;font-size:12px}
+.del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px}.del-btn:hover{color:var(--red)}
+.add-row-btn{font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--red);background:none;border:1px dashed #FECACA;border-radius:8px;padding:7px 14px;cursor:pointer;width:100%;margin-top:6px}
+
+.note-composer{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--soft)}
+.note-composer textarea{margin-bottom:8px;background:#fff}
+.priority-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.priority-row label{text-transform:none;font-size:12px;margin:0}
+.prio-opt{display:flex;align-items:center;gap:5px;cursor:pointer}
+.prio-opt input[type=radio]{accent-color:var(--red);width:13px;height:13px}
+.note-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.note-item{border-radius:8px;padding:9px 12px;font-size:12px;border:1px solid}
+.note-item.fyi{background:var(--lblue);border-color:#BFDBFE;color:var(--blue)}
+.note-item.follow_up{background:var(--lamber);border-color:#FED7AA;color:#C2410C}
+.note-item.urgent{background:var(--lred);border-color:#FECACA;color:var(--red)}
+.note-meta{display:flex;justify-content:space-between;margin-bottom:3px}
+.note-label{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;opacity:.7}
+.note-del{background:none;border:none;cursor:pointer;opacity:.5;font-size:12px}
+
+.submit-panel{background:var(--ink);border-radius:14px;padding:20px;margin-top:20px;text-align:center}
+.submit-panel h3{font-family:'Oswald';font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:6px}
+.submit-panel p{font-size:12px;color:#9CA3AF;margin-bottom:16px}
+.big-btn{font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:14px 40px;border-radius:10px;cursor:pointer;width:100%}
+.big-btn:hover{background:var(--red-dk)}
+.big-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:12px 24px;border-radius:10px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+@media(max-width:600px){.field-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="role-tag" id="roleTag">Coach Log</div>
+  <div class="spacer"></div>
+  <div class="date-badge" id="dateBadge"></div>
+  <button class="submit-btn" onclick="confirmSubmit()">Submit to Dani</button>
+  <div class="logo" style="margin-left:8px">Body <span>Shoppe</span></div>
+</div>
+
+<div class="wrap">
+
+  <!-- COACH SELECTOR -->
+  <div class="coach-select">
+    <label>Who is submitting this log?</label>
+    <select id="coachSelect" onchange="updateCoachTag()">
+      <option value="">-- Select Your Name --</option>
+      <option value="Roman">Roman Benedetti</option>
+      <option value="Marin">Marin Tyler</option>
+      <option value="James">James</option>
+      <option value="Danielle">Danielle Pellegrini</option>
+      <option value="Carissa">Carissa Baker</option>
+      <option value="Jessica">Jessica Ortolano</option>
+      <option value="Stephanie">Stephanie Jones</option>
+    </select>
+  </div>
+
+  <!-- SECTION 1: SESSIONS -->
+  <div class="section" id="sec-sessions">
+    <div class="section-header" onclick="toggleSection('sec-sessions')">
+      <span class="section-num">01</span>
+      <span class="section-title">Sessions Today</span>
+      <span class="section-status status-empty" id="status-sessions">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr><th>Client Name</th><th>Session Type</th><th>Outcome</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="sessions-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addSessionRow()">+ Add Session</button>
+    </div>
+  </div>
+
+  <!-- SECTION 2: CLIENT PROGRESS NOTES -->
+  <div class="section collapsed" id="sec-progress">
+    <div class="section-header" onclick="toggleSection('sec-progress')">
+      <span class="section-num">02</span>
+      <span class="section-title">Client Progress Notes</span>
+      <span class="section-status status-empty" id="status-progress">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr><th>Client</th><th>Progress Note</th><th>Flag</th><th></th></tr></thead>
+          <tbody id="progress-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addProgressRow()">+ Add Client Note</button>
+    </div>
+  </div>
+
+  <!-- SECTION 3: PT LEADS -->
+  <div class="section collapsed" id="sec-leads">
+    <div class="section-header" onclick="toggleSection('sec-leads')">
+      <span class="section-num">03</span>
+      <span class="section-title">PT Leads</span>
+      <span class="section-status status-empty" id="status-leads">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr><th>Name</th><th>Contact</th><th>Status</th><th>Notes</th><th></th></tr></thead>
+          <tbody id="leads-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addLeadRow()">+ Add Lead</button>
+    </div>
+  </div>
+
+  <!-- SECTION 4: FROZEN / PAST DUE -->
+  <div class="section collapsed" id="sec-flags">
+    <div class="section-header" onclick="toggleSection('sec-flags')">
+      <span class="section-num">04</span>
+      <span class="section-title">Client Flags</span>
+      <span class="section-status status-empty" id="status-flags">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field"><label>Frozen / Past Due / No-Show clients to flag</label>
+        <textarea id="client-flags" placeholder="e.g. Maria DiCostanzo — frozen, expected back July 10. Charles Panatano — medical hold, ortho appt scheduled." oninput="updateStatus('flags')"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: WINS + GAME PLAN -->
+  <div class="section collapsed" id="sec-wins">
+    <div class="section-header" onclick="toggleSection('sec-wins')">
+      <span class="section-num">05</span>
+      <span class="section-title">Wins & Game Plan</span>
+      <span class="section-status status-empty" id="status-wins">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field"><label>Notable Wins Today</label>
+        <textarea id="wins" placeholder="PRs, milestones, new sign-ups, great sessions..." oninput="updateStatus('wins')"></textarea>
+      </div>
+      <div class="field"><label>Game Plan for Tomorrow</label>
+        <textarea id="game-plan" placeholder="What's the focus tomorrow..." oninput="updateStatus('wins')"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: FLAGS FOR DANI -->
+  <div class="section collapsed" id="sec-notes">
+    <div class="section-header" onclick="toggleSection('sec-notes')">
+      <span class="section-num">06</span>
+      <span class="section-title">Flags for Dani</span>
+      <span class="section-status status-empty" id="status-notes">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-composer">
+        <label style="margin-bottom:6px;display:block">Add a Flag</label>
+        <textarea id="noteText" placeholder="Anything Dani needs to know..." rows="3"></textarea>
+        <div class="priority-row">
+          <label>Priority:</label>
+          <label class="prio-opt"><input type="radio" name="notePriority" value="fyi" checked><span style="font-size:12px;font-weight:600;color:var(--blue)">FYI</span></label>
+          <label class="prio-opt"><input type="radio" name="notePriority" value="follow_up"><span style="font-size:12px;font-weight:600;color:#C2410C">Follow-up</span></label>
+          <label class="prio-opt"><input type="radio" name="notePriority" value="urgent"><span style="font-size:12px;font-weight:600;color:var(--red)">Urgent</span></label>
+          <button class="add-row-btn" style="width:auto;padding:6px 14px;margin:0" onclick="addNote()">Add</button>
+        </div>
+      </div>
+      <div class="note-list" id="notesList"></div>
+    </div>
+  </div>
+
+  <div class="submit-panel">
+    <h3>Submit to Dani</h3>
+    <p id="submitHint">Your daily log appears on Dani's feed the moment you submit.</p>
+    <button class="big-btn" id="bigSubmitBtn" onclick="confirmSubmit()">Submit Daily Log to Dani</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const TODAY = new Date().toISOString().slice(0,10);
+const notes = [];
+document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+
+function toggleSection(id){document.getElementById(id).classList.toggle('collapsed')}
+function updateStatus(secId){
+  const sec=document.getElementById('sec-'+secId); if(!sec) return;
+  const inputs=sec.querySelectorAll('input:not([readonly]),textarea,select');
+  let filled=0; inputs.forEach(i=>{if((i.value||'').trim())filled++;});
+  const st=document.getElementById('status-'+secId);
+  if(st){st.textContent=filled?'Done':'Empty';st.className='section-status '+(filled?'status-done':'status-empty');}
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function updateCoachTag(){
+  const v=document.getElementById('coachSelect').value;
+  document.getElementById('roleTag').textContent=v?v+' — Coach Log':'Coach Log';
+}
+
+function addSessionRow(){
+  const tb=document.getElementById('sessions-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input type="text" placeholder="Client name" oninput="updateStatus('sessions')"></td>
+    <td><select oninput="updateStatus('sessions')"><option>PT Session</option><option>Welcome Workout</option><option>Group Class</option><option>Consultation</option></select></td>
+    <td><select oninput="updateStatus('sessions')"><option>SHOW</option><option>NO SHOW</option><option>CANCEL - RESCHEDULE</option><option>CANCEL CHARGE</option></select></td>
+    <td><input type="text" placeholder="Notes" oninput="updateStatus('sessions')"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove();updateStatus('sessions')">✕</button></td>`;
+  tb.appendChild(tr); updateStatus('sessions');
+}
+
+function addProgressRow(){
+  const tb=document.getElementById('progress-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input type="text" placeholder="Client" oninput="updateStatus('progress')"></td>
+    <td><textarea placeholder="Progress note..." style="height:50px" oninput="updateStatus('progress')"></textarea></td>
+    <td><select oninput="updateStatus('progress')"><option value="">None</option><option>Good progress</option><option>Needs attention</option><option>Frozen/hold</option><option>Renewal needed</option></select></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tb.appendChild(tr); updateStatus('progress');
+}
+
+function addLeadRow(){
+  const tb=document.getElementById('leads-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input type="text" placeholder="Name" oninput="updateStatus('leads')"></td>
+    <td><input type="text" placeholder="Phone / email" oninput="updateStatus('leads')"></td>
+    <td><select oninput="updateStatus('leads')"><option>New</option><option>Contacted</option><option>Interested</option><option>Closed</option><option>Not interested</option></select></td>
+    <td><input type="text" placeholder="Notes" oninput="updateStatus('leads')"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tb.appendChild(tr); updateStatus('leads');
+}
+
+function addNote(){
+  const txt=document.getElementById('noteText').value.trim();
+  if(!txt){showToast('Enter a note first');return;}
+  const prio=document.querySelector('input[name=notePriority]:checked').value;
+  notes.push({text:txt,priority:prio});
+  document.getElementById('noteText').value='';
+  renderNotes(); updateStatus('notes');
+}
+function removeNote(i){notes.splice(i,1);renderNotes();}
+function renderNotes(){
+  const labels={fyi:'FYI',follow_up:'Follow-up',urgent:'URGENT'};
+  document.getElementById('notesList').innerHTML=notes.map((n,i)=>
+    `<div class="note-item ${n.priority}"><div class="note-meta"><span class="note-label">${labels[n.priority]}</span><button class="note-del" onclick="removeNote(${i})">✕</button></div>${esc(n.text)}</div>`
+  ).join('');
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+function getTableRows(tbId){
+  const tb=document.getElementById(tbId); if(!tb) return [];
+  return Array.from(tb.querySelectorAll('tr')).map(tr=>Array.from(tr.querySelectorAll('input,select,textarea')).map(el=>el.value));
+}
+
+async function confirmSubmit(){
+  const coach=document.getElementById('coachSelect').value;
+  if(!coach){showToast('Select your name first');return;}
+  if(!confirm('Submit daily log to Dani?')) return;
+  const btn=document.getElementById('bigSubmitBtn');
+  btn.disabled=true; btn.textContent='Submitting...';
+  const data={
+    date:TODAY, authorName:coach, author_role:'pt_coach', gym_id:1,
+    notable_wins:document.getElementById('wins').value,
+    game_plan:document.getElementById('game-plan').value,
+    additional_notes:document.getElementById('client-flags').value,
+    notes:notes,
+    session_rows:getTableRows('sessions-body'),
+    progress_rows:getTableRows('progress-body'),
+    lead_rows:getTableRows('leads-body')
+  };
+  try{
+    const r=await fetch(WORKER+'/eod/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const resp=await r.json();
+    if(resp.ok||resp.id){
+      showToast('Submitted to Dani!',3000);
+      btn.textContent='✓ Submitted'; btn.style.background='var(--green)';
+      document.getElementById('submitHint').textContent='Submitted at '+new Date().toLocaleTimeString();
+    } else throw new Error(resp.error||'Failed');
+  } catch(e){
+    showToast('Submit failed: '+e.message,3000);
+    btn.disabled=false; btn.textContent='Submit Daily Log to Dani';
+  }
+}
+
+// Pre-add one session row
+addSessionRow();
+</script>
+</body>
+</html>

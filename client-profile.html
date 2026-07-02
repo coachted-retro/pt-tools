@@ -193,6 +193,8 @@ function openEdit(){
   setF('m_phone',CURRENT.phone); setF('m_gender',CURRENT.gender); setF('m_status',CURRENT.status||'active_pt');
   setF('m_coach',CURRENT.coach); setF('m_advisor',CURRENT.advisor); setF('m_package',CURRENT.package||'');
   setF('m_goal',CURRENT.goal_primary); setF('m_start',CURRENT.training_start_date);
+  setF('m_why',CURRENT.my_why||'');
+  setF('m_sessions_pw',CURRENT.sessions_per_week||'');
   document.getElementById('clientModal').classList.add('open');
 }
 function closeModal(){ document.getElementById('clientModal').classList.remove('open'); }
@@ -201,7 +203,7 @@ async function saveClient(){
   const vals={
     first_name:getF('m_first'), last_name:getF('m_last'), email:getF('m_email'), phone:getF('m_phone'),
     gender:getF('m_gender'), status:getF('m_status'), coach:getF('m_coach'), advisor:getF('m_advisor'),
-    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start')
+    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
   };
   if(!vals.first_name && !vals.last_name){ alert('Enter a name'); btn.disabled=false; btn.textContent='Save'; return; }
   async function write(v){ return EDIT_ID ? db({op:'update',table:'clients',values:v,where:{id:EDIT_ID}}) : db({op:'insert',table:'clients',values:v}); }
@@ -339,6 +341,35 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     statTile('Body Fat', stat.bf, '%', deltaHtml(stat.bf,first.bf,true))+
     statTile('BMI', stat.bmi, '', '')+
     '</div>';
+
+  // ── SESSION TRACKING BAR ──
+  const sessTotal = parseInt(client.sessions_total)||0;
+  const sessUsed  = parseInt(client.sessions_used)||0;
+  const sessRem   = parseInt(client.sessions_remaining)||0;
+  const sessPct   = sessTotal > 0 ? Math.min(100, Math.round((sessRem/sessTotal)*100)) : 0;
+  const sessColor = sessPct === 0 ? 'var(--red)' : sessPct < 25 ? 'var(--amber)' : 'var(--green)';
+  const sessLabel = sessTotal > 0
+    ? (sessRem === 0 ? '<span style="color:var(--red);font-weight:700">⚠ RENEWAL NEEDED</span>' : sessRem + ' of ' + sessTotal + ' sessions remaining')
+    : 'Sessions not set';
+  const freqLabel = client.sessions_per_week ? client.sessions_per_week + 'x/week' : '';
+  if (sessTotal > 0) {
+    html += '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:14px">' +
+      '<div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:5px">' +
+      '<span style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.3px">Session Package</span>' +
+      '<span style="font-size:12px;font-weight:600">' + sessLabel + '</span></div>' +
+      '<div style="height:8px;background:var(--bg);border-radius:6px;overflow:hidden">' +
+      '<div style="height:100%;width:' + sessPct + '%;background:' + sessColor + ';border-radius:6px;transition:width .4s"></div></div>' +
+      (freqLabel ? '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + freqLabel + ' · ' + esc(client.billing_type||'monthly EFT') + '</div>' : '') +
+      '</div></div>';
+  }
+
+  // ── MY WHY ──
+  if (client.my_why) {
+    html += '<div style="background:linear-gradient(135deg,var(--card),#FFFBEB);border:1px solid #FED7AA;border-radius:10px;padding:12px 16px;margin-bottom:12px">' +
+      '<div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--amber);margin-bottom:4px">MY WHY</div>' +
+      '<div style="font-size:14px;color:var(--ink);font-style:italic">&ldquo;' + esc(client.my_why) + '&rdquo;</div>' +
+      '</div>';
+  }
 
   // ── Workouts moved up top: this is the day-to-day tool, shown first ──
   html+='<div class="panel"><div class="ph"><h3>Workouts</h3><span class="pill" id="woPill">'+(workouts||[]).length+'</span></div><div class="pb" style="padding:0" id="woPanel">'+buildWorkoutPanel(workouts||[])+'</div></div>';
@@ -1004,7 +1035,9 @@ function renderScans(scans){
         </optgroup>
       </select></div>
       <div class="fld"><label>Training start date</label><input id="m_start" type="date"></div>
+      <div class="fld"><label>Sessions / Week</label><select id="m_sessions_pw"><option value="">—</option><option value="1">1x / week (4 sessions)</option><option value="2">2x / week (8 sessions)</option><option value="3">3x / week (12 sessions)</option></select></div>
       <div class="fld full"><label>Primary goal</label><input id="m_goal"></div>
+      <div class="fld full"><label>My Why (1 sentence — why they started)</label><input id="m_why" placeholder="e.g. I want to be around for my grandkids."></div>
     </div>
     <div class="mf">
       <button class="btn" onclick="closeModal()">Cancel</button>

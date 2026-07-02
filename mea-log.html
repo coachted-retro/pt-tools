@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MEA Shift Log — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--lgreen:#E3F5EC;--lred:#FEF2F2;--lamber:#FFF7ED;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;position:sticky;top:0;z-index:40;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .spacer{flex:1}
+.topbar .date-badge{font-size:11px;color:#D1D5DB}
+.topbar .submit-btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer}
+.wrap{max-width:720px;margin:0 auto;padding:18px 16px 60px}
+.mea-select{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.mea-select label{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
+.mea-select select{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:'Inter';font-size:14px;font-weight:600;color:var(--ink);background:var(--soft)}
+.section{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.section-header{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.section-header:hover{background:var(--soft)}
+.section-num{font-family:'Oswald';font-size:10px;font-weight:800;letter-spacing:1px;color:var(--red);background:var(--lred);padding:3px 8px;border-radius:6px}
+.section-title{font-family:'Oswald';font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;flex:1}
+.section-status{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+.status-done{background:var(--lgreen);color:#065F46}
+.status-empty{background:var(--soft);color:var(--muted)}
+.chevron{color:var(--muted);font-size:14px;transition:transform .2s}
+.section.collapsed .chevron{transform:rotate(-90deg)}
+.section-body{padding:16px}
+.section.collapsed .section-body{display:none}
+label{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:'Inter';font-size:13px;color:var(--ink);background:var(--soft)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red);background:#fff}
+textarea{resize:vertical;min-height:60px}
+.field{margin-bottom:12px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.chip-btn{font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;border:2px solid var(--line);background:var(--soft);color:var(--ink);padding:6px 14px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.chip-btn:hover{border-color:var(--red);color:var(--red)}
+.chip-btn.active{border-color:var(--red);background:var(--lred);color:var(--red)}
+.chip-btn .cnt{background:var(--red);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px}
+
+table.log-table{width:100%;border-collapse:collapse;font-size:12px}
+table.log-table th{text-align:left;font-family:'Oswald';font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:8px 8px 6px;border-bottom:2px solid var(--line)}
+table.log-table td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.log-table tr:last-child td{border-bottom:none}
+table.log-table input,table.log-table select{background:#fff;padding:5px 7px;font-size:12px}
+.del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px}.del-btn:hover{color:var(--red)}
+.add-row-btn{font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--red);background:none;border:1px dashed #FECACA;border-radius:8px;padding:7px 14px;cursor:pointer;width:100%;margin-top:6px}
+
+.submit-panel{background:var(--ink);border-radius:14px;padding:20px;margin-top:20px;text-align:center}
+.submit-panel h3{font-family:'Oswald';font-size:16px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:6px}
+.submit-panel p{font-size:12px;color:#9CA3AF;margin-bottom:14px}
+.big-btn{font-family:'Oswald';font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:12px 30px;border-radius:10px;cursor:pointer;width:100%}
+.big-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:12px 24px;border-radius:10px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+@media(max-width:500px){.field-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span style="font-family:'Oswald';font-size:14px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px">MEA Shift Log</span>
+  <div class="spacer"></div>
+  <div class="date-badge" id="dateBadge"></div>
+  <button class="submit-btn" onclick="confirmSubmit()">Submit to Sarah</button>
+  <div class="logo" style="margin-left:8px">Body <span>Shoppe</span></div>
+</div>
+
+<div class="wrap">
+  <div class="mea-select">
+    <label>Your Name</label>
+    <select id="meaSelect">
+      <option value="">-- Select Your Name --</option>
+    </select>
+  </div>
+
+  <!-- SHIFT INFO -->
+  <div class="section" id="sec-shift">
+    <div class="section-header" onclick="toggleSection('sec-shift')">
+      <span class="section-num">01</span>
+      <span class="section-title">Shift Info</span>
+      <span class="section-status status-empty" id="status-shift">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field-row">
+        <div class="field"><label>Shift Start</label><input type="time" id="shiftStart" oninput="updateStatus('shift')"></div>
+        <div class="field"><label>Shift End</label><input type="time" id="shiftEnd" oninput="updateStatus('shift')"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTREACH -->
+  <div class="section collapsed" id="sec-outreach">
+    <div class="section-header" onclick="toggleSection('sec-outreach')">
+      <span class="section-num">02</span>
+      <span class="section-title">Outreach</span>
+      <span class="section-status status-empty" id="status-outreach">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="chip-row">
+        <button class="chip-btn" onclick="addOutreach('call')">📞 Calls <span class="cnt" id="cnt-call">0</span></button>
+        <button class="chip-btn" onclick="addOutreach('text')">💬 Texts <span class="cnt" id="cnt-text">0</span></button>
+        <button class="chip-btn" onclick="addOutreach('floor_pull')">🏋️ Floor Pulls <span class="cnt" id="cnt-floor_pull">0</span></button>
+        <button class="chip-btn" onclick="addOutreach('appt_booked')">📅 Appts <span class="cnt" id="cnt-appt_booked">0</span></button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr><th>Type</th><th>Name</th><th>Phone</th><th>Outcome</th><th></th></tr></thead>
+          <tbody id="outreach-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addOutreachRow()">+ Add Entry</button>
+    </div>
+  </div>
+
+  <!-- PROSPECTS -->
+  <div class="section collapsed" id="sec-prospects">
+    <div class="section-header" onclick="toggleSection('sec-prospects')">
+      <span class="section-num">03</span>
+      <span class="section-title">Prospects</span>
+      <span class="section-status status-empty" id="status-prospects">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr><th>Name</th><th>Phone</th><th>Tour Date</th><th>Time</th><th>Note</th><th></th></tr></thead>
+          <tbody id="prospects-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addProspectRow()">+ Add Prospect</button>
+    </div>
+  </div>
+
+  <!-- GUEST PASSES -->
+  <div class="section collapsed" id="sec-guests">
+    <div class="section-header" onclick="toggleSection('sec-guests')">
+      <span class="section-num">04</span>
+      <span class="section-title">Guest Passes</span>
+      <span class="section-status status-empty" id="status-guests">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr><th>Name</th><th>Phone</th><th>Type</th><th>Note</th><th></th></tr></thead>
+          <tbody id="guests-body"></tbody>
+        </table>
+      </div>
+      <button class="add-row-btn" onclick="addGuestRow()">+ Add Guest Pass</button>
+    </div>
+  </div>
+
+  <!-- SHIFT NOTES -->
+  <div class="section collapsed" id="sec-notes">
+    <div class="section-header" onclick="toggleSection('sec-notes')">
+      <span class="section-num">05</span>
+      <span class="section-title">Shift Notes</span>
+      <span class="section-status status-empty" id="status-notes">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field"><label>What did you accomplish this shift?</label>
+        <textarea id="shiftNotes" placeholder="Member assists, floor activity, any issues or wins..." oninput="updateStatus('notes')"></textarea>
+      </div>
+      <div class="field"><label>Anything for Sarah to know?</label>
+        <textarea id="sarahNote" placeholder="Equipment issues, member complaints, anything unusual..." oninput="updateStatus('notes')"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="submit-panel">
+    <h3>Submit Shift Log</h3>
+    <p id="submitHint">Your shift log goes to Sarah's feed immediately.</p>
+    <button class="big-btn" id="bigBtn" onclick="confirmSubmit()">Submit to Sarah</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const TODAY = new Date().toISOString().slice(0,10);
+const counts = {call:0, text:0, floor_pull:0, appt_booked:0};
+document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+
+function toggleSection(id){document.getElementById(id).classList.toggle('collapsed');}
+function updateStatus(id){
+  const sec=document.getElementById('sec-'+id); if(!sec) return;
+  const inputs=sec.querySelectorAll('input,textarea,select');
+  let filled=0; inputs.forEach(i=>{if((i.value||'').trim())filled++;});
+  const st=document.getElementById('status-'+id);
+  if(st){st.textContent=filled?'Done':'Empty';st.className='section-status '+(filled?'status-done':'status-empty');}
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Load MEA roster from D1
+async function loadRoster(){
+  try{
+    const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({op:'select',table:'staff_roster',where:{active:1,gym_id:1},orderBy:'name asc',limit:100})});
+    const d=await r.json();
+    const staff=(d.results||[]).filter(e=>e.role==='MEA');
+    const sel=document.getElementById('meaSelect');
+    if(staff.length){
+      sel.innerHTML='<option value="">-- Select Your Name --</option>'+staff.map(e=>`<option value="${esc(e.name)}">${esc(e.name)}</option>`).join('');
+    } else {
+      sel.innerHTML='<option value="">-- Select Your Name --</option>'+['Andee','Michael','Michelle','Sonal','Tessa','Layla','Chey'].map(n=>`<option value="${n}">${n}</option>`).join('');
+    }
+  } catch(e){
+    document.getElementById('meaSelect').innerHTML='<option value="">-- Select Your Name --</option>'+['Andee','Michael','Michelle','Sonal','Tessa','Layla','Chey'].map(n=>`<option value="${n}">${n}</option>`).join('');
+  }
+}
+
+function addOutreach(type){
+  counts[type]++;
+  document.getElementById('cnt-'+type).textContent=counts[type];
+  addOutreachRow(type);
+}
+function addOutreachRow(type){
+  const tb=document.getElementById('outreach-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><select oninput="updateStatus('outreach')"><option value="call" ${type==='call'?'selected':''}>📞 Call</option><option value="text" ${type==='text'?'selected':''}>💬 Text</option><option value="floor_pull" ${type==='floor_pull'?'selected':''}>🏋️ Floor Pull</option><option value="appt_booked" ${type==='appt_booked'?'selected':''}>📅 Appt</option></select></td>
+    <td><input type="text" placeholder="Name" oninput="updateStatus('outreach')"></td>
+    <td><input type="text" placeholder="Phone" oninput="updateStatus('outreach')"></td>
+    <td><input type="text" placeholder="Outcome" oninput="updateStatus('outreach')"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove();updateStatus('outreach')">✕</button></td>`;
+  tb.appendChild(tr); updateStatus('outreach');
+}
+function addProspectRow(){
+  const tb=document.getElementById('prospects-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input type="text" placeholder="Name" oninput="updateStatus('prospects')"></td>
+    <td><input type="text" placeholder="Phone" oninput="updateStatus('prospects')"></td>
+    <td><input type="date" oninput="updateStatus('prospects')"></td>
+    <td><input type="time" oninput="updateStatus('prospects')"></td>
+    <td><input type="text" placeholder="Note" oninput="updateStatus('prospects')"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tb.appendChild(tr); updateStatus('prospects');
+}
+function addGuestRow(){
+  const tb=document.getElementById('guests-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input type="text" placeholder="Name" oninput="updateStatus('guests')"></td>
+    <td><input type="text" placeholder="Phone" oninput="updateStatus('guests')"></td>
+    <td><select oninput="updateStatus('guests')"><option>Guest Pass</option><option>3-Day Pass</option><option>Social Media</option><option>B2B</option></select></td>
+    <td><input type="text" placeholder="Note" oninput="updateStatus('guests')"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
+  tb.appendChild(tr); updateStatus('guests');
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+async function confirmSubmit(){
+  const mea=document.getElementById('meaSelect').value;
+  if(!mea){showToast('Select your name first');return;}
+  if(!confirm('Submit shift log to Sarah?')) return;
+  const btn=document.getElementById('bigBtn');
+  btn.disabled=true; btn.textContent='Submitting...';
+  const data={
+    date:TODAY, authorName:mea, author_role:'mea', gym_id:1,
+    shiftStart:document.getElementById('shiftStart').value,
+    shiftEnd:document.getElementById('shiftEnd').value,
+    additional_notes:document.getElementById('shiftNotes').value,
+    sarahNote:document.getElementById('sarahNote').value,
+    outreach_counts:counts
+  };
+  try{
+    const r=await fetch(WORKER+'/eod/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const resp=await r.json();
+    if(resp.ok||resp.id){
+      showToast('Shift log submitted!',3000);
+      btn.textContent='✓ Submitted'; btn.style.background='var(--green)';
+      document.getElementById('submitHint').textContent='Submitted at '+new Date().toLocaleTimeString();
+    } else throw new Error(resp.error||'Failed');
+  } catch(e){
+    showToast('Submit failed: '+e.message,3000);
+    btn.disabled=false; btn.textContent='Submit to Sarah';
+  }
+}
+loadRoster();
+</script>
+</body>
+</html>

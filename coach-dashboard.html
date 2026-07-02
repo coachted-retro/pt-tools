@@ -593,7 +593,7 @@
 
 <script><script>
 // ── CONFIG ────────────────────────────────────────────────────
-const APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
+// APPS_SCRIPT removed — check-ins now read from D1 via loadCheckins()
 const WORKER     = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write';
 const CI_SHEET   = '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
 const PT_PER_SESSION = 250; // estimated monthly revenue per client for risk calc
@@ -1038,25 +1038,48 @@ async function loadAll() {
 
 async function loadCheckins() {
   try {
-    // Use Apps Script to read PT Check-In History (Cloudflare Worker is write-only)
-    const res = await fetch(APPS_SCRIPT + '?action=getCheckins&tab=All Check-In History&sheetId=' + CI_SHEET);
-    const data = await res.json();
-    const rows = data.rows || [];
-    if (rows.length < 2) { allCheckins = []; return; }
-    const headers = rows[0].map(h => String(h).trim());
-    allCheckins = rows.slice(1).filter(r => r.some(c => c !== '')).map(r => {
-      const obj = {}; headers.forEach((h,i) => { obj[h] = r[i] || ''; });
-      // Compute deltas for milestone detection
-      const nowBF    = parseFloat(obj['BF%'])             || 0;
-      const prevBF   = parseFloat(obj['Prev BF%'])         || 0;
-      const nowLean  = parseFloat(obj['Lean Mass'])        || 0;
-      const prevLean = parseFloat(obj['Prev Lean Mass'])   || 0;
-      if (prevBF  && nowBF)   obj['Delta BF%']  = (nowBF  - prevBF).toFixed(1);
-      if (prevLean && nowLean) obj['Delta Lean'] = (nowLean - prevLean).toFixed(1);
-      obj['Advisor'] = normalizeAdvisor(obj['Advisor'] || '');
-      return obj;
+    // Read check-ins from D1 via Cloudflare Worker
+    const [ciRes, clientRes] = await Promise.all([
+      fetch(CAL_BASE + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'checkins', orderBy:'checkin_date desc', limit:500})}),
+      fetch(CAL_BASE + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:300})})
+    ]);
+    const ciData = await ciRes.json();
+    const clientData = await clientRes.json();
+    const clients = clientData.results || [];
+    const clientMap = {};
+    clients.forEach(c => { clientMap[c.id] = ((c.first_name||'')+' '+(c.last_name||'')).trim() || 'Unknown'; });
+    const ciRows = ciData.results || [];
+    allCheckins = ciRows.map(ci => {
+      const nowBF   = parseFloat(ci.now_body_fat_pct) || 0;
+      const prevBF  = parseFloat(ci.prev_body_fat_pct) || 0;
+      const nowLean = parseFloat(ci.now_lean_mass) || 0;
+      const prevLean= parseFloat(ci.prev_lean_mass) || 0;
+      return {
+        'Name':            clientMap[ci.client_id] || String(ci.client_id),
+        'Member Name':     clientMap[ci.client_id] || String(ci.client_id),
+        'Check-In Date':   ci.checkin_date || '',
+        'Advisor':         normalizeAdvisor(ci.coach || ci.advisor || ''),
+        'Session Score':   ci.session_score || '',
+        'Diet Score':      ci.diet_score || '',
+        'Sleep Score':     ci.sleep_score || '',
+        'Stress Level':    ci.stress_level || '',
+        'BF%':             ci.now_body_fat_pct || '',
+        'Prev BF%':        ci.prev_body_fat_pct || '',
+        'Lean Mass':       ci.now_lean_mass || '',
+        'Prev Lean Mass':  ci.prev_lean_mass || '',
+        'Delta BF%':       (prevBF && nowBF) ? (nowBF - prevBF).toFixed(1) : '',
+        'Delta Lean':      (prevLean && nowLean) ? (nowLean - prevLean).toFixed(1) : '',
+        'Weight':          ci.now_weight || '',
+        'Coach Notes':     ci.coach_notes || '',
+        '_client_id':      ci.client_id,
+        '_raw':            ci
+      };
     });
-  } catch(e) { console.error('loadCheckins error:', e); allCheckins = []; }
+    // Also update active clients list for calendar
+    allActiveClients = clients.filter(c => c.status === 'active_pt');
+  } catch(e) { console.error('loadCheckins D1 error:', e); allCheckins = []; }
 }
 
 // ── HELPERS ───────────────────────────────────────────────────

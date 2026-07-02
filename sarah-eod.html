@@ -436,8 +436,8 @@ table.log-table .del-btn:hover{color:var(--red)}
     <div class="section-body">
       <div class="field-row two">
         <div>
-          <label>Tessa's Notes</label>
-          <textarea id="tessaNotes" placeholder="What did Tessa complete this shift?" oninput="updateStatus('staffnotes')"></textarea>
+          <label>Assistant Manager / Co-Lead Notes</label>
+          <textarea id="tessaNotes" placeholder="What did your co-lead complete this shift?" oninput="updateStatus('staffnotes')"></textarea>
         </div>
         <div>
           <label>Sarah's Notes</label>
@@ -930,18 +930,41 @@ async function submitEOD() {
   }
 }
 
-// Pre-populate MEA roster from the doc
-['Andee','Michael','Michelle','Sarah','Sonal','Tessa','Layla','Chey'].forEach(name => addMeaRow(name));
-['Dan','Danielle','James','Luke','Branden'].forEach(name => {
-  const tb = document.getElementById('floortech-body');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" value="${name}" oninput="updateStatus('floortech')"></td>
-    <td><select oninput="updateStatus('floortech')"><option>PERFORMING</option><option>TRAINING</option><option>BORDERLINE</option><option>UNDERPERFORMING</option><option>CALLED OUT</option></select></td>
-    <td><input type="text" placeholder="Notes" oninput="updateStatus('floortech')"></td>
-    <td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
-  tb.appendChild(tr);
-});
+// Load MEA and Floor Tech from staff_roster D1 table
+async function loadRosterNames() {
+  try {
+    const r = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'staff_roster', where:{active:1, gym_id:1}, orderBy:'name asc', limit:100})
+    });
+    const d = await r.json();
+    const staff = d.results || [];
+    const meas = staff.filter(e => e.role === 'MEA');
+    const floorTechs = staff.filter(e => e.role === 'Floor Tech');
+    // If roster is empty, fall back to defaults
+    if (!meas.length) ['Andee','Michael','Michelle','Sarah','Sonal','Tessa','Layla','Chey'].forEach(n => addMeaRow(n));
+    else meas.forEach(e => addMeaRow(e.name));
+    if (!floorTechs.length) {
+      ['Dan','Danielle','James','Luke','Branden'].forEach(name => {
+        const tb = document.getElementById('floortech-body');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="text" value="${name}" oninput="updateStatus('floortech')"></td><td><select oninput="updateStatus('floortech')"><option>PERFORMING</option><option>TRAINING</option><option>BORDERLINE</option><option>UNDERPERFORMING</option><option>CALLED OUT</option></select></td><td><input type="text" placeholder="Notes" oninput="updateStatus('floortech')"></td><td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
+        tb.appendChild(tr);
+      });
+    } else {
+      floorTechs.forEach(e => {
+        const tb = document.getElementById('floortech-body');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="text" value="${e.name}" oninput="updateStatus('floortech')"></td><td><select oninput="updateStatus('floortech')"><option>PERFORMING</option><option>TRAINING</option><option>BORDERLINE</option><option>UNDERPERFORMING</option><option>CALLED OUT</option></select></td><td><input type="text" placeholder="Notes" oninput="updateStatus('floortech')"></td><td><button class="del-btn" onclick="this.closest('tr').remove()">✕</button></td>`;
+        tb.appendChild(tr);
+      });
+    }
+  } catch(e) {
+    // Fallback to hardcoded if roster unavailable
+    ['Andee','Michael','Michelle','Sarah','Sonal','Tessa','Layla','Chey'].forEach(n => addMeaRow(n));
+  }
+}
+loadRosterNames();
 </script>
 </body>
 </html>
