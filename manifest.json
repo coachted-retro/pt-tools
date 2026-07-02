@@ -1,0 +1,16 @@
+{
+  "name": "Retro Fitness PT",
+  "short_name": "Retro PT",
+  "description": "Retro Fitness of Fairless Hills — Personal Training member portal",
+  "start_url": "client-portal.html",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F6F8",
+  "theme_color": "#E0192B",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
