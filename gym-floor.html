@@ -183,6 +183,14 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <span class="ic">✚</span>
       <span><span class="t">Fresh Session</span><br><span class="d">Build the exercise list as you go</span></span>
     </button>
+    <button class="opt-tile" onclick="openBuilder()">
+      <span class="ic">🤖</span>
+      <span><span class="t">AI Program Builder</span><br><span class="d">Builds a program from goals, InBody and limitations</span></span>
+    </button>
+    <button class="opt-tile" onclick="openHero()">
+      <span class="ic">🎖</span>
+      <span><span class="t">HERO WOD</span><br><span class="d">Murph, DT, Chad and more, auto-scaled to this client</span></span>
+    </button>
     <div class="card">
       <h3>Templates</h3>
       <div id="tplList"><div class="empty">No templates yet. Finish a session and tap Save as Template.</div></div>
@@ -312,6 +320,54 @@ input,select,textarea{font-family:inherit;font-size:16px;}
   </div>
   <div class="bottombar">
     <button class="btn red" onclick="saveSession()">Save Session</button>
+  </div>
+</div>
+
+<!-- ============ SCREEN: AI PROGRAM BUILDER ============ -->
+<div class="screen" id="scr-builder">
+  <div class="topbar">
+    <div>
+      <div class="title">AI Program Builder</div>
+      <div class="sub" id="bName"></div>
+    </div>
+    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+  </div>
+  <div class="scroll" id="builderBody">
+    <div class="card">
+      <h3>Style</h3>
+      <div class="timer-modes" style="padding:0;flex-wrap:wrap;gap:8px" id="styleRow"></div>
+    </div>
+    <div class="card">
+      <h3>Or Specialty Session</h3>
+      <div class="timer-modes" style="padding:0;flex-wrap:wrap;gap:8px" id="specRow"></div>
+    </div>
+    <div class="card">
+      <h3>Days / Week + Equipment</h3>
+      <div class="timer-cfg" style="padding:0;justify-content:flex-start">
+        <div class="cfg-item"><div class="l">Days</div><div class="row"><button onclick="bDays(-1)">−</button><div class="v" id="bDaysV">3</div><button onclick="bDays(1)">+</button></div></div>
+      </div>
+      <div class="timer-modes" style="padding:10px 0 0;flex-wrap:wrap;gap:8px" id="equipRow"></div>
+    </div>
+    <div class="card" id="bCtx" style="font-size:12px;color:var(--ink2)"></div>
+    <div id="bResult"></div>
+  </div>
+  <div class="bottombar">
+    <button class="btn red" id="bGen" onclick="generateProgram()">Generate Program</button>
+  </div>
+</div>
+
+<!-- ============ SCREEN: HERO WOD ============ -->
+<div class="screen" id="scr-hero">
+  <div class="topbar">
+    <div>
+      <div class="title">HERO WOD</div>
+      <div class="sub" id="hName"></div>
+    </div>
+    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+  </div>
+  <div class="scroll">
+    <div id="heroList"></div>
+    <div id="heroResult"></div>
   </div>
 </div>
 
@@ -941,6 +997,8 @@ function computeBadges(){
   for(let i=0;i<60;i++){const d=new Date(now);d.setDate(d.getDate()-7*i);if(weeks.has(wk(d)))streak++;else break;}
   const SREAKS=[[52,'12-Month Streak'],[26,'6-Month Streak'],[8,'8-Week Streak'],[4,'4-Week Streak']];
   for(const[n,label]of SREAKS){if(streak===n){out.push({icon:'🔥',headline:label,detail:streak+' consecutive weeks with a session as of '+SESSION.date,win_type:'floor_streak'});break;}}
+  /* HERO completion */
+  if(SESSION.isHero||/^HERO:/i.test(SESSION.title||''))out.push({icon:'🎖',headline:(SESSION.title||'HERO WOD')+' Complete',detail:'Finished '+SESSION.date+(SESSION.workoutNote?' — '+SESSION.workoutNote.slice(0,60):''),win_type:'floor_hero'});
   /* comeback: gap of 21+ days before this session */
   if(HISTORY.length){
     const lastD=new Date(HISTORY[0].workout_date),gap=(new Date(SESSION.date)-lastD)/86400000;
@@ -965,6 +1023,164 @@ function paintBadges(){
   if(!EARNED.length){card.style.display='none';return;}
   card.style.display='block';
   $('badgeList').innerHTML=EARNED.map(b=>`<div class="set-chip" style="border-color:var(--amber)"><div style="font-size:20px">${b.icon}</div><div style="flex:1"><div class="v">${esc(b.headline)}</div><div style="font-size:11px;color:var(--ink2)">${esc(b.detail)}</div></div></div>`).join('');
+}
+
+/* =====================================================================
+   S3: AI PROGRAM BUILDER
+   ===================================================================== */
+const STYLES=['Push/Pull/Legs','Upper/Lower','Full Body','HIIT','Modified CrossFit','Bro Split'];
+const SPECS=['30-Min Core','KB/DB Leg Day','Hotel Circuit','Senior-Safe Strength'];
+const EQUIP=['Full Gym','Dumbbells Only','KB+DB+Bodyweight','Bands','Hotel Room'];
+let bStyle='Push/Pull/Legs',bSpec=null,bEquip='Full Gym',bDaysN=3,CLIENT_CTX=null;
+
+function openBuilder(){
+  $('bName').textContent=((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim();
+  paintBuilderChips();$('bResult').innerHTML='';
+  $('bCtx').textContent='Loading client context (goals, InBody, medical)...';
+  show('scr-builder');
+  loadClientCtx().then(()=>{
+    const c=CLIENT_CTX;
+    $('bCtx').innerHTML='<b style="color:var(--ink)">Context loaded:</b> '+
+      [c.goals?'goals':'',c.medical?'medical notes':'',c.inbody?'InBody '+c.inbody.scan_date:'',c.recent.length?c.recent.length+' recent workouts':''].filter(Boolean).join(' · ')
+      +(c.medical?'<br><span style="color:var(--amber)">⚠ '+esc(c.medical.slice(0,140))+'</span>':'');
+  });
+}
+function paintBuilderChips(){
+  $('styleRow').innerHTML=STYLES.map(s=>`<button class="${bStyle===s&&!bSpec?'active':''}" style="flex:0 0 auto;padding:10px 14px" onclick="bStyle='${s}';bSpec=null;paintBuilderChips()">${s}</button>`).join('');
+  $('specRow').innerHTML=SPECS.map(s=>`<button class="${bSpec===s?'active':''}" style="flex:0 0 auto;padding:10px 14px" onclick="bSpec='${s}';paintBuilderChips()">${s}</button>`).join('');
+  $('equipRow').innerHTML=EQUIP.map(s=>`<button class="${bEquip===s?'active':''}" style="flex:0 0 auto;padding:10px 14px" onclick="bEquip='${s}';paintBuilderChips()">${s}</button>`).join('');
+  $('bDaysV').textContent=bDaysN;
+}
+function bDays(d){bDaysN=Math.min(6,Math.max(1,bDaysN+d));$('bDaysV').textContent=bDaysN;}
+
+async function loadClientCtx(){
+  const ctx={goals:'',medical:'',assessment:'',inbody:null,recent:[],age:CLIENT.age||null,pkg:CLIENT.package||''};
+  try{
+    const[cons,scans]=await Promise.all([
+      db({op:'select',table:'consultations',where:{client_id:CLIENT.id},orderBy:'consult_date DESC',limit:1}),
+      db({op:'select',table:'inbody_scans',where:{client_id:CLIENT.id},orderBy:'scan_date DESC',limit:1})
+    ]);
+    const c=(cons.results||[])[0];
+    if(c){ctx.goals=c.goals||'';ctx.medical=c.medical_notes||'';ctx.assessment=c.assessment_summary||'';}
+    ctx.inbody=(scans.results||[])[0]||null;
+  }catch(e){}
+  ctx.recent=HISTORY.slice(0,8).map(w=>{
+    let names=[];try{names=(JSON.parse(w.exercises_json||'[]')||[]).map(x=>x.name).slice(0,6);}catch(e){}
+    return (w.workout_date||'')+': '+names.join(', ');
+  });
+  if(!ctx.goals&&CLIENT.goal_primary)ctx.goals=CLIENT.goal_primary;
+  CLIENT_CTX=ctx;return ctx;
+}
+
+function buildProgramPrompt(){
+  const c=CLIENT_CTX||{};
+  const target=bSpec?('a single specialty session: '+bSpec):('a '+bDaysN+'-day/week '+bStyle+' program');
+  return 'You are an expert personal trainer building '+target+' for a real client. Return ONLY JSON, no prose, no markdown fences. Shape: {"program_name":"...","days":[{"name":"Day label","focus":"...","exercises":[{"name":"...","sets":number,"reps":"e.g. 8-10","rest_s":number,"note":"form cue or substitution, optional"}]}],"progression":"one-sentence progression rule","cautions":"one sentence on what to watch, or empty"}. '
+  +(bSpec?'Return exactly 1 day. ':'Return exactly '+bDaysN+' days. ')
+  +'Equipment available: '+bEquip+'. '
+  +'CLIENT: age '+(c.age||'unknown')+'. Goals: '+(c.goals||'general fitness')+'. '
+  +'MEDICAL LIMITATIONS (HARD CONSTRAINTS, never program contraindicated movements): '+(c.medical||'none reported')+'. '
+  +(c.inbody?('Latest InBody '+c.inbody.scan_date+': weight '+c.inbody.weight+' lb, SMM '+(c.inbody.skeletal_muscle||'n/a')+', BF '+(c.inbody.body_fat_pct||'n/a')+'%. '):'')
+  +(c.assessment?('Assessment: '+c.assessment.slice(0,300)+'. '):'')
+  +(c.recent&&c.recent.length?('Recent training: '+c.recent.slice(0,4).join(' | ').slice(0,400)+'. '):'')
+  +'Sensible volume, 4-7 exercises per day, compound first. Exercise names must be standard gym names.';
+}
+
+async function generateProgram(){
+  $('bGen').disabled=true;$('bResult').innerHTML='<div class="empty">Building program with AI...</div>';
+  try{
+    if(!CLIENT_CTX)await loadClientCtx();
+    const r=await fetch(WORKER,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2500,messages:[{role:'user',content:buildProgramPrompt()}]})});
+    const d=await r.json();if(d.error)throw new Error(d.error.message||'AI error');
+    const text=(d.content||[]).map(b=>b.text||'').join('');
+    const prog=parseJSON(text);if(!prog||!prog.days)throw new Error('Bad AI response');
+    window._PROG=prog;renderProgram(prog);
+  }catch(e){$('bResult').innerHTML='<div class="empty" style="color:var(--red)">Failed: '+esc(e.message)+'</div>';}
+  $('bGen').disabled=false;
+}
+function parseJSON(t){try{return JSON.parse(t);}catch(e){}const m=t.match(/\{[\s\S]*\}/);if(m){try{return JSON.parse(m[0]);}catch(e){}}return null;}
+
+function renderProgram(p){
+  $('bResult').innerHTML='<div class="card"><h3>'+esc(p.program_name||'Program')+'</h3>'
+    +(p.cautions?'<div style="font-size:12px;color:var(--amber);margin-bottom:10px">⚠ '+esc(p.cautions)+'</div>':'')
+    +(p.progression?'<div style="font-size:12px;color:var(--ink2);margin-bottom:10px">Progression: '+esc(p.progression)+'</div>':'')
+    +p.days.map((day,i)=>'<div class="ex-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;align-items:center;gap:8px"><div class="nm" style="flex:1">'+esc(day.name||('Day '+(i+1)))+'</div>'
+      +'<button class="btn sm red" onclick="launchDay('+i+')">Start</button></div>'
+      +'<div class="meta" style="margin-top:6px">'+(day.exercises||[]).map(x=>esc(x.name)+' '+(x.sets||'')+'x'+(x.reps||'')).join(' · ')+'</div></div>').join('')
+    +'<button class="btn" style="width:100%;margin-top:8px" onclick="saveProgramTemplates()">💾 Save All Days as Templates</button></div>';
+}
+function launchDay(i){
+  const p=window._PROG;if(!p)return;
+  const day=p.days[i];
+  newSession((day.exercises||[]).map(x=>x.name),(p.program_name||'Program')+' — '+(day.name||('Day '+(i+1))));
+  /* seed target notes */
+  SESSION.exercises.forEach((e,j)=>{const x=day.exercises[j];if(x)e.note='Target: '+(x.sets||'')+'x'+(x.reps||'')+(x.rest_s?(' rest '+x.rest_s+'s'):'')+(x.note?(' — '+x.note):'');});
+  persistActive();renderQueue();
+}
+async function saveProgramTemplates(){
+  const p=window._PROG;if(!p)return;
+  for(let i=0;i<p.days.length;i++){
+    const day=p.days[i];
+    const exs=(day.exercises||[]).map(x=>({name:x.name,group:null}));
+    const row={name:(p.program_name||'Program')+' — '+(day.name||('Day '+(i+1))),exercises_json:JSON.stringify(exs),source:'floor_template',client_id:CLIENT.id,created_at:new Date().toISOString()};
+    try{const ins=await db({op:'insert',table:'programs',values:row});if(ins&&ins.error)throw 0;}
+    catch(e){const loc=tplLocal();loc.push({name:row.name,exercises_json:row.exercises_json,client_id:row.client_id});tplLocalSave(loc);}
+  }
+  toast('Program saved to templates');loadTemplates();
+}
+
+/* =====================================================================
+   S3: HERO WOD LIBRARY
+   ===================================================================== */
+const HEROES=[
+  {name:'Murph',fmt:'For Time',rx:'1 mile run, 100 pull-ups, 200 push-ups, 300 air squats, 1 mile run (partition as needed, 20 lb vest optional)'},
+  {name:'Cindy',fmt:'AMRAP 20',rx:'5 pull-ups, 10 push-ups, 15 air squats'},
+  {name:'DT',fmt:'5 Rounds For Time',rx:'12 deadlifts, 9 hang power cleans, 6 push jerks (155/105 lb)'},
+  {name:'Chad',fmt:'For Time',rx:'1000 box step-ups (20 inch, 45/35 lb ruck)'},
+  {name:'Fran',fmt:'21-15-9 For Time',rx:'Thrusters (95/65 lb) and pull-ups'},
+  {name:'Helen',fmt:'3 Rounds For Time',rx:'400m run, 21 KB swings (53/35 lb), 12 pull-ups'},
+  {name:'Grace',fmt:'For Time',rx:'30 clean and jerks (135/95 lb)'},
+  {name:'Annie',fmt:'50-40-30-20-10',rx:'Double-unders and sit-ups'},
+  {name:'Barbara',fmt:'5 Rounds',rx:'20 pull-ups, 30 push-ups, 40 sit-ups, 50 air squats, 3 min rest between rounds'}
+];
+function openHero(){
+  $('hName').textContent=((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim();
+  $('heroResult').innerHTML='';
+  $('heroList').innerHTML=HEROES.map((h,i)=>`<div class="ex-row"><div style="flex:1"><div class="nm">${h.name} <span style="font-size:10px;color:var(--ink3)">${h.fmt}</span></div><div class="meta">${h.rx}</div></div><button class="btn sm red" onclick="scaleHero(${i})">Scale</button></div>`).join('');
+  show('scr-hero');
+  if(!CLIENT_CTX)loadClientCtx();
+}
+async function scaleHero(i){
+  const h=HEROES[i];
+  $('heroResult').innerHTML='<div class="empty">Scaling '+esc(h.name)+' to this client...</div>';
+  try{
+    if(!CLIENT_CTX)await loadClientCtx();
+    const c=CLIENT_CTX;
+    const prompt='You are an expert coach scaling the HERO WOD "'+h.name+'" ('+h.fmt+': '+h.rx+') for a real client. Return ONLY JSON, no prose: {"title":"HERO: '+h.name+' (scaled)","format":"For Time or AMRAP X","plan":[{"name":"movement","target":"reps/distance","sub":"substitution note or empty"}],"strategy":"one sentence pacing advice","cautions":"one sentence or empty"}. '
+      +'CLIENT: age '+(c.age||'unknown')+'. Goals: '+(c.goals||'general fitness')+'. MEDICAL LIMITATIONS (HARD, substitute any contraindicated movement): '+(c.medical||'none')+'. '
+      +(c.inbody?('InBody: '+c.inbody.weight+' lb, BF '+(c.inbody.body_fat_pct||'?')+'%. '):'')
+      +'Scale volume and load to what this client can finish in a reasonable time with good form. Machine or bodyweight substitutions welcome.';
+    const r=await fetch(WORKER,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1200,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();if(d.error)throw new Error(d.error.message||'AI error');
+    const j=parseJSON((d.content||[]).map(b=>b.text||'').join(''));
+    if(!j||!j.plan)throw new Error('Bad AI response');
+    window._HERO=j;
+    $('heroResult').innerHTML='<div class="card"><h3>'+esc(j.title||('HERO: '+h.name))+' · '+esc(j.format||h.fmt)+'</h3>'
+      +(j.cautions?'<div style="font-size:12px;color:var(--amber);margin-bottom:8px">⚠ '+esc(j.cautions)+'</div>':'')
+      +j.plan.map(x=>'<div class="set-chip"><div class="v">'+esc(x.name)+'</div><div style="color:var(--ink2);font-size:12px">'+esc(x.target||'')+(x.sub?' · '+esc(x.sub):'')+'</div></div>').join('')
+      +(j.strategy?'<div style="font-size:12px;color:var(--ink2);margin-top:8px">'+esc(j.strategy)+'</div>':'')
+      +'<button class="btn red" style="width:100%;margin-top:10px" onclick="startHero()">Start WOD ▶</button></div>';
+  }catch(e){$('heroResult').innerHTML='<div class="empty" style="color:var(--red)">Failed: '+esc(e.message)+'</div>';}
+}
+function startHero(){
+  const j=window._HERO;if(!j)return;
+  newSession(j.plan.map(x=>x.name),j.title||'HERO WOD');
+  SESSION.exercises.forEach((e,i)=>{const x=j.plan[i];if(x)e.note='Target: '+(x.target||'')+(x.sub?(' — '+x.sub):'');});
+  SESSION.isHero=true;
+  persistActive();renderQueue();
+  /* open stopwatch, ready to go */
+  setTimerMode('stopwatch');openTimer();
+  toast('Stopwatch ready — hit Start when they go');
 }
 
 /* =====================================================================
