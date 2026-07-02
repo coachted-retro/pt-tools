@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Director Dashboard — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;
+  --line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;
+  --soft:#F5F6F8;--blue:#2563EB;--purple:#7C3AED;
+  --lgreen:#E3F5EC;--lred:#FEF2F2;--lblue:#EFF6FF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+
+/* TOPBAR */
+.topbar{background:var(--ink);display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;position:sticky;top:0;z-index:40;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .page-tag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9CA3AF;padding:3px 8px;border:1px solid #374151;border-radius:20px}
+.topbar .spacer{flex:1}
+.topbar .nav-btn{font-size:12px;color:#9CA3AF;text-decoration:none;padding:6px 12px;border:1px solid #374151;border-radius:8px;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.topbar .nav-btn:hover{color:#fff;border-color:#6B7280}
+.topbar .refresh-btn{font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:#9CA3AF;background:none;border:1px solid #374151;border-radius:8px;padding:6px 12px;cursor:pointer}
+.topbar .refresh-btn:hover{color:#fff}
+.last-up{font-size:11px;color:#6B7280;white-space:nowrap}
+
+/* LAYOUT */
+.wrap{max-width:1200px;margin:0 auto;padding:20px 16px 60px}
+
+/* QUICK NAV */
+.quick-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.qn-btn{font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:7px 14px;border-radius:8px;border:1px solid var(--line);color:var(--ink);background:var(--card);display:flex;align-items:center;gap:6px}
+.qn-btn:hover{border-color:var(--red);color:var(--red)}
+.qn-btn.primary{background:var(--red);color:#fff;border-color:var(--red)}
+.qn-btn.primary:hover{background:#B0121F}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.kpi-label{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.kpi-val{font-family:'Oswald';font-size:32px;font-weight:800;color:var(--ink);line-height:1}
+.kpi-val.green{color:var(--green)}
+.kpi-val.red{color:var(--red)}
+.kpi-val.amber{color:var(--amber)}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+
+/* SECTION */
+.section-hdr{display:flex;align-items:center;gap:10px;margin:24px 0 12px}
+.section-title{font-family:'Oswald';font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.section-line{flex:1;height:1px;background:var(--line)}
+.section-badge{font-size:11px;font-weight:700;background:var(--soft);color:var(--muted);padding:2px 8px;border-radius:10px}
+
+/* CARDS */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card-title{font-family:'Oswald';font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
+.card-sub{font-size:11px;color:var(--muted);margin-bottom:12px}
+
+/* PULSE LIST */
+.pulse-list{display:flex;flex-direction:column;gap:8px}
+.pulse-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--soft);border-radius:8px;border:1px solid var(--line)}
+.pulse-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.dot-red{background:var(--lred)}
+.dot-amber{background:#FFF3E0}
+.dot-green{background:var(--lgreen)}
+.dot-blue{background:var(--lblue)}
+.pulse-info{flex:1}
+.pulse-name{font-weight:600;font-size:13px;color:var(--ink)}
+.pulse-note{font-size:11px;color:var(--muted);margin-top:1px}
+.act-btn{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;background:var(--red);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+
+/* CLIENT LIST */
+.client-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.client-row:last-child{border-bottom:none}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.client-name{font-weight:600;font-size:13px;flex:1}
+.client-meta{font-size:11px;color:var(--muted)}
+.status-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;letter-spacing:.3px}
+.status-active{background:var(--lgreen);color:#065F46}
+.status-frozen{background:#EFF6FF;color:var(--blue)}
+.status-pastdue{background:var(--lred);color:var(--red)}
+.session-bar{display:flex;align-items:center;gap:6px;font-size:11px}
+.sessions-track{flex:1;height:6px;background:var(--soft);border-radius:4px;overflow:hidden;max-width:80px}
+.sessions-fill{height:100%;border-radius:4px;background:var(--green)}
+.sessions-fill.low{background:var(--amber)}
+.sessions-fill.empty{background:var(--red)}
+
+/* EOD FEED */
+.eod-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:8px}
+.eod-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.eod-author{font-weight:700;font-size:13px;color:var(--ink)}
+.eod-time{font-size:11px;color:var(--muted)}
+.eod-role-pill{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:10px;background:var(--soft);color:var(--muted)}
+.eod-preview{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.flag-list{display:flex;flex-wrap:wrap;gap:6px}
+.flag-item{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px}
+.flag-fyi{background:var(--lblue);color:var(--blue)}
+.flag-follow{background:#FFF7ED;color:#C2410C}
+.flag-urgent{background:var(--lred);color:var(--red)}
+.flag-escalate{background:var(--ink);color:#fff}
+.view-btn{font-size:10px;font-weight:700;text-transform:uppercase;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--ink)}
+.ack-btn{font-size:10px;font-weight:700;text-transform:uppercase;background:var(--lgreen);border:1px solid #9FE1CB;border-radius:6px;padding:4px 10px;cursor:pointer;color:#065F46}
+
+/* ADVISOR CARDS */
+.adv-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.adv-name{font-family:'Oswald';font-size:16px;font-weight:700;text-transform:uppercase;margin-bottom:12px}
+.adv-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.adv-stat{text-align:center}
+.adv-num{font-family:'Oswald';font-size:22px;font-weight:800}
+.adv-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+
+/* SCROLL LIST */
+.scroll-list{max-height:300px;overflow-y:auto}
+
+.empty-state{text-align:center;padding:24px;color:var(--muted);font-size:12px}
+.date-nav{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.date-nav button{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600;color:var(--ink)}
+.date-nav button:hover{border-color:var(--red)}
+.date-display{font-family:'Oswald';font-size:15px;font-weight:700;color:var(--ink)}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:20px}
+.tab{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:10px 18px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;background:none;border-top:none;border-left:none;border-right:none}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+@media(max-width:768px){
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .quick-nav{gap:6px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="command-center.html" class="nav-btn">← Command Center</a>
+  <div class="page-tag">Director</div>
+  <div class="spacer"></div>
+  <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+  <span class="last-up" id="lastUp">Loading...</span>
+  <div class="logo">Body <span>Shoppe</span></div>
+</div>
+
+<div class="wrap">
+
+  <!-- QUICK NAV -->
+  <div class="quick-nav">
+    <a href="command-center.html" class="qn-btn">🏠 Command Center</a>
+    <a href="gym-floor.html" class="qn-btn">💪 Gym Floor</a>
+    <a href="client-profile.html" class="qn-btn">👤 Client Profiles</a>
+    <a href="coach-dashboard.html" class="qn-btn">📊 Coach Dashboard</a>
+    <a href="staff-setup.html" class="qn-btn">👥 Staff Roster</a>
+    <a href="sarah-eod.html" class="qn-btn">📋 Sarah's EOD</a>
+    <a href="dani-eod.html" class="qn-btn primary">📝 Submit My EOD →</a>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab" onclick="switchTab('clients')">All Clients</button>
+    <button class="tab" onclick="switchTab('eod')">EOD Feed</button>
+    <button class="tab" onclick="switchTab('pulse')">Morning Pulse</button>
+  </div>
+
+  <!-- ── TAB: OVERVIEW ── -->
+  <div class="tab-pane active" id="tab-overview">
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Active PT Clients</div>
+        <div class="kpi-val green" id="kpi-active">—</div>
+        <div class="kpi-sub">in roster</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Sessions Remaining</div>
+        <div class="kpi-val" id="kpi-sessions">—</div>
+        <div class="kpi-sub">across all clients</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Renewals Needed</div>
+        <div class="kpi-val amber" id="kpi-renewals">—</div>
+        <div class="kpi-sub">sessions at 0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Frozen Accounts</div>
+        <div class="kpi-val red" id="kpi-frozen">—</div>
+        <div class="kpi-sub">on hold</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Overdue Monitoring</div>
+        <div class="kpi-val red" id="kpi-overdue">—</div>
+        <div class="kpi-sub">InBody 60+ days</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Avg Body Fat</div>
+        <div class="kpi-val" id="kpi-bf">—</div>
+        <div class="kpi-sub">current avg</div>
+      </div>
+    </div>
+
+    <!-- ADVISOR BREAKDOWN -->
+    <div class="section-hdr"><div class="section-title">Coach Performance</div><div class="section-line"></div></div>
+    <div class="grid-3" id="advisor-grid">
+      <div class="adv-card">
+        <div class="adv-name" style="color:var(--blue)">Coach Ted</div>
+        <div class="adv-stats" id="adv-ted"><div class="empty-state">Loading...</div></div>
+      </div>
+      <div class="adv-card">
+        <div class="adv-name" style="color:var(--amber)">Dani</div>
+        <div class="adv-stats" id="adv-dani"><div class="empty-state">Loading...</div></div>
+      </div>
+      <div class="adv-card">
+        <div class="adv-name" style="color:var(--muted)">Combined</div>
+        <div class="adv-stats" id="adv-combined"><div class="empty-state">Loading...</div></div>
+      </div>
+    </div>
+
+    <!-- AT-RISK + CAPACITY -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">⚠ At-Risk Clients</div>
+        <div class="card-sub">0 sessions remaining or frozen — act within 48hrs</div>
+        <div id="at-risk-list"><div class="empty-state">Loading...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Roster Capacity</div>
+        <div class="card-sub">Active clients per coach</div>
+        <div id="capacity-list"><div class="empty-state">Loading...</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── TAB: CLIENTS ── -->
+  <div class="tab-pane" id="tab-clients">
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <input type="text" id="clientSearch" placeholder="Search clients..." oninput="renderClientTab()"
+        style="flex:1;min-width:160px;border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;background:var(--soft)">
+      <select id="clientFilter" onchange="renderClientTab()"
+        style="border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;background:var(--soft)">
+        <option value="all">All Status</option>
+        <option value="active_pt">Active PT</option>
+        <option value="frozen">Frozen</option>
+        <option value="renewal">Needs Renewal</option>
+      </select>
+    </div>
+    <div class="card">
+      <div id="client-list-body"><div class="empty-state">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: EOD FEED ── -->
+  <div class="tab-pane" id="tab-eod">
+    <div class="date-nav">
+      <button onclick="changeDate(-1)">← Prev</button>
+      <div class="date-display" id="eodDateDisplay"></div>
+      <button onclick="changeDate(1)">Next →</button>
+    </div>
+    <div id="eod-feed"><div class="empty-state">Loading EOD submissions...</div></div>
+    <div class="section-hdr" style="margin-top:24px"><div class="section-title">🚩 Open Action Items</div><div class="section-line"></div></div>
+    <div id="action-items-list"><div class="empty-state">No open action items.</div></div>
+  </div>
+
+  <!-- ── TAB: MORNING PULSE ── -->
+  <div class="tab-pane" id="tab-pulse">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">☀ Morning Pulse</div>
+      <div class="card-sub">Auto-generated from D1 — the 5 people who need attention today</div>
+      <div class="pulse-list" id="pulse-list"><div class="empty-state">Generating pulse...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔔 Reminders</div>
+      <div class="card-sub">Upcoming monitoring, renewals, and anniversaries</div>
+      <div id="reminders-list"><div class="empty-state">Loading...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let allClients = [];
+let allScans = [];
+let eodDate = new Date().toISOString().slice(0,10);
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const panes = ['overview','clients','eod','pulse'];
+    t.classList.toggle('active', panes[i] === name);
+  });
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'eod') loadEODFeed();
+  if (name === 'pulse') buildPulse();
+}
+
+// ── LOAD ALL ──────────────────────────────────────────────────
+async function loadAll() {
+  document.getElementById('lastUp').textContent = 'Loading...';
+  try {
+    const [clientsRes, scansRes] = await Promise.all([
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:500})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'inbody_scans', orderBy:'scan_date desc', limit:500})})
+    ]);
+    const cd = await clientsRes.json(); allClients = cd.results || [];
+    const sd = await scansRes.json(); allScans = sd.results || [];
+    renderOverview();
+    renderClientTab();
+    buildPulse();
+    document.getElementById('lastUp').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('lastUp').textContent = 'Error loading data';
+  }
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────
+function renderOverview() {
+  const active = allClients.filter(c => c.status === 'active_pt');
+  const frozen = allClients.filter(c => c.status === 'frozen');
+  const renewals = allClients.filter(c => c.status === 'active_pt' && (c.sessions_remaining === 0 || c.sessions_remaining === null && c.sessions_total > 0));
+
+  // Overdue InBody (latest scan > 60 days ago)
+  const latestScans = {};
+  allScans.forEach(s => {
+    if (!latestScans[s.client_id] || s.scan_date > latestScans[s.client_id]) {
+      latestScans[s.client_id] = s.scan_date;
+    }
+  });
+  const sixtyDaysAgo = new Date(Date.now() - 60*24*60*60*1000).toISOString().slice(0,10);
+  const overdue = active.filter(c => {
+    const last = latestScans[c.id];
+    return !last || last < sixtyDaysAgo;
+  });
+
+  // Avg BF from latest scans
+  const bfVals = active.map(c => {
+    const s = allScans.filter(sc => sc.client_id === c.id).sort((a,b) => b.scan_date.localeCompare(a.scan_date))[0];
+    return s ? parseFloat(s.body_fat_pct) : null;
+  }).filter(v => v && v > 0);
+  const avgBF = bfVals.length ? (bfVals.reduce((a,b)=>a+b,0)/bfVals.length).toFixed(1)+'%' : '—';
+
+  const totalSessions = active.reduce((sum,c) => sum + (c.sessions_remaining||0), 0);
+
+  document.getElementById('kpi-active').textContent = active.length;
+  document.getElementById('kpi-sessions').textContent = totalSessions;
+  document.getElementById('kpi-renewals').textContent = renewals.length;
+  document.getElementById('kpi-frozen').textContent = frozen.length;
+  document.getElementById('kpi-overdue').textContent = overdue.length;
+  document.getElementById('kpi-bf').textContent = avgBF;
+
+  renderAdvisorCards(active);
+  renderAtRisk(renewals, frozen);
+  renderCapacity(active);
+}
+
+function advisorStats(clients, advisor) {
+  const mine = advisor === 'combined' ? clients : clients.filter(c => {
+    const a = (c.advisor||c.coach||'').toLowerCase();
+    return a.includes(advisor.toLowerCase());
+  });
+  const totalSess = mine.reduce((s,c) => s+(c.sessions_remaining||0), 0);
+  return { count: mine.length, sessions: totalSess, renewals: mine.filter(c=>c.sessions_remaining===0).length };
+}
+
+function renderAdvisorCards(active) {
+  ['ted','dani','combined'].forEach(adv => {
+    const s = advisorStats(active, adv);
+    const label = adv === 'ted' ? 'Coach Ted' : adv === 'dani' ? 'Dani' : 'Combined';
+    document.getElementById('adv-' + adv).innerHTML = `
+      <div class="adv-stat"><div class="adv-num" style="color:var(--green)">${s.count}</div><div class="adv-lbl">Clients</div></div>
+      <div class="adv-stat"><div class="adv-num">${s.sessions}</div><div class="adv-lbl">Sessions Left</div></div>
+      <div class="adv-stat"><div class="adv-num" style="color:${s.renewals>0?'var(--red)':'var(--green)'}">${s.renewals}</div><div class="adv-lbl">Renewals</div></div>
+    `;
+  });
+}
+
+function renderAtRisk(renewals, frozen) {
+  const all = [
+    ...renewals.map(c => ({...c, flag:'renewal', note:'0 sessions remaining — renewal conversation needed'})),
+    ...frozen.map(c => ({...c, flag:'frozen', note:'Account frozen — follow up on return date'}))
+  ];
+  const el = document.getElementById('at-risk-list');
+  if (!all.length) { el.innerHTML = '<div class="empty-state" style="color:var(--green)">✓ No at-risk clients right now</div>'; return; }
+  el.innerHTML = all.map(c => `
+    <div class="client-row">
+      <div class="avatar">${initials(c)}</div>
+      <div style="flex:1">
+        <div class="client-name">${esc(name(c))}</div>
+        <div class="client-meta">${c.note}</div>
+      </div>
+      <a href="client-profile.html?id=${c.id}" style="font-size:10px;font-weight:700;color:var(--red);text-decoration:none;padding:4px 10px;border:1px solid #FECACA;border-radius:6px">View →</a>
+    </div>
+  `).join('');
+}
+
+function renderCapacity(active) {
+  const coaches = {};
+  active.forEach(c => {
+    const a = normalizeAdvisor(c.advisor || c.coach || 'Unassigned');
+    if (!coaches[a]) coaches[a] = 0;
+    coaches[a]++;
+  });
+  const el = document.getElementById('capacity-list');
+  if (!Object.keys(coaches).length) { el.innerHTML = '<div class="empty-state">No data</div>'; return; }
+  el.innerHTML = Object.entries(coaches).sort((a,b)=>b[1]-a[1]).map(([coach, count]) => {
+    const pct = Math.round((count/30)*100);
+    return `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="font-weight:600">${esc(coach)}</span>
+          <span style="color:var(--muted)">${count} / 30 clients (${pct}%)</span>
+        </div>
+        <div style="height:6px;background:var(--soft);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${Math.min(pct,100)}%;background:${pct>80?'var(--red)':pct>60?'var(--amber)':'var(--green)'};border-radius:4px"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── CLIENTS TAB ───────────────────────────────────────────────
+function renderClientTab() {
+  const q = (document.getElementById('clientSearch').value||'').toLowerCase();
+  const filter = document.getElementById('clientFilter').value;
+  let clients = allClients.filter(c => {
+    const nm = name(c).toLowerCase();
+    if (q && !nm.includes(q)) return false;
+    if (filter === 'active_pt') return c.status === 'active_pt';
+    if (filter === 'frozen') return c.status === 'frozen';
+    if (filter === 'renewal') return c.sessions_remaining === 0;
+    return true;
+  });
+  const el = document.getElementById('client-list-body');
+  if (!clients.length) { el.innerHTML = '<div class="empty-state">No clients found</div>'; return; }
+  el.innerHTML = clients.map(c => {
+    const rem = c.sessions_remaining || 0;
+    const tot = c.sessions_total || 0;
+    const pct = tot > 0 ? Math.round((rem/tot)*100) : 0;
+    const fillClass = pct === 0 ? 'empty' : pct < 25 ? 'low' : '';
+    const statusClass = c.status === 'active_pt' ? 'status-active' : c.status === 'frozen' ? 'status-frozen' : 'status-pastdue';
+    return `
+      <div class="client-row">
+        <div class="avatar">${initials(c)}</div>
+        <div style="flex:1">
+          <div class="client-name">${esc(name(c))}</div>
+          <div class="client-meta">${esc(c.advisor||c.coach||'Unassigned')} · ${esc(c.package||'—')}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="session-bar" style="justify-content:flex-end;margin-bottom:4px">
+            <span style="font-size:11px;color:${pct===0?'var(--red)':pct<25?'var(--amber)':'var(--muted)'}">${rem} left</span>
+            <div class="sessions-track"><div class="sessions-fill ${fillClass}" style="width:${pct}%"></div></div>
+          </div>
+          <span class="status-pill ${statusClass}">${(c.status||'').replace('_',' ')}</span>
+        </div>
+        <a href="client-profile.html?id=${c.id}" style="margin-left:10px;font-size:10px;font-weight:700;color:var(--red);text-decoration:none;padding:4px 10px;border:1px solid #FECACA;border-radius:6px;white-space:nowrap">Open →</a>
+      </div>`;
+  }).join('');
+}
+
+// ── EOD FEED ──────────────────────────────────────────────────
+function changeDate(delta) {
+  const d = new Date(eodDate);
+  d.setDate(d.getDate() + delta);
+  if (d > new Date()) return;
+  eodDate = d.toISOString().slice(0,10);
+  loadEODFeed();
+}
+
+async function loadEODFeed() {
+  const display = new Date(eodDate + 'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('eodDateDisplay').textContent = display;
+  const feed = document.getElementById('eod-feed');
+  feed.innerHTML = '<div class="empty-state">Loading...</div>';
+  try {
+    const r = await fetch(WORKER + `/eod/feed?date=${eodDate}`);
+    const d = await r.json();
+    const subs = d.submissions || [];
+    const items = d.action_items || [];
+    if (!subs.length) {
+      feed.innerHTML = '<div class="empty-state">No EOD submissions for this date yet.</div>';
+    } else {
+      feed.innerHTML = subs.map(s => {
+        const flags = s.priority_flags_json ? JSON.parse(s.priority_flags_json) : [];
+        const time = s.submitted_at ? new Date(s.submitted_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+        return `
+          <div class="eod-card">
+            <div class="eod-header">
+              <div>
+                <div class="eod-author">${esc(s.author_name)}</div>
+                <div class="eod-time">${time} · <span class="eod-role-pill">${esc(s.author_role||'').replace(/_/g,' ')}</span></div>
+              </div>
+              <div style="margin-left:auto;display:flex;gap:6px">
+                <button class="view-btn" onclick="alert('Full detail view coming in next build')">View Full</button>
+                <button class="ack-btn">Acknowledge</button>
+              </div>
+            </div>
+            ${s.additional_notes ? `<div class="eod-preview">${esc(s.additional_notes).slice(0,200)}${s.additional_notes.length>200?'...':''}</div>` : ''}
+            ${flags.length ? `<div class="flag-list">${flags.map(f=>`<span class="flag-item flag-${f.priority||'fyi'}">${esc(f.text||'').slice(0,60)}</span>`).join('')}</div>` : ''}
+          </div>`;
+      }).join('');
+    }
+    // Action items
+    const ail = document.getElementById('action-items-list');
+    const open = items.filter(i => i.status === 'open');
+    if (!open.length) {
+      ail.innerHTML = '<div class="empty-state" style="color:var(--green)">✓ No open action items</div>';
+    } else {
+      ail.innerHTML = open.map(i => `
+        <div class="eod-card">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="flag-item flag-${i.priority||'fyi'}">${(i.priority||'fyi').replace('_',' ')}</span>
+            <span style="flex:1;font-size:13px;font-weight:500">${esc(i.title)}</span>
+            <span style="font-size:11px;color:var(--muted)">from ${esc(i.created_by)}</span>
+          </div>
+        </div>`).join('');
+    }
+  } catch(e) { feed.innerHTML = '<div class="empty-state">Could not load EOD feed.</div>'; }
+}
+
+// ── MORNING PULSE ─────────────────────────────────────────────
+function buildPulse() {
+  const el = document.getElementById('pulse-list');
+  const active = allClients.filter(c => c.status === 'active_pt');
+  const today = new Date().toISOString().slice(0,10);
+  const pulse = [];
+
+  // No sessions remaining
+  active.filter(c => (c.sessions_remaining||0) === 0).forEach(c =>
+    pulse.push({icon:'📅',color:'dot-red',name:name(c),note:'0 sessions remaining — renewal conversation needed',type:'renewal'}));
+
+  // Long absence (no recent check-in)
+  // Flag clients whose inbody scan is 60+ days old
+  const latestScans = {};
+  allScans.forEach(s => { if (!latestScans[s.client_id] || s.scan_date > latestScans[s.client_id]) latestScans[s.client_id] = s.scan_date; });
+  const sixtyAgo = new Date(Date.now()-60*24*60*60*1000).toISOString().slice(0,10);
+  active.filter(c => !latestScans[c.id] || latestScans[c.id] < sixtyAgo).slice(0,3).forEach(c =>
+    pulse.push({icon:'⚠️',color:'dot-amber',name:name(c),note:'No InBody scan in 60+ days — progress monitoring overdue',type:'monitoring'}));
+
+  // Frozen accounts
+  allClients.filter(c => c.status === 'frozen').slice(0,2).forEach(c =>
+    pulse.push({icon:'❄️',color:'dot-blue',name:name(c),note:'Account frozen — check on return timeline',type:'frozen'}));
+
+  if (!pulse.length) {
+    el.innerHTML = '<div class="empty-state" style="color:var(--green)">✓ All clients are in good shape today</div>';
+    return;
+  }
+
+  el.innerHTML = pulse.slice(0,5).map(p => `
+    <div class="pulse-item">
+      <div class="pulse-dot ${p.color}">${p.icon}</div>
+      <div class="pulse-info">
+        <div class="pulse-name">${esc(p.name)}</div>
+        <div class="pulse-note">${esc(p.note)}</div>
+      </div>
+      <button class="act-btn" onclick="window.open('client-profile.html','_blank')">Act</button>
+    </div>
+  `).join('');
+
+  // Reminders
+  buildReminders();
+}
+
+function buildReminders() {
+  const el = document.getElementById('reminders-list');
+  const items = [];
+  allClients.filter(c => c.status === 'active_pt' && c.sessions_remaining <= 2 && c.sessions_remaining > 0).forEach(c =>
+    items.push(`<div class="pulse-item"><div class="pulse-dot dot-amber">⚡</div><div class="pulse-info"><div class="pulse-name">${esc(name(c))}</div><div class="pulse-note">${c.sessions_remaining} session${c.sessions_remaining===1?'':'s'} remaining — start renewal conversation</div></div></div>`));
+  el.innerHTML = items.length ? items.join('') : '<div class="empty-state" style="color:var(--green)">✓ No reminders today</div>';
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function name(c){ return ((c.first_name||'')+' '+(c.last_name||'')).trim() || 'Unknown'; }
+function initials(c){ return ((c.first_name||'?')[0]+(c.last_name||'?')[0]).toUpperCase(); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function normalizeAdvisor(n){
+  const l = String(n).toLowerCase();
+  if(l.includes('ted')) return 'Coach Ted';
+  if(l.includes('dani')) return 'Dani';
+  return n;
+}
+
+// ── STARTUP ───────────────────────────────────────────────────
+document.getElementById('eodDateDisplay').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+loadAll();
+</script>
+</body>
+</html>

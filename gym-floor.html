@@ -153,13 +153,17 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 <!-- ============ SCREEN: CLIENT PICKER ============ -->
 <div class="screen active" id="scr-client">
   <div class="topbar">
-    <div>
-      <div class="title">Gym Floor</div>
-      <div class="sub">Pick a client to start</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="command-center.html" style="font-size:11px;color:var(--ink2);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;white-space:nowrap">← Hub</a>
+      <div>
+        <div class="title">Gym Floor</div>
+        <div class="sub">Pick a client to start</div>
+      </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <span class="pill" id="syncPill">…</span>
       <button class="btn sm" onclick="openTimer()">⏱</button>
+      <a href="coach-dashboard.html" style="font-size:11px;color:var(--ink2);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;white-space:nowrap">Dashboard →</a>
     </div>
   </div>
   <div class="scroll">

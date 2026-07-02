@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Staff Roster — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;
+  --line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;
+  --soft:#F5F6F8;--blue:#2563EB;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 16px;height:52px;position:sticky;top:0;z-index:40;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:16px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .nav-btn{font-size:12px;color:#9CA3AF;text-decoration:none;padding:6px 12px;border:1px solid #374151;border-radius:8px;display:flex;align-items:center;gap:6px}
+.topbar .nav-btn:hover{color:#fff;border-color:#6B7280}
+.topbar .spacer{flex:1}
+.topbar .page-title{font-family:'Oswald';font-size:14px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 60px}
+.page-hdr{margin-bottom:20px}
+.page-hdr h1{font-family:'Oswald';font-size:24px;font-weight:800;text-transform:uppercase;color:var(--ink)}
+.page-hdr p{font-size:13px;color:var(--muted);margin-top:4px}
+
+.add-bar{display:flex;gap:10px;margin-bottom:20px}
+.add-bar .add-btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:10px 20px;border-radius:10px;cursor:pointer}
+.add-bar .add-btn:hover{background:#B0121F}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal h2{font-family:'Oswald';font-size:18px;font-weight:800;text-transform:uppercase;margin-bottom:16px;color:var(--ink)}
+.field{margin-bottom:14px}
+.field label{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
+.field input,.field select{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-family:'Inter';font-size:13px;color:var(--ink);background:var(--soft)}
+.field input:focus,.field select:focus{outline:none;border-color:var(--red)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.checkbox-row{display:flex;align-items:center;gap:10px;padding:10px 0}
+.checkbox-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--red)}
+.checkbox-row label{font-size:13px;font-weight:500;color:var(--ink);cursor:pointer}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.modal-actions button{flex:1;font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;padding:10px;border-radius:8px;cursor:pointer;border:none}
+.btn-save{background:var(--red);color:#fff}
+.btn-save:hover{background:#B0121F}
+.btn-cancel{background:var(--soft);color:var(--muted);border:1px solid var(--line)!important}
+
+.section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
+
+.roster-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:10px}
+.roster-header{display:grid;grid-template-columns:2fr 1.8fr 1fr 1fr 90px;gap:8px;padding:10px 16px;background:var(--soft);border-bottom:1px solid var(--line)}
+.roster-header span{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
+.roster-row{display:grid;grid-template-columns:2fr 1.8fr 1fr 1fr 90px;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:center}
+.roster-row:last-child{border-bottom:none}
+.roster-row:hover{background:var(--soft)}
+.r-name{font-weight:600;font-size:13px;color:var(--ink)}
+.r-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.role-pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.3px;padding:3px 9px;border-radius:20px;text-transform:uppercase}
+.role-director{background:#EDE9FE;color:#5B21B6}
+.role-gm{background:#FEF3C7;color:#92400E}
+.role-lead{background:#DBEAFE;color:#1E40AF}
+.role-coach{background:#D1FAE5;color:#065F46}
+.role-mea{background:#F3F4F6;color:#374151}
+.role-floor{background:#FEE2E2;color:#991B1B}
+.role-regional{background:#E0192B;color:#fff}
+
+.eod-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
+.eod-yes{background:#D1FAE5;color:#065F46}
+.eod-no{background:var(--soft);color:var(--muted)}
+
+.active-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot-green{background:var(--green)}
+.dot-gray{background:var(--muted)}
+
+.row-actions{display:flex;gap:6px}
+.action-btn{font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;border:none;text-transform:uppercase;letter-spacing:.3px}
+.btn-edit{background:var(--soft);color:var(--ink);border:1px solid var(--line)!important}
+.btn-deactivate{background:#FEF2F2;color:var(--red);border:1px solid #FECACA!important}
+.btn-activate{background:#E3F5EC;color:var(--green);border:1px solid #9FE1CB!important}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:12px 24px;border-radius:10px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+
+@media(max-width:600px){
+  .roster-header,.roster-row{grid-template-columns:1fr 1fr;gap:6px}
+  .roster-header span:nth-child(3),.roster-header span:nth-child(4),
+  .roster-row>div:nth-child(3),.roster-row>div:nth-child(4){display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="command-center.html" class="nav-btn">← Hub</a>
+  <div class="spacer"></div>
+  <div class="page-title">Staff Roster</div>
+  <div class="logo" style="margin-left:12px">Body <span>Shoppe</span></div>
+</div>
+
+<div class="wrap">
+  <div class="page-hdr">
+    <h1>Staff Roster</h1>
+    <p>Manage employees, roles, and EOD reporting requirements. All EOD forms pull names from this roster — no hardcoded names anywhere.</p>
+  </div>
+
+  <div class="add-bar">
+    <button class="add-btn" onclick="openModal()">+ Add Employee</button>
+  </div>
+
+  <div class="section-label">Directors & Management</div>
+  <div class="roster-card" id="roster-mgmt">
+    <div class="roster-header">
+      <span>Name</span><span>Role</span><span>EOD Required</span><span>Status</span><span>Actions</span>
+    </div>
+    <div id="rows-mgmt"><div class="empty-state">Loading...</div></div>
+  </div>
+
+  <div class="section-label">Coaches & Trainers</div>
+  <div class="roster-card" id="roster-coaches">
+    <div class="roster-header">
+      <span>Name</span><span>Role</span><span>EOD Required</span><span>Status</span><span>Actions</span>
+    </div>
+    <div id="rows-coaches"><div class="empty-state">Loading...</div></div>
+  </div>
+
+  <div class="section-label">MEA Team</div>
+  <div class="roster-card" id="roster-mea">
+    <div class="roster-header">
+      <span>Name</span><span>Role</span><span>EOD Required</span><span>Status</span><span>Actions</span>
+    </div>
+    <div id="rows-mea"><div class="empty-state">Loading...</div></div>
+  </div>
+
+  <div class="section-label">Floor Tech</div>
+  <div class="roster-card" id="roster-floor">
+    <div class="roster-header">
+      <span>Name</span><span>Role</span><span>EOD Required</span><span>Status</span><span>Actions</span>
+    </div>
+    <div id="rows-floor"><div class="empty-state">Loading...</div></div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Add Employee</h2>
+    <input type="hidden" id="editId">
+    <div class="field">
+      <label>Full Name *</label>
+      <input type="text" id="fName" placeholder="e.g. Sarah Aldrich">
+    </div>
+    <div class="field">
+      <label>Role *</label>
+      <select id="fRole" onchange="updateEODTemplate()">
+        <option value="">-- Select Role --</option>
+        <option value="Regional Director">Regional Director</option>
+        <option value="Director of Fitness">Director of Fitness</option>
+        <option value="General Manager">General Manager</option>
+        <option value="Men's Training Lead">Men's Training Lead</option>
+        <option value="PT Coach">PT Coach</option>
+        <option value="MEA">MEA</option>
+        <option value="Floor Tech">Floor Tech</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="fEmail" placeholder="name@email.com">
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="fPhone" placeholder="(555) 000-0000">
+      </div>
+    </div>
+    <div class="field">
+      <label>Hire Date</label>
+      <input type="date" id="fHireDate">
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <input type="text" id="fNotes" placeholder="Optional notes">
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="fEOD">
+      <label for="fEOD">Submits End of Day report</label>
+    </div>
+    <div class="checkbox-row">
+      <input type="checkbox" id="fActive" checked>
+      <label for="fActive">Active employee</label>
+    </div>
+    <input type="hidden" id="fTemplate">
+    <div class="modal-actions">
+      <button class="action-btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEmployee()">Save Employee</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let roster = [];
+
+const ROLE_GROUPS = {
+  mgmt: ['Regional Director','Director of Fitness','General Manager'],
+  coaches: ["Men's Training Lead",'PT Coach'],
+  mea: ['MEA'],
+  floor: ['Floor Tech']
+};
+
+const EOD_TEMPLATES = {
+  'Regional Director': '',
+  'Director of Fitness': 'director_fitness',
+  'General Manager': 'general_manager',
+  "Men's Training Lead": 'training_lead',
+  'PT Coach': 'pt_coach',
+  'MEA': '',
+  'Floor Tech': ''
+};
+
+const ROLE_DEFAULT_EOD = {
+  'Director of Fitness': true,
+  'General Manager': true,
+  "Men's Training Lead": true,
+};
+
+async function loadRoster() {
+  try {
+    const r = await fetch(WORKER + '/db', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'staff_roster', orderBy:'name asc', limit:200})
+    });
+    const d = await r.json();
+    roster = d.results || [];
+    renderRoster();
+  } catch(e) {
+    showToast('Could not load roster');
+  }
+}
+
+function rolePillClass(role) {
+  if (role === 'Regional Director') return 'role-regional';
+  if (role === 'Director of Fitness') return 'role-director';
+  if (role === 'General Manager') return 'role-gm';
+  if (role.includes('Training Lead')) return 'role-lead';
+  if (role === 'PT Coach') return 'role-coach';
+  if (role === 'MEA') return 'role-mea';
+  if (role === 'Floor Tech') return 'role-floor';
+  return 'role-mea';
+}
+
+function renderGroup(containerId, roles) {
+  const members = roster.filter(e => roles.includes(e.role));
+  const el = document.getElementById(containerId);
+  if (!members.length) {
+    el.innerHTML = '<div class="empty-state">No employees in this group yet.</div>';
+    return;
+  }
+  el.innerHTML = members.map(e => `
+    <div class="roster-row">
+      <div>
+        <div class="r-name"><span class="active-dot ${e.active ? 'dot-green' : 'dot-gray'}"></span>${esc(e.name)}</div>
+        ${e.email ? `<div class="r-sub">${esc(e.email)}</div>` : ''}
+      </div>
+      <div><span class="role-pill ${rolePillClass(e.role)}">${esc(e.role)}</span></div>
+      <div><span class="eod-badge ${e.eod_required ? 'eod-yes' : 'eod-no'}">${e.eod_required ? '✓ Yes' : '— No'}</span></div>
+      <div style="font-size:12px;color:${e.active ? 'var(--green)' : 'var(--muted)'}">${e.active ? 'Active' : 'Inactive'}</div>
+      <div class="row-actions">
+        <button class="action-btn btn-edit" onclick="editEmployee(${e.id})">Edit</button>
+        <button class="action-btn ${e.active ? 'btn-deactivate' : 'btn-activate'}" onclick="toggleActive(${e.id}, ${e.active ? 0 : 1})">${e.active ? 'Deactivate' : 'Activate'}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderRoster() {
+  renderGroup('rows-mgmt', ROLE_GROUPS.mgmt);
+  renderGroup('rows-coaches', ROLE_GROUPS.coaches);
+  renderGroup('rows-mea', ROLE_GROUPS.mea);
+  renderGroup('rows-floor', ROLE_GROUPS.floor);
+}
+
+function openModal(id) {
+  document.getElementById('modalTitle').textContent = id ? 'Edit Employee' : 'Add Employee';
+  document.getElementById('editId').value = id || '';
+  if (!id) {
+    document.getElementById('fName').value = '';
+    document.getElementById('fRole').value = '';
+    document.getElementById('fEmail').value = '';
+    document.getElementById('fPhone').value = '';
+    document.getElementById('fHireDate').value = '';
+    document.getElementById('fNotes').value = '';
+    document.getElementById('fEOD').checked = false;
+    document.getElementById('fActive').checked = true;
+    document.getElementById('fTemplate').value = '';
+  } else {
+    const emp = roster.find(e => e.id === id);
+    if (!emp) return;
+    document.getElementById('fName').value = emp.name || '';
+    document.getElementById('fRole').value = emp.role || '';
+    document.getElementById('fEmail').value = emp.email || '';
+    document.getElementById('fPhone').value = emp.phone || '';
+    document.getElementById('fHireDate').value = emp.hire_date || '';
+    document.getElementById('fNotes').value = emp.notes || '';
+    document.getElementById('fEOD').checked = !!emp.eod_required;
+    document.getElementById('fActive').checked = !!emp.active;
+    document.getElementById('fTemplate').value = emp.eod_template || '';
+  }
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function updateEODTemplate() {
+  const role = document.getElementById('fRole').value;
+  document.getElementById('fTemplate').value = EOD_TEMPLATES[role] || '';
+  document.getElementById('fEOD').checked = !!ROLE_DEFAULT_EOD[role];
+}
+
+async function saveEmployee() {
+  const name = document.getElementById('fName').value.trim();
+  const role = document.getElementById('fRole').value;
+  if (!name || !role) { showToast('Name and role are required'); return; }
+  const id = document.getElementById('editId').value;
+  const values = {
+    name, role,
+    email: document.getElementById('fEmail').value.trim() || null,
+    phone: document.getElementById('fPhone').value.trim() || null,
+    hire_date: document.getElementById('fHireDate').value || null,
+    notes: document.getElementById('fNotes').value.trim() || null,
+    eod_required: document.getElementById('fEOD').checked ? 1 : 0,
+    eod_template: document.getElementById('fTemplate').value || null,
+    active: document.getElementById('fActive').checked ? 1 : 0,
+    gym_id: 1
+  };
+  try {
+    if (id) {
+      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'update', table:'staff_roster', values, where:{id: parseInt(id)}})});
+      showToast('Employee updated');
+    } else {
+      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'insert', table:'staff_roster', values})});
+      showToast('Employee added');
+    }
+    closeModal();
+    await loadRoster();
+  } catch(e) { showToast('Save failed: ' + e.message); }
+}
+
+async function toggleActive(id, newVal) {
+  const emp = roster.find(e => e.id === id);
+  const action = newVal ? 'Activate' : 'Deactivate';
+  if (!confirm(`${action} ${emp ? emp.name : 'this employee'}?`)) return;
+  try {
+    await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'update', table:'staff_roster', values:{active: newVal}, where:{id}})});
+    showToast(`${action}d`);
+    await loadRoster();
+  } catch(e) { showToast('Update failed'); }
+}
+
+function editEmployee(id) { openModal(id); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+loadRoster();
+</script>
+</body>
+</html>
