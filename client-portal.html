@@ -203,6 +203,49 @@
   .mm-type-btn{flex:1;min-width:70px;padding:8px 4px;border:1.5px solid var(--line);border-radius:8px;text-align:center;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);background:var(--soft)}
   .mm-type-btn.sel{border-color:var(--red);color:var(--red);background:#FEF2F2}
   .mm-status{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+
+  /* ── DAILY HABITS (Home) ── */
+  .habit-row{display:flex;gap:10px}
+  .habit-chip{flex:1;border-radius:12px;border:1.5px solid var(--line);background:var(--soft);padding:12px 6px;text-align:center;cursor:pointer}
+  .habit-chip.hit{border-color:var(--green);background:#E3F5EC}
+  .habit-chip .hc-icon{font-size:20px}
+  .habit-chip .hc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-top:4px}
+  .habit-chip .hc-streak{font-family:'Oswald';font-size:15px;font-weight:700;color:var(--ink);margin-top:2px}
+  .habit-chip.hit .hc-streak{color:var(--green)}
+
+  /* ── PHOTO COMPARISON (Progress) ── */
+  .pc-pose-row{display:flex;gap:6px;margin-bottom:12px}
+  .pc-pose-btn{flex:1;padding:7px 4px;border:1.5px solid var(--line);border-radius:8px;text-align:center;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);background:var(--soft)}
+  .pc-pose-btn.sel{border-color:var(--red);color:var(--red);background:#FEF2F2}
+  .pc-slider-wrap{position:relative;width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--soft)}
+  .pc-slider-wrap img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+  .pc-img-after{clip-path:inset(0 0 0 50%)}
+  .pc-handle-line{position:absolute;top:0;bottom:0;left:50%;width:3px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.4);pointer-events:none}
+  .pc-handle-dot{position:absolute;top:50%;left:50%;width:34px;height:34px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none}
+  .pc-slider-range{width:100%;margin-top:10px;accent-color:var(--red)}
+  .pc-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:700;margin-top:4px}
+
+  /* ── PROGRAM VIEW (My Training) ── */
+  .prog-ex-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+  .prog-ex-row:last-child{border-bottom:none}
+  .prog-ex-num{width:22px;height:22px;border-radius:50%;background:var(--soft);color:var(--muted);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .prog-ex-name{font-weight:600;font-size:13px}
+  .prog-name{font-family:'Oswald';font-size:14px;text-transform:uppercase;letter-spacing:.3px;color:var(--red);margin-bottom:6px}
+
+  /* ── RECIPE BANK ── */
+  .recipe-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .rf-chip{padding:6px 12px;border:1.5px solid var(--line);border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);background:var(--soft);cursor:pointer}
+  .rf-chip.sel{border-color:var(--red);color:var(--red);background:#FEF2F2}
+  .recipe-card{border:1.5px solid var(--line);border-radius:12px;padding:13px;margin-bottom:10px;cursor:pointer}
+  .recipe-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .recipe-card-title{font-weight:700;font-size:14px;color:var(--ink)}
+  .recipe-card-meta{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+  .recipe-card-macros{font-size:11px;color:var(--red);font-weight:700;text-align:right;flex-shrink:0;white-space:nowrap}
+  .recipe-detail h4{font-family:'Oswald';text-transform:uppercase;letter-spacing:.4px;font-size:12px;color:var(--muted);margin:14px 0 6px}
+  .recipe-detail ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7}
+  .recipe-detail ol{margin:0;padding-left:18px;font-size:13px;line-height:1.7}
+  .supp-note{background:#FEF2F2;border:1px solid #FBD5D5;border-radius:9px;padding:10px 12px;font-size:12px;color:var(--red-dk);margin-top:14px}
+  .supp-note a{color:var(--red-dk);font-weight:700}
 </style>
 </head>
 <body>
@@ -242,6 +285,7 @@
     <div class="tab active" onclick="showTab('home')">Home</div>
     <div class="tab" onclick="showTab('nutrition')">Nutrition</div>
     <div class="tab" onclick="showTab('meal')">Meal Plan</div>
+    <div class="tab" id="tab-btn-recipes" style="display:none" onclick="showTab('recipes')">Recipes</div>
     <div class="tab" onclick="showTab('progress')">Progress</div>
     <div class="tab" onclick="showTab('challenge')">Challenge</div>
     <div class="tab" onclick="showTab('train')">My Training</div>
@@ -252,6 +296,7 @@
   <div class="wrap panel active" id="tab-home">
     <div class="card" id="home-welcome"></div>
     <div class="my-tier-card" id="home-tier"></div>
+    <div class="card" id="home-habits"></div>
     <div class="elite-card" id="home-coachs-edge"></div>
     <div class="card" id="home-stats"></div>
     <div class="card" id="home-appt"></div>
@@ -318,6 +363,17 @@
     </div>
   </div>
 
+  <!-- RECIPES -->
+  <div class="wrap panel" id="tab-recipes">
+    <div class="card">
+      <h3>Chef Ted's Recipe Bank</h3>
+      <div class="recipe-filter-row" id="recipe-filters"></div>
+      <div id="recipe-list"><div class="empty">Loading your recipes...</div></div>
+      <button class="btn btn-outline" onclick="generateRecipes()" style="margin-top:12px">Get More Recipes</button>
+      <div class="mm-status" id="recipe-gen-status"></div>
+    </div>
+  </div>
+
   <!-- MEAL PLAN -->
   <div class="wrap panel" id="tab-meal">
     <div class="card" id="meal-plan-card">
@@ -332,6 +388,10 @@
 
   <!-- PROGRESS -->
   <div class="wrap panel" id="tab-progress">
+    <div class="card" id="photo-compare-card">
+      <h3>Photo Comparison</h3>
+      <div id="photo-compare-body"><div class="empty">Loading photos...</div></div>
+    </div>
     <div class="card">
       <h3>Body Composition</h3>
       <div id="prog-stats" class="stat-row"></div>
@@ -356,6 +416,10 @@
 
   <!-- MY TRAINING -->
   <div class="wrap panel" id="tab-train">
+    <div class="card" id="program-card" style="display:none">
+      <h3>Your Program</h3>
+      <div id="program-body"></div>
+    </div>
     <div class="card" style="padding:16px">
       <!-- Date + Duration header bar (Trainerize-style) -->
       <div class="wo-header">
@@ -525,6 +589,9 @@ async function loadPortalData(){
     renderTier(d.tier);
     renderMealPlan(d.mealPlan);
     renderProgress(d.checkins||[], d.scans||[]);
+    renderHabits(d.dailyLogs||[]);
+    const pkg = (d.client && d.client.package || '').toLowerCase();
+    document.getElementById('tab-btn-recipes').style.display = (pkg==='complete'||pkg==='complete_plus') ? '' : 'none';
     renderTrainHist([...(d.sessions||[]),...(d.selfWorkouts||[])].sort((a,b)=>(b.session_date||b.workout_date||'').localeCompare(a.session_date||a.workout_date||'')));
   }catch(e){}
 }
@@ -1111,6 +1178,205 @@ async function confirmSaveMeal(){
   }catch(e){ status.textContent = 'Connection error, try again'; }
 }
 
+// ── DAILY HABITS ─────────────────────────────────────────────────────────────
+const HABIT_TARGETS = { hydration: 8, sleep_hours: 7, steps: 8000 };
+function dateStr(offsetDays){ const d=new Date(); d.setDate(d.getDate()+offsetDays); return d.toISOString().slice(0,10); }
+
+function computeStreak(logs, key, threshold){
+  const byDate = {}; logs.forEach(l=>{ byDate[l.log_date]=l; });
+  let streak=0, i=0;
+  while(true){
+    const row = byDate[dateStr(-i)];
+    if(!row || !(Number(row[key])>=threshold)) break;
+    streak++; i++;
+    if(i>60) break;
+  }
+  return streak;
+}
+
+function renderHabits(logs){
+  const today = dateStr(0);
+  const todayRow = logs.find(l=>l.log_date===today) || {};
+  const items = [
+    { key:'hydration', label:'Water', icon:'&#128167;', val: todayRow.hydration, target: HABIT_TARGETS.hydration },
+    { key:'sleep_hours', label:'Sleep', icon:'&#128564;', val: todayRow.sleep_hours, target: HABIT_TARGETS.sleep_hours },
+    { key:'steps', label:'Steps', icon:'&#128099;', val: todayRow.steps, target: HABIT_TARGETS.steps }
+  ];
+  const html = '<h3>Daily Habits</h3><div class="habit-row">' + items.map(it=>{
+    const hit = Number(it.val) >= it.target;
+    const streak = computeStreak(logs, it.key, it.target);
+    return '<div class="habit-chip'+(hit?' hit':'')+'" onclick="toggleHabit(\''+it.key+'\','+it.target+')">'+
+      '<div class="hc-icon">'+it.icon+'</div><div class="hc-label">'+it.label+'</div>'+
+      '<div class="hc-streak">'+(streak>0?(streak+'&#128293;'):(hit?'&#10003;':'tap'))+'</div></div>';
+  }).join('') + '</div>';
+  document.getElementById('home-habits').innerHTML = html;
+}
+
+async function toggleHabit(key, target){
+  const logs = (SESSION.data && SESSION.data.dailyLogs) || [];
+  const today = dateStr(0);
+  const todayRow = logs.find(l=>l.log_date===today) || {};
+  const isHit = Number(todayRow[key]) >= target;
+  const body = { client_id: SESSION.client_id, log_date: today };
+  const apiKey = key === 'hydration' ? 'hydration' : (key === 'sleep_hours' ? 'sleep' : 'steps');
+  body[apiKey] = isHit ? null : target;
+  try{
+    const r = await fetch(WORKER+'/portal/log-day', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const d = await r.json();
+    if(d.ok){ await loadPortalData(); }
+  }catch(e){}
+}
+
+// ── PHOTO COMPARISON ─────────────────────────────────────────────────────────
+let PC_PHOTOS = {}, PC_POSE = 'front';
+async function loadPhotoCompare(){
+  const body = document.getElementById('photo-compare-body');
+  try{
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'progress_photos', where:{ client_id: SESSION.client_id }, orderBy:'captured_at' }) });
+    const d = await r.json();
+    const photos = (d.results||[]).filter(p=>String(p.client_id)===String(SESSION.client_id));
+    PC_PHOTOS = {};
+    photos.forEach(p=>{ const pose=p.pose||'other'; (PC_PHOTOS[pose]=PC_PHOTOS[pose]||[]).push(p); });
+    const poses = Object.keys(PC_PHOTOS).filter(p=>PC_PHOTOS[p].length>=2);
+    if(!poses.length){ body.innerHTML='<div class="empty">Need at least 2 photos of the same pose to compare. Keep logging progress photos with your coach.</div>'; return; }
+    PC_POSE = poses.includes('front') ? 'front' : poses[0];
+    body.innerHTML = '<div class="pc-pose-row" id="pc-pose-row"></div><div id="pc-slider-area"></div>';
+    document.getElementById('pc-pose-row').innerHTML = poses.map(p=>
+      '<div class="pc-pose-btn'+(p===PC_POSE?' sel':'')+'" onclick="selectPose(this,\''+p+'\')">'+p+'</div>').join('');
+    renderPhotoSlider();
+  }catch(e){ body.innerHTML='<div class="empty">Could not load photos</div>'; }
+}
+function selectPose(el, pose){
+  PC_POSE = pose;
+  document.querySelectorAll('#pc-pose-row .pc-pose-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  renderPhotoSlider();
+}
+function renderPhotoSlider(){
+  const list = PC_PHOTOS[PC_POSE] || [];
+  const first = list[0], last = list[list.length-1];
+  const area = document.getElementById('pc-slider-area');
+  area.innerHTML =
+    '<div class="pc-slider-wrap">'+
+      '<img src="'+WORKER+'/photo/get?key='+encodeURIComponent(first.r2_key)+'">'+
+      '<img class="pc-img-after" id="pc-after-img" src="'+WORKER+'/photo/get?key='+encodeURIComponent(last.r2_key)+'">'+
+      '<div class="pc-handle-line" id="pc-handle-line"></div>'+
+      '<div class="pc-handle-dot">&#8596;</div>'+
+    '</div>'+
+    '<input type="range" class="pc-slider-range" min="0" max="100" value="50" oninput="movePcSlider(this.value)">'+
+    '<div class="pc-labels"><span>'+(first.captured_at||'').slice(0,10)+'</span><span>'+(last.captured_at||'').slice(0,10)+'</span></div>';
+}
+function movePcSlider(val){
+  document.getElementById('pc-after-img').style.clipPath = 'inset(0 0 0 '+val+'%)';
+  document.getElementById('pc-handle-line').style.left = val+'%';
+}
+
+// ── PROGRAM VIEW ─────────────────────────────────────────────────────────────
+async function loadProgram(){
+  try{
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'programs', where:{ source:'floor_template' }, orderBy:'created_at DESC', limit:50 }) });
+    const d = await r.json();
+    const mine = (d.results||[]).filter(t=>!t.client_id || String(t.client_id)===String(SESSION.client_id));
+    const card = document.getElementById('program-card');
+    if(!mine.length){ card.style.display='none'; return; }
+    card.style.display='block';
+    document.getElementById('program-body').innerHTML = mine.map(t=>{
+      let exs=[]; try{ exs=JSON.parse(t.exercises_json||'[]'); }catch(e){}
+      return '<div class="prog-name">'+escapeHtml(t.name||'Program')+'</div>'+
+        exs.map((ex,i)=>'<div class="prog-ex-row"><div class="prog-ex-num">'+(i+1)+'</div><div class="prog-ex-name">'+escapeHtml(ex.name||ex)+'</div></div>').join('');
+    }).join('<div style="height:14px"></div>');
+  }catch(e){}
+}
+
+// ── RECIPE BANK ──────────────────────────────────────────────────────────────
+let RECIPE_ALL = [], RECIPE_FILTER = { meal:'all', prep:'all' };
+async function loadRecipes(){
+  const list = document.getElementById('recipe-list');
+  try{
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'recipes', where:{ client_id: SESSION.client_id }, orderBy:'created_at DESC', limit:100 }) });
+    const d = await r.json();
+    RECIPE_ALL = (d.results||[]).filter(rc=>String(rc.client_id)===String(SESSION.client_id));
+    renderRecipeFilters();
+    renderRecipeList();
+    if(!RECIPE_ALL.length){ generateRecipes(); }
+  }catch(e){ list.innerHTML='<div class="empty">Could not load recipes</div>'; }
+}
+function renderRecipeFilters(){
+  const meals=['all','breakfast','lunch','dinner','snack'];
+  document.getElementById('recipe-filters').innerHTML =
+    meals.map(m=>'<div class="rf-chip'+(RECIPE_FILTER.meal===m?' sel':'')+'" onclick="setRecipeFilter(\'meal\',\''+m+'\')">'+m+'</div>').join('') +
+    '<div class="rf-chip'+(RECIPE_FILTER.prep==='quick'?' sel':'')+'" onclick="setRecipeFilter(\'prep\',\''+(RECIPE_FILTER.prep==='quick'?'all':'quick')+'\')">under 15 min</div>';
+}
+function setRecipeFilter(kind, val){ RECIPE_FILTER[kind]=val; renderRecipeFilters(); renderRecipeList(); }
+function renderRecipeList(){
+  let list = RECIPE_ALL;
+  if(RECIPE_FILTER.meal!=='all') list = list.filter(r=>r.meal_type===RECIPE_FILTER.meal);
+  if(RECIPE_FILTER.prep==='quick') list = list.filter(r=>Number(r.prep_min)>0 && Number(r.prep_min)<=15);
+  const el = document.getElementById('recipe-list');
+  if(!list.length){ el.innerHTML='<div class="empty">No recipes match yet</div>'; return; }
+  el.innerHTML = list.map((r,i)=>
+    '<div class="recipe-card" onclick="openRecipeDetail('+RECIPE_ALL.indexOf(list[i])+')">'+
+      '<div class="recipe-card-head"><div><div class="recipe-card-title">'+escapeHtml(r.title)+'</div>'+
+      '<div class="recipe-card-meta">'+(r.meal_type||'')+(r.prep_min?(' &middot; '+r.prep_min+' min'):'')+'</div></div>'+
+      '<div class="recipe-card-macros">'+Math.round(r.calories||0)+' kcal<br>'+Math.round(r.protein_g||0)+'g pro</div></div></div>'
+  ).join('');
+}
+function openRecipeDetail(idx){
+  const r = RECIPE_ALL[idx];
+  if(!r) return;
+  let ingredients=[], steps=[];
+  try{ ingredients=JSON.parse(r.ingredients_json||'[]'); }catch(e){}
+  try{ steps=JSON.parse(r.steps_json||'[]'); }catch(e){}
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('mm-title').textContent = r.title;
+  document.getElementById('mm-body').innerHTML =
+    '<div class="recipe-card-meta" style="margin-bottom:10px">'+(r.meal_type||'')+(r.prep_min?(' &middot; '+r.prep_min+' min'):'')+' &middot; '+Math.round(r.calories||0)+' kcal &middot; '+Math.round(r.protein_g||0)+'g protein &middot; '+Math.round(r.carbs_g||0)+'g carbs &middot; '+Math.round(r.fat_g||0)+'g fat</div>'+
+    '<div class="recipe-detail"><h4>Ingredients</h4><ul>'+ingredients.map(i=>'<li>'+escapeHtml(i)+'</li>').join('')+'</ul>'+
+    '<h4>Steps</h4><ol>'+steps.map(s=>'<li>'+escapeHtml(s)+'</li>').join('')+'</ol></div>'+
+    (r.supplement_note ? '<div class="supp-note">'+escapeHtml(r.supplement_note)+' <a href="'+FPLINK_URL+'" target="_blank">Shop 1st Phorm</a></div>' : '')+
+    '<button class="btn btn-red" onclick="logRecipeAsMeal('+idx+')" style="margin-top:16px">Log This Meal</button>'+
+    '<div class="mm-status" id="mm-status"></div>';
+}
+const FPLINK_URL = 'https://1stphorm.com/?a_aid=coachted';
+async function logRecipeAsMeal(idx){
+  const r = RECIPE_ALL[idx];
+  if(!r) return;
+  const status = document.getElementById('mm-status');
+  if(status) status.textContent = 'Logging...';
+  const now = new Date();
+  const payload = {
+    client_id: SESSION.client_id, meal_date: now.toISOString().slice(0,10), meal_time: now.toTimeString().slice(0,5),
+    meal_type: r.meal_type || 'snack', photo_key: null,
+    calories: r.calories||0, protein_g: r.protein_g||0, carbs_g: r.carbs_g||0, fat_g: r.fat_g||0,
+    items_json: JSON.stringify([{ name:r.title, portion:'1 serving', calories:r.calories||0, protein_g:r.protein_g||0, carbs_g:r.carbs_g||0, fat_g:r.fat_g||0 }]),
+    source: 'recipe', logged_at: now.toISOString()
+  };
+  try{
+    const res = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'meals', values: payload }) });
+    const d = await res.json();
+    if(!d.ok){ if(status) status.textContent = d.error||'Save failed'; return; }
+    closeMealModal();
+    window._nutriLoaded=false;
+  }catch(e){ if(status) status.textContent='Connection error'; }
+}
+async function generateRecipes(){
+  const status = document.getElementById('recipe-gen-status');
+  if(status) status.textContent = 'Chef Ted is cooking up some recipes...';
+  try{
+    const r = await fetch(WORKER+'/recipes/generate', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: SESSION.client_id, count:6 }) });
+    const d = await r.json();
+    if(!d.ok){ if(status) status.textContent = d.error||'Could not generate recipes'; return; }
+    RECIPE_ALL = [...(d.recipes||[]), ...RECIPE_ALL];
+    renderRecipeList();
+    if(status) status.textContent = '';
+  }catch(e){ if(status) status.textContent = 'Connection error'; }
+}
+
 // ── TABS ─────────────────────────────────────────────────────────────────────
 function showTab(id){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
@@ -1118,6 +1384,9 @@ function showTab(id){
   const panel=document.getElementById('tab-'+id); if(panel) panel.classList.add('active');
   document.querySelectorAll('.tab').forEach(t=>{ if(t.textContent.toLowerCase().replace(/\s/g,'')===id||t.getAttribute('onclick')===`showTab('${id}')`) t.classList.add('active'); });
   if(id==='nutrition' && !window._nutriLoaded){ window._nutriLoaded=true; loadNutritionDay(); }
+  if(id==='progress' && !window._pcLoaded){ window._pcLoaded=true; loadPhotoCompare(); }
+  if(id==='train' && !window._progLoaded){ window._progLoaded=true; loadProgram(); }
+  if(id==='recipes' && !window._recipesLoaded){ window._recipesLoaded=true; loadRecipes(); }
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
