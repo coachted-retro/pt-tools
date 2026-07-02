@@ -610,7 +610,7 @@ function buildWorkoutPanel(workouts){
       '<button class="wo-view-tab '+(woView==='list'?'active':'')+'" onclick="setWoView(\'list\')">Log</button>'+
     '</div>'+
     '<button class="btn red" onclick="openSessionLogger(null)">+ Log Session</button>'+
-    '<label class="btn" style="cursor:pointer">📷 Upload Screenshot<input type="file" accept="image/*" style="display:none" onchange="uploadWorkout(event)"></label>'+
+    '<label class="btn" style="cursor:pointer">📷 Upload Screenshot / PDF<input type="file" accept="image/*,.pdf,application/pdf" style="display:none" onchange="uploadWorkout(event)"></label>'+
     '<label class="btn" style="cursor:pointer">📄 Import CSV<input type="file" accept=".csv,text/csv" style="display:none" onchange="importCSV(event)"></label>'+
     '<span class="wo-status" id="woStatus"></span>'+
   '</div>'+

@@ -2787,16 +2787,9 @@ async function finalizeAccept() {
     };
     Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]==null) delete clientPayload[k]; });
 
-    var workerBase = getApiUrl().replace('/v1/messages','').replace('https://api.anthropic.com','https://broken-cake-e9c2.tedscholl.workers.dev');
-    if (!workerBase.includes('tedscholl.workers.dev')) workerBase = 'https://broken-cake-e9c2.tedscholl.workers.dev';
-
-    var clientRes = await fetch(workerBase + '/db/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': 'retro-admin-2024' },
-      body: JSON.stringify(clientPayload)
-    });
-    var clientData = {}; try { clientData = await clientRes.json(); } catch(e) {}
-    window._enrolledClientId = clientData.id || clientData.client_id || null;
+    var clientData = await dbCall({ op:'insert', table:'clients', values: clientPayload });
+    if (!clientData.ok) { throw new Error('Client save failed: ' + (clientData.error || 'unknown error')); }
+    window._enrolledClientId = clientData.id || null;
     var _pl = document.getElementById('profileLink'); if(_pl && window._enrolledClientId) _pl.href = 'client-profile.html?client='+window._enrolledClientId;
 
     // 2. Save consultation record to D1
@@ -2814,11 +2807,7 @@ async function finalizeAccept() {
         notes: 'Package: ' + (pkg.name || selectedPkg) + '. Frequency: ' + (freq ? freq.textContent.trim() : '') + '. Length: ' + (length ? length.textContent.trim() : '')
       };
       Object.keys(consultPayload).forEach(function(k){ if(consultPayload[k]==null) delete consultPayload[k]; });
-      fetch(workerBase + '/db/consultations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-admin-key': 'retro-admin-2024' },
-        body: JSON.stringify(consultPayload)
-      }).catch(function(){});
+      dbCall({ op:'insert', table:'consultations', values: consultPayload }).catch(function(){});
     }
 
     // 3. Save nutrition profile if Complete package
@@ -2855,7 +2844,6 @@ async function finalizeDecline() {
   const tabName = gender === 'Female' ? 'Female Follow-Ups' : 'Male Follow-Ups';
 
   // 1. Write prospect/lead to D1 (primary)
-  var workerBase = 'https://broken-cake-e9c2.tedscholl.workers.dev';
   var clientName = gv('name') || '';
   try {
     var declinePayload = {
@@ -2871,19 +2859,10 @@ async function finalizeDecline() {
       coach_notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
     };
     Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
-    fetch(workerBase + '/db/clients', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': 'retro-admin-2024' },
-      body: JSON.stringify(declinePayload)
-    }).then(function(r){ return r.json(); }).then(function(d){
-      // Save follow-up record
-      var clientId = d.id || d.client_id;
+    dbCall({ op:'insert', table:'clients', values: declinePayload }).then(function(d){
+      var clientId = d.id;
       if (clientId) {
-        fetch(workerBase + '/db/followups', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-admin-key': 'retro-admin-2024' },
-          body: JSON.stringify({ client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' })
-        }).catch(function(){});
+        dbCall({ op:'insert', table:'followups', values: { client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' } }).catch(function(){});
       }
     }).catch(function(){});
   } catch(e) {}

@@ -283,10 +283,59 @@
 
 <div class="toast" id="toast"></div>
 
+<div id="appt-menu-box" style="display:none;position:fixed;inset:0;background:rgba(20,23,26,.45);z-index:100;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;width:320px;max-width:92vw">
+    <div id="appt-menu-title" style="font-weight:700;font-size:15px;margin-bottom:14px;color:var(--ink)">Appointment</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button onclick="markApptStatus('show')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--green);background:#E3F5EC;color:var(--green);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#10003; Show</button>
+      <button onclick="markApptStatus('no_show')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--amber);background:#FDF3E3;color:var(--amber);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#10005; No-Show</button>
+      <button onclick="markApptStatus('rescheduled')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--blue);background:#E8EFFD;color:var(--blue);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#8635; Rescheduled</button>
+      <button onclick="markApptStatus('declined')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--red);background:#FDEAEC;color:var(--red);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&mdash; Declined</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="apptMenuOpenTool()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:12px;cursor:pointer">Open Tool Only</button>
+      <button onclick="closeApptMenu()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="reschedule-modal" style="display:none;position:fixed;inset:0;background:rgba(20,23,26,.45);z-index:105;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;width:340px;max-width:92vw">
+    <div id="resched-title" style="font-weight:700;font-size:15px;margin-bottom:14px;color:var(--ink)">Reschedule</div>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:var(--muted);cursor:pointer">
+      <input type="checkbox" id="resched-tbd" onchange="toggleReschedTbd()" style="width:16px;height:16px">
+      To be determined \u2014 still working it out with the client
+    </label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div>
+        <div style="font-size:10.5px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700">New Date</div>
+        <input type="date" id="resched-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:13px">
+      </div>
+      <div>
+        <div style="font-size:10.5px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700">New Time</div>
+        <input type="time" id="resched-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:13px">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="confirmReschedule()" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer">Save</button>
+      <button onclick="closeRescheduleModal()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 
 let CLIENTS = [], LEADS = [], APPTS = [], MEAL_PROFILES = [], MEAL_PLANS = [], tab = 'nba';
+function findClientByName(name){
+  const key=(name||'').trim().toLowerCase();
+  if(!key) return null;
+  return CLIENTS.find(c=>((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase()===key) || null;
+}
+function openTraining(name){
+  const c=findClientByName(name);
+  openTool('gym-floor.html'+(c?('?client='+c.id):''));
+}
 let charts = {};
 
 async function db(body){
@@ -299,19 +348,109 @@ function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;
 function daysFromNow(d){ if(!d) return null; const ms=new Date(d+'T00:00:00')-new Date(); return Math.ceil(ms/86400000); }
 
 let APPT_ERR='';
+let APPT_STATUS_MAP = {};
+function apptStatusKey(date, name){ return date+'|'+(name||'').trim().toLowerCase(); }
 async function loadAll(){
-  const [c, l, mp, mpl] = await Promise.all([
+  const [c, l, mp, mpl, ast] = await Promise.all([
     db({op:'select', table:'clients', orderBy:'updated_at DESC', limit:1000}),
     db({op:'select', table:'leads',   orderBy:'created_at DESC', limit:2000}),
     db({op:'select', table:'meal_profiles', limit:1000}),
-    db({op:'select', table:'meal_plans', orderBy:'week_of DESC', limit:2000})
+    db({op:'select', table:'meal_plans', orderBy:'week_of DESC', limit:2000}),
+    db({op:'select', table:'appointment_status', limit:2000})
   ]);
   CLIENTS = (c.results)||[]; LEADS = (l.results)||[]; MEAL_PROFILES = (mp.results)||[]; MEAL_PLANS = (mpl.results)||[];
+  APPT_STATUS_MAP = {};
+  ((ast.results)||[]).forEach(row=>{ APPT_STATUS_MAP[apptStatusKey(row.appt_date, row.client_name)] = row; });
   try{
     const cr=await fetch(WORKER+'/calendar');
     if(!cr.ok){ APPTS=[]; APPT_ERR='Calendar endpoint returned HTTP '+cr.status+(cr.status===404?'. Deploy the latest Worker \u2014 it adds the /calendar route.':'.'); }
     else { const cd=await cr.json(); if(cd&&cd.ok&&cd.events){ APPTS=cd.events; APPT_ERR=''; } else { APPTS=[]; APPT_ERR=(cd&&cd.error)?cd.error:'The calendar feed returned no upcoming events.'; } }
   }catch(e){ APPTS=[]; APPT_ERR='Could not reach the calendar endpoint: '+e.message+'. Deploy the Worker and confirm its URL.'; }
+  render();
+}
+
+let apptMenuTarget = null;
+function openApptMenu(file, name, date, time, kind){
+  apptMenuTarget = { file, name, date, time, kind };
+  const title = document.getElementById('appt-menu-title');
+  if (title) title.textContent = (name||'this appointment') + ' \u2014 ' + date;
+  const box = document.getElementById('appt-menu-box');
+  if (box) box.style.display = 'flex';
+}
+function closeApptMenu(){
+  const box = document.getElementById('appt-menu-box');
+  if (box) box.style.display = 'none';
+  apptMenuTarget = null;
+}
+function apptMenuOpenTool(){
+  if (!apptMenuTarget) return;
+  const t = apptMenuTarget;
+  closeApptMenu();
+  if (t.kind === 'training') { openTraining(t.name); return; }
+  const c = findClientByName(t.name);
+  let params = 'name='+encodeURIComponent(t.name||'')+'&appt='+t.kind+'&date='+t.date;
+  if (c && c.id) params += '&client_id='+c.id;
+  openTool(t.file+'?'+params);
+}
+async function markApptStatus(status){
+  if (!apptMenuTarget) return;
+  if (status === 'rescheduled') { closeApptMenu(); openRescheduleModal(); return; }
+  const t = apptMenuTarget;
+  closeApptMenu();
+  try {
+    const key = apptStatusKey(t.date, t.name);
+    const existing = APPT_STATUS_MAP[key];
+    const payload = { appt_date: t.date, client_name: t.name, appt_type: t.kind, status, updated_at: new Date().toISOString() };
+    if (existing && existing.id) await db({op:'update', table:'appointment_status', values:payload, where:{id:existing.id}});
+    else await db({op:'insert', table:'appointment_status', values:payload});
+    APPT_STATUS_MAP[key] = payload;
+  } catch(e) { console.warn('Could not save appointment status', e); }
+
+  if (status === 'show') {
+    apptMenuTarget = t; apptMenuOpenTool();
+  } else if (status === 'no_show') {
+    toast('No-show logged for ' + t.name + '. Flag it in ABC at the front desk.');
+  } else if (status === 'declined') {
+    const c = findClientByName(t.name);
+    if (c && c.id) { try { await db({op:'update', table:'clients', values:{status:'not_interested'}, where:{id:c.id}}); } catch(e){} }
+    toast(t.name + ' marked as not interested.');
+  }
+  render();
+}
+function openRescheduleModal(){
+  const title = document.getElementById('resched-title');
+  if (title) title.textContent = (apptMenuTarget ? apptMenuTarget.name : 'this appointment') + ' \u2014 new time';
+  document.getElementById('resched-date').value = '';
+  document.getElementById('resched-time').value = '';
+  document.getElementById('resched-tbd').checked = false;
+  toggleReschedTbd();
+  document.getElementById('reschedule-modal').style.display = 'flex';
+}
+function closeRescheduleModal(){ document.getElementById('reschedule-modal').style.display = 'none'; }
+function toggleReschedTbd(){
+  const isTbd = document.getElementById('resched-tbd').checked;
+  document.getElementById('resched-date').disabled = isTbd;
+  document.getElementById('resched-time').disabled = isTbd;
+}
+async function confirmReschedule(){
+  if (!apptMenuTarget) { closeRescheduleModal(); return; }
+  const t = apptMenuTarget;
+  const isTbd = document.getElementById('resched-tbd').checked;
+  const dateVal = document.getElementById('resched-date').value;
+  const timeVal = document.getElementById('resched-time').value;
+  if (!isTbd && !dateVal) { alert('Pick a new date, or check "To be determined."'); return; }
+  closeRescheduleModal();
+  try {
+    const key = apptStatusKey(t.date, t.name);
+    const existing = APPT_STATUS_MAP[key];
+    const payload = { appt_date: t.date, client_name: t.name, appt_type: t.kind, status:'rescheduled',
+      reschedule_date: isTbd ? null : dateVal, reschedule_time: isTbd ? null : (timeVal||null),
+      reschedule_tbd: isTbd ? 1 : 0, updated_at: new Date().toISOString() };
+    if (existing && existing.id) await db({op:'update', table:'appointment_status', values:payload, where:{id:existing.id}});
+    else await db({op:'insert', table:'appointment_status', values:payload});
+    APPT_STATUS_MAP[key] = payload;
+  } catch(e) { console.warn('Could not save reschedule', e); }
+  toast('Rescheduled ' + t.name + (isTbd ? ' \u2014 time TBD.' : (' to ' + dateVal + (timeVal?(' '+timeVal):'') + '.')));
   render();
 }
 
@@ -454,8 +593,8 @@ function buildNBA(){
     if((a.start||'').slice(0,10)!==today) return;
     const p=parseAppt(a.summary);
     const timePfx=fmtTimeOnly(a.start); const timeTag=timePfx?(timePfx+' \u00b7 '):'';
-    if(p.t) items.push({prio:1,cat:'Today',pill:'p-new',title:timeTag+(p.name||'Appointment')+' \u00b7 '+p.t.label,reason:'Scheduled today',act:'Start',fn:()=>openTool(p.t.file+'?name='+encodeURIComponent(p.name||'')+'&appt='+p.t.key+'&date='+today)});
-    else { const dt=a.start||''; items.push({prio:2,cat:'Today',pill:'p-declined',title:timeTag+(p.name||p.typePart||a.summary||'Session'),reason:'On your calendar today',act:'Log',fn:()=>openTool('session-log.html?client='+encodeURIComponent(p.name||'')+'&date='+dt.slice(0,10)+(dt.slice(11,16)?('&time='+dt.slice(11,16)):'')+'&coach=Ted')}); }
+    if(p.t) items.push({prio:1,cat:'Today',pill:'p-new',title:timeTag+(p.name||'Appointment')+' \u00b7 '+p.t.label,reason:'Scheduled today',act:'Start',fn:()=>openApptMenu(p.t.file,p.name||p.t.label,today,(a.start||'').slice(11,16),p.t.key)});
+    else { items.push({prio:2,cat:'Today',pill:'p-declined',title:timeTag+(p.name||p.typePart||a.summary||'Session'),reason:'On your calendar today',act:'Log',fn:()=>openApptMenu('gym-floor.html',p.name||p.typePart||a.summary||'Session',today,(a.start||'').slice(11,16),'training')}); }
   });
   CLIENTS.forEach(c=>{
     if(!c.training_start_date) return;
@@ -495,32 +634,32 @@ function renderAppts(){
   }
   el.innerHTML=APPTS.map((a,i)=>{
     const p=parseAppt(a.summary); const when=fmtAppt(a.start);
+    const date=(a.start||'').slice(0,10);
+    const statusRow=APPT_STATUS_MAP[apptStatusKey(date,p.name||p.typePart||a.summary||'')];
+    const statusTag=statusRow?(' <span style="font-weight:700">['+statusRow.status.replace('_',' ')+(statusRow.status==='rescheduled'?(statusRow.reschedule_tbd?' \u2013 TBD':(statusRow.reschedule_date?(' \u2192 '+statusRow.reschedule_date+(statusRow.reschedule_time?(' '+statusRow.reschedule_time):'')):'')):'')+']</span>'):'';
     if(p.t){
       return '<div class="row" onclick="openAppt('+i+')">'+
         '<div class="main"><div class="name">'+esc(p.name||p.t.label)+'</div>'+
-        '<div class="meta">'+esc(when)+' \u00b7 '+esc(p.t.label)+(a.location?' \u00b7 '+esc(a.location):'')+'</div></div>'+
+        '<div class="meta">'+esc(when)+' \u00b7 '+esc(p.t.label)+(a.location?' \u00b7 '+esc(a.location):'')+statusTag+'</div></div>'+
         '<span class="pill '+p.t.pill+'">'+esc(p.t.key)+'</span></div>';
     }
     const title=p.name||p.typePart||a.summary||'(untitled)';
     const sub=p.name?esc(p.typePart):'Session / class';
     return '<div class="row" onclick="openSession('+i+')">'+
       '<div class="main"><div class="name">'+esc(title)+'</div>'+
-      '<div class="meta">'+esc(when)+' \u00b7 '+sub+'</div></div>'+
+      '<div class="meta">'+esc(when)+' \u00b7 '+sub+statusTag+'</div></div>'+
       '<span class="pill p-declined">session</span></div>';
   }).join('');
 }
 function openAppt(i){
   const a=APPTS[i]; if(!a) return;
   const p=parseAppt(a.summary); if(!p.t) return;
-  const q='?name='+encodeURIComponent(p.name)+'&appt='+p.t.key+'&date='+encodeURIComponent((a.start||'').slice(0,10));
-  openTool(p.t.file+q);
+  openApptMenu(p.t.file, p.name||p.t.label, (a.start||'').slice(0,10), (a.start||'').slice(11,16), p.t.key);
 }
 function openSession(i){
   const a=APPTS[i]; if(!a) return;
   const p=parseAppt(a.summary);
-  const dt=(a.start||''); const date=dt.slice(0,10); const time=dt.slice(11,16);
-  const q='?client='+encodeURIComponent(p.name||'')+'&date='+date+(time?('&time='+time):'')+'&coach=Ted';
-  openTool('session-log.html'+q);
+  openApptMenu('gym-floor.html', p.name||p.typePart||a.summary||'Session', (a.start||'').slice(0,10), (a.start||'').slice(11,16), 'training');
 }
 
 /* ---------- charts ---------- */

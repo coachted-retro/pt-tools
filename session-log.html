@@ -309,6 +309,37 @@
           <input type="text" id="log-next-goal" class="field-input" placeholder="e.g. Add 5lb to bench, improve form">
         </div>
       </div>
+
+      <div class="field-group">
+        <label class="field-label">Weight &amp; Body Measurements (optional)</label>
+        <div class="grid3" style="margin-bottom:10px">
+          <input type="number" step="0.1" id="log-weight" class="field-input" placeholder="Weight (lb)">
+          <input type="number" step="0.1" id="log-waist" class="field-input" placeholder="Waist (in)">
+          <input type="number" step="0.1" id="log-chest" class="field-input" placeholder="Chest (in)">
+        </div>
+        <div class="grid3" style="margin-bottom:10px">
+          <input type="number" step="0.1" id="log-hips" class="field-input" placeholder="Hips (in)">
+          <input type="number" step="0.1" id="log-neck" class="field-input" placeholder="Neck (in)">
+          <input type="number" step="0.1" id="log-larm" class="field-input" placeholder="L Arm (in)">
+        </div>
+        <div class="grid3">
+          <input type="number" step="0.1" id="log-rarm" class="field-input" placeholder="R Arm (in)">
+          <input type="number" step="0.1" id="log-lthigh" class="field-input" placeholder="L Thigh (in)">
+          <input type="number" step="0.1" id="log-rthigh" class="field-input" placeholder="R Thigh (in)">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Attach Files (optional)</label>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Trainerize routine screenshot or PDF gets read automatically. Progress photos file straight into the client's photo timeline.</div>
+        <div class="method-wrap">
+          <label class="method-pill" style="cursor:pointer">📋 Trainerize Screenshot / PDF<input type="file" accept="image/*,.pdf,application/pdf" style="display:none" onchange="handleWorkoutUpload(event)"></label>
+          <label class="method-pill" style="cursor:pointer">📷 Photo — Front<input type="file" accept="image/*" style="display:none" onchange="handlePhotoUpload(event,'front')"></label>
+          <label class="method-pill" style="cursor:pointer">📷 Photo — Side<input type="file" accept="image/*" style="display:none" onchange="handlePhotoUpload(event,'side')"></label>
+          <label class="method-pill" style="cursor:pointer">📷 Photo — Back<input type="file" accept="image/*" style="display:none" onchange="handlePhotoUpload(event,'back')"></label>
+        </div>
+        <div class="status-msg" id="attach-status" style="margin-top:8px"></div>
+      </div>
     </div>
 
     <!-- TOUCHPOINT FIELDS -->
@@ -758,7 +789,92 @@ async function _logToD1(clientName, e){
     Object.keys(vals).forEach(k=>{ if(vals[k]===''||vals[k]===null||vals[k]===undefined) delete vals[k]; });
     vals.client_id=clientId;
     await db({op:'insert',table:'training_sessions',values:vals});
+
+    // optional weight & measurements, only if the coach filled any of them in
+    const mf=id=>{ const el=document.getElementById(id); const v=el?el.value.trim():''; return v===''?null:parseFloat(v); };
+    const measRow={ client_id:clientId, measured_at:e.date, weight:mf('log-weight'), waist:mf('log-waist'), chest:mf('log-chest'),
+      hips:mf('log-hips'), neck:mf('log-neck'), left_arm:mf('log-larm'), right_arm:mf('log-rarm'),
+      left_thigh:mf('log-lthigh'), right_thigh:mf('log-rthigh'), source:'session_log' };
+    const hasMeasurement=['weight','waist','chest','hips','neck','left_arm','right_arm','left_thigh','right_thigh'].some(k=>measRow[k]!=null);
+    if(hasMeasurement){
+      Object.keys(measRow).forEach(k=>{ if(measRow[k]==null) delete measRow[k]; });
+      measRow.client_id=clientId; measRow.measured_at=e.date;
+      await db({op:'insert',table:'measurements',values:measRow});
+    }
   }catch(err){ console.warn('D1 session save failed', err); }
+}
+
+// ── FILE UPLOAD + AI EXTRACTION (Trainerize screenshots/PDFs, progress photos) ──
+const API_BASE = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function fileToB64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]); r.onerror=rej; r.readAsDataURL(file); }); }
+function parseAiJSON(t){ try{ return JSON.parse(String(t).replace(/```json|```/g,'').trim()); }catch(e){ return null; } }
+async function resolveClientId(name){
+  name=(name||'').trim(); if(!name) return null;
+  const dbCall=async b=>{ const r=await fetch(API_BASE+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)}); return r.json(); };
+  const all=((await dbCall({op:'select',table:'clients',limit:5000})).results)||[];
+  const key=name.toLowerCase();
+  const c=all.find(x=>(((x.first_name||'')+' '+(x.last_name||'')).trim().toLowerCase())===key);
+  if(c) return c.id;
+  const p=name.split(/\s+/);
+  const ins=await dbCall({op:'insert',table:'clients',values:{first_name:p[0]||'',last_name:p.slice(1).join(' '),status:'active_pt'}});
+  return (ins&&ins.id!=null)?ins.id:null;
+}
+async function aiExtractFile(file, b64, prompt){
+  const isPdf=(file.type==='application/pdf')|| /\.pdf$/i.test(file.name);
+  const block=isPdf
+    ? {type:'document', source:{type:'base64', media_type:'application/pdf', data:b64}}
+    : {type:'image', source:{type:'base64', media_type:(file.type||'image/jpeg'), data:b64}};
+  const r=await fetch(API_BASE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1500,messages:[{role:'user',content:[block,{type:'text',text:prompt}]}]})});
+  const d=await r.json();
+  if(d.error) throw new Error(d.error.message||'AI error');
+  const text=(d.content||[]).map(b=>b.text||'').join('');
+  const j=parseAiJSON(text); if(!j) throw new Error('Could not read the file');
+  return j;
+}
+const WO_PROMPT='You are reading a workout log screenshot or PDF (such as Trainerize). Return ONLY JSON, no prose, no fences. Shape: {"workout_date":"YYYY-MM-DD" or null,"title":"short name or null","exercises":[{"name":"...","sets":number,"reps":"as written","weight":"as written"}]}. Pull every exercise visible.';
+async function handleWorkoutUpload(ev){
+  const file=ev.target.files[0]; ev.target.value=''; if(!file) return;
+  const st=document.getElementById('attach-status');
+  const name=document.getElementById('log-client').value.trim();
+  if(!name){ st.textContent='Enter a client name first.'; return; }
+  st.textContent='Reading workout file...';
+  try{
+    const clientId=await resolveClientId(name);
+    if(!clientId) throw new Error('Could not find or create that client');
+    const b64=await fileToB64(file);
+    const ext=(file.name.split('.').pop()||'bin').toLowerCase();
+    const buf=await file.arrayBuffer();
+    const upRes=await fetch(API_BASE+'/file/upload?client='+clientId+'&kind=workout&ext='+ext+'&ct='+encodeURIComponent(file.type||'application/octet-stream'),{method:'POST',body:buf});
+    const upD=await upRes.json(); if(!upD.key) throw new Error(upD.error||'Upload failed');
+    const j=await aiExtractFile(file,b64,WO_PROMPT);
+    let vol=0; (j.exercises||[]).forEach(x=>{ const s=parseFloat(x.sets),rp=parseFloat(x.reps),w=parseFloat(x.weight); if(!isNaN(s)&&!isNaN(rp)&&!isNaN(w)) vol+=s*rp*w; });
+    const row={client_id:clientId,workout_date:j.workout_date||new Date().toISOString().slice(0,10),title:j.title||'Workout',file_url:upD.key,exercises_json:JSON.stringify(j.exercises||[]),total_volume:vol||null,source:'trainerize_screenshot'};
+    Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; }); row.client_id=clientId;
+    const db=async b=>{ const r=await fetch(API_BASE+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)}); return r.json(); };
+    const ins=await db({op:'insert',table:'workouts',values:row});
+    if(ins&&ins.error) throw new Error(ins.error);
+    st.textContent='Workout saved to '+name+'\u2019s history.';
+  }catch(e){ st.textContent='Failed: '+e.message; }
+}
+async function handlePhotoUpload(ev, pose){
+  const file=ev.target.files[0]; ev.target.value=''; if(!file) return;
+  const st=document.getElementById('attach-status');
+  const name=document.getElementById('log-client').value.trim();
+  if(!name){ st.textContent='Enter a client name first.'; return; }
+  st.textContent='Uploading '+pose+' photo...';
+  try{
+    const clientId=await resolveClientId(name);
+    if(!clientId) throw new Error('Could not find or create that client');
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
+    const buf=await file.arrayBuffer();
+    const upRes=await fetch(API_BASE+'/file/upload?client='+clientId+'&kind=photo_'+pose+'&ext='+ext+'&ct='+encodeURIComponent(file.type||'image/jpeg'),{method:'POST',body:buf});
+    const upD=await upRes.json(); if(!upD.key) throw new Error(upD.error||'Upload failed');
+    const row={client_id:clientId, captured_at:new Date().toISOString().slice(0,10), pose:pose, r2_key:upD.key, source:'session_log'};
+    const db=async b=>{ const r=await fetch(API_BASE+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)}); return r.json(); };
+    const ins=await db({op:'insert',table:'progress_photos',values:row});
+    if(ins&&ins.error) throw new Error(ins.error);
+    st.textContent=pose.charAt(0).toUpperCase()+pose.slice(1)+' photo saved to '+name+'\u2019s timeline.';
+  }catch(e){ st.textContent='Failed: '+e.message; }
 }
 
 // ── RESET FORM ────────────────────────────────────────────────
