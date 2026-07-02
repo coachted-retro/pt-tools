@@ -27,6 +27,13 @@
   /* top bar */
   .topbar{display:flex;align-items:center;gap:16px;background:var(--card);border-bottom:3px solid var(--red);
     padding:12px 22px;position:sticky;top:0;z-index:20}
+  @media(max-width:640px){
+    .topbar{flex-wrap:wrap;gap:8px;padding:10px 14px}
+    .topbar img{height:28px}
+    .topbar .title{font-size:16px}
+    .search{order:10;flex:1 1 100%;min-width:0}
+    .search input{width:100%}
+  }
   .topbar img{height:40px;width:auto;border-radius:4px}
   .topbar .title{font-family:'Oswald';font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:1px}
   .topbar .title span{color:var(--red)}

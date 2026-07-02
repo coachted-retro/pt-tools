@@ -45,6 +45,7 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 14px 28px; background: var(--surface);
     border-bottom: 3px solid var(--red); position: sticky; top: 0; z-index: 50;
+    flex-wrap: wrap; gap: 10px;
   }
   .header-left { display: flex; align-items: center; gap: 14px; }
   .back-btn { font-family: var(--font); font-size: 12px; color: var(--text2); background: none; border: 1px solid var(--border2); border-radius: 7px; padding: 6px 12px; cursor: pointer; transition: all .15s; }
@@ -64,6 +65,14 @@
   /* LAYOUT */
   .main { max-width: 1200px; margin: 0 auto; padding: 28px; display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
   @media (max-width: 900px) { .main { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) {
+    .main { padding: 14px; gap: 16px; }
+    .form-card { padding: 18px; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .type-selector { grid-template-columns: 1fr; }
+    .scale-wrap { flex-wrap: wrap; }
+    .scale-btn { min-width: 30px; }
+  }
 
   /* FORM CARD */
   .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; }

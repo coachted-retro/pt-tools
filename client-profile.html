@@ -17,6 +17,14 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
   .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:30}
+  @media(max-width:640px){
+    .topbar{flex-wrap:wrap;gap:8px;padding:10px 14px}
+    .topbar img{height:26px}
+    .topbar .t{font-size:15px}
+    .search{order:10;flex:1 1 100%;min-width:0}
+    .search input{width:100%}
+    .topbar .btn{padding:8px 10px;font-size:12px}
+  }
   .topbar img{height:34px;border-radius:4px}
   .topbar .t{font-family:'Oswald';font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:1px}
   .topbar .t span{color:var(--red)}
@@ -72,7 +80,7 @@
   .fld input,.fld select{width:100%;font-family:'Inter';font-size:13px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--soft)}
   .modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px}
   .x{cursor:pointer;color:var(--muted);font-size:20px;background:none;border:none}
-  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.search input{width:150px}}
+  @media(max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
 
   /* ── WORKOUT LOGGER ── */
   .wo-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line);}
