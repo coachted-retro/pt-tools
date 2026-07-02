@@ -28,7 +28,10 @@ const ALLOWED_TABLES = new Set([
   'inbody_scans','workouts',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts',
   'daily_content','client_wins','gym_events',
-  'gyms','pt_reps','pt_sales','gym_quotas'
+  'gyms','pt_reps','pt_sales','gym_quotas',
+  'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
+  'b2b_log','social_media_log','member_joins_log','schedule_changes',
+  'maintenance_log','staff_performance','action_items','shift_logs'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -580,6 +583,128 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const limit = Math.min(parseInt(url.searchParams.get('limit')||'30',10), 90);
         const res = await env.DB.prepare('SELECT * FROM eod_reports ORDER BY report_date DESC LIMIT ?').bind(limit).all();
         return ok({ reports: res.results||[] }, cors);
+      }
+
+      // ── EOD SUBMIT (Sarah, Ted, coaches, Dani) ──────────────────
+      if (url.pathname === '/eod/submit' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const body = await request.json().catch(() => ({}));
+        const logDate = body.date || new Date().toISOString().slice(0,10);
+        const authorName = body.authorName || 'Unknown';
+        const authorRole = body.author_role || 'staff';
+        const gymId = body.gym_id || 1;
+
+        // Insert main submission record
+        const subRes = await env.DB.prepare(
+          `INSERT INTO eod_submissions (gym_id,author_name,author_role,log_date,notable_wins,areas_improvement,game_plan,additional_notes,priority_flags_json,status,submitted_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)`
+        ).bind(
+          gymId, authorName, authorRole, logDate,
+          body.notable_wins||null, body.areas_improvement||null,
+          body.game_plan||null, body.sarahNotes||body.additional_notes||null,
+          body.notes ? JSON.stringify(body.notes) : null,
+          'submitted', new Date().toISOString()
+        ).run();
+        const subId = subRes.meta?.last_row_id;
+
+        // KPI snapshot
+        if (body.kpi && Object.values(body.kpi).some(v => v)) {
+          const k = body.kpi;
+          await env.DB.prepare(
+            `INSERT INTO kpi_snapshots (gym_id,snapshot_date,new_members,cancels,pt_revenue,dpc,waiver_pct,closing_pct,active_members,membership_goal,entered_by,created_at)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+          ).bind(
+            gymId, logDate,
+            parseInt(k.new_members)||null, parseInt(k.cancels)||null,
+            k.pt_revenue||null, k.dpc||null,
+            parseFloat(k.waiver_pct)||null, parseFloat(k.closing_pct)||null,
+            parseInt(k.active_members)||null, parseInt(k.membership_goal)||null,
+            authorName, new Date().toISOString()
+          ).run();
+        }
+
+        // Shake count
+        if (body.shake && body.shake.open) {
+          await env.DB.prepare(
+            `INSERT INTO shake_counts (gym_id,count_date,opening_count,closing_count,daily_total,entered_by,created_at) VALUES (?,?,?,?,?,?,?)`
+          ).bind(
+            gymId, logDate,
+            parseInt(body.shake.open)||null, parseInt(body.shake.close)||null,
+            parseInt(body.shake.total)||null, authorName, new Date().toISOString()
+          ).run();
+        }
+
+        // Priority flags as action items
+        if (body.notes && Array.isArray(body.notes)) {
+          for (const n of body.notes) {
+            if (!n.text) continue;
+            await env.DB.prepare(
+              `INSERT INTO action_items (gym_id,created_by,title,priority,status,visible_to,source_log_id,created_at)
+               VALUES (?,?,?,?,?,?,?,?)`
+            ).bind(
+              gymId, authorName, n.text, n.priority || 'fyi',
+              'open', n.priority === 'escalate' ? 'keelin' : 'dani',
+              subId, new Date().toISOString()
+            ).run();
+          }
+        }
+
+        // Staff performance rows
+        if (body.mea_rows && Array.isArray(body.mea_rows)) {
+          const weekOf = logDate.slice(0,10);
+          for (const row of body.mea_rows) {
+            if (!row[0]) continue;
+            await env.DB.prepare(
+              `INSERT INTO staff_performance (gym_id,week_of,employee_name,role,closing_pct,booking_pct,show_pct,performance_status,entered_by,created_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?)`
+            ).bind(
+              gymId, weekOf, row[0], 'MEA',
+              parseFloat(row[1])||null, parseFloat(row[3])||null, parseFloat(row[5])||null,
+              row[6]||null, authorName, new Date().toISOString()
+            ).run();
+          }
+        }
+
+        // Maintenance items
+        if (body.maint_rows && Array.isArray(body.maint_rows)) {
+          for (const row of body.maint_rows) {
+            if (!row[0]) continue;
+            await env.DB.prepare(
+              `INSERT INTO maintenance_log (gym_id,reported_date,item,status,notes,entered_by,created_at)
+               VALUES (?,?,?,?,?,?,?)`
+            ).bind(gymId, row[1]||logDate, row[0], row[2]||'OPEN', row[3]||null, authorName, new Date().toISOString())
+            .run();
+          }
+        }
+
+        // Schedule changes
+        if (body.sched_rows && Array.isArray(body.sched_rows)) {
+          for (const row of body.sched_rows) {
+            if (!row[1] && !row[2]) continue;
+            await env.DB.prepare(
+              `INSERT INTO schedule_changes (gym_id,log_date,change_date,original_employee,coverage_employee,shift_time,reason,entered_by,created_at)
+               VALUES (?,?,?,?,?,?,?,?,?)`
+            ).bind(gymId, logDate, row[0]||null, row[1]||null, row[2]||null, row[3]||null, row[4]||null, authorName, new Date().toISOString())
+            .run();
+          }
+        }
+
+        return ok({ ok: true, id: subId, date: logDate, author: authorName }, cors);
+      }
+
+      // ── EOD FEED (Dani / Keelin dashboard) ─────────────────────
+      if (url.pathname === '/eod/feed' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const feedDate = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
+        const gymId = url.searchParams.get('gym_id') || null;
+        let sql = `SELECT * FROM eod_submissions WHERE log_date=? ORDER BY submitted_at DESC`;
+        const binds = [feedDate];
+        if (gymId) { sql = `SELECT * FROM eod_submissions WHERE log_date=? AND gym_id=? ORDER BY submitted_at DESC`; binds.push(gymId); }
+        const subs = await env.DB.prepare(sql).bind(...binds).all();
+        const flags = await env.DB.prepare(
+          `SELECT * FROM action_items WHERE created_at >= ? ORDER BY priority DESC, created_at DESC LIMIT 50`
+        ).bind(feedDate + 'T00:00:00').all();
+        return ok({ submissions: subs.results||[], action_items: flags.results||[] }, cors);
       }
 
       if (request.method !== 'POST') return ok({}, cors);
