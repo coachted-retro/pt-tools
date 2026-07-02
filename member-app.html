@@ -276,6 +276,15 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div class="sec-label">Today's Workout</div>
         <div id="training-today-card"></div>
         <div class="sec-label">Routine Bundles — Pick Your Split</div>
+        <div class="day-picker" id="bundle-filter-strip" style="margin-bottom:10px">
+          <div class="day-pill active" onclick="setBundleFilter('all', this)">All</div>
+          <div class="day-pill" onclick="setBundleFilter('build', this)">Build Muscle</div>
+          <div class="day-pill" onclick="setBundleFilter('strength', this)">Strength</div>
+          <div class="day-pill" onclick="setBundleFilter('cut', this)">Fat Loss</div>
+          <div class="day-pill" onclick="setBundleFilter('general', this)">General</div>
+          <div class="day-pill" onclick="setBundleFilter('beginner', this)">Beginner</div>
+          <div class="day-pill" onclick="setBundleFilter('recovery', this)">Recovery</div>
+        </div>
         <div id="bundle-grid"></div>
         <div id="bundle-detail" style="display:none"></div>
         <div class="sec-label">Log a Self-Guided Session</div>
@@ -488,6 +497,253 @@ const BUNDLES = [
       ]},
     ]
   },
+  ,
+  {
+    id: 'strength_5x5',
+    icon: '🏋️',
+    name: 'Strength Foundation 5×5',
+    desc: 'Compound lifts only. Progressive overload every session. The fastest way to get genuinely strong.',
+    days: '3 days / week',
+    accent: '#1A1D21',
+    goal: ['strength','general'],
+    routines: [
+      { label: 'Workout A', exercises: [
+        {name:'Barbell Squat', sets:5, reps:'5', rest:'3 min'},
+        {name:'Barbell Bench Press', sets:5, reps:'5', rest:'3 min'},
+        {name:'Barbell Row', sets:5, reps:'5', rest:'3 min'},
+      ]},
+      { label: 'Workout B', exercises: [
+        {name:'Barbell Squat', sets:5, reps:'5', rest:'3 min'},
+        {name:'Overhead Press', sets:5, reps:'5', rest:'3 min'},
+        {name:'Deadlift', sets:1, reps:'5', rest:'5 min'},
+      ]},
+    ]
+  },
+  {
+    id: 'fat_loss_circuit',
+    icon: '⚡',
+    name: 'Fat Loss Circuit',
+    desc: 'Supersets with minimal rest. Keeps heart rate elevated, burns more in less time. No cardio excuses.',
+    days: '3–4 days / week',
+    accent: '#D97706',
+    goal: ['cut','recomp'],
+    routines: [
+      { label: 'Circuit A — Upper + Lower Superset', exercises: [
+        {name:'Dumbbell Press (superset with Row)', sets:4, reps:'12', rest:'20s between, 60s after'},
+        {name:'Dumbbell Row', sets:4, reps:'12', rest:'60s after superset'},
+        {name:'Goblet Squat (superset with RDL)', sets:4, reps:'12', rest:'20s between, 60s after'},
+        {name:'Romanian Deadlift', sets:4, reps:'12', rest:'60s after superset'},
+        {name:'Plank to Push-Up', sets:3, reps:'10', rest:'45s'},
+      ]},
+      { label: 'Circuit B — Push + Pull Superset', exercises: [
+        {name:'Incline Press (superset with Pull-Up)', sets:4, reps:'10', rest:'20s between, 60s after'},
+        {name:'Pull-Up or Lat Pulldown', sets:4, reps:'10', rest:'60s after superset'},
+        {name:'Shoulder Press (superset with Face Pull)', sets:3, reps:'12', rest:'20s between, 60s after'},
+        {name:'Face Pull', sets:3, reps:'15', rest:'60s after superset'},
+        {name:'Dip (superset with Curl)', sets:3, reps:'10', rest:'20s between, 60s after'},
+        {name:'Barbell Curl', sets:3, reps:'10', rest:'60s after superset'},
+      ]},
+    ]
+  },
+  {
+    id: 'functional_strength',
+    icon: '🔩',
+    name: 'Functional Strength',
+    desc: 'Movement patterns over muscle groups. Built for real-world strength, injury prevention, and longevity.',
+    days: '3 days / week',
+    accent: '#2563EB',
+    goal: ['general','strength'],
+    routines: [
+      { label: 'Day 1 — Hinge & Push', exercises: [
+        {name:'Trap Bar Deadlift or Kettlebell Swing', sets:4, reps:'8', rest:'90s'},
+        {name:'Push-Up Variations (tempo)', sets:4, reps:'10-12', rest:'60s'},
+        {name:'Cable Pull-Through', sets:3, reps:'15', rest:'60s'},
+        {name:'Farmers Carry', sets:4, reps:'40 yards', rest:'60s'},
+        {name:'Pallof Press', sets:3, reps:'12 each side', rest:'30s'},
+      ]},
+      { label: 'Day 2 — Squat & Pull', exercises: [
+        {name:'Goblet Squat or Safety Bar Squat', sets:4, reps:'10', rest:'90s'},
+        {name:'Single-Arm Dumbbell Row', sets:4, reps:'10 each', rest:'60s'},
+        {name:'Step-Up with Dumbbells', sets:3, reps:'10 each leg', rest:'60s'},
+        {name:'Band Pull-Apart', sets:4, reps:'20', rest:'20s'},
+        {name:'Dead Bug', sets:3, reps:'10 each side', rest:'30s'},
+      ]},
+      { label: 'Day 3 — Carry & Rotate', exercises: [
+        {name:'Single-Leg RDL', sets:3, reps:'8 each', rest:'60s'},
+        {name:'Landmine Press', sets:3, reps:'10 each', rest:'60s'},
+        {name:'Suitcase Carry', sets:4, reps:'40 yards each', rest:'60s'},
+        {name:'Cable Woodchop', sets:3, reps:'12 each side', rest:'45s'},
+        {name:'Plank Row', sets:3, reps:'10 each', rest:'45s'},
+      ]},
+    ]
+  },
+  {
+    id: 'chest_arms',
+    icon: '💪',
+    name: 'Chest & Arms',
+    desc: 'Extra volume on the muscles men want most. Run alongside any base split for accelerated chest and arm development.',
+    days: '2 days / week (add-on)',
+    accent: '#E0192B',
+    goal: ['build','recomp'],
+    routines: [
+      { label: 'Chest Specialization Day', exercises: [
+        {name:'Flat Barbell Bench Press', sets:5, reps:'5-6', rest:'3 min'},
+        {name:'Incline Dumbbell Press', sets:4, reps:'8-10', rest:'90s'},
+        {name:'Low Cable Fly', sets:4, reps:'12-15', rest:'60s'},
+        {name:'Decline Push-Up', sets:3, reps:'15-20', rest:'45s'},
+        {name:'Cable Chest Press', sets:3, reps:'12', rest:'45s'},
+      ]},
+      { label: 'Arms Specialization Day', exercises: [
+        {name:'EZ Bar Preacher Curl', sets:4, reps:'10', rest:'60s'},
+        {name:'Skull Crushers', sets:4, reps:'10', rest:'60s'},
+        {name:'Incline Dumbbell Curl', sets:3, reps:'12', rest:'45s'},
+        {name:'Cable Tricep Pushdown', sets:3, reps:'15', rest:'45s'},
+        {name:'Hammer Curl', sets:3, reps:'12', rest:'45s'},
+        {name:'Overhead Tricep Extension', sets:3, reps:'12', rest:'45s'},
+        {name:'Reverse Curl', sets:2, reps:'15', rest:'30s'},
+      ]},
+    ]
+  },
+  {
+    id: 'bodybuilding_5day',
+    icon: '🏆',
+    name: 'Bodybuilding Split',
+    desc: 'High volume, isolation work, aesthetics focus. For experienced members chasing size and definition.',
+    days: '5 days / week',
+    accent: '#7C3AED',
+    goal: ['build','recomp'],
+    routines: [
+      { label: 'Day 1 — Chest', exercises: [
+        {name:'Flat Barbell Bench Press', sets:4, reps:'6-8', rest:'2 min'},
+        {name:'Incline Dumbbell Press', sets:4, reps:'10-12', rest:'90s'},
+        {name:'Decline Bench Press', sets:3, reps:'10-12', rest:'90s'},
+        {name:'Cable Fly', sets:4, reps:'12-15', rest:'45s'},
+        {name:'Push-Up Burnout', sets:2, reps:'failure', rest:'60s'},
+      ]},
+      { label: 'Day 2 — Back', exercises: [
+        {name:'Deadlift', sets:4, reps:'5-6', rest:'3 min'},
+        {name:'Wide-Grip Pull-Up', sets:4, reps:'8-10', rest:'90s'},
+        {name:'T-Bar Row', sets:4, reps:'10', rest:'90s'},
+        {name:'Seated Cable Row', sets:3, reps:'12', rest:'60s'},
+        {name:'Straight-Arm Pulldown', sets:3, reps:'15', rest:'45s'},
+        {name:'Face Pull', sets:3, reps:'20', rest:'30s'},
+      ]},
+      { label: 'Day 3 — Shoulders', exercises: [
+        {name:'Overhead Press (Barbell)', sets:4, reps:'6-8', rest:'2 min'},
+        {name:'Dumbbell Lateral Raise', sets:5, reps:'15', rest:'30s'},
+        {name:'Arnold Press', sets:3, reps:'10-12', rest:'90s'},
+        {name:'Rear Delt Fly', sets:4, reps:'15', rest:'30s'},
+        {name:'Cable Lateral Raise', sets:3, reps:'15 each', rest:'30s'},
+        {name:'Shrugs', sets:3, reps:'12-15', rest:'45s'},
+      ]},
+      { label: 'Day 4 — Arms', exercises: [
+        {name:'EZ Bar Curl', sets:4, reps:'10-12', rest:'60s'},
+        {name:'Close-Grip Bench Press', sets:4, reps:'10-12', rest:'60s'},
+        {name:'Incline Dumbbell Curl', sets:3, reps:'12', rest:'45s'},
+        {name:'Skull Crushers', sets:3, reps:'10-12', rest:'60s'},
+        {name:'Concentration Curl', sets:3, reps:'12', rest:'30s'},
+        {name:'Overhead Tricep Extension', sets:3, reps:'12', rest:'45s'},
+        {name:'Reverse Curl', sets:2, reps:'15', rest:'30s'},
+      ]},
+      { label: 'Day 5 — Legs', exercises: [
+        {name:'Barbell Squat', sets:4, reps:'8-10', rest:'2-3 min'},
+        {name:'Leg Press', sets:4, reps:'12', rest:'90s'},
+        {name:'Romanian Deadlift', sets:3, reps:'10-12', rest:'90s'},
+        {name:'Leg Curl', sets:4, reps:'12', rest:'60s'},
+        {name:'Leg Extension', sets:4, reps:'12-15', rest:'45s'},
+        {name:'Standing Calf Raise', sets:5, reps:'15-20', rest:'30s'},
+      ]},
+    ]
+  },
+  {
+    id: 'beginner_foundation',
+    icon: '🌱',
+    name: 'Beginner Foundation',
+    desc: 'Your first 6 weeks. Form before intensity. 3 days, never back-to-back. Build the base everything else stands on.',
+    days: '3 days / week · Mon, Wed, Fri',
+    accent: '#1E9E5A',
+    goal: ['beginner','general'],
+    routines: [
+      { label: 'Week 1–2: Movement Patterns', exercises: [
+        {name:'Goblet Squat', sets:3, reps:'10', rest:'90s', note:'Feet shoulder-width. Chest up. Sit between your heels.'},
+        {name:'Dumbbell Bench Press', sets:3, reps:'10', rest:'90s', note:'Start light. Full range of motion. Control the descent.'},
+        {name:'Seated Cable Row', sets:3, reps:'10', rest:'90s', note:'Pull to your belly button. Squeeze shoulder blades together.'},
+        {name:'Dumbbell Shoulder Press', sets:3, reps:'10', rest:'60s', note:'Don't lock out at the top. Stay controlled.'},
+        {name:'Plank', sets:3, reps:'20-30s hold', rest:'45s', note:'Straight line head to heels. Don't let hips sag.'},
+      ]},
+      { label: 'Week 3–4: Adding Load', exercises: [
+        {name:'Barbell Squat (light)', sets:3, reps:'8', rest:'2 min', note:'Add the bar when goblet squat feels solid.'},
+        {name:'Barbell Bench Press (light)', sets:3, reps:'8', rest:'2 min', note:'Have a spotter or use a rack with safety bars.'},
+        {name:'Lat Pulldown', sets:3, reps:'10', rest:'90s', note:'Pull to chin. Lead with elbows, not hands.'},
+        {name:'Dumbbell Row', sets:3, reps:'10 each', rest:'60s', note:'One hand on bench. Full stretch at bottom.'},
+        {name:'Romanian Deadlift (dumbbell)', sets:3, reps:'10', rest:'90s', note:'Hip hinge. Push hips back. Feel the hamstrings stretch.'},
+        {name:'Plank + Side Plank', sets:3, reps:'30s each', rest:'30s'},
+      ]},
+      { label: 'Week 5–6: Progressive Overload', exercises: [
+        {name:'Barbell Squat', sets:4, reps:'6', rest:'2-3 min', note:'Add 5 lb each session if form is clean.'},
+        {name:'Barbell Bench Press', sets:4, reps:'6', rest:'2-3 min', note:'Add 5 lb each session.'},
+        {name:'Deadlift (intro)', sets:3, reps:'5', rest:'3 min', note:'This is the king of exercises. Take your time learning it.'},
+        {name:'Barbell Row', sets:3, reps:'8', rest:'90s'},
+        {name:'Overhead Press', sets:3, reps:'8', rest:'90s'},
+        {name:'Ab Wheel or Cable Crunch', sets:3, reps:'10', rest:'30s'},
+      ]},
+    ]
+  },
+  {
+    id: 'athletic_performance',
+    icon: '🚀',
+    name: 'Athletic Performance',
+    desc: 'Power, speed, and explosive strength. For competitive men who want to feel athletic, not just look it.',
+    days: '3–4 days / week',
+    accent: '#0891B2',
+    goal: ['strength','general'],
+    routines: [
+      { label: 'Power Day A', exercises: [
+        {name:'Box Jump', sets:5, reps:'3', rest:'2 min', note:'Full reset between reps. Land soft.'},
+        {name:'Power Clean or Hang Clean', sets:5, reps:'3', rest:'2-3 min'},
+        {name:'Barbell Squat (explosive)', sets:4, reps:'4', rest:'2 min', note:'Drive up as fast as possible. Control descent.'},
+        {name:'Broad Jump', sets:4, reps:'3', rest:'90s'},
+        {name:'Med Ball Slam', sets:4, reps:'8', rest:'60s'},
+      ]},
+      { label: 'Power Day B', exercises: [
+        {name:'Trap Bar Jump Deadlift', sets:5, reps:'3', rest:'2 min'},
+        {name:'Push Press (barbell)', sets:5, reps:'3', rest:'2 min'},
+        {name:'Single-Leg Bound', sets:4, reps:'5 each', rest:'90s'},
+        {name:'Battle Ropes', sets:5, reps:'20s on, 40s off', rest:'40s'},
+        {name:'Sprint (treadmill or turf)', sets:6, reps:'10 sec all-out', rest:'50s'},
+      ]},
+    ]
+  },
+  {
+    id: 'mobility_recovery',
+    icon: '🧘',
+    name: 'Mobility & Recovery',
+    desc: 'The work that protects the work. Do this on rest days or before any session. 20–30 minutes.',
+    days: 'Rest days · or pre-session',
+    accent: '#059669',
+    goal: ['recovery','general'],
+    routines: [
+      { label: 'Full Body Mobility Flow', exercises: [
+        {name:'Foam Roll — T-Spine', sets:1, reps:'60s', rest:'—', note:'Find tight spots, pause and breathe into them.'},
+        {name:'Foam Roll — Lats', sets:1, reps:'45s each', rest:'—'},
+        {name:'90/90 Hip Stretch', sets:2, reps:'60s each side', rest:'—', note:'Sit tall. Switch sides slowly.'},
+        {name:'World's Greatest Stretch', sets:3, reps:'5 each side', rest:'—'},
+        {name:'Cat-Cow', sets:2, reps:'10 slow', rest:'—', note:'Breathe through each rep. Full range.'},
+        {name:'Thoracic Rotation (half-kneeling)', sets:2, reps:'10 each side', rest:'—'},
+        {name:'Hip Flexor Stretch', sets:2, reps:'60s each', rest:'—', note:'Squeeze the glute of the back leg. Feel the stretch change.'},
+        {name:'Shoulder CARs (Controlled Articular Rotations)', sets:2, reps:'5 each direction', rest:'—'},
+        {name:'Hamstring Floss (banded or towel)', sets:2, reps:'10 each', rest:'—'},
+      ]},
+      { label: 'Pre-Session Activation', exercises: [
+        {name:'Band Pull-Apart', sets:3, reps:'20', rest:'—'},
+        {name:'Hip Circle', sets:2, reps:'10 each direction', rest:'—'},
+        {name:'Glute Bridge Activation', sets:2, reps:'15', rest:'—'},
+        {name:'Inchworm', sets:2, reps:'8', rest:'—'},
+        {name:'Leg Swing (front-back + lateral)', sets:2, reps:'10 each direction', rest:'—'},
+        {name:'Light Goblet Squat (warm-up weight)', sets:2, reps:'10', rest:'—'},
+      ]},
+    ]
+  },
 ];
 
 const CLASS_SCHEDULE = [
@@ -522,6 +778,7 @@ const CLASS_SCHEDULE = [
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 let selectedDay = DAYS[new Date().getDay()];
 let selectedBundle = null;
+let bundleFilter = 'all';
 
 // ── LOGIN ────────────────────────────────────────────────────
 async function doLogin() {
@@ -710,21 +967,31 @@ function renderTraining() {
   renderBundles();
 }
 
+function setBundleFilter(filter, el) {
+  bundleFilter = filter;
+  document.querySelectorAll('#bundle-filter-strip .day-pill').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderBundles();
+}
+
 function renderBundles() {
   const goal = DATA.mealProfile?.goal_type || DATA.client?.goal_primary || '';
   const goalKey = goal.toLowerCase().includes('cut') || goal.toLowerCase().includes('lose') ? 'cut' :
                   goal.toLowerCase().includes('build') || goal.toLowerCase().includes('muscle') ? 'build' :
                   goal.toLowerCase().includes('recomp') ? 'recomp' : 'general';
 
+  const filtered = bundleFilter === 'all' ? BUNDLES : BUNDLES.filter(b => b.goal.includes(bundleFilter));
+
   document.getElementById('bundle-grid').innerHTML = `<div class="bundle-grid">` +
-    BUNDLES.map(b => `
+    filtered.map(b => `
       <div class="bundle-card ${selectedBundle===b.id?'selected':''}" style="--accent:${b.accent}" onclick="selectBundle('${b.id}')">
         <div class="bundle-icon">${b.icon}</div>
         <div class="bundle-name">${b.name}</div>
         <div class="bundle-desc">${b.desc}</div>
         <div class="bundle-days">${b.days}</div>
         ${b.goal.includes(goalKey) ? `<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:${b.accent};margin-top:4px">✓ Matches your goal</div>` : ''}
-      </div>`).join('') + `</div>`;
+      </div>`).join('') + `</div>` +
+    (filtered.length === 0 ? `<div class="empty"><div class="e-icon">🔍</div><div class="e-title">No bundles found</div>Try a different filter.</div>` : '');
 }
 
 function selectBundle(id) {
