@@ -184,6 +184,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <span><span class="t">Fresh Session</span><br><span class="d">Build the exercise list as you go</span></span>
     </button>
     <div class="card">
+      <h3>Templates</h3>
+      <div id="tplList"><div class="empty">No templates yet. Finish a session and tap Save as Template.</div></div>
+    </div>
+    <div class="card">
       <h3>Recent Sessions</h3>
       <div id="recentList"><div class="empty">Loading...</div></div>
     </div>
@@ -255,7 +259,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     <button class="logset-btn" onclick="logSet()">Log Set</button>
 
     <div class="sets-done" id="setsDone"></div>
-    <textarea class="note-in" id="exNote" rows="2" placeholder="Exercise note (form cues, pain flags, adjustments)..." onchange="saveExNote()"></textarea>
+    <div style="display:flex;gap:8px;align-items:flex-start;margin-top:12px">
+      <textarea class="note-in" id="exNote" rows="2" placeholder="Exercise note (form cues, pain flags, adjustments)..." onchange="saveExNote()" style="margin-top:0;flex:1"></textarea>
+      <button class="btn sm" id="micEx" onclick="voiceNote('exNote','micEx')" style="padding:14px;font-size:18px">🎙</button>
+    </div>
   </div>
 
   <div class="log-nav">
@@ -285,8 +292,19 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     <div class="sum-grid" id="sumGrid"></div>
     <div class="card">
       <h3>Session Note</h3>
-      <textarea class="note-in" id="woNote" rows="3" placeholder="Overall session note..." style="margin-top:0"></textarea>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <textarea class="note-in" id="woNote" rows="3" placeholder="Overall session note..." style="margin-top:0;flex:1"></textarea>
+        <button class="btn sm" id="micWo" onclick="voiceNote('woNote','micWo')" style="padding:14px;font-size:18px">🎙</button>
+      </div>
     </div>
+    <div class="card" id="badgeCard" style="display:none">
+      <h3>Badges Earned 🏆</h3>
+      <div id="badgeList"></div>
+    </div>
+    <button class="opt-tile" onclick="saveAsTemplate()" style="margin-bottom:12px">
+      <span class="ic">📋</span>
+      <span><span class="t">Save as Template</span><br><span class="d">Reuse this exercise list for future sessions</span></span>
+    </button>
     <div class="card">
       <h3>Exercises</h3>
       <div id="sumExList"></div>
@@ -440,6 +458,7 @@ async function pickClient(id){
     let n=0;try{n=(JSON.parse(last.exercises_json||'[]')||[]).length;}catch(e){}
     $('lastWoDesc').textContent=(last.title||'Workout')+' · '+(last.workout_date||'')+' · '+n+' exercises';
   }else $('lastWoDesc').textContent='No previous sessions on file';
+  loadTemplates();
   $('recentList').innerHTML=HISTORY.length?HISTORY.slice(0,6).map(w=>{
     let n=0;try{n=(JSON.parse(w.exercises_json||'[]')||[]).length;}catch(e){}
     return `<div class="client-row" onclick="startFromWorkout(${w.id})"><div style="flex:1"><div class="nm">${esc(w.title||'Workout')}</div><div class="mt">${esc(w.workout_date||'')} · ${n} exercises${w.total_volume?' · '+Math.round(w.total_volume).toLocaleString()+' lb vol':''}</div></div><div style="color:var(--ink3)">›</div></div>`;
@@ -497,21 +516,45 @@ function tryResume(){
 /* =====================================================================
    EXERCISE QUEUE
    ===================================================================== */
+const GROUP_COLORS=['#E0192B','#2FBF71','#4A9EFF','#F5A623','#B06AF0'];
 function renderQueue(){
   $('queueName').textContent=SESSION.client_name;
   const done=SESSION.exercises.filter(e=>e.sets.length).length;
   $('queueMeta').textContent=SESSION.exercises.length+' exercises · '+done+' with sets logged';
-  $('queueList').innerHTML=SESSION.exercises.length?SESSION.exercises.map((e,i)=>`
-    <div class="ex-row ${e.sets.length?'done':''}" >
+  let html='';
+  SESSION.exercises.forEach((e,i)=>{
+    const gc=e.group?GROUP_COLORS[(e.group-1)%GROUP_COLORS.length]:null;
+    html+=`<div class="ex-row ${e.sets.length?'done':''}" style="${gc?'border-left:4px solid '+gc:''}">
       <div style="flex:1" onclick="jumpTo(${i})">
-        <div class="nm">${esc(e.name)}</div>
+        <div class="nm">${esc(e.name)}${e.group?' <span style="font-size:10px;color:'+gc+';font-weight:800">SS'+e.group+'</span>':''}</div>
         <div class="meta">${e.sets.length?e.sets.length+' sets · '+setsBrief(e.sets):lastBrief(e.name)}</div>
       </div>
       <button class="x" onclick="removeExercise(${i})">✕</button>
-    </div>`).join(''):'<div class="empty">Add exercises below, or go back and pick Repeat Last.</div>';
+    </div>`;
+    if(i<SESSION.exercises.length-1){
+      const linked=e.group&&SESSION.exercises[i+1].group===e.group;
+      html+=`<div style="display:flex;justify-content:center;margin:-6px 0 4px"><button onclick="toggleLink(${i})" style="font-size:10px;font-weight:800;letter-spacing:.5px;padding:3px 12px;border-radius:99px;border:1px solid ${linked?'var(--red)':'var(--line)'};background:${linked?'rgba(224,25,43,.15)':'var(--panel2)'};color:${linked?'var(--red)':'var(--ink3)'}">${linked?'⛓ SUPERSET':'⛓ link'}</button></div>`;
+    }
+  });
+  $('queueList').innerHTML=html||'<div class="empty">Add exercises below, or go back and pick Repeat Last.</div>';
   $('beginBtn').disabled=!SESSION.exercises.length;
 }
 function setsBrief(sets){return sets.map(s=>s.reps+'@'+s.weight).join(', ');}
+function lastBrief(name){const lp=lastPerf(name);return lp?('Last: '+lp):'New';}
+function toggleLink(i){
+  const a=SESSION.exercises[i],b=SESSION.exercises[i+1];if(!a||!b)return;
+  if(a.group&&a.group===b.group){
+    /* unlink: b (and anything after sharing group) leaves the group */
+    const g=a.group;let split=false;
+    SESSION.exercises.forEach((e,j)=>{if(j>i&&e.group===g)e.group=null;});
+    if(!SESSION.exercises.some((e,j)=>j!==i&&e.group===g))a.group=null;
+  }else{
+    const g=a.group||b.group||nextGroupId();
+    a.group=g;b.group=g;
+  }
+  persistActive();renderQueue();
+}
+function nextGroupId(){let m=0;SESSION.exercises.forEach(e=>{if(e.group)m=Math.max(m,e.group);});return m+1;}
 function addExercise(){
   const n=($('newExName').value||'').trim();if(!n)return;
   SESSION.exercises.push({name:n,sets:[],note:''});
@@ -580,8 +623,21 @@ function logSet(){
   const ex=SESSION.exercises[EXI];if(!ex)return;
   ex.sets.push({weight:curW,reps:curR,at:Date.now()});
   persistActive();renderSets();vib(30);
-  startRest();
   $('progFill').style.width=Math.round((SESSION.exercises.filter(e=>e.sets.length).length/Math.max(1,SESSION.exercises.length))*100)+'%';
+  /* superset: hop to the partner exercise with the fewest sets, short rest */
+  if(ex.group){
+    const partners=SESSION.exercises.map((e,i)=>({e,i})).filter(x=>x.e.group===ex.group&&x.i!==EXI);
+    if(partners.length){
+      partners.sort((a,b)=>a.e.sets.length-b.e.sets.length);
+      if(partners[0].e.sets.length<ex.sets.length){
+        saveExNote();EXI=partners[0].i;openLogging();
+        toast('Superset → '+partners[0].e.name);
+        startRest(20);
+        return;
+      }
+    }
+  }
+  startRest();
 }
 function renderSets(){
   const ex=SESSION.exercises[EXI];
@@ -611,8 +667,8 @@ function prevExercise(){saveExNote();if(EXI>0){EXI--;openLogging();}else showQue
 
 /* ---------- rest timer ---------- */
 let restLeft=0,restIv=null,restDefault=90;
-function startRest(){
-  restLeft=restDefault;$('restBar').classList.add('on');paintRest();
+function startRest(secs){
+  restLeft=secs||restDefault;$('restBar').classList.add('on');paintRest();
   clearInterval(restIv);
   restIv=setInterval(()=>{restLeft--;paintRest();if(restLeft<=0){clearInterval(restIv);$('restBar').classList.remove('on');cueGo();}},1000);
 }
@@ -638,6 +694,7 @@ function finishSession(){
     <div class="sum-tile"><div class="v">${mins}m${prs?' · '+prs+' PR':''}</div><div class="l">Duration${prs?' + PRs':''}</div></div>`;
   $('sumExList').innerHTML=logged.map(e=>`<div class="set-chip"><div class="v">${esc(e.name)}</div><div style="color:var(--ink2);font-size:12px">${e.sets.length} sets · ${setsBrief(e.sets)}</div></div>`).join('');
   $('woNote').value=SESSION.workoutNote||'';
+  paintBadges();
   show('scr-summary');paintSync();
 }
 function totalVolume(){let v=0;SESSION.exercises.forEach(e=>e.sets.forEach(s=>{v+=(parseFloat(s.weight)||0)*(parseInt(s.reps)||0);}));return v;}
@@ -649,7 +706,7 @@ function saveSession(){
   /* backward-compatible exercises_json: flat summary + set_detail */
   const exercises=logged.map(e=>{
     const top=Math.max(...e.sets.map(s=>parseFloat(s.weight)||0));
-    return{name:e.name,sets:e.sets.length,reps:e.sets[0].reps,weight:top,
+    return{name:e.name,sets:e.sets.length,reps:e.sets[0].reps,weight:top,group:e.group||null,
       set_detail:e.sets.map(s=>({weight:s.weight,reps:s.reps})),note:e.note||''};
   });
   const row={client_id:SESSION.client_id,workout_date:SESSION.date,title:SESSION.title,
@@ -657,6 +714,10 @@ function saveSession(){
     notes:SESSION.workoutNote||null,source:'gym_floor'};
   Object.keys(row).forEach(k=>{if(row[k]==null)delete row[k];});
   qpush({op:'insert',table:'workouts',values:row});
+  /* badges to client_wins: surfaces on client portal wins feed + profile */
+  (EARNED||[]).forEach(b=>{
+    qpush({op:'insert',table:'client_wins',values:{client_id:SESSION.client_id,headline:b.icon+' '+b.headline,detail:b.detail,win_type:b.win_type,source:'gym_floor',visible:1,created_at:new Date().toISOString()}});
+  });
   localStorage.removeItem(LS_ACTIVE);SESSION=null;
   toast(navigator.onLine?'Session saved':'Saved offline, will sync');
   show('scr-setup');
@@ -757,6 +818,153 @@ function paintClock(){
     tm.textContent=fmtMS(emLeft);ph.textContent='EMOM';
     rd.textContent='Round '+emRound+' / '+emRounds;
   }
+}
+
+/* =====================================================================
+   VOICE NOTES  (Web Speech API)
+   ===================================================================== */
+let recog=null,recogTarget=null,recogBtn=null;
+function voiceNote(taId,btnId){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Voice input not supported on this browser');return;}
+  if(recog){recog.stop();return;}
+  recogTarget=$(taId);recogBtn=$(btnId);
+  recog=new SR();recog.lang='en-US';recog.interimResults=false;recog.continuous=true;
+  recogBtn.style.background='var(--red)';recogBtn.style.borderColor='var(--red)';
+  vib(40);
+  recog.onresult=e=>{
+    let txt='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)txt+=e.results[i][0].transcript;}
+    if(txt){recogTarget.value=(recogTarget.value?recogTarget.value.trim()+' ':'')+txt.trim();
+      if(taId==='exNote')saveExNote();else if(SESSION)SESSION.workoutNote=recogTarget.value;}
+  };
+  recog.onend=()=>{recogBtn.style.background='';recogBtn.style.borderColor='';recog=null;recogTarget=null;recogBtn=null;};
+  recog.onerror=()=>{toast('Mic error, try again');};
+  recog.start();
+}
+
+/* =====================================================================
+   TEMPLATES  (programs table with localStorage fallback)
+   ===================================================================== */
+const LS_TPL='gf_templates';
+function tplLocal(){try{return JSON.parse(localStorage.getItem(LS_TPL)||'[]');}catch(e){return[];}}
+function tplLocalSave(list){localStorage.setItem(LS_TPL,JSON.stringify(list));}
+let TPL_REMOTE=[];
+async function loadTemplates(){
+  TPL_REMOTE=[];
+  try{
+    const d=await db({op:'select',table:'programs',where:{source:'floor_template'},limit:200});
+    TPL_REMOTE=(d.results||[]).filter(t=>!t.client_id||t.client_id===CLIENT.id);
+  }catch(e){/* programs table lacks source column or select failed: local only */}
+  renderTemplates();
+}
+function allTemplates(){
+  const loc=tplLocal().map(t=>({...t,_local:true}));
+  const seen=new Set(TPL_REMOTE.map(t=>t.name));
+  return [...TPL_REMOTE,...loc.filter(t=>!seen.has(t.name))];
+}
+function renderTemplates(){
+  const list=allTemplates();
+  $('tplList').innerHTML=list.length?list.map((t,i)=>{
+    let n=0;try{n=(JSON.parse(t.exercises_json||'[]')||[]).length;}catch(e){}
+    return `<div class="client-row"><div style="flex:1" onclick="startTemplate(${i})"><div class="nm">${esc(t.name||'Template')} ${t._local?'<span style="font-size:9px;color:var(--ink3)">DEVICE</span>':''}</div><div class="mt">${n} exercises${t.client_id?' · client-specific':' · all clients'}</div></div><button class="x" onclick="deleteTemplate(${i})">✕</button></div>`;
+  }).join(''):'<div class="empty">No templates yet. Finish a session and tap Save as Template.</div>';
+}
+function startTemplate(i){
+  const t=allTemplates()[i];if(!t)return;
+  let exs=[];try{exs=JSON.parse(t.exercises_json||'[]')||[];}catch(e){}
+  newSession(exs.map(x=>x.name||x).filter(Boolean),t.name||'Training Session');
+  /* restore superset groups if stored */
+  try{const full=JSON.parse(t.exercises_json||'[]');full.forEach((x,j)=>{if(x.group&&SESSION.exercises[j])SESSION.exercises[j].group=x.group;});renderQueue();}catch(e){}
+}
+function deleteTemplate(i){
+  const t=allTemplates()[i];if(!t)return;
+  if(!confirm('Delete template "'+(t.name||'')+'"?'))return;
+  if(t._local){tplLocalSave(tplLocal().filter(x=>x.name!==t.name));}
+  else if(t.id){qpush({op:'delete',table:'programs',where:{id:t.id}});TPL_REMOTE=TPL_REMOTE.filter(x=>x.id!==t.id);}
+  renderTemplates();
+}
+async function saveAsTemplate(){
+  if(!SESSION)return;
+  const name=prompt('Template name:',SESSION.title==='Training Session'?'':SESSION.title);
+  if(!name)return;
+  const scope=confirm('Make this template available for ALL clients?\nOK = all clients, Cancel = just '+SESSION.client_name);
+  const exs=SESSION.exercises.map(e=>({name:e.name,group:e.group||null}));
+  const row={name:name.trim(),exercises_json:JSON.stringify(exs),source:'floor_template',created_at:new Date().toISOString()};
+  if(!scope)row.client_id=SESSION.client_id;
+  try{
+    const ins=await db({op:'insert',table:'programs',values:row});
+    if(ins&&ins.error)throw new Error(ins.error);
+    toast('Template saved');
+  }catch(e){
+    /* fallback: device-local */
+    const loc=tplLocal();loc.push({name:row.name,exercises_json:row.exercises_json,client_id:row.client_id||null});
+    tplLocalSave(loc);
+    toast('Saved to this device (programs table not writable yet)');
+  }
+}
+
+/* =====================================================================
+   BADGES  (written to client_wins: client_id, headline, detail, win_type, source)
+   ===================================================================== */
+function computeBadges(){
+  const out=[];
+  const logged=SESSION.exercises.filter(e=>e.sets.length);
+  /* PR badges */
+  logged.forEach(e=>{
+    const b=histBest(e.name);
+    const top=Math.max(...e.sets.map(s=>parseFloat(s.weight)||0));
+    if(b!=null&&top>b)out.push({icon:'🏋️',headline:'Weight PR: '+e.name,detail:top+' lb, previous best '+b+' lb ('+SESSION.date+')',win_type:'floor_pr_weight'});
+    /* rep PR at same-or-higher weight */
+    const bestReps=histBestReps(e.name,top);
+    const topReps=Math.max(...e.sets.filter(s=>(parseFloat(s.weight)||0)>=top).map(s=>parseInt(s.reps)||0));
+    if(b!=null&&top===b&&bestReps!=null&&topReps>bestReps)out.push({icon:'🔁',headline:'Rep PR: '+e.name,detail:topReps+' reps @ '+top+' lb, previous '+bestReps+' ('+SESSION.date+')',win_type:'floor_pr_reps'});
+  });
+  /* volume PR: this session vs best historical total_volume */
+  const vol=Math.round(totalVolume());
+  const bestVol=Math.max(0,...HISTORY.map(w=>parseFloat(w.total_volume)||0));
+  if(HISTORY.length&&vol>bestVol)out.push({icon:'📦',headline:'Volume PR',detail:vol.toLocaleString()+' lb total, previous best '+Math.round(bestVol).toLocaleString()+' lb ('+SESSION.date+')',win_type:'floor_pr_volume'});
+  /* session count milestones */
+  const count=HISTORY.length+1;
+  const MILES=[1,10,25,50,100,250];
+  if(MILES.includes(count))out.push({icon:'🎖',headline:count===1?'First Session!':count+' Sessions Club',detail:'Session #'+count+' logged '+SESSION.date,win_type:'floor_milestone_sessions'});
+  /* lifetime volume clubs */
+  const lifeVol=HISTORY.reduce((a,w)=>a+(parseFloat(w.total_volume)||0),0)+vol;
+  const CLUBS=[[1000000,'1,000,000 LB CLUB'],[500000,'500K lb Club'],[250000,'250K lb Club'],[100000,'100K lb Club']];
+  for(const[thr,label]of CLUBS){
+    const before=lifeVol-vol;
+    if(lifeVol>=thr&&before<thr){out.push({icon:'💪',headline:label,detail:'Lifetime volume crossed '+thr.toLocaleString()+' lb on '+SESSION.date,win_type:'floor_milestone_volume'});break;}
+  }
+  /* streak: consecutive calendar weeks with a session, including this week */
+  const wk=d=>{const dt=new Date(d);const y=dt.getFullYear();const on=new Date(y,0,1);return y+'-'+Math.floor(((dt-on)/86400000+on.getDay())/7);};
+  const weeks=new Set(HISTORY.map(w=>wk(w.workout_date)));weeks.add(wk(SESSION.date));
+  let streak=0;const now=new Date(SESSION.date);
+  for(let i=0;i<60;i++){const d=new Date(now);d.setDate(d.getDate()-7*i);if(weeks.has(wk(d)))streak++;else break;}
+  const SREAKS=[[52,'12-Month Streak'],[26,'6-Month Streak'],[8,'8-Week Streak'],[4,'4-Week Streak']];
+  for(const[n,label]of SREAKS){if(streak===n){out.push({icon:'🔥',headline:label,detail:streak+' consecutive weeks with a session as of '+SESSION.date,win_type:'floor_streak'});break;}}
+  /* comeback: gap of 21+ days before this session */
+  if(HISTORY.length){
+    const lastD=new Date(HISTORY[0].workout_date),gap=(new Date(SESSION.date)-lastD)/86400000;
+    if(gap>=21)out.push({icon:'👊',headline:'Comeback',detail:'Back in the gym after '+Math.round(gap)+' days ('+SESSION.date+')',win_type:'floor_comeback'});
+  }
+  return out;
+}
+function histBestReps(name,atWeight){
+  let best=null;
+  for(const w of HISTORY){
+    try{const exs=JSON.parse(w.exercises_json||'[]')||[];
+      const m=exs.find(x=>(x.name||'').toLowerCase()===name.toLowerCase());
+      if(m&&Array.isArray(m.set_detail))m.set_detail.forEach(s=>{if((parseFloat(s.weight)||0)>=atWeight){const r=parseInt(s.reps);if(!isNaN(r))best=best==null?r:Math.max(best,r);}});
+    }catch(e){}
+  }
+  return best;
+}
+let EARNED=[];
+function paintBadges(){
+  EARNED=computeBadges();
+  const card=$('badgeCard');
+  if(!EARNED.length){card.style.display='none';return;}
+  card.style.display='block';
+  $('badgeList').innerHTML=EARNED.map(b=>`<div class="set-chip" style="border-color:var(--amber)"><div style="font-size:20px">${b.icon}</div><div style="flex:1"><div class="v">${esc(b.headline)}</div><div style="font-size:11px;color:var(--ink2)">${esc(b.detail)}</div></div></div>`).join('');
 }
 
 /* =====================================================================
