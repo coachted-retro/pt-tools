@@ -113,6 +113,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .ex-meta{font-size:11px;color:var(--ink3)}
 .ex-log-btn{font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer}
 .ex-log-btn.logged{background:var(--green-lt);border-color:#9FE1CB;color:var(--green)}
+.ex-cue{display:none;background:var(--soft);border-top:1px solid var(--line);padding:10px 12px;font-size:12px;color:var(--ink2);line-height:1.6}
+.ex-cue.open{display:block}
+.ex-cue-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.yt-btn{display:inline-flex;align-items:center;gap:5px;background:#FF0000;color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:4px 10px;border-radius:6px;text-decoration:none;flex-shrink:0}
+.info-btn{background:none;border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;color:var(--ink3);cursor:pointer;flex-shrink:0}
+.info-btn.open{background:var(--blue-lt);border-color:#BFDBFE;color:var(--blue)}
 
 /* ── LOG SESSION ────────────────────────────────────────────── */
 .set-input-row{display:flex;gap:8px;align-items:center;padding:6px 0}
@@ -366,6 +372,140 @@ let SESSION = null;
 let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null };
 let goingClasses = new Set(JSON.parse(localStorage.getItem('going_classes')||'[]'));
 let slExCount = 0;
+
+// ── EXERCISE FORM CUES ───────────────────────────────────────
+function toggleExCue(btn) {
+  const cue = btn.closest('[class*="ex-row"]').querySelector('.ex-cue');
+  if (!cue) return;
+  const open = cue.classList.toggle('open');
+  btn.classList.toggle('open', open);
+  btn.textContent = open ? '✕' : 'ℹ';
+}
+
+const FORM_CUES = {
+  // Squat patterns
+  'barbell squat': 'Bar on upper traps, feet shoulder-width, toes slightly out. Brace your core hard before you descend. Hit parallel or below — depth is non-negotiable for full development. Drive your knees out and push the floor apart on the way up.',
+  'barbell squat (light)': 'Same technique as a regular squat — lighter load lets you focus on depth and control. Take 3 seconds down, pause at the bottom, drive up. Learn the pattern before you load it.',
+  'goblet squat': 'Hold the dumbbell at your chest, elbows tucked. Feet slightly wider than shoulder-width. Sit between your heels, not on top of them. Keep your chest tall — the weight should make this natural.',
+  'goblet squat or safety bar squat': 'Focus on a vertical torso and full depth. If using a safety bar, keep your elbows forward to control the camber of the bar. This variation is easier on the shoulders and lower back.',
+  'box jump': 'Stand close to the box. Swing your arms, bend slightly, then explode. Land with both feet flat, soft knees. Step down — never jump down. Full reset between reps.',
+  'leg press': 'Feet shoulder-width, mid-height on the platform. Lower until knees hit 90° — don't let your lower back peel off the pad. Push through the whole foot, not just your toes. Never lock out at the top.',
+  'bulgarian split squat': 'Rear foot elevated on bench, laces down. Front foot far enough out that your shin stays close to vertical at the bottom. Lower until your rear knee nearly touches the floor. 90% of your weight stays on the front leg.',
+  'step-up with dumbbells': 'Drive through the heel of the working leg — don't push off the back foot. Full hip extension at the top. Control the descent. Use a box height that gets your thigh to parallel.',
+  'single-leg bound': 'Drive the knee up and bound forward. Land on the same foot you jumped from. Absorb the landing with a soft bend. Build distance progressively — this is explosive work.',
+
+  // Hip hinge patterns
+  'deadlift': 'Hinge from the hips to grip the bar — don't squat to it. Bar over mid-foot, tight against your shins. Big breath and brace. Drive the floor away. Lock out hips and knees together at the top. Hinge back down, don't drop it.',
+  'deadlift (intro)': 'Take your time here — this is the most important lift you'll learn. Bar over mid-foot, hip-width stance. Grip just outside your legs. Flat back, chest up, brace hard. Think "push the floor away" not "pull the bar up."',
+  'romanian deadlift': 'Soft bend in the knees — they stay there the whole time. Hinge at the hips and push them back. Feel the hamstrings load as the bar drops below your knees. Stop when your back starts to round. Drive hips forward to return.',
+  'romanian deadlift (dumbbell)': 'Same hip hinge pattern as the barbell version. Hold dumbbells at your thighs and slide them down your legs as you hinge. Squeeze glutes to return. You should feel this in your hamstrings, not your lower back.',
+  'trap bar jump deadlift': 'Set up inside the trap bar. Load is moderate — this is power work, not max effort. Dip slightly, then explode upward through the whole body. Heels may leave the floor. Control the landing. Reset completely between reps.',
+  'trap bar deadlift or kettlebell swing': 'Trap bar: neutral grip, drive through the floor. Kettlebell swing: hike the bell back between your legs then snap your hips forward — it's a hinge, not a squat. The bell floats, your arms don't pull it.',
+  'hip thrust': 'Shoulders on bench, bar over hips with a pad. Feet flat, knees at 90° at the top. Drive through your heels and squeeze your glutes hard at the top — don't hyperextend your lower back. Lower controlled.',
+  'cable pull-through': 'Stand facing away from the cable stack with the rope between your legs. Hinge at the hips, pushing them back. The rope goes between your legs. Drive hips forward to standing — squeeze glutes at the top.',
+  'glute bridge activation': 'Feet flat, knees bent. Press through your heels and drive your hips up. Squeeze glutes hard at the top for a full second. This activates before heavier work — don't rush it.',
+
+  // Horizontal push
+  'flat barbell bench press': 'Grip just outside shoulder-width. Arch your upper back slightly — keep your butt on the bench. Lower to your lower chest, elbows at about 45°. Drive the bar up and slightly back toward your face.',
+  'barbell bench press (light)': 'Light load means you can nail the technique. Full range of motion — touch the chest, full lockout. Elbows at 45° from your body, not flared. Feel the pec stretch at the bottom.',
+  'incline dumbbell press': 'Set bench to 30-45°. Dumbbells at chest level with a neutral or pronated grip. Press up and in, let the dumbbells touch lightly at the top. Control the descent — the stretch at the bottom is where the growth happens.',
+  'decline bench press': 'Feet hooked in, head lower than hips. Lower the bar to your lower chest. This hits the lower pec hard — great for fullness and chest thickness.',
+  'push-up variations (tempo)': 'Slow the descent to 3-4 seconds, pause at the bottom, explode up. Hands slightly wider than shoulders. Body is a rigid plank — don't let hips sag. If standard push-ups are easy, elevate your feet.',
+  'push-up burnout': 'As many as you can with perfect form. The moment your hips sag or elbows flare wide, stop. Quality reps only — a bad push-up doesn't count.',
+  'plank to push-up': 'Start in plank. Press up to push-up position one hand at a time, then lower back down. Keep hips level — they should not rotate. Alternate which arm leads.',
+  'dumbbell press (superset with row)': 'Standard dumbbell bench press. Controlled and full range. Move immediately to the row with minimal rest — this is a superset, keep the pace up.',
+  'cable chest press': 'Stand between the cables, arms forward. Press together and slightly forward, like you're hugging a tree. Squeeze the chest at the end range. Great for the inner chest.',
+  'low cable fly': 'Cables set at the lowest position. Arms start below hip level. Sweep upward and together. Slight bend in elbows stays constant — this is not a pressing motion.',
+
+  // Vertical push
+  'overhead press': 'Bar from the front rack or dumbbell version. Core tight, glutes squeezed — don't hyperextend. Press straight up, head moves back slightly to let the bar pass. Bar ends directly above your ears at the top.',
+  'dumbbell shoulder press': 'Start at ear level, elbows at 90°. Press up without locking out. Lower controlled. Keep your lower back from arching — brace your core throughout.',
+  'arnold press': 'Start with palms facing you, elbows forward. As you press up, rotate palms out. More total shoulder recruitment than a standard press. Control the rotation — don't rush it.',
+  'push press (barbell)': 'This is a power movement. Dip slightly at the knees, then drive up through the legs to launch the bar. Lock out at the top. The leg drive takes the weight through the sticking point. Lower controlled.',
+  'landmine press': 'One hand on the end of a barbell anchored in a corner or landmine attachment. Press up and forward at a 45° angle. Great for shoulder health — this angle is much easier on the rotator cuff than a strict overhead press.',
+
+  # Vertical pull
+  'pull-ups': 'Dead hang start. Drive elbows to your back pockets. Chin clears the bar. Lower all the way — no half reps. If you can't do bodyweight, use a band or the assisted machine to build toward it.',
+  'pull-ups / lat pulldown': 'If doing pull-ups: dead hang, full range. If using the lat pulldown: sit tall, lean back slightly, pull to your chin, lead with your elbows. Don't let the weight pull you forward.',
+  'wide-grip pull-up': 'Wider grip emphasizes the outer lats — gives you that V-taper. Full dead hang, pull until your chin clears. Lower all the way down. 3 seconds on the way down.',
+  'lat pulldown': 'Sit tall and lean back about 10°. Pull to your chin, not your chest. Elbows drive straight down. The bar should touch your upper chest at the bottom. Stretch fully at the top.',
+  'straight-arm pulldown': 'Stand facing the cable with a bar or rope. Arms nearly straight with a soft elbow bend. Pull straight down by driving your elbows toward your hips. Squeeze the lats hard at the bottom. Controlled return.',
+
+  # Horizontal pull
+  'barbell row': 'Hinge forward to about 45°. Bar hangs from a dead hang. Pull to your belly button — not your chest. Squeeze shoulder blades together at the top. Lower until your arms are fully extended.',
+  't-bar row': 'Chest on the pad, or straddle the bar. Pull the weight to your lower chest. Keep your elbows close to your body. Squeeze hard at the top. This is a mass builder — don't use momentum.',
+  'seated cable row': 'Sit tall, slight arch in lower back. Pull the handle to your belly. Squeeze shoulder blades together — hold for a beat. Return slowly and let your shoulder blades protract fully. Don't round forward.',
+  'single-arm dumbbell row': 'One hand on the bench for support. Back is flat and parallel to the floor. Pull the dumbbell to your hip — not your shoulder. Feel the full stretch at the bottom. No rotation.',
+  'dumbbell row': 'Hand on bench, back flat. Pull to your hip. Full stretch at the bottom — that's where you build the thickness.',
+  'barbell row': 'Bent over at 45°. Overhand grip. Pull the bar to your lower abs. Squeeze the lats and rhomboids at the top. This is a foundational back builder — earn your weight here.',
+  'plank row': 'In a push-up position holding dumbbells. Row one arm while keeping your hips level — don't rotate. The anti-rotation challenge is the whole point. Keep your core locked.',
+
+  # Shoulders / accessories
+  'dumbbell lateral raise': 'Arms slightly in front of your body, not directly out to the side. Lead with your pinkies — think "pouring a pitcher." Stop at shoulder height. Control the descent — the eccentric builds the muscle.',
+  'cable lateral raise': 'Cable at hip height, stand sideways. Pull across your body and up to shoulder height. More constant tension than dumbbells. Lean slightly away from the cable to increase the range of motion.',
+  'rear delt fly': 'Bent forward or on a reverse fly machine. Arms go wide to the sides. Squeeze the rear delts — not your traps. These are small muscles, so go lighter than you think.',
+  'face pull': 'Cable at face height, rope attachment. Pull to your forehead, elbows high and wide. External rotation at the end — this protects your rotator cuff and fixes your posture. Do more of these than you think you need.',
+  'band pull-apart': 'Hold a band at shoulder width, arms straight in front. Pull the band apart until it touches your chest. Squeeze shoulder blades together. This warms up the rear delts and rotator cuff. Do it before every upper body session.',
+  'shrugs': 'Barbell or dumbbell. Straight up — don't roll your shoulders. Hold at the top for a beat. Lower slowly. Heavy weight, controlled movement.',
+
+  # Arms
+  'ez bar curl': 'Elbows pinned at your sides. The EZ bar angle is easier on the wrists than a straight bar. Full range — all the way down, all the way up. Don't swing.',
+  'ez bar preacher curl': 'Chest against the pad, elbows on the arm rest. Full extension at the bottom — don't let the tension go. Curl to the top without letting your elbows leave the pad.',
+  'barbell curl': 'Elbows at your sides, don't let them drift forward as you curl. Full range of motion both directions. The lowering is as important as the lifting.',
+  'incline dumbbell curl': 'Set bench at 45-60°. Arms hang straight down. Curl from a dead stretch — this maximizes the peak contraction. Don't swing the dumbbells.',
+  'concentration curl': 'Seated, elbow on the inside of your thigh. Curl slowly, squeeze hard at the top. No momentum. This isolates the bicep completely — go lighter than you think.',
+  'hammer curl': 'Neutral grip — thumbs up throughout. Hits the brachialis and brachioradialis alongside the bicep. Gives you thickness in the arm. Control both directions.',
+  'reverse curl': 'Overhand grip — palms down. This hits your brachioradialis and forearms. Harder than it looks. Keep elbows pinned and control the movement.',
+  'skull crushers': 'Lie on bench, barbell or EZ bar. Lower to your forehead or just behind your head. Elbows stay pointed at the ceiling — don't let them flare. Press back up without locking out.',
+  'cable tricep pushdown': 'Elbows pinned at your sides. Press straight down until arms are fully extended. Squeeze the triceps hard at the bottom. Don't let your elbows drift forward on the way down.',
+  'overhead tricep extension': 'Arms overhead, elbows by your ears. Lower the weight behind your head. Full stretch at the bottom. Press back up. This hits the long head of the tricep — the biggest portion.',
+  'close-grip bench press': 'Grip slightly narrower than shoulder-width. Same bench press technique, but you'll feel this in your triceps instead of your chest. Don't go too narrow — it stresses the wrists.',
+  'tricep dips': 'Chest slightly forward, elbows back. Lower until upper arms are parallel. Press back up. The more you lean forward, the more chest. Upright = more tricep.',
+
+  # Core
+  'plank': 'Forearms on the floor, toes on floor. Straight line from head to heels. Squeeze everything — abs, glutes, quads. Breathe steadily. The second your hips sag, the set is over.',
+  'plank hold': 'Same as a plank — perfecting the tension. Don't just endure it. Actively squeeze every muscle. This is full body isometric work.',
+  'side plank': 'One forearm, feet stacked or staggered. Body is a straight line. Don't let your hip drop. If you want harder, raise your top arm or leg.',
+  'plank + side plank': 'Hold the front plank, then rotate to each side for the full sequence. Core stability from every angle. Don't rush the transitions.',
+  'cable crunch': 'Kneel at the cable. Rope behind your head. Crunch your elbows toward your knees — this is a spinal flexion movement, not a hip flexion movement. Don't pull with your arms.',
+  'ab wheel or cable crunch': 'Ab wheel: kneel, roll out until back is flat, pull back. It's harder than it looks — don't go too far until you can control it. Cable crunch: elbows toward knees, round the spine.',
+  'russian twist': 'Lean back 45°, feet off the floor. Rotate a weight side to side, touching it to the floor each time. The rotation comes from your torso, not your arms. Keep your spine long.',
+  'mountain climbers': 'Push-up position. Drive one knee to your chest, switch fast. Keep your hips low — in line with your body, not raised. The faster you go, the more cardio benefit.',
+  'dead bug': 'Lie on your back, arms straight up, knees at 90°. Lower one arm and the opposite leg simultaneously. Lower back stays pressed into the floor the entire time. Return and switch. Breathe out on the way down.',
+  'cable crunch': 'Kneel at the cable. Rope behind your head. Round your spine to crunch your elbows toward your knees. Controlled return. Feel the abs working, not the hip flexors.',
+  'reverse crunch': 'Lie on your back, hands by your sides. Lift your knees to your chest, then raise your hips off the floor. Lower controlled. The movement is posterior pelvic tilt — your lower back presses into the floor throughout.',
+  'pallof press': 'Stand sideways to the cable. Press straight out in front of you — resist the rotation. The cable pulls you to the side and your core fights it. Hold 1-2 seconds. This is anti-rotation core work.',
+  'ab wheel': 'Kneel on the floor. Roll out slowly until your body is parallel to the floor. Pull back with your core, not your arms. Don't let your lower back collapse on the way out.',
+
+  # Power
+  'power clean or hang clean': 'This is a technical lift. Start from the hang position above the knees. Extend explosively through hips and knees, then pull yourself under the bar and catch it in the front rack. Land with soft knees. If you're new to this, ask Coach Ted for a demonstration.',
+  'broad jump': 'Stand with feet hip-width. Swing arms back, bend knees, then explode forward and up. Land with soft knees and controlled balance. Measure your distance — this is a power output test.',
+  'med ball slam': 'Hold the ball overhead. Brace hard, then slam it into the floor with maximum force. Absorb the bounce or let it bounce back. This is pure explosive power — don't hold back.',
+  'battle ropes': 'Both hands, alternating waves. Drive from your hips and core, not just your arms. Keep the waves going all the way to the anchor. 20 seconds all-out means all-out.',
+  'sprint (treadmill or turf)': '10 seconds of maximum effort. This is not a jog. Pump your arms, drive your knees, go as fast as you can maintain. 50 seconds of full rest before the next one.',
+
+  # Mobility
+  'foam roll — t-spine': 'Place the roller perpendicular to your spine between your shoulder blades. Support your head with your hands. Extend gently over the roller. Move slowly up your thoracic spine. When you hit a tight spot, stay there and breathe.',
+  'foam roll — lats': 'Lie on your side with the roller under your armpit. Arm extended overhead. Roll slowly from armpit down toward mid-back. The lats are large — take your time.',
+  '90/90 hip stretch': 'Both legs bent at 90°, one in front and one to the side. Sit tall and breathe. You're stretching both internal and external hip rotation simultaneously. Switch sides slowly — don't rush.',
+  "world's greatest stretch": 'Step into a lunge, drop back knee to the floor. Place same-side hand on the floor inside your front foot. Rotate the opposite arm overhead. This hits hip flexors, thoracic spine, and hamstrings in one movement.',
+  'cat-cow': 'On all fours. Cat: round your spine up toward the ceiling, tuck your chin and pelvis. Cow: let your spine sag, lift your chin and tailbone. Move through the full range slowly and breathe through both positions.',
+  'thoracic rotation (half-kneeling)': 'One knee down, opposite foot forward. Hands behind your head. Rotate toward the forward leg as far as you can without your hips moving. The rotation comes from your mid-back only.',
+  'hip flexor stretch': 'Kneel on one knee, other foot forward. Drive your hips forward gently while staying tall. Now squeeze the glute of the back leg — this unlocks extra range. Hold and breathe.',
+  'shoulder cars (controlled articular rotations)': 'Full circles of the shoulder joint in both directions — slow and controlled. The goal is to explore your full range of motion under muscular control. Don't let your shoulder blade or ribcage compensate.',
+  'hamstring floss (banded or towel)': 'On your back, towel around your foot. Leg straight, pull gently toward you. Flex and point your foot 5 times. Then do small circles. Breathe into the stretch — you're not fighting it.',
+  'hip circle': 'Standing, hands on hips. Large circles with your hips in both directions. Controlled and deliberate. Warms up the hip joint through its full range before lower body work.',
+  'band pull-apart': 'Arms straight in front of you. Pull the band apart and touch your chest. Squeeze shoulder blades together. Do this before every upper body session — it's your shoulder health insurance.',
+  'leg swing (front-back + lateral)': 'Stand on one leg, hold a wall if needed. Swing the free leg forward and back from the hip — not the knee. Then side to side. 10 each direction. This primes the hip for squats, deadlifts, and lunges.',
+  'light goblet squat (warm-up weight)': 'Same goblet squat technique but with a weight that feels easy. The purpose here is joint preparation and movement rehearsal. Take 3 seconds down, pause, drive up. This is not a workout set.',
+  'inchworm': 'Stand tall, bend and walk your hands out to a push-up position. Do one push-up optional. Walk your feet back in. Stand and repeat. This warms up your hamstrings, shoulders, and core simultaneously.',
+};
+
+function getFormCue(name) {
+  const key = name.toLowerCase().replace(/[^a-z0-9\s\/\-]/g, '').trim();
+  return FORM_CUES[key] || FORM_CUES[key.split('(')[0].trim()] ||
+    'Focus on controlled movement throughout the full range of motion. If you're unsure about form, watch the YouTube video above or ask Coach Ted.';
+}
 
 // ── ROUTINE BUNDLES ──────────────────────────────────────────
 const BUNDLES = [
@@ -1012,13 +1152,23 @@ function selectBundle(id) {
           <div style="margin-bottom:${ri<bundle.routines.length-1?'16px':'0'}">
             <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:${bundle.accent};margin-bottom:8px;letter-spacing:.3px">${r.label}</div>
             ${r.exercises.map((ex, i) => `
-              <div class="ex-row">
-                <div class="ex-num" style="background:${bundle.accent}">${i+1}</div>
-                <div style="flex:1">
-                  <div class="ex-name">${esc(ex.name)}</div>
-                  <div class="ex-meta">${ex.sets} sets × ${ex.reps} · Rest ${ex.rest}</div>
+              <div class="ex-row" style="flex-direction:column;align-items:stretch;padding:0">
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+                  <div class="ex-num" style="background:${bundle.accent}">${i+1}</div>
+                  <div style="flex:1">
+                    <div class="ex-name">${esc(ex.name)}</div>
+                    <div class="ex-meta">${ex.sets} sets × ${ex.reps} · Rest ${ex.rest}</div>
+                  </div>
+                  <button class="info-btn" onclick="toggleExCue(this)" title="Form cues & video">ℹ</button>
+                  <button class="ex-log-btn" onclick="this.classList.toggle('logged');this.textContent=this.classList.contains('logged')?'✓ Done':'Log'">Log</button>
                 </div>
-                <button class="ex-log-btn" onclick="this.classList.toggle('logged');this.textContent=this.classList.contains('logged')?'✓ Done':'Log'">Log</button>
+                <div class="ex-cue">
+                  <div class="ex-cue-row">
+                    <a class="yt-btn" href="https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' proper form tutorial')}" target="_blank" rel="noopener">▶ Watch on YouTube</a>
+                    ${ex.note ? '' : ''}
+                  </div>
+                  ${ex.note ? `<div style="color:var(--ink2)">${esc(ex.note)}</div>` : `<div style="color:var(--ink2)">${getFormCue(ex.name)}</div>`}
+                </div>
               </div>`).join('')}
             <button class="action-btn" style="margin-top:10px;background:${bundle.accent};box-shadow:none" onclick="startBundleWorkout(${ri})">Start This Workout</button>
           </div>`).join('<div style="height:1px;background:var(--line);margin:16px 0"></div>')}
