@@ -498,10 +498,11 @@
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;width:340px;max-width:92vw">
         <div id="appt-menu-title" style="font-family:var(--font-display,Oswald,sans-serif);font-size:15px;font-weight:700;margin-bottom:16px;">Appointment</div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-          <button onclick="markApptStatus('show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(76,175,125,0.4);background:rgba(76,175,125,0.15);color:var(--green);font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">✓ Show</button>
-          <button onclick="markApptStatus('no_show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(217,138,11,0.4);background:rgba(217,138,11,0.15);color:#D98A0B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">✕ No-Show</button>
-          <button onclick="markApptStatus('rescheduled')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(90,142,200,0.4);background:rgba(90,142,200,0.15);color:#7eb3e8;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">↻ Rescheduled</button>
-          <button onclick="markApptStatus('declined')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(224,25,43,0.4);background:rgba(224,25,43,0.15);color:#E0192B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">— Declined</button>
+          <button onclick="markApptStatus('show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(76,175,125,0.4);background:rgba(76,175,125,0.15);color:var(--green);font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">✅ SHOW — Session logged</button>
+          <button onclick="markApptStatus('cancel_reschedule')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(90,142,200,0.4);background:rgba(90,142,200,0.15);color:#7eb3e8;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">🔄 CANCEL — RESCHEDULE (30+ min notice, session preserved)</button>
+          <button onclick="markApptStatus('no_show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(217,138,11,0.4);background:rgba(217,138,11,0.15);color:#D98A0B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">❌ NO SHOW — Session lost (deducted)</button>
+          <button onclick="markApptStatus('cancel_charge')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(224,25,43,0.4);background:rgba(224,25,43,0.15);color:#E0192B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">⚡ CANCEL CHARGE — Under 30 min, session lost</button>
+          <button onclick="markApptStatus('declined')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(100,100,100,0.3);background:rgba(100,100,100,0.1);color:var(--text3,#9CA3AF);font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">— DECLINED (consultation, not a PT session)</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:16px;">
           <button onclick="apptMenuTarget && openFeedAppt(null, apptMenuTarget.file, apptMenuTarget.encName, apptMenuTarget.date, apptMenuTarget.time); closeApptMenu();" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;">Open Tool Only</button>
@@ -703,9 +704,27 @@ async function markApptStatus(status){
     apptStatusMap[key] = payload;
   } catch(e) { console.warn('Could not save appointment status', e); }
 
+  // ── SESSION DEDUCTION HELPER ──────────────────────────────
+  async function deductSession(clientName) {
+    try {
+      var cl = await lookupClientByName(clientName);
+      if (!cl || !cl.id) return;
+      var rem = parseInt(cl.sessions_remaining) || 0;
+      var used = parseInt(cl.sessions_used) || 0;
+      if (rem > 0) rem--;
+      used++;
+      await fetch(CAL_BASE+'/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'update', table:'clients',
+          values:{sessions_used: used, sessions_remaining: rem},
+          where:{id: cl.id}})});
+      if (rem === 0) toast(clientName + ' — 0 sessions remaining. Renewal conversation needed.', 5000);
+      else if (rem <= 2) toast(clientName + ' — ' + rem + ' session' + (rem===1?'':'s') + ' remaining.', 3000);
+    } catch(e) { console.warn('Session deduction failed', e); }
+  }
+
   if (status === 'show') {
+    await deductSession(t.name);
     if (t.kind === 'training') {
-      // PT session: open the real workout logger, pre-loaded to this client
       var trainClient = await lookupClientByName(t.name);
       if (trainClient && trainClient.id) {
         window.open('gym-floor.html?client=' + trainClient.id, '_blank');
@@ -713,22 +732,32 @@ async function markApptStatus(status){
         window.open('gym-floor.html', '_blank');
       }
     } else {
-      // Intake type (consultation / followup / checkin): pull full profile, then open prefilled
       var client = await lookupClientByName(t.name);
       var params = 'client='+t.encName+'&date='+t.date+(t.time?('&time='+t.time):'')+'&coach=Ted';
       if (client && client.id) params += '&client_id='+client.id;
       window.open(t.file+'?'+params, '_blank');
     }
+  } else if (status === 'cancel_reschedule') {
+    // 30+ min notice — session preserved, reschedule
+    toast(t.name + ' — Session preserved. Reschedule when ready.');
+    closeApptMenu();
+    openRescheduleModal();
+    return;
   } else if (status === 'no_show') {
-    toast('No-show logged for ' + t.name + '. Flag it in ABC at the front desk.');
+    await deductSession(t.name);
+    toast(t.name + ' — No-show. Session deducted.');
+  } else if (status === 'cancel_charge') {
+    await deductSession(t.name);
+    toast(t.name + ' — Late cancel. Session deducted.');
   } else if (status === 'declined') {
     var client2 = await lookupClientByName(t.name);
     if (client2 && client2.id) {
       try {
-        await fetch(CAL_BASE+'/db', {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({op:'update', table:'clients', values:{status:'not_interested'}, where:{id:client2.id}})});
+        await fetch(CAL_BASE+'/db', {method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({op:'update', table:'clients', values:{status:'not_interested'}, where:{id:client2.id}})});
       } catch(e) { console.warn('Could not update client status', e); }
     }
-    toast(t.name + ' marked as not interested. No further action needed.');
+    toast(t.name + ' marked as not interested.');
   }
 
   renderCalendar();
@@ -867,8 +896,9 @@ function renderCalendar() {
       var bg, col;
       if (status === 'show') { bg='rgba(76,175,125,0.28)'; col='var(--green)'; }
       else if (status === 'no_show') { bg='rgba(217,138,11,0.28)'; col='#D98A0B'; }
-      else if (status === 'rescheduled') { bg='rgba(90,142,200,0.28)'; col='#7eb3e8'; }
-      else if (status === 'declined') { bg='rgba(224,25,43,0.20)'; col='#E0192B'; }
+      else if (status === 'cancel_charge') { bg='rgba(224,25,43,0.22)'; col='#E0192B'; }
+      else if (status === 'cancel_reschedule' || status === 'rescheduled') { bg='rgba(90,142,200,0.28)'; col='#7eb3e8'; }
+      else if (status === 'declined') { bg='rgba(100,100,100,0.18)'; col='#9CA3AF'; }
       else { bg = isSession?'rgba(63,119,192,0.16)':'rgba(184,120,12,0.16)'; col = isSession?'#3F77C0':'#B8780C'; }
       var statusTag = status ? ' [' + status.replace('_',' ') + (status==='rescheduled' ? (statusRow.reschedule_tbd ? ' \u2013 TBD' : (statusRow.reschedule_date ? (' \u2192 '+statusRow.reschedule_date+(statusRow.reschedule_time?(' '+statusRow.reschedule_time):'')) : '')) : '') + ']' : '';
       return '<div class="cal-feed-pill" onclick="openApptMenu(event,\''+a.file+'\',\''+encodeURIComponent(a.name||'')+'\',\''+a.date+'\',\''+(a.time||'')+'\',\''+(a.kind||'session')+'\')" style="font-size:10.5px;line-height:1.35;font-weight:600;background:'+bg+';color:'+col+';border-radius:4px;padding:3px 5px;margin-top:2px;cursor:pointer;white-space:normal;word-break:break-word;" title="'+(a.name||'Session')+statusTag+'">'+(a.time||'')+' '+(a.name||(isSession?'Session':'Appt'))+statusTag+'</div>';

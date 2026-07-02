@@ -888,11 +888,8 @@ async function writeToSheet(tab, row) {
 }
 
 async function callAppsScript(params) {
-  try {
-    const qs = new URLSearchParams(params).toString();
-    const resp = await fetch(APPS_SCRIPT + '?' + qs);
-    return await resp.json();
-  } catch(e) { console.error('Apps Script call failed:', e); return {success:false}; }
+  // Sheets sync removed — data lives in D1
+  return {success: false};
 }
 
 // ══════════════════════════════════════════════════
@@ -903,126 +900,46 @@ async function syncFromSheet() {
   if (indicator) { indicator.textContent = '↻ Syncing...'; indicator.style.display = 'inline'; }
   try {
     // --- Prospects ---
-    const pResp = await fetch(APPS_SCRIPT + '?action=getProspects');
+    // Read from D1 leads table
+    const pResp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:500})
+    });
     const pData = await pResp.json();
-    if (pData.prospects && Array.isArray(pData.prospects)) {
-      const sheetProspects = pData.prospects
-        .filter(r => r.Name && r.Phone)
-        .map(r => {
-          // Check if we already have this prospect in localStorage (match by name+phone)
-          const key = (String(r.Name) + String(r.Phone)).toLowerCase().replace(/\D/g,'');
-          const existing = prospects.find(p =>
-            (p.name + p.phone).toLowerCase().replace(/\D/g,'') === key
-          );
-          if (existing) return existing; // keep local version (has id, history, etc.)
-          return {
-            id: genId(),
-            name: String(r.Name),
-            phone: String(r.Phone),
-            email: String(r.Email || ''),
-            type: String(r.Type || 'Gym Member'),
-            interest: String(r.Interest || 'Warm'),
-            timeframe: String(r.Timeframe || 'ASAP'),
-            referred: String(r.ReferredBy || ''),
-            advisor: String(r.Advisor || ''),
-            notes: String(r.Notes || ''),
-            date: r.DateAdded ? String(r.DateAdded) : new Date().toLocaleDateString('en-US')
-          };
-        });
-      // Merge: sheet rows first, then any local-only records not in sheet
-      const sheetKeys = sheetProspects.map(p => (p.name + p.phone).toLowerCase().replace(/\D/g,''));
-      const localOnly = prospects.filter(p =>
-        !sheetKeys.includes((p.name + p.phone).toLowerCase().replace(/\D/g,''))
-      );
-      prospects = [...sheetProspects, ...localOnly];
+    if (pData.results && Array.isArray(pData.results)) {
+      const d1Prospects = pData.results.map(r => {
+        const key = (String(r.business_name||r.first_name||'') + String(r.phone||'')).toLowerCase().replace(/\D/g,'');
+        const existing = prospects.find(p => (p.name + p.phone).toLowerCase().replace(/\D/g,'') === key);
+        if (existing) return existing;
+        return {
+          id: r.id ? String(r.id) : genId(),
+          name: r.business_name || ((r.first_name||'') + ' ' + (r.last_name||'')).trim() || 'Unknown',
+          phone: String(r.phone||''),
+          email: String(r.email||''),
+          type: r.lead_type || 'Gym Member',
+          interest: r.status === 'qualified' ? 'Hot' : r.status === 'contacted' ? 'Warm' : 'Cold',
+          timeframe: 'ASAP',
+          referred: '',
+          advisor: String(r.assigned_to||''),
+          notes: String(r.notes||''),
+          date: r.created_at ? r.created_at.slice(0,10) : new Date().toLocaleDateString('en-US'),
+          _d1_id: r.id
+        };
+      });
+      const d1Keys = d1Prospects.map(p => (p.name + p.phone).toLowerCase().replace(/\D/g,''));
+      const localOnly = prospects.filter(p => !d1Keys.includes((p.name + p.phone).toLowerCase().replace(/\D/g,'')));
+      prospects = [...d1Prospects, ...localOnly];
     }
+    
+    // Touchpoints loaded from localStorage (D1 migration pending)
+    } // end touchpoints
 
-    // --- Touchpoints ---
-    const tResp = await fetch(APPS_SCRIPT + '?action=getAllTouchpoints');
-    const tData = await tResp.json();
-    if (tData.touchpoints && Array.isArray(tData.touchpoints)) {
-      const sheetTPs = tData.touchpoints
-        .filter(r => r.ProspectName && r.Outcome)
-        .map(r => {
-          const prospect = prospects.find(p =>
-            p.name.toLowerCase() === String(r.ProspectName).toLowerCase()
-          );
-          // Check for duplicate by date+name+outcome
-          const key = String(r.Date) + String(r.ProspectName) + String(r.Outcome);
-          const existing = touchpoints.find(t =>
-            (t.date + (prospects.find(p=>p.id===t.prospectId)||{name:''}).name + t.outcome) === key
-          );
-          if (existing) return existing;
-          return {
-            id: genId(),
-            prospectId: prospect ? prospect.id : null,
-            date: String(r.Date || ''),
-            outcome: String(r.Outcome || ''),
-            notes: String(r.Notes || ''),
-            advisor: String(r.Advisor || '')
-          };
-        })
-        .filter(t => t.prospectId); // drop any touchpoints with no matching prospect
-      // Merge
-      const existingTPIds = new Set(touchpoints.map(t => t.id));
-      const newTPs = sheetTPs.filter(t => !existingTPIds.has(t.id));
-      touchpoints = [...touchpoints, ...newTPs];
-    }
+    // Booked consultations from D1 appointment_status (pending)
 
-    // --- Booked Consultations ---
-    const bcResp = await fetch(APPS_SCRIPT + '?action=getBookedConsultations');
-    const bcData = await bcResp.json();
-    if (bcData.rows && Array.isArray(bcData.rows) && bcData.rows.length > 1) {
-      const sheetBC = bcData.rows.slice(1)
-        .filter(r => r[1])
-        .map(r => {
-          const key = (String(r[1]) + String(r[2])).toLowerCase().replace(/\D/g,'');
-          const existing = bcBookings.find(b =>
-            (b.name + b.phone).toLowerCase().replace(/\D/g,'') === key
-          );
-          if (existing) {
-            // Keep local edits but accept sheet status if sheet has a newer/different status
-            const sheetStatus = String(r[8] || 'Booked');
-            if (sheetStatus !== 'Booked' && existing.status === 'Booked') {
-              existing.status = sheetStatus; // only update status if sheet advanced it
-            }
-            return existing; // preserve all local edits (time, date, notes etc.)
-          }
-          const rawDate = String(r[4] || '');
-          const apptDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
-          // Convert sheet time (12hr like '3:30 PM') to 24hr for internal storage
-          const rawTime = to24hr(String(r[5] || ''));
-          return {
-            id: genId(),
-            name: String(r[1] || ''),
-            phone: String(r[2] || ''),
-            email: String(r[3] || ''),
-            apptDate,
-            apptTime: rawTime,
-            bookedBy: String(r[6] || ''),
-            advisor: String(r[7] || ''),
-            status: String(r[8] || 'Booked'),
-            notes: String(r[9] || ''),
-            dateBooked: String(r[0] || ''),
-            originalProspectDate: String(r[10] || ''),
-            history: []
-          };
-        });
-      const sheetBCKeys = sheetBC.map(b => (b.name + b.phone).toLowerCase().replace(/\D/g,''));
-      const localOnlyBC = bcBookings.filter(b =>
-        !sheetBCKeys.includes((b.name + b.phone).toLowerCase().replace(/\D/g,''))
-      );
-      bcBookings = [...sheetBC, ...localOnlyBC];
-    }
-
-    saveLocal();
-    renderList(); updateStats(); updateTabCounts();
-    if (indicator) { indicator.textContent = '✓ Synced'; setTimeout(() => { indicator.style.display = 'none'; }, 2500); }
   } catch(e) {
     console.warn('Sheet sync failed, using local data:', e);
     if (indicator) { indicator.style.display = 'none'; }
   }
-}
 
 // ══════════════════════════════════════════════════
 // LOCAL STORAGE
@@ -1220,8 +1137,8 @@ async function doDeleteProspect() {
   renderList(); updateStats(); updateTabCounts();
   try {
     const params = new URLSearchParams({ action: 'deleteProspect', name: p.name, phone: p.phone });
-    await fetch(APPS_SCRIPT + '?' + params);
-  } catch(e) { console.warn('Sheet delete failed:', e); }
+    // D1 delete handled above via /db endpoint
+  } catch(e) { console.warn('Delete failed:', e); }
 }
 
 function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }

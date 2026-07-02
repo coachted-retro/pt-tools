@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Owner Dashboard — Bill Zolnowski</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--blue:#2563EB;--lgreen:#E3F5EC;--lred:#FEF2F2;--lamber:#FFF7ED;--lblue:#EFF6FF;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:18px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .owner-tag{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9CA3AF;padding:3px 10px;border:1px solid #374151;border-radius:20px}
+.topbar .spacer{flex:1}
+.topbar .last-up{font-size:11px;color:#6B7280}
+.topbar .refresh-btn{font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:#9CA3AF;background:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;cursor:pointer}
+.topbar .refresh-btn:hover{color:#fff}
+
+.wrap{max-width:1200px;margin:0 auto;padding:24px 20px 60px}
+
+/* HERO KPIs */
+.hero-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+.hero-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+.hero-card::after{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent,var(--blue))}
+.hero-label{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.hero-val{font-family:'Oswald';font-size:38px;font-weight:800;color:var(--ink);line-height:1}
+.hero-sub{font-size:12px;color:var(--muted);margin-top:5px}
+.hero-delta{font-size:12px;font-weight:700;margin-top:3px}
+.delta-up{color:var(--green)}
+.delta-down{color:var(--red)}
+
+/* SECTIONS */
+.section-hdr{display:flex;align-items:center;gap:10px;margin:24px 0 14px}
+.section-title{font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.section-line{flex:1;height:1px;background:var(--line)}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+.card-title{font-family:'Oswald';font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:12px;color:var(--ink)}
+.card-sub{font-size:11px;color:var(--muted);margin-bottom:12px}
+
+/* EOD FEED */
+.eod-item{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px}
+.eod-item.has-urgent{border-left:3px solid var(--red)}
+.eod-author{font-weight:700;font-size:13px}
+.eod-time{font-size:11px;color:var(--muted);margin-left:8px}
+.eod-preview{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}
+.flag-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px}
+.chip.urgent{background:var(--lred);color:var(--red)}
+.chip.escalate{background:var(--ink);color:#fff}
+.chip.fyi{background:var(--lblue);color:var(--blue)}
+
+/* PT METRICS */
+.pt-stat{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pt-stat:last-child{border-bottom:none}
+.pt-stat-label{font-size:13px;color:var(--muted)}
+.pt-stat-val{font-family:'Oswald';font-size:18px;font-weight:700;color:var(--ink)}
+.pt-stat-val.red{color:var(--red)}
+.pt-stat-val.green{color:var(--green)}
+.pt-stat-val.amber{color:var(--amber)}
+
+/* MAINTENANCE */
+.maint-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.maint-item:last-child{border-bottom:none}
+.maint-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase;white-space:nowrap}
+.badge-open{background:var(--lred);color:var(--red)}
+.badge-progress{background:var(--lamber);color:var(--amber)}
+.badge-fixed{background:var(--lgreen);color:var(--green)}
+
+/* TREND BAR */
+.trend-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.trend-label{font-size:12px;color:var(--muted);width:100px;flex-shrink:0}
+.trend-bar{flex:1;height:8px;background:var(--soft);border-radius:4px;overflow:hidden}
+.trend-fill{height:100%;border-radius:4px;background:var(--blue)}
+.trend-val{font-size:12px;font-weight:700;width:40px;text-align:right;flex-shrink:0}
+
+.empty-state{text-align:center;padding:24px;color:var(--muted);font-size:12px}
+.date-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.date-nav button{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600}
+.date-nav button:hover{border-color:var(--red)}
+.date-display{font-family:'Oswald';font-size:14px;font-weight:700}
+
+@media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}.hero-kpis{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Body <span>Shoppe</span></div>
+  <div class="owner-tag">Owner — Bill Zolnowski</div>
+  <div class="spacer"></div>
+  <span class="last-up" id="lastUp">Loading...</span>
+  <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO KPIs — from Bill's daily email (latest snapshot) -->
+  <div class="hero-kpis">
+    <div class="hero-card" style="--accent:var(--green)">
+      <div class="hero-label">Active Members</div>
+      <div class="hero-val" id="h-active">—</div>
+      <div class="hero-sub">current count</div>
+    </div>
+    <div class="hero-card" style="--accent:var(--blue)">
+      <div class="hero-label">New Members MTD</div>
+      <div class="hero-val" id="h-new">—</div>
+      <div class="hero-delta" id="h-new-delta"></div>
+    </div>
+    <div class="hero-card" style="--accent:var(--red)">
+      <div class="hero-label">Cancels MTD</div>
+      <div class="hero-val" id="h-cancels">—</div>
+      <div class="hero-delta" id="h-cancels-delta"></div>
+    </div>
+    <div class="hero-card" style="--accent:var(--amber)">
+      <div class="hero-label">Closing %</div>
+      <div class="hero-val" id="h-closing">—</div>
+      <div class="hero-sub">membership conversion</div>
+    </div>
+    <div class="hero-card" style="--accent:var(--purple,#7C3AED)">
+      <div class="hero-label">DPC</div>
+      <div class="hero-val" id="h-dpc">—</div>
+      <div class="hero-sub">dues per cancel</div>
+    </div>
+    <div class="hero-card" style="--accent:var(--green)">
+      <div class="hero-label">PT Revenue MTD</div>
+      <div class="hero-val" id="h-pt">—</div>
+      <div class="hero-sub">personal training</div>
+    </div>
+  </div>
+
+  <!-- PT + EOD ROW -->
+  <div class="grid-2">
+    <!-- PT Snapshot -->
+    <div class="card">
+      <div class="card-title">PT Department</div>
+      <div class="card-sub">Live from client records</div>
+      <div class="pt-stat"><span class="pt-stat-label">Active PT Clients</span><span class="pt-stat-val green" id="pt-active">—</span></div>
+      <div class="pt-stat"><span class="pt-stat-label">Frozen Accounts</span><span class="pt-stat-val amber" id="pt-frozen">—</span></div>
+      <div class="pt-stat"><span class="pt-stat-label">Renewals Needed</span><span class="pt-stat-val red" id="pt-renewals">—</span></div>
+      <div class="pt-stat"><span class="pt-stat-label">Overdue Monitoring</span><span class="pt-stat-val amber" id="pt-overdue">—</span></div>
+      <div class="pt-stat"><span class="pt-stat-label">Active Leads</span><span class="pt-stat-val" id="pt-leads">—</span></div>
+    </div>
+
+    <!-- EOD Submissions today -->
+    <div class="card">
+      <div class="card-title">Today's EOD Submissions</div>
+      <div class="date-nav">
+        <button onclick="changeDate(-1)">← Prev</button>
+        <span class="date-display" id="eodDateDisp"></span>
+        <button onclick="changeDate(1)">Next →</button>
+      </div>
+      <div id="eod-feed"><div class="empty-state">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- ACTION ITEMS + MAINTENANCE -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🚩 Open Action Items</div>
+      <div class="card-sub">Flagged urgent or escalated — requires attention</div>
+      <div id="action-items"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔧 Maintenance Log</div>
+      <div class="card-sub">Open equipment and facility issues</div>
+      <div id="maint-list"><div class="empty-state">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- STAFF PERFORMANCE -->
+  <div class="section-hdr"><div class="section-title">MEA Performance</div><div class="section-line"></div></div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-sub">Latest weekly snapshot — closing %, booking %, show %</div>
+    <div id="staff-perf"><div class="empty-state">Loading...</div></div>
+  </div>
+
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let eodDate = new Date().toISOString().slice(0,10);
+
+function changeDate(d) {
+  const dt = new Date(eodDate); dt.setDate(dt.getDate()+d);
+  if (dt > new Date()) return;
+  eodDate = dt.toISOString().slice(0,10);
+  loadEOD();
+}
+
+async function loadAll() {
+  document.getElementById('lastUp').textContent = 'Loading...';
+  await Promise.all([loadKPIs(), loadPT(), loadEOD(), loadMaintenance(), loadStaffPerf()]);
+  document.getElementById('lastUp').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+async function loadKPIs() {
+  try {
+    const r = await fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'kpi_snapshots', orderBy:'snapshot_date desc', limit:1})});
+    const d = await r.json();
+    const snap = (d.results||[])[0];
+    if (!snap) return;
+    document.getElementById('h-active').textContent = snap.active_members || '—';
+    document.getElementById('h-new').textContent = snap.new_members || '—';
+    document.getElementById('h-cancels').textContent = snap.cancels || '—';
+    document.getElementById('h-closing').textContent = snap.closing_pct ? snap.closing_pct+'%' : '—';
+    document.getElementById('h-dpc').textContent = snap.dpc || '—';
+    document.getElementById('h-pt').textContent = snap.pt_revenue || '—';
+    if (snap.new_members && snap.cancels) {
+      const net = snap.new_members - snap.cancels;
+      const el = document.getElementById('h-new-delta');
+      el.textContent = (net >= 0 ? '↑ +' : '↓ ') + net + ' net';
+      el.className = 'hero-delta ' + (net >= 0 ? 'delta-up' : 'delta-down');
+    }
+  } catch(e) {}
+}
+
+async function loadPT() {
+  try {
+    const [cr, lr, sr] = await Promise.all([
+      fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'clients', limit:500})}),
+      fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'leads', limit:200})}),
+      fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'inbody_scans', orderBy:'scan_date desc', limit:500})})
+    ]);
+    const clients = (await cr.json()).results||[];
+    const leads = (await lr.json()).results||[];
+    const scans = (await sr.json()).results||[];
+    const active = clients.filter(c=>c.status==='active_pt');
+    const frozen = clients.filter(c=>c.status==='frozen');
+    const renewals = active.filter(c=>(c.sessions_remaining||0)===0);
+    const latestScans = {};
+    scans.forEach(s=>{if(!latestScans[s.client_id]||s.scan_date>latestScans[s.client_id])latestScans[s.client_id]=s.scan_date;});
+    const sixtyAgo = new Date(Date.now()-60*24*60*60*1000).toISOString().slice(0,10);
+    const overdue = active.filter(c=>!latestScans[c.id]||latestScans[c.id]<sixtyAgo);
+    const activeLeads = leads.filter(l=>l.status==='new'||l.status==='contacted'||l.status==='qualified');
+    document.getElementById('pt-active').textContent = active.length;
+    document.getElementById('pt-frozen').textContent = frozen.length;
+    document.getElementById('pt-renewals').textContent = renewals.length;
+    document.getElementById('pt-overdue').textContent = overdue.length;
+    document.getElementById('pt-leads').textContent = activeLeads.length;
+  } catch(e) {}
+}
+
+async function loadEOD() {
+  const disp = document.getElementById('eodDateDisp');
+  disp.textContent = new Date(eodDate+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const el = document.getElementById('eod-feed');
+  try {
+    const r = await fetch(WORKER+`/eod/feed?date=${eodDate}`);
+    const d = await r.json();
+    const subs = d.submissions||[];
+    if (!subs.length) { el.innerHTML = '<div class="empty-state">No EOD submissions for this date.</div>'; return; }
+    const roleLabels = {training_lead:'Coach Ted', general_manager:'Sarah', director_fitness:'Dani', pt_coach:'Coach', mea:'MEA'};
+    el.innerHTML = subs.map(s => {
+      const flags = s.priority_flags_json ? JSON.parse(s.priority_flags_json) : [];
+      const urgent = flags.some(f=>f.priority==='escalate'||f.priority==='urgent');
+      const time = s.submitted_at ? new Date(s.submitted_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+      return `<div class="eod-item ${urgent?'has-urgent':''}">
+        <span class="eod-author">${esc(s.author_name)}</span>
+        <span class="eod-time">${esc(roleLabels[s.author_role]||s.author_role)} · ${time}</span>
+        ${s.additional_notes ? `<div class="eod-preview">${esc(s.additional_notes).slice(0,150)}</div>` : ''}
+        ${flags.length ? `<div class="flag-chips">${flags.slice(0,3).map(f=>`<span class="chip ${f.priority||'fyi'}">${esc((f.text||'').slice(0,40))}</span>`).join('')}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load EOD data.</div>'; }
+}
+
+async function loadMaintenance() {
+  const el = document.getElementById('maint-list');
+  try {
+    const r = await fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'maintenance_log', orderBy:'reported_date desc', limit:20})});
+    const d = await r.json();
+    const items = (d.results||[]).filter(i=>i.status!=='FIXED');
+    if (!items.length) { el.innerHTML = '<div class="empty-state" style="color:var(--green)">✓ No open maintenance items</div>'; return; }
+    el.innerHTML = items.map(i => `
+      <div class="maint-item">
+        <span class="maint-badge badge-${(i.status||'open').toLowerCase().replace(' ','-')}">${i.status||'OPEN'}</span>
+        <span style="flex:1">${esc(i.item)}</span>
+        <span style="font-size:11px;color:var(--muted)">${i.reported_date||''}</span>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load maintenance data.</div>'; }
+}
+
+async function loadStaffPerf() {
+  const el = document.getElementById('staff-perf');
+  try {
+    const r = await fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'staff_performance', orderBy:'week_of desc', limit:30})});
+    const d = await r.json();
+    const rows = d.results||[];
+    if (!rows.length) { el.innerHTML = '<div class="empty-state">No performance data yet. Submitted via Sarah\'s EOD.</div>'; return; }
+    const latest = rows[0].week_of;
+    const week = rows.filter(r=>r.week_of===latest);
+    el.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:10px">Week of ${latest}</div>` +
+      week.map(e => `
+        <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)">
+          <span style="font-weight:600;font-size:13px;width:100px">${esc(e.employee_name)}</span>
+          <div style="flex:1">
+            <div class="trend-row"><span class="trend-label">Closing</span><div class="trend-bar"><div class="trend-fill" style="width:${Math.min(e.closing_pct||0,100)}%;background:var(--green)"></div></div><span class="trend-val">${e.closing_pct||0}%</span></div>
+            <div class="trend-row"><span class="trend-label">Booking</span><div class="trend-bar"><div class="trend-fill" style="width:${Math.min(e.booking_pct||0,100)}%;background:var(--blue)"></div></div><span class="trend-val">${e.booking_pct||0}%</span></div>
+          </div>
+          <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--soft);color:var(--muted)">${esc(e.performance_status||'—')}</span>
+        </div>`).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load staff data.</div>'; }
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+document.getElementById('eodDateDisp').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+loadAll();
+</script>
+</body>
+</html>
