@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ted EOD — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--blue:#2563EB;--lgreen:#E3F5EC;--lred:#FEF2F2;--lamber:#FFF7ED;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;position:sticky;top:0;z-index:40;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .role-tag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9CA3AF;padding:3px 8px;border:1px solid #374151;border-radius:20px}
+.topbar .spacer{flex:1}
+.topbar .date-badge{font-size:11px;color:#D1D5DB}
+.topbar .nav-btn{font-size:12px;color:#9CA3AF;text-decoration:none;padding:6px 12px;border:1px solid #374151;border-radius:8px}
+.topbar .nav-btn:hover{color:#fff}
+.topbar .submit-btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer}
+.topbar .submit-btn:hover{background:var(--red-dk)}
+
+.wrap{max-width:860px;margin:0 auto;padding:18px 16px 60px}
+
+.progress-bar{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.progress-track{flex:1;background:var(--soft);border-radius:6px;height:8px;overflow:hidden}
+.progress-fill{height:100%;background:var(--red);border-radius:6px;transition:width .4s}
+
+.section{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.section-header{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.section-header:hover{background:var(--soft)}
+.section-num{font-family:'Oswald';font-size:10px;font-weight:800;letter-spacing:1px;color:var(--red);background:var(--lred);padding:3px 8px;border-radius:6px;text-transform:uppercase}
+.section-title{font-family:'Oswald';font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;flex:1}
+.section-status{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+.status-done{background:var(--lgreen);color:#065F46}
+.status-partial{background:var(--lamber);color:#92400E}
+.status-empty{background:var(--soft);color:var(--muted)}
+.status-auto{background:#EFF6FF;color:var(--blue)}
+.chevron{color:var(--muted);font-size:14px;transition:transform .2s}
+.section.collapsed .chevron{transform:rotate(-90deg)}
+.section-body{padding:16px}
+.section.collapsed .section-body{display:none}
+
+/* AUTO-PULLED ROWS */
+.auto-list{display:flex;flex-direction:column;gap:6px}
+.auto-row{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.auto-row.flag-red{border-left:3px solid var(--red);background:var(--lred)}
+.auto-row.flag-amber{border-left:3px solid var(--amber);background:var(--lamber)}
+.auto-row.flag-green{border-left:3px solid var(--green);background:var(--lgreen)}
+.auto-row .ar-icon{font-size:16px;flex-shrink:0}
+.auto-row .ar-info{flex:1}
+.auto-row .ar-name{font-weight:600;font-size:13px;color:var(--ink)}
+.auto-row .ar-note{font-size:11px;color:var(--muted);margin-top:1px}
+.note-btn{font-size:10px;font-weight:700;text-transform:uppercase;padding:4px 10px;border-radius:6px;cursor:pointer;border:none;background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.note-btn:hover{border-color:var(--red);color:var(--red)}
+.inline-note{margin-top:6px;display:none}
+.inline-note textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-family:'Inter';font-size:12px;color:var(--ink);background:#fff;resize:none;height:52px}
+.inline-note textarea:focus{outline:none;border-color:var(--red)}
+
+/* FIELDS */
+label{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+input[type=text],select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:'Inter';font-size:13px;color:var(--ink);background:var(--soft)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red);background:#fff}
+textarea{resize:vertical;min-height:72px}
+.field{margin-bottom:12px}
+.field-row{display:grid;gap:10px;margin-bottom:12px}
+.field-row.two{grid-template-columns:1fr 1fr}
+
+/* NOTES */
+.note-composer{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--soft)}
+.note-composer textarea{margin-bottom:8px;background:#fff}
+.priority-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.priority-row label{text-transform:none;font-size:12px;margin:0}
+.prio-opt{display:flex;align-items:center;gap:5px;cursor:pointer}
+.prio-opt input[type=radio]{accent-color:var(--red);width:13px;height:13px}
+.note-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.note-item{border-radius:8px;padding:9px 12px;font-size:12px;border:1px solid}
+.note-item.fyi{background:#EFF6FF;border-color:#BFDBFE;color:#1D4ED8}
+.note-item.follow_up{background:var(--lamber);border-color:#FED7AA;color:#C2410C}
+.note-item.urgent{background:var(--lred);border-color:#FECACA;color:var(--red)}
+.note-item.escalate{background:var(--ink);border-color:#374151;color:#fff}
+.note-meta{display:flex;justify-content:space-between;margin-bottom:3px}
+.note-label{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;opacity:.7}
+.note-del{background:none;border:none;cursor:pointer;opacity:.5;font-size:12px}
+
+.add-row-btn{font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--red);background:none;border:1px dashed #FECACA;border-radius:8px;padding:7px 14px;cursor:pointer;width:100%;margin-top:6px}
+.add-row-btn:hover{background:var(--lred)}
+
+.divider{height:1px;background:var(--line);margin:12px 0}
+
+.empty-auto{text-align:center;padding:16px;color:var(--green);font-size:12px;font-weight:600}
+
+.submit-panel{background:var(--ink);border-radius:14px;padding:20px;margin-top:20px;text-align:center}
+.submit-panel h3{font-family:'Oswald';font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:6px}
+.submit-panel p{font-size:12px;color:#9CA3AF;margin-bottom:16px}
+.big-btn{font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:14px 40px;border-radius:10px;cursor:pointer;width:100%}
+.big-btn:hover{background:var(--red-dk)}
+.big-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:12px 24px;border-radius:10px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+.kpi-hint{font-size:11px;color:var(--blue);background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:8px 12px;margin-bottom:12px}
+
+@media(max-width:600px){.field-row.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="command-center.html" class="nav-btn">← Hub</a>
+  <div class="role-tag">Coach Ted</div>
+  <div class="spacer"></div>
+  <div class="date-badge" id="dateBadge"></div>
+  <button class="submit-btn" onclick="confirmSubmit()">Submit to Dani</button>
+</div>
+
+<div class="wrap">
+
+  <div class="progress-bar">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);white-space:nowrap">EOD Progress</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <span style="font-family:'Oswald';font-size:15px;font-weight:700;color:var(--ink)" id="progressPct">0%</span>
+  </div>
+
+  <!-- SECTION 1: SESSIONS TODAY -->
+  <div class="section" id="sec-sessions">
+    <div class="section-header" onclick="toggleSection('sec-sessions')">
+      <span class="section-num">01</span>
+      <span class="section-title">Sessions Today</span>
+      <span class="section-status status-auto" id="status-sessions">Loading from D1...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Auto-pulled from your calendar and session logs. Tap any row to add a note.</div>
+      <div class="auto-list" id="sessions-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: WELCOME WORKOUTS -->
+  <div class="section collapsed" id="sec-ww">
+    <div class="section-header" onclick="toggleSection('sec-ww')">
+      <span class="section-num">02</span>
+      <span class="section-title">Welcome Workouts</span>
+      <span class="section-status status-empty" id="status-ww">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field-row two">
+        <div class="field"><label>Booked</label><input type="number" id="ww-booked" placeholder="0" oninput="updateStatus('ww')"></div>
+        <div class="field"><label>Showed</label><input type="number" id="ww-showed" placeholder="0" oninput="updateStatus('ww')"></div>
+      </div>
+      <div class="field-row two">
+        <div class="field"><label>Closed / Signed Up</label><input type="number" id="ww-closed" placeholder="0" oninput="updateStatus('ww')"></div>
+        <div class="field"><label>Follow-Up Needed</label><input type="number" id="ww-followup" placeholder="0" oninput="updateStatus('ww')"></div>
+      </div>
+      <div class="field"><label>No-Shows (names + notes)</label><textarea id="ww-noshows" placeholder="e.g. Amelia Stefanowski — called, rescheduling..." oninput="updateStatus('ww')"></textarea></div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: PT LEADS -->
+  <div class="section collapsed" id="sec-leads">
+    <div class="section-header" onclick="toggleSection('sec-leads')">
+      <span class="section-num">03</span>
+      <span class="section-title">PT Leads</span>
+      <span class="section-status status-auto" id="status-leads">Loading...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Auto-pulled from leads table. Tap to update status or add a note.</div>
+      <div class="auto-list" id="leads-list"><div class="empty-auto">Loading...</div></div>
+      <button class="add-row-btn" onclick="addLeadNote()">+ Add Lead Not in System</button>
+      <div id="extra-leads"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: PROGRESS MONITORING -->
+  <div class="section collapsed" id="sec-monitoring">
+    <div class="section-header" onclick="toggleSection('sec-monitoring')">
+      <span class="section-num">04</span>
+      <span class="section-title">Progress Monitoring</span>
+      <span class="section-status status-auto" id="status-monitoring">Loading...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Auto-flagged from InBody scan dates. Red = overdue (60+ days), Amber = due soon (45+ days).</div>
+      <div class="auto-list" id="monitoring-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: FROZEN / PAST DUE -->
+  <div class="section collapsed" id="sec-frozen">
+    <div class="section-header" onclick="toggleSection('sec-frozen')">
+      <span class="section-num">05</span>
+      <span class="section-title">Frozen & Past Due</span>
+      <span class="section-status status-auto" id="status-frozen">Loading...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="auto-list" id="frozen-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: SESSION RENEWALS -->
+  <div class="section collapsed" id="sec-renewals">
+    <div class="section-header" onclick="toggleSection('sec-renewals')">
+      <span class="section-num">06</span>
+      <span class="section-title">Session Renewals</span>
+      <span class="section-status status-auto" id="status-renewals">Loading...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Clients at 0 sessions remaining or 2 or fewer left.</div>
+      <div class="auto-list" id="renewals-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: NOTABLE WINS -->
+  <div class="section collapsed" id="sec-wins">
+    <div class="section-header" onclick="toggleSection('sec-wins')">
+      <span class="section-num">07</span>
+      <span class="section-title">Notable Wins</span>
+      <span class="section-status status-empty" id="status-wins">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field"><label>Wins worth celebrating today</label>
+        <textarea id="notable-wins" placeholder="e.g. Gage hit a new deadlift PR — 225 lbs. Rick completed his first month." oninput="updateStatus('wins')"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: GAME PLAN -->
+  <div class="section collapsed" id="sec-plan">
+    <div class="section-header" onclick="toggleSection('sec-plan')">
+      <span class="section-num">08</span>
+      <span class="section-title">Game Plan for Tomorrow</span>
+      <span class="section-status status-empty" id="status-plan">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field"><label>What's the focus tomorrow</label>
+        <textarea id="game-plan" placeholder="e.g. Floor pulls before 11am. Follow up with Maria. Fill open WW slots." oninput="updateStatus('plan')"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 9: PRIORITY FLAGS -->
+  <div class="section collapsed" id="sec-notes">
+    <div class="section-header" onclick="toggleSection('sec-notes')">
+      <span class="section-num">09</span>
+      <span class="section-title">Additional Notes & Flags</span>
+      <span class="section-status status-empty" id="status-notes">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="note-composer">
+        <label style="margin-bottom:6px;display:block">Add a Note or Flag</label>
+        <textarea id="noteText" placeholder="Flag anything for Dani..." rows="3"></textarea>
+        <div class="priority-row">
+          <label>Priority:</label>
+          <label class="prio-opt"><input type="radio" name="notePriority" value="fyi" checked><span style="font-size:12px;font-weight:600;color:var(--blue)">FYI</span></label>
+          <label class="prio-opt"><input type="radio" name="notePriority" value="follow_up"><span style="font-size:12px;font-weight:600;color:#C2410C">Follow-up</span></label>
+          <label class="prio-opt"><input type="radio" name="notePriority" value="urgent"><span style="font-size:12px;font-weight:600;color:var(--red)">Urgent</span></label>
+          <label class="prio-opt"><input type="radio" name="notePriority" value="escalate"><span style="font-size:12px;font-weight:600;background:var(--ink);color:#fff;padding:2px 8px;border-radius:10px">Escalate to Dani</span></label>
+          <button class="add-row-btn" style="width:auto;padding:6px 14px;margin:0" onclick="addNote()">Add</button>
+        </div>
+      </div>
+      <div class="note-list" id="notesList"></div>
+    </div>
+  </div>
+
+  <!-- SUBMIT -->
+  <div class="submit-panel">
+    <h3>Ready to Submit?</h3>
+    <p id="submitHint">Submit your EOD to Dani. It appears on her dashboard instantly.</p>
+    <button class="big-btn" id="bigSubmitBtn" onclick="confirmSubmit()">Submit EOD to Dani</button>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const TODAY = new Date().toISOString().slice(0,10);
+const notes = [];
+let allClients = [];
+let allScans = [];
+let allLeads = [];
+let sessionNotes = {};
+
+document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+
+const SECTIONS = ['sessions','ww','leads','monitoring','frozen','renewals','wins','plan','notes'];
+
+function toggleSection(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+function updateStatus(secId, statusText, cls) {
+  const st = document.getElementById('status-' + secId);
+  if (!st) return;
+  if (statusText) { st.textContent = statusText; st.className = 'section-status ' + (cls||'status-done'); }
+  else {
+    const sec = document.getElementById('sec-' + secId);
+    const inputs = sec ? sec.querySelectorAll('input:not([readonly]),textarea,select') : [];
+    let filled = 0;
+    inputs.forEach(i => { if ((i.value||'').trim()) filled++; });
+    if (filled === 0) { st.textContent = 'Empty'; st.className = 'section-status status-empty'; }
+    else { st.textContent = 'Done'; st.className = 'section-status status-done'; }
+  }
+  updateProgress();
+}
+
+function updateProgress() {
+  let done = 0;
+  SECTIONS.forEach(s => {
+    const st = document.getElementById('status-' + s);
+    if (st && (st.textContent === 'Done' || st.textContent === 'Entered' || st.textContent.includes('client') || st.textContent.includes('session'))) done++;
+  });
+  const pct = Math.round((done / SECTIONS.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function name(c) { return ((c.first_name||'')+' '+(c.last_name||'')).trim() || 'Unknown'; }
+
+function autoRow(icon, flagClass, clientName, note, id) {
+  return `<div class="auto-row ${flagClass}" id="ar-${id}">
+    <span class="ar-icon">${icon}</span>
+    <div class="ar-info">
+      <div class="ar-name">${esc(clientName)}</div>
+      <div class="ar-note">${esc(note)}</div>
+      <div class="inline-note" id="note-${id}">
+        <textarea placeholder="Add a note for Dani..." oninput="sessionNotes['${id}']=this.value"></textarea>
+      </div>
+    </div>
+    <button class="note-btn" onclick="toggleInlineNote('${id}')">+ Note</button>
+  </div>`;
+}
+
+function toggleInlineNote(id) {
+  const n = document.getElementById('note-' + id);
+  if (n) { n.style.display = n.style.display === 'block' ? 'none' : 'block'; }
+}
+
+async function loadData() {
+  try {
+    const [clientsRes, scansRes, leadsRes] = await Promise.all([
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:200})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'inbody_scans', orderBy:'scan_date desc', limit:500})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:100})})
+    ]);
+    allClients = (await clientsRes.json()).results || [];
+    allScans = (await scansRes.json()).results || [];
+    allLeads = (await leadsRes.json()).results || [];
+    renderAll();
+  } catch(e) { showToast('Error loading data: ' + e.message); }
+}
+
+function renderAll() {
+  renderSessions();
+  renderLeads();
+  renderMonitoring();
+  renderFrozen();
+  renderRenewals();
+}
+
+function renderSessions() {
+  // Show today's active PT clients as expected sessions
+  const active = allClients.filter(c => c.status === 'active_pt' && (c.advisor||'').toLowerCase().includes('ted'));
+  const el = document.getElementById('sessions-list');
+  if (!active.length) {
+    el.innerHTML = '<div class="empty-auto">✓ No active PT clients assigned to Ted</div>';
+    updateStatus('sessions', 'No clients', 'status-empty');
+    return;
+  }
+  el.innerHTML = active.map(c => autoRow('💪', 'flag-green', name(c),
+    `Package: ${c.package||'—'} · Sessions remaining: ${c.sessions_remaining||'?'} · ${c.goal_primary||''}`,
+    'sess-' + c.id)).join('');
+  updateStatus('sessions', active.length + ' client' + (active.length===1?'':'s'), 'status-auto');
+}
+
+function renderLeads() {
+  const el = document.getElementById('leads-list');
+  const active = allLeads.filter(l => l.status === 'new' || l.status === 'contacted' || l.status === 'qualified');
+  if (!active.length) {
+    el.innerHTML = '<div class="empty-auto">✓ No active leads right now</div>';
+    updateStatus('leads', 'None', 'status-auto');
+    return;
+  }
+  el.innerHTML = active.map(l => autoRow('🎯', 'flag-amber', l.business_name || l.first_name || 'Lead',
+    `Status: ${l.status||'new'} · ${l.category||l.lead_type||''}`, 'lead-' + l.id)).join('');
+  updateStatus('leads', active.length + ' active', 'status-auto');
+}
+
+function renderMonitoring() {
+  const el = document.getElementById('monitoring-list');
+  const active = allClients.filter(c => c.status === 'active_pt');
+  const latestScans = {};
+  allScans.forEach(s => { if (!latestScans[s.client_id] || s.scan_date > latestScans[s.client_id]) latestScans[s.client_id] = s.scan_date; });
+  const today = new Date();
+  const flags = active.map(c => {
+    const last = latestScans[c.id];
+    if (!last) return {c, days: 999, flag: 'red'};
+    const diff = Math.floor((today - new Date(last)) / 86400000);
+    if (diff >= 60) return {c, days: diff, flag: 'red'};
+    if (diff >= 45) return {c, days: diff, flag: 'amber'};
+    return null;
+  }).filter(Boolean).sort((a,b) => b.days - a.days);
+
+  if (!flags.length) {
+    el.innerHTML = '<div class="empty-auto">✓ All clients current on progress monitoring</div>';
+    updateStatus('monitoring', 'All current', 'status-done');
+    return;
+  }
+  el.innerHTML = flags.map(f => autoRow(
+    f.flag === 'red' ? '🔴' : '🟡',
+    'flag-' + f.flag,
+    name(f.c),
+    f.days === 999 ? 'No InBody scan on file' : `Last scan: ${latestScans[f.c.id]} (${f.days} days ago)`,
+    'mon-' + f.c.id
+  )).join('');
+  updateStatus('monitoring', flags.length + ' flagged', flags.some(f=>f.flag==='red') ? 'status-partial' : 'status-auto');
+}
+
+function renderFrozen() {
+  const el = document.getElementById('frozen-list');
+  const frozen = allClients.filter(c => c.status === 'frozen' || c.status === 'past_due');
+  if (!frozen.length) {
+    el.innerHTML = '<div class="empty-auto">✓ No frozen or past due accounts</div>';
+    updateStatus('frozen', 'None', 'status-done');
+    return;
+  }
+  el.innerHTML = frozen.map(c => autoRow(
+    c.status === 'frozen' ? '❄️' : '⚠️',
+    c.status === 'past_due' ? 'flag-red' : 'flag-amber',
+    name(c),
+    `Status: ${c.status} · ${c.package||'—'}`,
+    'frz-' + c.id
+  )).join('');
+  updateStatus('frozen', frozen.length + ' account' + (frozen.length===1?'':'s'), 'status-partial');
+}
+
+function renderRenewals() {
+  const el = document.getElementById('renewals-list');
+  const renewals = allClients.filter(c => c.status === 'active_pt' && (c.sessions_remaining||0) <= 2);
+  if (!renewals.length) {
+    el.innerHTML = '<div class="empty-auto">✓ No renewals needed right now</div>';
+    updateStatus('renewals', 'None', 'status-done');
+    return;
+  }
+  el.innerHTML = renewals.map(c => autoRow(
+    (c.sessions_remaining||0) === 0 ? '🔴' : '🟡',
+    (c.sessions_remaining||0) === 0 ? 'flag-red' : 'flag-amber',
+    name(c),
+    `${c.sessions_remaining||0} session${c.sessions_remaining===1?'':'s'} remaining · ${c.package||'—'}`,
+    'ren-' + c.id
+  )).join('');
+  updateStatus('renewals', renewals.length + ' needed', 'status-partial');
+}
+
+function addLeadNote() {
+  const el = document.getElementById('extra-leads');
+  const id = Date.now();
+  const div = document.createElement('div');
+  div.className = 'auto-row flag-amber';
+  div.style.marginTop = '6px';
+  div.innerHTML = `
+    <span class="ar-icon">🎯</span>
+    <div class="ar-info" style="flex:1">
+      <input type="text" placeholder="Lead name / business" style="margin-bottom:6px" oninput="updateStatus('leads')">
+      <textarea placeholder="Notes on this lead..." style="height:48px" oninput="updateStatus('leads')"></textarea>
+    </div>
+    <button class="note-btn" style="color:var(--red)" onclick="this.closest('.auto-row').remove()">✕</button>`;
+  el.appendChild(div);
+}
+
+// NOTES
+function addNote() {
+  const txt = document.getElementById('noteText').value.trim();
+  if (!txt) { showToast('Enter a note first'); return; }
+  const prio = document.querySelector('input[name=notePriority]:checked').value;
+  notes.push({text: txt, priority: prio, ts: new Date().toISOString()});
+  document.getElementById('noteText').value = '';
+  renderNotes();
+  updateStatus('notes', 'Flagged', 'status-done');
+}
+function removeNote(i) { notes.splice(i,1); renderNotes(); }
+function renderNotes() {
+  const labels = {fyi:'FYI', follow_up:'Follow-up', urgent:'URGENT', escalate:'ESCALATE TO DANI'};
+  document.getElementById('notesList').innerHTML = notes.map((n,i) =>
+    `<div class="note-item ${n.priority}">
+      <div class="note-meta"><span class="note-label">${labels[n.priority]}</span><button class="note-del" onclick="removeNote(${i})">✕</button></div>
+      ${esc(n.text)}
+    </div>`).join('');
+}
+
+function showToast(msg, dur) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur||2500);
+}
+
+async function confirmSubmit() {
+  if (!confirm('Submit your EOD to Dani? It will appear on her dashboard immediately.')) return;
+  const btn = document.getElementById('bigSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+  const data = {
+    date: TODAY,
+    authorName: 'Ted Scholl',
+    author_role: 'training_lead',
+    gym_id: 1,
+    notable_wins: document.getElementById('notable-wins').value,
+    game_plan: document.getElementById('game-plan').value,
+    notes: notes,
+    ww: {
+      booked: document.getElementById('ww-booked').value,
+      showed: document.getElementById('ww-showed').value,
+      closed: document.getElementById('ww-closed').value,
+      followup: document.getElementById('ww-followup').value,
+      noshows: document.getElementById('ww-noshows').value
+    },
+    session_notes: sessionNotes,
+    auto_summary: {
+      active_clients: allClients.filter(c=>c.status==='active_pt').length,
+      leads: allLeads.filter(l=>l.status==='new'||l.status==='contacted').length,
+      frozen: allClients.filter(c=>c.status==='frozen').length,
+      renewals_needed: allClients.filter(c=>c.status==='active_pt'&&(c.sessions_remaining||0)===0).length
+    }
+  };
+  try {
+    const r = await fetch(WORKER + '/eod/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+    const resp = await r.json();
+    if (resp.ok || resp.id) {
+      showToast('EOD submitted to Dani!', 4000);
+      btn.textContent = '✓ Submitted';
+      btn.style.background = 'var(--green)';
+      document.getElementById('submitHint').textContent = 'Submitted at ' + new Date().toLocaleTimeString();
+    } else throw new Error(resp.error||'Failed');
+  } catch(e) {
+    showToast('Submit failed: ' + e.message, 4000);
+    btn.disabled = false; btn.textContent = 'Submit EOD to Dani';
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>

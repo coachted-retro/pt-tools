@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>HR Portal — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--blue:#2563EB;--purple:#7C3AED;--lgreen:#E3F5EC;--lred:#FEF2F2;--lamber:#FFF7ED;--lblue:#EFF6FF;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+
+.topbar{background:var(--ink);display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;position:sticky;top:0;z-index:40;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .page-tag{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#9CA3AF;padding:3px 8px;border:1px solid #374151;border-radius:20px}
+.topbar .spacer{flex:1}
+.topbar .nav-btn{font-size:12px;color:#9CA3AF;text-decoration:none;padding:6px 12px;border:1px solid #374151;border-radius:8px}
+.topbar .nav-btn:hover{color:#fff}
+
+.wrap{max-width:1000px;margin:0 auto;padding:20px 16px 60px}
+.page-hdr{margin-bottom:20px}
+.page-hdr h1{font-family:'Oswald';font-size:24px;font-weight:800;text-transform:uppercase}
+.page-hdr p{font-size:13px;color:var(--muted);margin-top:4px}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:20px}
+.tab{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:10px 18px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;background:none;border-top:none;border-left:none;border-right:none}
+.tab.active{color:var(--red);border-bottom-color:var(--red)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* EMPLOYEE SELECTOR */
+.emp-selector{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.emp-selector select{flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-family:'Inter';font-size:13px;background:var(--soft)}
+.emp-selector select:focus{outline:none;border-color:var(--red)}
+.emp-badge{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;flex:1;min-width:200px}
+.emp-avatar{width:40px;height:40px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
+.emp-info .emp-name{font-weight:700;font-size:15px}
+.emp-info .emp-role{font-size:12px;color:var(--muted);margin-top:1px}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
+.card-title{font-family:'Oswald';font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.card-title .completion{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;font-family:'Inter';text-transform:none;letter-spacing:0}
+.comp-full{background:var(--lgreen);color:#065F46}
+.comp-partial{background:var(--lamber);color:#92400E}
+.comp-none{background:var(--lred);color:var(--red)}
+
+/* CHECKLIST */
+.checklist{display:flex;flex-direction:column;gap:8px}
+.check-item{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--soft);border:1px solid var(--line);border-radius:8px}
+.check-item.completed{background:var(--lgreen);border-color:#9FE1CB}
+.check-item.completed .check-label{color:#065F46}
+.check-cb{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;cursor:pointer}
+.check-label{font-size:13px;font-weight:500;flex:1}
+.check-date{font-size:11px;color:var(--muted);white-space:nowrap}
+.check-note{font-size:11px;color:var(--muted);margin-top:2px}
+.date-input{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:11px;background:#fff;color:var(--ink);width:130px}
+
+/* PERFORMANCE LOG */
+.perf-list{display:flex;flex-direction:column;gap:8px}
+.perf-item{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:12px}
+.perf-item.note{border-left:3px solid var(--blue)}
+.perf-item.commendation{border-left:3px solid var(--green)}
+.perf-item.warning{border-left:3px solid var(--red)}
+.perf-item.evaluation{border-left:3px solid var(--purple)}
+.perf-meta{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.perf-type{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:10px}
+.type-note{background:var(--lblue);color:var(--blue)}
+.type-commendation{background:var(--lgreen);color:var(--green)}
+.type-warning{background:var(--lred);color:var(--red)}
+.type-evaluation{background:var(--lpurple,#F5F3FF);color:var(--purple)}
+.perf-date{font-size:11px;color:var(--muted)}
+.perf-by{font-size:11px;color:var(--muted)}
+.perf-text{font-size:13px;color:var(--ink);line-height:1.5}
+
+/* ADD ENTRY */
+.add-entry{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.add-entry h4{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px;color:var(--muted)}
+.field{margin-bottom:10px}
+label{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px}
+input[type=text],input[type=date],select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-family:'Inter';font-size:13px;color:var(--ink);background:#fff}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
+textarea{resize:vertical;min-height:72px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.save-btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:9px 20px;border-radius:8px;cursor:pointer}
+.save-btn:hover{background:#B0121F}
+
+/* KPI BADGES */
+.kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.kpi-badge{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:center;min-width:90px}
+.kpi-badge .kv{font-family:'Oswald';font-size:24px;font-weight:800;line-height:1}
+.kpi-badge .kl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;margin-top:3px}
+.kv.green{color:var(--green)}
+.kv.red{color:var(--red)}
+.kv.amber{color:var(--amber)}
+
+/* ROLE CHIP */
+.role-chip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.3px;padding:3px 9px;border-radius:20px;text-transform:uppercase}
+.role-director{background:#EDE9FE;color:#5B21B6}
+.role-gm{background:#FEF3C7;color:#92400E}
+.role-lead{background:#DBEAFE;color:#1E40AF}
+.role-coach{background:#D1FAE5;color:#065F46}
+.role-mea{background:#F3F4F6;color:#374151}
+.role-floor{background:#FEE2E2;color:#991B1B}
+
+.empty-state{text-align:center;padding:24px;color:var(--muted);font-size:12px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:12px 24px;border-radius:10px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:18px 0 10px}
+
+@media(max-width:600px){.field-row{grid-template-columns:1fr}.emp-selector{flex-direction:column}.kpi-row{gap:6px}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="director-dashboard.html" class="nav-btn">← Director</a>
+  <div class="page-tag">HR Portal</div>
+  <div class="spacer"></div>
+  <div class="logo">Body <span>Shoppe</span></div>
+</div>
+
+<div class="wrap">
+  <div class="page-hdr">
+    <h1>HR Portal</h1>
+    <p>Employee records, onboarding checklists, document tracking, and performance history. Managed by Dani and Bill.</p>
+  </div>
+
+  <!-- EMPLOYEE SELECTOR -->
+  <div class="emp-selector">
+    <select id="empSelect" onchange="loadEmployee()">
+      <option value="">-- Select Employee --</option>
+    </select>
+    <div class="emp-badge" id="empBadge" style="display:none">
+      <div class="emp-avatar" id="empAvatar">?</div>
+      <div class="emp-info">
+        <div class="emp-name" id="empName">—</div>
+        <div class="emp-role" id="empRoleDisplay">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="hr-content" style="display:none">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-badge"><div class="kv" id="kv-docs">—</div><div class="kl">Docs Complete</div></div>
+      <div class="kpi-badge"><div class="kv" id="kv-onboard">—</div><div class="kl">Onboarding</div></div>
+      <div class="kpi-badge"><div class="kv green" id="kv-tenure">—</div><div class="kl">Tenure</div></div>
+      <div class="kpi-badge"><div class="kv" id="kv-perf">—</div><div class="kl">Perf Entries</div></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('docs')">📄 Documents</button>
+      <button class="tab" onclick="switchTab('onboarding')">✅ Onboarding</button>
+      <button class="tab" onclick="switchTab('performance')">📊 Performance</button>
+    </div>
+
+    <!-- TAB: DOCUMENTS -->
+    <div class="tab-pane active" id="tab-docs">
+      <div class="card">
+        <div class="card-title">Hiring & Compliance Documents <span class="completion" id="docs-comp-badge">Loading...</span></div>
+        <div class="checklist" id="docs-checklist"></div>
+      </div>
+    </div>
+
+    <!-- TAB: ONBOARDING -->
+    <div class="tab-pane" id="tab-onboarding">
+      <div class="card">
+        <div class="card-title">Onboarding Checklist <span class="completion" id="onboard-comp-badge">Loading...</span></div>
+        <div class="checklist" id="onboard-checklist"></div>
+      </div>
+    </div>
+
+    <!-- TAB: PERFORMANCE -->
+    <div class="tab-pane" id="tab-performance">
+      <div class="add-entry">
+        <h4>+ Add Performance Entry</h4>
+        <div class="field-row">
+          <div class="field">
+            <label>Entry Type</label>
+            <select id="perf-type">
+              <option value="note">General Note</option>
+              <option value="commendation">Commendation</option>
+              <option value="warning">Written Warning</option>
+              <option value="evaluation">Evaluation</option>
+            </select>
+          </div>
+          <div class="field"><label>Date</label><input type="date" id="perf-date"></div>
+        </div>
+        <div class="field"><label>Notes</label><textarea id="perf-notes" placeholder="Document this performance entry..."></textarea></div>
+        <div class="field-row">
+          <div class="field"><label>Entered By</label>
+            <select id="perf-by">
+              <option value="Dani">Dani</option>
+              <option value="Bill">Bill</option>
+            </select>
+          </div>
+          <div class="field"><label>Visible To</label>
+            <select id="perf-visible">
+              <option value="dani">Dani</option>
+              <option value="dani_bill">Dani + Bill</option>
+            </select>
+          </div>
+        </div>
+        <button class="save-btn" onclick="savePerfEntry()">Save Entry</button>
+      </div>
+      <div class="perf-list" id="perf-list"><div class="empty-state">Loading performance history...</div></div>
+    </div>
+
+  </div>
+  <div id="hr-empty" style="text-align:center;padding:48px;color:var(--muted)">
+    <div style="font-size:32px;margin-bottom:12px">👥</div>
+    <div style="font-family:'Oswald';font-size:18px;font-weight:700;text-transform:uppercase;margin-bottom:6px">Select an Employee</div>
+    <div style="font-size:13px">Choose an employee above to view their HR record</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let roster = [];
+let currentEmp = null;
+
+const DOC_TYPES = [
+  {key:'application', label:'Application / Resume on File'},
+  {key:'i9', label:'I-9 Employment Verification'},
+  {key:'w4', label:'W-4 Tax Form'},
+  {key:'handbook', label:'Employee Handbook Signed'},
+  {key:'emergency_contact', label:'Emergency Contact Form'},
+  {key:'background_check', label:'Background Check Completed'},
+  {key:'direct_deposit', label:'Direct Deposit Form'},
+];
+
+const ONBOARD_TASKS_BY_ROLE = {
+  default: [
+    'Orientation completed',
+    'Gym tour and safety walkthrough',
+    'System access granted (scheduling, POS)',
+    'Uniform / dress code reviewed',
+    '30-day check-in completed',
+    '90-day review scheduled',
+  ],
+  'MEA': [
+    'Orientation completed',
+    'Gym tour and safety walkthrough',
+    'Front desk system training (POS, scheduling)',
+    'Membership sales training completed',
+    'Outreach / floor pull procedures reviewed',
+    'Guest pass protocols reviewed',
+    '30-day check-in completed',
+    'First mystery shop completed',
+  ],
+  'PT Coach': [
+    'Orientation completed',
+    'Coaching philosophy and standards review',
+    'Client management system training',
+    'Welcome Workout procedure training',
+    'Progress monitoring protocol reviewed',
+    'Trainerize / platform access set up',
+    '30-day check-in completed',
+    'First client assigned',
+  ],
+  "Men's Training Lead": [
+    'Orientation completed',
+    'Coaching philosophy and standards review',
+    'Platform (pt-tools) full training',
+    'Welcome Workout procedure training',
+    'Progress monitoring protocol reviewed',
+    'EOD reporting procedure reviewed',
+    '30-day check-in completed',
+    'Full client roster reviewed with director',
+  ],
+  'General Manager': [
+    'Orientation completed',
+    'Gym operations full walkthrough',
+    'Opening and closing procedures',
+    'Staff management protocols',
+    'EOD reporting system training',
+    'Emergency procedures reviewed',
+    'KPI reporting and Bill\'s daily email process',
+    '30-day check-in with Dani',
+    '90-day review with Bill',
+  ],
+};
+
+function rolePillClass(role) {
+  if (!role) return 'role-mea';
+  if (role.includes('Director')) return 'role-director';
+  if (role.includes('Manager') || role.includes('GM')) return 'role-gm';
+  if (role.includes('Lead')) return 'role-lead';
+  if (role.includes('Coach')) return 'role-coach';
+  if (role === 'MEA') return 'role-mea';
+  if (role.includes('Floor')) return 'role-floor';
+  return 'role-mea';
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function loadRoster() {
+  try {
+    const r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'staff_roster', where:{active:1}, orderBy:'name asc', limit:100})});
+    const d = await r.json();
+    roster = d.results || [];
+    const sel = document.getElementById('empSelect');
+    sel.innerHTML = '<option value="">-- Select Employee --</option>' +
+      roster.map(e => `<option value="${e.id}">${esc(e.name)} — ${esc(e.role)}</option>`).join('');
+  } catch(e) { showToast('Could not load roster'); }
+}
+
+async function loadEmployee() {
+  const id = parseInt(document.getElementById('empSelect').value);
+  if (!id) { document.getElementById('hr-content').style.display='none'; document.getElementById('hr-empty').style.display='block'; return; }
+  currentEmp = roster.find(e => e.id === id);
+  if (!currentEmp) return;
+
+  document.getElementById('hr-content').style.display='block';
+  document.getElementById('hr-empty').style.display='none';
+
+  const initials = (currentEmp.name||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+  document.getElementById('empAvatar').textContent = initials;
+  document.getElementById('empName').textContent = currentEmp.name;
+  document.getElementById('empRoleDisplay').innerHTML = `<span class="role-chip ${rolePillClass(currentEmp.role)}">${esc(currentEmp.role)}</span>${currentEmp.hire_date ? ' · Hired ' + currentEmp.hire_date : ''}`;
+  document.getElementById('empBadge').style.display='flex';
+
+  if (currentEmp.hire_date) {
+    const days = Math.floor((new Date() - new Date(currentEmp.hire_date)) / 86400000);
+    const months = Math.floor(days/30);
+    document.getElementById('kv-tenure').textContent = months > 0 ? months + 'mo' : days + 'd';
+  } else { document.getElementById('kv-tenure').textContent = '—'; }
+
+  await Promise.all([loadDocs(), loadOnboarding(), loadPerformance()]);
+}
+
+async function loadDocs() {
+  try {
+    const r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'hr_documents', where:{employee_id: currentEmp.id}, limit:50})});
+    const d = await r.json();
+    const rows = d.results || [];
+    const docsMap = {};
+    rows.forEach(r => { docsMap[r.doc_type] = r; });
+
+    let done = 0;
+    const html = DOC_TYPES.map(dt => {
+      const row = docsMap[dt.key];
+      const checked = row && row.completed;
+      if (checked) done++;
+      return `<div class="check-item ${checked?'completed':''}" id="doc-row-${dt.key}">
+        <input type="checkbox" class="check-cb" ${checked?'checked':''} onchange="toggleDoc('${dt.key}', this.checked)">
+        <div style="flex:1">
+          <div class="check-label">${esc(dt.label)}</div>
+          ${row && row.completed_date ? `<div class="check-note">Completed ${row.completed_date}</div>` : ''}
+        </div>
+        <input type="date" class="date-input" placeholder="Date" value="${row&&row.completed_date||''}" onchange="saveDocDate('${dt.key}', this.value)" style="display:${checked?'block':'none'}">
+      </div>`;
+    }).join('');
+
+    document.getElementById('docs-checklist').innerHTML = html;
+    const pct = Math.round((done/DOC_TYPES.length)*100);
+    const badge = document.getElementById('docs-comp-badge');
+    badge.textContent = `${done}/${DOC_TYPES.length} (${pct}%)`;
+    badge.className = 'completion ' + (pct===100?'comp-full':pct>0?'comp-partial':'comp-none');
+    document.getElementById('kv-docs').textContent = pct + '%';
+    document.getElementById('kv-docs').className = 'kv ' + (pct===100?'green':pct>0?'amber':'red');
+  } catch(e) { console.error(e); }
+}
+
+async function toggleDoc(docType, checked) {
+  const row = document.getElementById('doc-row-' + docType);
+  const dateInput = row ? row.querySelector('.date-input') : null;
+  if (dateInput) dateInput.style.display = checked ? 'block' : 'none';
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const existing = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'hr_documents', where:{employee_id: currentEmp.id, doc_type: docType}, limit:1})});
+    const ed = await existing.json();
+    if (ed.results && ed.results.length) {
+      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'update', table:'hr_documents', values:{completed: checked?1:0, completed_date: checked?today:null}, where:{id: ed.results[0].id}})});
+    } else {
+      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'insert', table:'hr_documents', values:{employee_id: currentEmp.id, doc_type: docType, completed: checked?1:0, completed_date: checked?today:null, entered_by: 'Dani'}})});
+    }
+    if (row) row.classList.toggle('completed', checked);
+    showToast(checked ? 'Document marked complete' : 'Marked incomplete');
+    setTimeout(loadDocs, 300);
+  } catch(e) { showToast('Save failed'); }
+}
+
+async function saveDocDate(docType, date) {
+  try {
+    const existing = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'hr_documents', where:{employee_id: currentEmp.id, doc_type: docType}, limit:1})});
+    const ed = await existing.json();
+    if (ed.results && ed.results.length) {
+      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'update', table:'hr_documents', values:{completed_date: date}, where:{id: ed.results[0].id}})});
+    }
+  } catch(e) {}
+}
+
+async function loadOnboarding() {
+  try {
+    const r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'hr_onboarding', where:{employee_id: currentEmp.id}, limit:50})});
+    const d = await r.json();
+    const rows = d.results || [];
+    const taskMap = {};
+    rows.forEach(r => { taskMap[r.task] = r; });
+
+    const tasks = ONBOARD_TASKS_BY_ROLE[currentEmp.role] || ONBOARD_TASKS_BY_ROLE.default;
+    let done = 0;
+    const html = tasks.map((task, i) => {
+      const row = taskMap[task];
+      const checked = row && row.completed;
+      if (checked) done++;
+      const safeId = 'ob-' + i;
+      return `<div class="check-item ${checked?'completed':''}" id="${safeId}">
+        <input type="checkbox" class="check-cb" ${checked?'checked':''} onchange="toggleOnboard(${JSON.stringify(task)}, this.checked, '${safeId}')">
+        <div style="flex:1">
+          <div class="check-label">${esc(task)}</div>
+          ${row && row.completed_date ? `<div class="check-note">Completed ${row.completed_date}</div>` : ''}
+        </div>
+        ${checked ? `<span class="check-date">${row.completed_date||''}</span>` : ''}
+      </div>`;
+    }).join('');
+
+    document.getElementById('onboard-checklist').innerHTML = html;
+    const pct = Math.round((done/tasks.length)*100);
+    const badge = document.getElementById('onboard-comp-badge');
+    badge.textContent = `${done}/${tasks.length} (${pct}%)`;
+    badge.className = 'completion ' + (pct===100?'comp-full':pct>0?'comp-partial':'comp-none');
+    document.getElementById('kv-onboard').textContent = pct + '%';
+    document.getElementById('kv-onboard').className = 'kv ' + (pct===100?'green':pct>0?'amber':'red');
+  } catch(e) { console.error(e); }
+}
+
+async function toggleOnboard(task, checked, rowId) {
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    const existing = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'hr_onboarding', where:{employee_id: currentEmp.id, task: task}, limit:1})});
+    const ed = await existing.json();
+    if (ed.results && ed.results.length) {
+      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'update', table:'hr_onboarding', values:{completed: checked?1:0, completed_date: checked?today:null}, where:{id: ed.results[0].id}})});
+    } else {
+      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'insert', table:'hr_onboarding', values:{employee_id: currentEmp.id, task, completed: checked?1:0, completed_date: checked?today:null, role: currentEmp.role, entered_by: 'Dani'}})});
+    }
+    const row = document.getElementById(rowId);
+    if (row) row.classList.toggle('completed', checked);
+    showToast(checked ? 'Task completed' : 'Task unchecked');
+    setTimeout(loadOnboarding, 300);
+  } catch(e) { showToast('Save failed'); }
+}
+
+async function loadPerformance() {
+  try {
+    const r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'hr_performance', where:{employee_id: currentEmp.id}, orderBy:'entry_date desc', limit:50})});
+    const d = await r.json();
+    const rows = d.results || [];
+    document.getElementById('kv-perf').textContent = rows.length;
+    const typeLabels = {note:'General Note', commendation:'Commendation', warning:'Warning', evaluation:'Evaluation'};
+    document.getElementById('perf-list').innerHTML = rows.length ? rows.map(row => `
+      <div class="perf-item ${row.entry_type||'note'}">
+        <div class="perf-meta">
+          <span class="perf-type type-${row.entry_type||'note'}">${typeLabels[row.entry_type]||row.entry_type}</span>
+          <span class="perf-date">${row.entry_date||''}</span>
+          <span class="perf-by">by ${esc(row.entered_by||'')}</span>
+        </div>
+        <div class="perf-text">${esc(row.notes||'')}</div>
+      </div>`).join('') : '<div class="empty-state">No performance entries yet.</div>';
+    document.getElementById('perf-date').value = new Date().toISOString().slice(0,10);
+  } catch(e) { console.error(e); }
+}
+
+async function savePerfEntry() {
+  const notes = document.getElementById('perf-notes').value.trim();
+  if (!notes || !currentEmp) { showToast('Enter notes first'); return; }
+  try {
+    await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'insert', table:'hr_performance', values:{
+        employee_id: currentEmp.id,
+        entry_date: document.getElementById('perf-date').value || new Date().toISOString().slice(0,10),
+        entry_type: document.getElementById('perf-type').value,
+        notes,
+        entered_by: document.getElementById('perf-by').value,
+        visible_to: document.getElementById('perf-visible').value,
+      }})});
+    document.getElementById('perf-notes').value = '';
+    showToast('Entry saved');
+    await loadPerformance();
+  } catch(e) { showToast('Save failed'); }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const panes = ['docs','onboarding','performance'];
+    t.classList.toggle('active', panes[i] === name);
+  });
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+loadRoster();
+</script>
+</body>
+</html>

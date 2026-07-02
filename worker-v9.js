@@ -31,7 +31,8 @@ const ALLOWED_TABLES = new Set([
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
-  'maintenance_log','staff_performance','action_items','shift_logs'
+  'maintenance_log','staff_performance','action_items','shift_logs',
+  'staff_roster','hr_documents','hr_onboarding','hr_performance'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
