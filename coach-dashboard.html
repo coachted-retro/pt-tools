@@ -507,6 +507,35 @@
       </div>
     </div>
 
+    <!-- Reschedule Modal -->
+    <div id="reschedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1150;align-items:center;justify-content:center">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;width:360px;max-width:92vw">
+        <div id="resched-title" style="font-family:var(--font-display,Oswald,sans-serif);font-size:15px;font-weight:700;margin-bottom:16px;">Reschedule</div>
+        <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--text2);cursor:pointer">
+          <input type="checkbox" id="resched-tbd" onchange="toggleReschedTbd()" style="width:16px;height:16px">
+          To be determined \u2014 still working it out with the client
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700">New Date</div>
+            <input type="date" id="resched-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px">
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700">New Time</div>
+            <input type="time" id="resched-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="confirmReschedule()" style="flex:1;padding:10px;border-radius:8px;border:none;background:#7eb3e8;color:#0D0E10;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;">Save</button>
+          <button onclick="closeRescheduleModal()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="cd-toast" style="display:none;position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);color:var(--text);padding:12px 20px;border-radius:10px;font-size:13px;z-index:1200;box-shadow:0 6px 20px rgba(0,0,0,0.4);transition:opacity .3s;max-width:90vw;text-align:center"></div>
+
+
     <!-- Schedule Session Modal -->
     <div id="schedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;width:440px;max-width:95vw">
@@ -780,6 +809,11 @@ async function lookupClientByName(name){
 
 async function markApptStatus(status){
   if (!apptMenuTarget) return;
+  if (status === 'rescheduled') {
+    closeApptMenu();
+    openRescheduleModal();
+    return;
+  }
   var t = apptMenuTarget;
   closeApptMenu();
 
@@ -798,8 +832,13 @@ async function markApptStatus(status){
 
   if (status === 'show') {
     if (t.kind === 'training') {
-      // PT session: open session-log.html, prefilled, ready to start
-      window.open('session-log.html?client='+t.encName+'&date='+t.date+(t.time?('&time='+t.time):'')+'&coach=Ted', '_blank');
+      // PT session: open the real workout logger, pre-loaded to this client
+      var trainClient = await lookupClientByName(t.name);
+      if (trainClient && trainClient.id) {
+        window.open('gym-floor.html?client=' + trainClient.id, '_blank');
+      } else {
+        window.open('gym-floor.html', '_blank');
+      }
     } else {
       // Intake type (consultation / followup / checkin): pull full profile, then open prefilled
       var client = await lookupClientByName(t.name);
@@ -807,8 +846,8 @@ async function markApptStatus(status){
       if (client && client.id) params += '&client_id='+client.id;
       window.open(t.file+'?'+params, '_blank');
     }
-  } else if (status === 'no_show' || status === 'rescheduled') {
-    alert((status === 'no_show' ? 'No-show' : 'Reschedule') + ' recorded for ' + t.name + '.\n\nReminder: add a reschedule note in ABC at the front desk, and flag this for manager review.');
+  } else if (status === 'no_show') {
+    toast('No-show logged for ' + t.name + '. Flag it in ABC at the front desk.');
   } else if (status === 'declined') {
     var client2 = await lookupClientByName(t.name);
     if (client2 && client2.id) {
@@ -816,10 +855,74 @@ async function markApptStatus(status){
         await fetch(CAL_BASE+'/db', {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({op:'update', table:'clients', values:{status:'not_interested'}, where:{id:client2.id}})});
       } catch(e) { console.warn('Could not update client status', e); }
     }
-    alert(t.name + ' marked as not interested. No further action needed.');
+    toast(t.name + ' marked as not interested. No further action needed.');
   }
 
   renderCalendar();
+}
+
+function openRescheduleModal(){
+  var box = document.getElementById('reschedule-modal');
+  var title = document.getElementById('resched-title');
+  if (title) title.textContent = (apptMenuTarget ? apptMenuTarget.name : 'this appointment') + ' \u2014 new time';
+  var dateEl = document.getElementById('resched-date');
+  var timeEl = document.getElementById('resched-time');
+  if (dateEl) dateEl.value = '';
+  if (timeEl) timeEl.value = '';
+  var tbd = document.getElementById('resched-tbd');
+  if (tbd) tbd.checked = false;
+  toggleReschedTbd();
+  if (box) box.style.display = 'flex';
+}
+function closeRescheduleModal(){
+  var box = document.getElementById('reschedule-modal');
+  if (box) box.style.display = 'none';
+}
+function toggleReschedTbd(){
+  var tbd = document.getElementById('resched-tbd');
+  var dateEl = document.getElementById('resched-date');
+  var timeEl = document.getElementById('resched-time');
+  var isTbd = tbd && tbd.checked;
+  if (dateEl) dateEl.disabled = isTbd;
+  if (timeEl) timeEl.disabled = isTbd;
+}
+async function confirmReschedule(){
+  if (!apptMenuTarget) { closeRescheduleModal(); return; }
+  var t = apptMenuTarget;
+  var tbdEl = document.getElementById('resched-tbd');
+  var isTbd = !!(tbdEl && tbdEl.checked);
+  var dateVal = document.getElementById('resched-date').value;
+  var timeVal = document.getElementById('resched-time').value;
+  if (!isTbd && !dateVal) { alert('Pick a new date, or check "To be determined."'); return; }
+  closeRescheduleModal();
+  try {
+    var key = apptStatusKey(t.date, t.name);
+    var existing = apptStatusMap[key];
+    var payload = { appt_date: t.date, client_name: t.name, appt_type: t.kind, status: 'rescheduled',
+      reschedule_date: isTbd ? null : dateVal, reschedule_time: isTbd ? null : (timeVal || null),
+      reschedule_tbd: isTbd ? 1 : 0, updated_at: new Date().toISOString() };
+    if (existing && existing.id) {
+      await fetch(CAL_BASE+'/db', {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({op:'update', table:'appointment_status', values:payload, where:{id:existing.id}})});
+    } else {
+      await fetch(CAL_BASE+'/db', {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({op:'insert', table:'appointment_status', values:payload})});
+    }
+    apptStatusMap[key] = payload;
+  } catch(e) { console.warn('Could not save reschedule', e); }
+  toast('Rescheduled ' + t.name + (isTbd ? ' \u2014 time to be determined.' : (' to ' + dateVal + (timeVal ? (' ' + timeVal) : '') + '.')));
+  renderCalendar();
+}
+
+function toast(msg){
+  var el = document.getElementById('cd-toast');
+  if (!el) { alert(msg); return; }
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.opacity = '1';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(function(){
+    el.style.opacity = '0';
+    setTimeout(function(){ el.style.display = 'none'; }, 300);
+  }, 3500);
 }
 
 function saveScheduledSessions() {
@@ -894,7 +997,7 @@ function renderCalendar() {
       else if (status === 'rescheduled') { bg='rgba(90,142,200,0.28)'; col='#7eb3e8'; }
       else if (status === 'declined') { bg='rgba(224,25,43,0.20)'; col='#E0192B'; }
       else { bg = isSession?'rgba(63,119,192,0.16)':'rgba(184,120,12,0.16)'; col = isSession?'#3F77C0':'#B8780C'; }
-      var statusTag = status ? ' [' + status.replace('_',' ') + ']' : '';
+      var statusTag = status ? ' [' + status.replace('_',' ') + (status==='rescheduled' ? (statusRow.reschedule_tbd ? ' \u2013 TBD' : (statusRow.reschedule_date ? (' \u2192 '+statusRow.reschedule_date+(statusRow.reschedule_time?(' '+statusRow.reschedule_time):'')) : '')) : '') + ']' : '';
       return '<div class="cal-feed-pill" onclick="openApptMenu(event,\''+a.file+'\',\''+encodeURIComponent(a.name||'')+'\',\''+a.date+'\',\''+(a.time||'')+'\',\''+(a.kind||'session')+'\')" style="font-size:10.5px;line-height:1.35;font-weight:600;background:'+bg+';color:'+col+';border-radius:4px;padding:3px 5px;margin-top:2px;cursor:pointer;white-space:normal;word-break:break-word;" title="'+(a.name||'Session')+statusTag+'">'+(a.time||'')+' '+(a.name||(isSession?'Session':'Appt'))+statusTag+'</div>';
     }).join('');
 

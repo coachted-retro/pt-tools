@@ -441,14 +441,21 @@ function _monthlyDue(start, updated){
   const ds=_daysSince(updated);
   return (ds==null || ds>=25) ? ('Month '+(m+1)+' check-in') : null;
 }
+function fmtTimeOnly(iso){
+  const m=(iso||'').match(/T(\d{2}):(\d{2})/);
+  if(!m) return '';
+  let h=+m[1]; const mins=m[2]; const ap=h>=12?'PM':'AM'; h=h%12; if(h===0) h=12;
+  return h+':'+mins+' '+ap;
+}
 function buildNBA(){
   const today=new Date().toISOString().slice(0,10);
   const items=[];
   APPTS.forEach(a=>{
     if((a.start||'').slice(0,10)!==today) return;
     const p=parseAppt(a.summary);
-    if(p.t) items.push({prio:1,cat:'Today',pill:'p-new',title:(p.name||'Appointment')+' \u00b7 '+p.t.label,reason:'Scheduled today',act:'Start',fn:()=>openTool(p.t.file+'?name='+encodeURIComponent(p.name||'')+'&appt='+p.t.key+'&date='+today)});
-    else { const dt=a.start||''; items.push({prio:2,cat:'Today',pill:'p-declined',title:(p.name||p.typePart||a.summary||'Session'),reason:'On your calendar today',act:'Log',fn:()=>openTool('session-log.html?client='+encodeURIComponent(p.name||'')+'&date='+dt.slice(0,10)+(dt.slice(11,16)?('&time='+dt.slice(11,16)):'')+'&coach=Ted')}); }
+    const timePfx=fmtTimeOnly(a.start); const timeTag=timePfx?(timePfx+' \u00b7 '):'';
+    if(p.t) items.push({prio:1,cat:'Today',pill:'p-new',title:timeTag+(p.name||'Appointment')+' \u00b7 '+p.t.label,reason:'Scheduled today',act:'Start',fn:()=>openTool(p.t.file+'?name='+encodeURIComponent(p.name||'')+'&appt='+p.t.key+'&date='+today)});
+    else { const dt=a.start||''; items.push({prio:2,cat:'Today',pill:'p-declined',title:timeTag+(p.name||p.typePart||a.summary||'Session'),reason:'On your calendar today',act:'Log',fn:()=>openTool('session-log.html?client='+encodeURIComponent(p.name||'')+'&date='+dt.slice(0,10)+(dt.slice(11,16)?('&time='+dt.slice(11,16)):'')+'&coach=Ted')}); }
   });
   CLIENTS.forEach(c=>{
     if(!c.training_start_date) return;
@@ -461,13 +468,6 @@ function buildNBA(){
     const has=MEAL_PLANS.some(mp=>{ if(mp.client_id!==p.client_id) return false; const d=daysFromNow(mp.week_of); return d!=null && d>-7; });
     if(!has){ const c=CLIENTS.find(x=>x.id===p.client_id)||{}; const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||('Client #'+p.client_id);
       items.push({prio:3,cat:'Meal plan',pill:'p-prospect',title:nm+' \u00b7 weekly plan due',reason:(p.package==='complete_plus'?'Complete+':'Complete')+', no plan this week',act:'Build',fn:()=>openTool('meal-plans.html')}); }
-  });
-  LEADS.forEach(l=>{
-    const d=daysFromNow(l.next_action_date);
-    if(d!=null && d<=7){ items.push({prio:(d<0?1:3),cat:'Lead',pill:(d<0?'p-dead':'p-prospect'),title:(l.business_name||'Lead')+' \u00b7 follow up',reason:(d<0?('Overdue '+(-d)+'d'):('Due in '+d+'d')),act:'Open',fn:()=>{setTab('pipeline'); if(window.openLead) openLead(l.id);}}); }
-  });
-  LEADS.filter(l=>(l.status==='new'||!l.status)&&!l.next_action_date).slice(0,6).forEach(l=>{
-    items.push({prio:4,cat:'New lead',pill:'p-new',title:(l.business_name||'New lead')+' \u00b7 first contact',reason:(l.category||'lead')+(l.city?(' \u00b7 '+l.city):''),act:'Open',fn:()=>{setTab('pipeline'); if(window.openLead) openLead(l.id);}});
   });
   CLIENTS.forEach(c=>{
     const d=_daysSince(c.updated_at);
