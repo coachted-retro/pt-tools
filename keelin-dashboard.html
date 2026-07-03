@@ -101,8 +101,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <body>
 
 <div class="topbar">
-  <div class="logo">Retro <span>Fitness</span></div>
+  <div class="logo">The Body <span>Shoppe</span></div>
   <div class="role-tag">Keelin — Regional Director</div>
+  <div class="bell-wrap" style="position:relative">
+    <button class="refresh-btn" id="bell-btn" onclick="toggleBell()" style="position:relative">&#128276;<span id="bell-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px;min-width:14px">0</span></button>
+    <div id="bell-drop" style="display:none;position:absolute;top:42px;right:0;width:320px;max-height:380px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.15);z-index:50;color:var(--ink)"></div>
+  </div>
   <div class="spacer"></div>
   <span class="last-up" id="lastUp">Loading...</span>
   <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
@@ -112,6 +116,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
   <div class="tabs">
     <button class="tab active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab" onclick="switchTab('board')">The Board</button>
     <button class="tab" onclick="switchTab('eod')">EOD Feed</button>
     <button class="tab" onclick="switchTab('coaching')">PT Coaching</button>
     <button class="tab" onclick="switchTab('actions')">Action Items</button>
@@ -136,6 +141,30 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   </div>
 
   <!-- TAB: EOD FEED -->
+  <!-- TAB: THE BODY SHOPPE BOARD -->
+  <div class="tab-pane" id="tab-board">
+    <div class="section-hdr"><div class="section-title">The Body Shoppe Board</div><div class="section-line"></div><span class="card-sub" id="board-month"></span></div>
+    <table class="gym-table">
+      <thead><tr><th>#</th><th>Club</th><th>TCV Goal</th><th>MTD</th><th>Progress</th><th>%</th><th>Keelin's Note</th></tr></thead>
+      <tbody id="board-rows"><tr><td colspan="7" class="empty-state">Loading the board...</td></tr></tbody>
+    </table>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">&#127881; Region Wins Feed</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <input id="win-input" placeholder="Post to the region..." style="flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-family:'Inter';font-size:13px">
+          <button class="refresh-btn" style="color:var(--ink);border-color:var(--line)" onclick="postShout('','wins')">Post</button>
+        </div>
+        <div id="wins-feed"><div class="empty-state">Loading...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" id="thread-title">Sale Thread</div>
+        <div class="card-sub">Tap a win on the left to open its celebration thread</div>
+        <div id="thread-box"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="tab-pane" id="tab-eod">
     <div class="date-nav">
       <button onclick="changeDate(-1)">← Prev</button>
@@ -178,10 +207,11 @@ let eodDateStr = new Date().toISOString().slice(0,10);
 let allClients = [], allScans = [];
 
 function switchTab(name) {
-  const panes = ['overview','eod','coaching','actions'];
+  const panes = ['overview','board','eod','coaching','actions'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', panes[i]===name));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
+  if (name==='board') { loadBoard(); loadWins(); }
   if (name==='eod') loadEOD();
   if (name==='coaching') loadCoaching();
   if (name==='actions') loadActions();
@@ -197,6 +227,124 @@ function changeDate(d) {
 async function db(payload) {
   const r = await fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   return (await r.json()).results||[];
+}
+
+const CURRENT_MONTH = new Date().toISOString().slice(0,7);
+const EMOJIS = ['\uD83D\uDD25','\uD83D\uDCAA','\uD83D\uDC4F','\uD83C\uDF89','\uD83D\uDE4C','\u2764\uFE0F'];
+let boardData = null, activeThread = null;
+
+function fmtMoney(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function loadBoard(){
+  const r = await fetch(WORKER+'/region/summary?month='+CURRENT_MONTH);
+  boardData = await r.json();
+  document.getElementById('board-month').textContent = new Date(CURRENT_MONTH+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'}) + ' · Region ' + (boardData.region_pct==null?'':boardData.region_pct+'% to goal');
+  const tb = document.getElementById('board-rows');
+  if (!boardData.gyms || !boardData.gyms.length){ tb.innerHTML = '<tr><td colspan="7" class="empty-state">No gyms yet. Run the seed or onboard a club.</td></tr>'; return; }
+  tb.innerHTML = boardData.gyms.map((g,i)=>{
+    const pct = g.pct==null?0:g.pct;
+    const color = pct>=90?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+    return `<tr>
+      <td style="font-family:'Oswald';font-weight:800;color:var(--muted)">${i+1}</td>
+      <td><div class="gym-name">${escH(g.name)}</div><div class="gym-manager">${escH(g.director||'')}</div></td>
+      <td><span style="cursor:pointer;border-bottom:1px dashed var(--muted)" onclick="editGoal(${g.gym_id},${g.goal})">${fmtMoney(g.goal)}</span></td>
+      <td style="font-family:'Oswald';font-weight:700">${fmtMoney(g.actual)}</td>
+      <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div></td>
+      <td><span class="pct-badge" style="color:${color}">${g.pct==null?'—':g.pct+'%'}</span></td>
+      <td style="max-width:220px"><span style="cursor:pointer" onclick="editNote(${g.gym_id},this)">${g.note?escH(g.note)+' '+(g.emoji||''):'<span style=&quot;color:var(--muted)&quot;>+ add note</span>'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function editGoal(gymId, current){
+  const v = prompt('Set monthly TCV goal for this club:', current||'');
+  if (v==null) return;
+  const goal = parseFloat(String(v).replace(/[^0-9.]/g,''));
+  if (isNaN(goal)) return alert('Enter a number.');
+  await fetch(WORKER+'/board/set-goal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,tcv_goal:goal})});
+  loadBoard();
+}
+
+async function editNote(gymId){
+  const g = (boardData.gyms||[]).find(x=>x.gym_id===gymId) || {};
+  const note = prompt('Board note for '+(g.name||'this club')+':', g.note||'');
+  if (note==null) return;
+  const pick = prompt('Emoji (type a number): 1 \uD83D\uDD25  2 \uD83D\uDCAA  3 \uD83D\uDC4F  4 \uD83C\uDF89  5 \uD83D\uDE4C  6 \u2764\uFE0F  (blank = none)','1');
+  const emoji = pick && EMOJIS[parseInt(pick)-1] ? EMOJIS[parseInt(pick)-1] : '';
+  await fetch(WORKER+'/board/set-note',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,note:note,emoji:emoji,author:'Keelin'})});
+  loadBoard();
+}
+
+async function loadWins(){
+  const r = await fetch(WORKER+'/huddle/feed?channel=wins');
+  const d = await r.json();
+  const el = document.getElementById('wins-feed');
+  const msgs = (d.messages||[]).filter(m=>m.author==='system' || !m.thread_ref);
+  if (!msgs.length){ el.innerHTML = '<div class="empty-state">No wins posted yet.</div>'; return; }
+  el.innerHTML = msgs.map(m=>`
+    <div style="padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer" onclick="openThread('${escH(m.thread_ref||'')}','${escH((m.body||'').slice(0,60))}')">
+      <div style="font-size:13px">${escH(m.body)}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${escH(m.author)} · ${new Date(m.created_at+'Z').toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})} ${m.thread_ref?'· tap to celebrate':''}</div>
+    </div>`).join('');
+}
+
+async function openThread(ref, title){
+  if (!ref) return;
+  activeThread = ref;
+  document.getElementById('thread-title').textContent = title || 'Sale Thread';
+  const r = await fetch(WORKER+'/huddle/feed?thread_ref='+encodeURIComponent(ref));
+  const d = await r.json();
+  const box = document.getElementById('thread-box');
+  box.innerHTML = (d.messages||[]).map(m=>`
+    <div style="padding:8px 10px;background:${m.author==='system'?'var(--lred)':'var(--soft)'};border-radius:8px;margin-bottom:6px">
+      <div style="font-size:11px;font-weight:700">${escH(m.author)}</div>
+      <div style="font-size:13px">${escH(m.body)}</div>
+    </div>`).join('') + `
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input id="thread-input" placeholder="Drop a shout-out..." style="flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px">
+      <button class="refresh-btn" style="color:var(--ink);border-color:var(--line)" onclick="postShout('${escH(ref)}','wins',true)">\uD83D\uDD25 Send</button>
+    </div>`;
+}
+
+async function postShout(ref, channel, fromThread){
+  const input = document.getElementById(fromThread?'thread-input':'win-input');
+  const body = (input?.value||'').trim();
+  if (!body) return;
+  await fetch(WORKER+'/huddle/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:channel||'wins',author:'Keelin',body:body,thread_ref:ref||''})});
+  if (input) input.value='';
+  if (fromThread && ref) openThread(ref, document.getElementById('thread-title').textContent);
+  else loadWins();
+}
+
+async function loadBell(){
+  try {
+    const r = await fetch(WORKER+'/notifications?recipient=keelin');
+    const d = await r.json();
+    const badge = document.getElementById('bell-badge');
+    if (d.unread>0){ badge.style.display='inline-block'; badge.textContent=d.unread; } else badge.style.display='none';
+    const drop = document.getElementById('bell-drop');
+    drop.innerHTML = (d.notifications||[]).map(n=>{
+      let p={}; try{p=JSON.parse(n.payload_json||'{}')}catch(e){}
+      return `<div style="padding:12px 14px;border-bottom:1px solid var(--line);${n.read?'':'background:var(--lred);'}cursor:pointer" onclick="bellTap(${n.id},'${escH(p.sale_id?('sale:'+p.sale_id):'')}')">
+        <div style="font-size:12px;font-weight:700">\uD83C\uDF89 New PT Sale · ${escH(p.gym||'')}</div>
+        <div style="font-size:12px">${fmtMoney(p.amount)} · ${escH(p.package||'')} · ${escH(p.seller||'')}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${escH(p.date||'')} · tap to celebrate</div>
+      </div>`;
+    }).join('') || '<div class="empty-state" style="padding:20px">No notifications</div>';
+  } catch(e){}
+}
+
+function toggleBell(){
+  const drop = document.getElementById('bell-drop');
+  drop.style.display = drop.style.display==='none'?'block':'none';
+}
+
+async function bellTap(id, threadRef){
+  await fetch(WORKER+'/notifications/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})});
+  document.getElementById('bell-drop').style.display='none';
+  loadBell();
+  if (threadRef){ switchTab('board'); setTimeout(()=>openThread(threadRef,'Celebrate this sale'),400); }
 }
 
 async function loadAll() {
@@ -335,7 +483,7 @@ async function loadActions() {
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 document.getElementById('eodDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-loadAll();
+loadAll(); loadBell(); setInterval(loadBell, 60000);
 </script>
 </body>
 </html>

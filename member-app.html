@@ -290,6 +290,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-greeting"></div>
         <div id="today-workout-card"></div>
         <div class="kpi-strip" id="home-kpis" style="display:none"></div>
+        <div id="home-booking"></div>
+        <div id="home-referral"></div>
+        <div id="home-supplement"></div>
+        <div id="home-partners"></div>
         <div class="sec-label">Community</div>
         <div id="community-feed"></div>
       </div>
@@ -388,7 +392,50 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const _origFetch = window.fetch.bind(window);
+window.fetch = function(url, opts) {
+  if (typeof IS_DEMO !== 'undefined' && IS_DEMO && opts && opts.method && opts.method !== 'GET') {
+    return Promise.resolve(new Response(JSON.stringify({ok:true, demo:true}), {headers:{'Content-Type':'application/json'}}));
+  }
+  return _origFetch(url, opts);
+};
+// ── COACH TED LINK HUB ──────────────────────────────────────
+const GUEST_PASS_URL = 'https://tr.ee/yourguestpass';
+const SUPPLEMENT_URL = 'https://tr.ee/coachteds1stPhorm';
+const BOOK_FIRST_WORKOUT_URL = 'https://linktr.ee/tedscholl';
+const BOOK_CONSULT_URL = 'https://linktr.ee/tedscholl';
 let SESSION = null;
+// ── CONSULTATION DEMO MODE ───────────────────────────────────
+const DEMO_PARAMS = new URLSearchParams(location.search);
+const IS_DEMO = DEMO_PARAMS.get('demo') === '1';
+
+function demoData() {
+  const name = DEMO_PARAMS.get('name') || 'Future Member';
+  const goal = (DEMO_PARAMS.get('goal') || 'general').toLowerCase();
+  const today = new Date().toISOString().slice(0,10);
+  const weight = parseFloat(DEMO_PARAMS.get('weight')) || null;
+  const bf = parseFloat(DEMO_PARAMS.get('bf')) || null;
+  const smm = parseFloat(DEMO_PARAMS.get('smm')) || null;
+  return {
+    client: { id: 0, first_name: name.split(' ')[0], last_name: name.split(' ').slice(1).join(' '),
+      goal: goal, my_why: 'This is where your reason lives. We write it together on day one.',
+      sessions_per_week: 2, sessions_total: 8, sessions_used: 0, sessions_remaining: 8,
+      package_start_date: today, billing_type: 'monthly' },
+    checkins: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null,
+    scans: weight ? [{ scan_date: today, weight: weight, body_fat_pct: bf, smm: smm }] : []
+  };
+}
+
+function demoGoal() {
+  const g = (DEMO_PARAMS.get('goal') || 'general').toLowerCase();
+  const map = { 'lose': 'cut', 'fat loss': 'cut', 'weight loss': 'cut', 'cut': 'cut',
+    'build': 'build', 'muscle': 'build', 'gain': 'build', 'strength': 'strength',
+    'tone': 'recomp', 'recomp': 'recomp', 'beginner': 'beginner', 'recovery': 'recovery' };
+  for (const k in map) if (g.includes(k)) return map[k];
+  return 'general';
+}
+
+
 let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null };
 let goingClasses = new Set(JSON.parse(localStorage.getItem('going_classes')||'[]'));
 let slExCount = 0;
@@ -1043,6 +1090,7 @@ const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Satur
 let selectedDay = DAYS[new Date().getDay()];
 let selectedBundle = null;
 let bundleFilter = 'all';
+if (typeof IS_DEMO !== 'undefined' && IS_DEMO) { bundleFilter = demoGoal(); }
 
 // ── LOGIN ────────────────────────────────────────────────────
 async function doLogin() {
@@ -1064,10 +1112,16 @@ async function doLogin() {
 // ── APP INIT ─────────────────────────────────────────────────
 async function startApp() {
   document.getElementById('login-screen').style.display = 'none';
+  if (IS_DEMO) {
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:#15171A;color:#fff;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px';
+    banner.textContent = 'DEMO PREVIEW · Your app, ready to activate';
+    document.body.prepend(banner);
+  }
   const shell = document.getElementById('app-shell');
   shell.style.display = 'flex';
   await loadPortalData();
-  renderHome();
+  renderHome(); renderHomeExtras();
   renderTraining();
   renderClasses();
   renderProgress();
@@ -1075,6 +1129,19 @@ async function startApp() {
 }
 
 async function loadPortalData() {
+  if (IS_DEMO) {
+    const d = demoData();
+    DATA.client = d.client; DATA.checkins = d.checkins; DATA.scans = d.scans;
+    DATA.sessions = d.sessions; DATA.selfWorkouts = d.selfWorkouts;
+    DATA.mealPlan = d.mealPlan; DATA.tier = d.tier; DATA.mealProfile = d.mealProfile;
+    const name = DATA.client.first_name || 'Friend';
+    const hr = new Date().getHours();
+    const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('g-name').textContent = name;
+    document.getElementById('g-sub').textContent = greet;
+    document.getElementById('g-avatar').textContent = name[0] || '?';
+    return;
+  }
   try {
     const r = await fetch(WORKER + `/portal/me?client_id=${SESSION.client_id}`);
     const d = await r.json();
@@ -1105,6 +1172,74 @@ function switchTab(tab) {
 }
 
 // ── HOME ─────────────────────────────────────────────────────
+function renderHomeExtras() {
+  // Booking row
+  document.getElementById('home-booking').innerHTML = `
+    <div class="sec-label">Book With Coach Ted</div>
+    <div class="card"><div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+      <a class="action-btn" style="text-decoration:none;text-align:center;display:block" href="${BOOK_FIRST_WORKOUT_URL}" target="_blank" rel="noopener">Book Your Free First Workout</a>
+      <a class="action-btn secondary" style="text-decoration:none;text-align:center;display:block" href="${BOOK_CONSULT_URL}" target="_blank" rel="noopener">Free Consultation + InBody Scan</a>
+    </div></div>`;
+
+  // Bring a Friend referral card
+  document.getElementById('home-referral').innerHTML = `
+    <div class="card" style="border-top:3px solid var(--red)"><div class="card-body">
+      <div style="font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Bring a Friend</div>
+      <div style="font-size:13px;color:var(--ink3);margin:6px 0 12px">Share a free guest pass. They sign the waiver on their phone and walk right in with you.</div>
+      <button class="action-btn" style="width:100%" onclick="shareGuestPass()">Share Guest Pass</button>
+    </div></div>`;
+
+  // Nutritional Supplement Resource
+  document.getElementById('home-supplement').innerHTML = `
+    <div class="card"><div class="card-body">
+      <div style="font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Nutritional Supplement Resource</div>
+      <div style="font-size:12px;color:var(--red);font-weight:700;margin:4px 0 8px;text-transform:uppercase;letter-spacing:.5px">Doctor Approved; Athletes Recommended; Science Proven</div>
+      <div style="font-size:13px;color:var(--ink3);margin-bottom:12px">Coach Ted\'s hand-picked supplement recommendations to support your training and nutrition.</div>
+      <a class="action-btn" style="text-decoration:none;text-align:center;display:block" href="${SUPPLEMENT_URL}" target="_blank" rel="noopener">View Coach Ted\'s Picks</a>
+      <div style="font-size:10px;color:var(--ink3);margin-top:8px;text-align:center">Coach Ted may earn a commission.</div>
+    </div></div>`;
+
+  loadPartners();
+}
+
+async function shareGuestPass() {
+  const payload = { title: 'Free Guest Pass — Retro Fitness Fairless Hills',
+    text: 'Come work out with me at Retro Fitness Fairless Hills. Sign the guest waiver here and you\'re in:',
+    url: GUEST_PASS_URL };
+  try {
+    if (navigator.share) { await navigator.share(payload); }
+    else { await navigator.clipboard.writeText(GUEST_PASS_URL); alert('Guest pass link copied. Text it to your friend!'); }
+    fetch(WORKER + '/portal/guest-share', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_id: SESSION?.client_id||null, channel: navigator.share?'share_sheet':'clipboard'})}).catch(()=>{});
+  } catch (e) { /* user cancelled share sheet */ }
+}
+
+async function loadPartners() {
+  const el = document.getElementById('home-partners');
+  try {
+    const r = await fetch(WORKER + '/portal/partners');
+    const d = await r.json();
+    const list = d.partners || [];
+    if (!list.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="sec-label">Member Perks — Club Partners</div>` + list.map(p => `
+      <div class="card"><div class="card-body" style="display:flex;gap:12px;align-items:center">
+        ${p.logo_url ? `<img src="${esc(p.logo_url)}" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">` : ''}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${esc(p.name)}</div>
+          ${p.blurb ? `<div style="font-size:12px;color:var(--ink3)">${esc(p.blurb)}</div>` : ''}
+          ${p.offer ? `<div style="font-size:12px;color:var(--red);font-weight:700;margin-top:2px">${esc(p.offer)}${p.promo_code ? ` · Code: ${esc(p.promo_code)}` : ''}</div>` : ''}
+        </div>
+        ${p.link_url ? `<button class="action-btn secondary" style="flex-shrink:0;padding:8px 12px;font-size:12px" onclick="tapPartner(${p.id},'${esc(p.link_url)}')">View</button>` : ''}
+      </div></div>`).join('');
+  } catch (e) { el.innerHTML = ''; }
+}
+
+function tapPartner(id, url) {
+  fetch(WORKER + '/portal/partner-tap', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({partner_id: id, client_id: SESSION?.client_id||null})}).catch(()=>{});
+  window.open(url, '_blank', 'noopener');
+}
+
 function renderHome() {
   const c = DATA.client;
   const sessRem = parseInt(c?.sessions_remaining) || 0;
@@ -1575,7 +1710,8 @@ async function resetConfirm() {
 function doLogout() { localStorage.removeItem('member_session'); SESSION=null; document.getElementById('app-shell').style.display='none'; document.getElementById('login-screen').style.display='flex'; }
 
 // ── STARTUP ──────────────────────────────────────────────────
-const saved = localStorage.getItem('member_session');
+if (IS_DEMO) { SESSION = { client_id: 0, token: 'demo', email: 'demo@retro.fit' }; startApp(); return; }
+  const saved = localStorage.getItem('member_session');
 if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); } }
 </script>
 </body>

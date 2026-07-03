@@ -171,6 +171,14 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
   <!-- ── TAB: OVERVIEW ── -->
   <div class="tab-pane active" id="tab-overview">
+    <div class="section-hdr"><div class="section-title">📋 The Body Shoppe Board — Region</div><div class="section-line"></div>
+      <button onclick="openSaleModal()" style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;background:var(--red);color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer">+ Record PT Sale</button>
+    </div>
+    <table class="gym-table" style="margin-bottom:20px">
+      <thead><tr><th>#</th><th>Club</th><th>Goal</th><th>MTD</th><th>%</th><th>Keelin Says</th></tr></thead>
+      <tbody id="region-board-rows"><tr><td colspan="6" style="padding:14px;color:var(--muted)">Loading region board...</td></tr></tbody>
+    </table>
+
 
     <!-- KPIs -->
     <div class="kpi-grid">
@@ -287,6 +295,58 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const GYM_ID = 1;
+function fmtM(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function escR(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function loadRegionBoard(){
+  try {
+    const r = await fetch(WORKER+'/region/summary?month='+new Date().toISOString().slice(0,7));
+    const d = await r.json();
+    const tb = document.getElementById('region-board-rows');
+    if (!d.gyms || !d.gyms.length){ tb.innerHTML='<tr><td colspan="6" style="padding:14px;color:var(--muted)">Board not seeded yet.</td></tr>'; return; }
+    tb.innerHTML = d.gyms.map((g,i)=>{
+      const pct = g.pct==null?0:g.pct;
+      const color = pct>=90?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+      const isUs = g.gym_id===GYM_ID;
+      return `<tr style="${isUs?'background:var(--lred)':''}">
+        <td style="font-family:'Oswald';font-weight:800;color:var(--muted)">${i+1}</td>
+        <td style="font-weight:${isUs?'800':'600'};font-size:13px">${escR(g.name)}${isUs?' ⭐':''}</td>
+        <td>${fmtM(g.goal)}</td>
+        <td style="font-family:'Oswald';font-weight:700">${fmtM(g.actual)}</td>
+        <td style="font-family:'Oswald';font-weight:700;color:${color}">${g.pct==null?'—':g.pct+'%'}</td>
+        <td style="font-size:12px;max-width:200px">${escR(g.note||'')} ${g.emoji||''}</td>
+      </tr>`;
+    }).join('');
+  } catch(e){}
+}
+
+function openSaleModal(){ document.getElementById('sale-modal').style.display='flex'; }
+function closeSaleModal(){ document.getElementById('sale-modal').style.display='none'; }
+
+async function submitSale(){
+  const client = document.getElementById('sm-client').value.trim();
+  const pkgEl = document.getElementById('sm-package');
+  const pkg = pkgEl.value;
+  const sessions = parseInt(pkgEl.selectedOptions[0].dataset.sessions);
+  const amount = parseFloat(document.getElementById('sm-amount').value);
+  const seller = document.getElementById('sm-seller').value.trim();
+  const msg = document.getElementById('sm-msg');
+  if (!client || !amount || !seller){ msg.textContent='Client, amount, and coach are required.'; return; }
+  msg.textContent = 'Saving...';
+  const r = await fetch(WORKER+'/sales/record',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({gym_id:GYM_ID, client_name:client, package_name:pkg, sessions:sessions, amount:amount, sold_by:seller})});
+  const d = await r.json();
+  if (d.sale_id){
+    msg.textContent = '';
+    closeSaleModal();
+    document.getElementById('sm-client').value=''; document.getElementById('sm-amount').value=''; document.getElementById('sm-seller').value='';
+    loadRegionBoard();
+    alert('🎉 Sale recorded! Posted to the region wins feed and Keelin has been notified.');
+  } else { msg.textContent = d.error || 'Something went wrong. Try again.'; }
+}
+
+
 let allClients = [];
 let allScans = [];
 let eodDate = new Date().toISOString().slice(0,10);
@@ -591,7 +651,27 @@ function normalizeAdvisor(n){
 
 // ── STARTUP ───────────────────────────────────────────────────
 document.getElementById('eodDateDisplay').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-loadAll();
+loadAll(); loadRegionBoard();
 </script>
+<div id="sale-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:24px;width:min(420px,92vw)">
+    <div style="font-family:'Oswald';font-size:17px;font-weight:800;text-transform:uppercase;margin-bottom:14px">Record PT Sale</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="sm-client" placeholder="Client name" style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px">
+      <select id="sm-package" style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px">
+        <option value="6-Session Pack" data-sessions="6">6-Session Pack</option>
+        <option value="12-Session Pack" data-sessions="12">12-Session Pack</option>
+        <option value="24-Session Pack" data-sessions="24">24-Session Pack</option>
+      </select>
+      <input id="sm-amount" type="number" placeholder="Contract amount ($)" style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px">
+      <input id="sm-seller" placeholder="Sold by (coach name)" style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="closeSaleModal()" style="flex:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:10px;cursor:pointer;font-size:13px">Cancel</button>
+      <button onclick="submitSale()" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px">Save Sale 🎉</button>
+    </div>
+    <div id="sm-msg" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>
+</div>
 </body>
 </html>

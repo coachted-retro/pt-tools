@@ -1761,6 +1761,15 @@
               <div style="font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);">What this program does for you</div>
               <div id="closing-benefits-list" style="margin-bottom:20px;"></div>
 
+              <!-- Show Them Their App (demo mode launcher) -->
+              <div style="background:linear-gradient(135deg,#15171A,#2a2d33);border-radius:var(--radius);padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+                <div style="flex:1;">
+                  <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;">Show them their app</div>
+                  <div style="font-size:12px;color:#9CA3AF;margin-top:3px;">Launches the member app personalized with their name, goal, and today's scan. Hand them the phone.</div>
+                </div>
+                <button onclick="launchAppDemo()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:12px 18px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;">&#128241; Launch Demo</button>
+              </div>
+
               <!-- Investment block -->
               <div style="font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);">Your Investment</div>
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
@@ -4018,5 +4027,17 @@ function runConsultReport(type) {
 
 // Show report buttons after finalize
 // Enrollment and decline flows write to D1 directly — no report-wrap patches needed.
+
+
+function launchAppDemo() {
+  var name = gv('name') || 'Future Member';
+  var goals = gv('goals') || 'general';
+  var weight = gv('weight') || '';
+  var pbf = gv('pbf') || '';
+  var params = new URLSearchParams({ demo: '1', name: name, goal: goals });
+  if (weight) params.set('weight', weight);
+  if (pbf) params.set('bf', pbf);
+  window.open('member-app.html?' + params.toString(), '_blank', 'noopener');
+}
 
 </script>
