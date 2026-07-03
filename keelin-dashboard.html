@@ -109,6 +109,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   </div>
   <div class="spacer"></div>
   <span class="last-up" id="lastUp">Loading...</span>
+  <a href="reports-portal.html" class="refresh-btn" style="text-decoration:none;display:inline-flex;align-items:center">&#128202; Reports</a>
   <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
 </div>
 
@@ -203,6 +204,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
+const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
 let eodDateStr = new Date().toISOString().slice(0,10);
 let allClients = [], allScans = [];
 
@@ -237,7 +240,7 @@ function fmtMoney(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumF
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 async function loadBoard(){
-  const r = await fetch(WORKER+'/region/summary?month='+CURRENT_MONTH);
+  const r = await fetch(WORKER+'/region/summary?month='+CURRENT_MONTH+DEMO_Q);
   boardData = await r.json();
   document.getElementById('board-month').textContent = new Date(CURRENT_MONTH+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'}) + ' · Region ' + (boardData.region_pct==null?'':boardData.region_pct+'% to goal');
   const tb = document.getElementById('board-rows');
@@ -277,7 +280,7 @@ async function editNote(gymId){
 }
 
 async function loadWins(){
-  const r = await fetch(WORKER+'/huddle/feed?channel=wins');
+  const r = await fetch(WORKER+'/huddle/feed?channel=wins'+DEMO_Q);
   const d = await r.json();
   const el = document.getElementById('wins-feed');
   const msgs = (d.messages||[]).filter(m=>m.author==='system' || !m.thread_ref);

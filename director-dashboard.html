@@ -295,13 +295,15 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
+const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
 const GYM_ID = 1;
 function fmtM(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function escR(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 async function loadRegionBoard(){
   try {
-    const r = await fetch(WORKER+'/region/summary?month='+new Date().toISOString().slice(0,7));
+    const r = await fetch(WORKER+'/region/summary?month='+new Date().toISOString().slice(0,7)+DEMO_Q);
     const d = await r.json();
     const tb = document.getElementById('region-board-rows');
     if (!d.gyms || !d.gyms.length){ tb.innerHTML='<tr><td colspan="6" style="padding:14px;color:var(--muted)">Board not seeded yet.</td></tr>'; return; }
@@ -321,6 +323,24 @@ async function loadRegionBoard(){
   } catch(e){}
 }
 
+
+let CHECKLIST_SALE_ID = null;
+function openChecklist(saleId, client){
+  CHECKLIST_SALE_ID = saleId;
+  document.getElementById('cl-client').textContent = client;
+  document.querySelectorAll('.cl-box').forEach(b=>b.checked=false);
+  document.getElementById('checklist-modal').style.display='flex';
+}
+async function saveChecklist(){
+  const done = Array.from(document.querySelectorAll('.cl-box')).reduce((o,b)=>{o[b.value]=b.checked;return o;},{});
+  document.getElementById('checklist-modal').style.display='none';
+  if (CHECKLIST_SALE_ID){
+    try {
+      await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({op:'update', table:'pt_sales', id:CHECKLIST_SALE_ID, data:{checklist_json: JSON.stringify(done)}})});
+    } catch(e){}
+  }
+}
 function openSaleModal(){ document.getElementById('sale-modal').style.display='flex'; }
 function closeSaleModal(){ document.getElementById('sale-modal').style.display='none'; }
 
@@ -335,14 +355,14 @@ async function submitSale(){
   if (!client || !amount || !seller){ msg.textContent='Client, amount, and coach are required.'; return; }
   msg.textContent = 'Saving...';
   const r = await fetch(WORKER+'/sales/record',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({gym_id:GYM_ID, client_name:client, package_name:pkg, sessions:sessions, amount:amount, sold_by:seller})});
+    body:JSON.stringify({gym_id:GYM_ID, client_name:client, package_name:pkg, sessions:sessions, amount:amount, sold_by:seller, sale_type:document.getElementById('sm-type').value})});
   const d = await r.json();
   if (d.sale_id){
     msg.textContent = '';
     closeSaleModal();
     document.getElementById('sm-client').value=''; document.getElementById('sm-amount').value=''; document.getElementById('sm-seller').value='';
     loadRegionBoard();
-    alert('🎉 Sale recorded! Posted to the region wins feed and Keelin has been notified.');
+    openChecklist(d.sale_id, client);
   } else { msg.textContent = d.error || 'Something went wrong. Try again.'; }
 }
 
@@ -663,6 +683,11 @@ loadAll(); loadRegionBoard();
         <option value="12-Session Pack" data-sessions="12">12-Session Pack</option>
         <option value="24-Session Pack" data-sessions="24">24-Session Pack</option>
       </select>
+      <select id="sm-type" style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px">
+        <option value="new">New Business</option>
+        <option value="renewal">Renewal</option>
+        <option value="upgrade">Upgrade</option>
+      </select>
       <input id="sm-amount" type="number" placeholder="Contract amount ($)" style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px">
       <input id="sm-seller" placeholder="Sold by (coach name)" style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px">
     </div>
@@ -671,6 +696,21 @@ loadAll(); loadRegionBoard();
       <button onclick="submitSale()" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px">Save Sale 🎉</button>
     </div>
     <div id="sm-msg" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>
+</div>
+<div id="checklist-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:110;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:24px;width:min(420px,92vw)">
+    <div style="font-family:'Oswald';font-size:17px;font-weight:800;text-transform:uppercase">🎉 Sale Recorded!</div>
+    <div style="font-size:12px;color:var(--muted);margin:4px 0 14px">Posted to the region wins feed. Keelin has been notified. Before <span id="cl-client" style="font-weight:700"></span> leaves, complete The Body Shoppe post-close checklist:</div>
+    <div id="cl-items" style="display:flex;flex-direction:column;gap:8px">
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px"><input type="checkbox" class="cl-box" value="client_folder"> Client folder created</label>
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px"><input type="checkbox" class="cl-box" value="photo_release"> Photo release signed</label>
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px"><input type="checkbox" class="cl-box" value="first_session"> First session booked</label>
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px"><input type="checkbox" class="cl-box" value="free_smoothie"> Free smoothie</label>
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px"><input type="checkbox" class="cl-box" value="zen_den"> Zen Den visit</label>
+      <label style="display:flex;gap:10px;align-items:center;font-size:14px"><input type="checkbox" class="cl-box" value="coach_intro"> Client + coach introduction</label>
+    </div>
+    <button onclick="saveChecklist()" style="width:100%;margin-top:16px;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;cursor:pointer;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px">Save Checklist</button>
   </div>
 </div>
 </body>
