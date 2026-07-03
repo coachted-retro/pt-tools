@@ -243,7 +243,27 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <div class="fld"><label>Password</label><input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
     <div class="login-err" id="l-err" style="display:none"></div>
+    <div class="login-hint" style="margin-top:12px"><a href="#" onclick="showReset(event)" style="color:var(--red);font-weight:700;text-decoration:none">Forgot password? / First time? Set one up</a></div>
     <div class="login-hint">Don't have an account? Ask your coach to set you up.</div>
+  </div>
+
+  <div class="login-box" id="reset-box" style="display:none;margin-top:14px">
+    <h2 style="font-size:18px">Set / Reset Password</h2>
+    <div id="reset-step1">
+      <p>Enter the email your coach has on file. We'll send a 6-digit code.</p>
+      <div class="fld"><label>Email</label><input id="r-email" type="email" placeholder="you@email.com" autocomplete="email"></div>
+      <button class="login-btn" onclick="resetRequest()">Send Code</button>
+    </div>
+    <div id="reset-step2" style="display:none">
+      <p>Check your email for the code, then choose a new password.</p>
+      <div class="fld"><label>6-Digit Code</label><input id="r-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000"></div>
+      <div class="fld"><label>New Password</label><input id="r-pass1" type="password" placeholder="At least 6 characters" autocomplete="new-password"></div>
+      <div class="fld"><label>Confirm Password</label><input id="r-pass2" type="password" placeholder="Repeat it" autocomplete="new-password"></div>
+      <button class="login-btn" onclick="resetConfirm()">Set Password</button>
+      <div class="login-hint" style="margin-top:10px"><a href="#" onclick="resetRequest(event)" style="color:var(--ink3)">Resend code</a></div>
+    </div>
+    <div class="login-err" id="r-err" style="display:none"></div>
+    <div class="login-hint"><a href="#" onclick="hideReset(event)" style="color:var(--ink3)">Back to sign in</a></div>
   </div>
 </div>
 
@@ -1511,6 +1531,47 @@ function shareWorkout() {
 
 // ── UTILS ────────────────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showReset(e) { if (e) e.preventDefault(); document.getElementById('reset-box').style.display = 'block'; const le = document.getElementById('l-email').value.trim(); if (le) document.getElementById('r-email').value = le; }
+function hideReset(e) { if (e) e.preventDefault(); document.getElementById('reset-box').style.display = 'none'; document.getElementById('reset-step2').style.display = 'none'; document.getElementById('reset-step1').style.display = 'block'; document.getElementById('r-err').style.display = 'none'; }
+async function resetRequest(e) {
+  if (e) e.preventDefault();
+  const errEl = document.getElementById('r-err');
+  errEl.style.display = 'none';
+  const email = document.getElementById('r-email').value.trim();
+  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return; }
+  try {
+    await fetch(WORKER + '/auth/reset-request', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+    document.getElementById('reset-step1').style.display = 'none';
+    document.getElementById('reset-step2').style.display = 'block';
+  } catch (err) {
+    errEl.textContent = 'Could not reach the server. Try again.'; errEl.style.display = 'block';
+  }
+}
+async function resetConfirm() {
+  const errEl = document.getElementById('r-err');
+  errEl.style.display = 'none';
+  const email = document.getElementById('r-email').value.trim();
+  const code = document.getElementById('r-code').value.trim();
+  const p1 = document.getElementById('r-pass1').value;
+  const p2 = document.getElementById('r-pass2').value;
+  if (!code || !p1 || !p2) { errEl.textContent = 'Fill in all fields.'; errEl.style.display = 'block'; return; }
+  if (p1 !== p2) { errEl.textContent = 'Passwords do not match.'; errEl.style.display = 'block'; return; }
+  if (p1.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return; }
+  try {
+    const r = await fetch(WORKER + '/auth/reset-confirm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, code, new_password: p1}) });
+    const d = await r.json();
+    if (!d.ok && !d.reset) { errEl.textContent = d.error || 'Invalid or expired code.'; errEl.style.display = 'block'; return; }
+    hideReset();
+    document.getElementById('l-email').value = email;
+    document.getElementById('l-pass').value = '';
+    const le = document.getElementById('l-err');
+    le.textContent = 'Password set. Sign in with your new password.';
+    le.style.color = '#0F9D6E';
+    le.style.display = 'block';
+  } catch (err) {
+    errEl.textContent = 'Could not reach the server. Try again.'; errEl.style.display = 'block';
+  }
+}
 function doLogout() { localStorage.removeItem('member_session'); SESSION=null; document.getElementById('app-shell').style.display='none'; document.getElementById('login-screen').style.display='flex'; }
 
 // ── STARTUP ──────────────────────────────────────────────────
