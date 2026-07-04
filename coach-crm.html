@@ -26,12 +26,26 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .badge-red{background:var(--lred);color:var(--red)}
 .badge-muted{background:var(--soft);color:var(--muted)}
 .empty{color:var(--muted);padding:30px;text-align:center}
+
+@media (max-width:640px){
+  .wrap{padding:16px 12px 90px}
+  .picker{flex-direction:column;align-items:stretch;gap:8px}
+  .picker select{padding:14px;font-size:16px}
+  .card{padding:16px;gap:12px}
+  .badges{flex-direction:column;align-items:flex-end;gap:4px}
+  .name{font-size:15px}
+}
 </style>
 </head>
 <body>
 <div class="topbar">
   <div class="logo">Coach <span>CRM</span></div>
-  <a href="command-center.html">&larr; Command Center</a>
+  <div style="position:relative;margin-left:auto">
+    <button onclick="toggleBell()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;position:relative">&#128276;<span id="bell-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:800;border-radius:10px;padding:1px 5px">0</span></button>
+    <div id="bell-drop" style="display:none;position:absolute;top:36px;right:0;width:300px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2);z-index:50;color:var(--ink)"></div>
+  </div>
+  <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
+  <a href="command-center.html" style="margin-left:12px">&larr; Command Center</a>
 </div>
 <div class="wrap">
   <div class="picker">
@@ -53,6 +67,47 @@ function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g
 
 const saved = localStorage.getItem('coach_crm_name');
 if (saved) document.getElementById('coach-select').value = saved;
+
+
+async function loadBell(){
+  const coach = document.getElementById('coach-select').value;
+  if (!coach) return;
+  try {
+    const r = await fetch(WORKER + '/coach/notifications?coach=' + encodeURIComponent(coach));
+    const d = await r.json();
+    const badge = document.getElementById('bell-badge');
+    if (d.unread>0){ badge.style.display='block'; badge.textContent=d.unread; } else badge.style.display='none';
+    const drop = document.getElementById('bell-drop');
+    drop.innerHTML = (d.notifications||[]).map(n=>{
+      let p={}; try{p=JSON.parse(n.payload_json||'{}')}catch(e){}
+      if (n.type==='self_workout') {
+        return `<div style="padding:12px 14px;border-bottom:1px solid var(--line);${n.read?'':'background:var(--lred)'};cursor:pointer" onclick="bellTap(${n.id},${p.client_id},'${escH(p.client_name)}','${escH(p.title)}')">
+          <div style="font-size:12px;font-weight:700">\uD83D\uDCAA ${escH(p.client_name)} logged a workout</div>
+          <div style="font-size:12px;color:var(--muted)">${escH(p.title)} \u00B7 ${p.exercise_count||0} exercises</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${escH(p.date||'')} \u00B7 tap to send encouragement</div>
+        </div>`;
+      }
+      return '';
+    }).join('') || '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No notifications</div>';
+  } catch(e){}
+}
+
+function toggleBell(){
+  const drop = document.getElementById('bell-drop');
+  drop.style.display = drop.style.display==='none'?'block':'none';
+}
+
+async function bellTap(notifId, clientId, clientName, workoutTitle){
+  document.getElementById('bell-drop').style.display = 'none';
+  await fetch(WORKER + '/coach/notifications/read', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id: notifId})});
+  loadBell();
+  const msg = prompt('Send ' + clientName + ' a quick reaction to "' + workoutTitle + '":', '\uD83D\uDD25 Great work today, keep pushing!');
+  if (!msg) return;
+  const coach = document.getElementById('coach-select').value;
+  await fetch(WORKER + '/coach/react-workout', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({client_id: clientId, coach_name: coach, body: msg})});
+}
 
 async function loadClients(){
   const coach = document.getElementById('coach-select').value;
@@ -82,8 +137,10 @@ async function loadClients(){
       </a>`;
     }).join('');
   } catch(e) { list.innerHTML = '<div class="empty">Could not load clients.</div>'; }
+  loadBell();
 }
 if (saved) loadClients();
+setInterval(loadBell, 60000);
 </script>
 </body>
 </html>

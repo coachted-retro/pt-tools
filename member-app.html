@@ -1626,6 +1626,31 @@ function toggleGoing(key, btn) {
 }
 
 // ── PROGRESS ─────────────────────────────────────────────────
+
+function renderMuscleBalance(scan) {
+  if (!scan || !scan.segmental_json) return '';
+  let seg; try { seg = JSON.parse(scan.segmental_json); } catch(e) { return ''; }
+  const parts = [['Right Arm',seg.right_arm],['Left Arm',seg.left_arm],['Trunk',seg.trunk],['Right Leg',seg.right_leg],['Left Leg',seg.left_leg]];
+  const rows = parts.filter(p => p[1] != null).map(([label,pct]) => {
+    const color = pct >= 100 ? 'var(--red)' : pct >= 90 ? '#D98A0B' : '#DC2626';
+    const width = Math.min(100, (pct/140)*100);
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="font-weight:600">${label}</span><span style="font-weight:700;color:${color}">${pct}%</span>
+      </div>
+      <div style="height:8px;background:var(--soft);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${width}%;background:${color};border-radius:4px"></div>
+      </div>
+    </div>`;
+  }).join('');
+  if (!rows) return '';
+  return `<div class="sec-label">Muscle Balance</div>
+    <div class="card"><div class="card-body">
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:14px">Segmental lean mass from your latest InBody scan — 100% is your body's own balanced baseline.</div>
+      ${rows}
+    </div></div>`;
+}
+
 function renderProgress() {
   const el = document.getElementById('progress-body');
   const latest = DATA.scans[0];
@@ -1638,6 +1663,11 @@ function renderProgress() {
   const dw = latest && first && latest.id !== first.id ? (parseFloat(latest.weight)-parseFloat(first.weight)).toFixed(1) : null;
   const dbf = latest && first && latest.id !== first.id ? (parseFloat(latest.body_fat_pct)-parseFloat(first.body_fat_pct)).toFixed(1) : null;
   el.innerHTML = `
+    ${c?.coach_recommendation ? `<div class="card" style="border-left:3px solid var(--red);margin-bottom:14px"><div class="card-body">
+      <div style="font-family:'Oswald',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--red)">From Your Coach</div>
+      <div style="font-size:14px;margin-top:6px">${esc(c.coach_recommendation)}</div>
+      ${c.coach_recommendation_by ? `<div style="font-size:11px;color:var(--ink3);margin-top:8px">— ${esc(c.coach_recommendation_by)}</div>` : ''}
+    </div></div>` : ''}
     ${c?.my_why ? `<div class="my-why-card"><div class="mw-eyebrow">My Why</div><div class="mw-text">"${esc(c.my_why)}"</div></div>` : ''}
     ${latest ? `
     <div class="sec-label">Latest InBody — ${esc(latest.scan_date||'')}</div>
@@ -1648,7 +1678,8 @@ function renderProgress() {
       </div>
       <div class="ib-tile"><div class="ib-val">${latest.lean_mass||'—'}<span class="ib-unit">lb</span></div><div class="ib-label">Lean Mass</div></div>
       <div class="ib-tile"><div class="ib-val">${DATA.scans.length}</div><div class="ib-label">Total Scans</div></div>
-    </div>` : ''}
+    </div>
+    ${renderMuscleBalance(latest)}` : ''}
     <div class="sec-label">Activity</div>
     <div class="kpi-strip">
       <div class="kpi-tile"><div class="kv">${DATA.sessions.length}</div><div class="kl">PT Sessions</div></div>

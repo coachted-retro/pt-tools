@@ -339,13 +339,14 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'+
     '<div style="display:flex;gap:6px" id="rosterNav"></div>'+
     '<button class="btn" onclick="openEdit()">Edit</button>'+
+    '<a href="coach-client-profile.html?client='+client.id+'" class="btn" style="text-decoration:none;display:inline-block">Coach View</a>'+
     '</div></div>';
 
   // actions
   const q='?client='+encodeURIComponent(nm);
   html+='<div class="actions">'+
     '<a class="btn red" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Start Check-In</a>'+
-    '<a class="btn" href="session-log.html?client='+encodeURIComponent(nm)+'&coach=Ted">Log Session</a>'+
+    '<a class="btn" href="gym-floor.html?client='+client.id+'">Log Session</a>'+
     '<a class="btn" href="meal-plans.html">Build Meal Plan</a>'+
     '<a class="btn" href="fitness-consultation-tool.html'+q+'">New Consultation</a>'+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
@@ -430,7 +431,8 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px" onclick="event.stopPropagation()">'+
     '<label class="btn red" style="cursor:pointer">Upload InBody PDF<input type="file" accept="application/pdf,image/*" style="display:none" onchange="uploadInbody(event)"></label>'+
     '<span id="ibStatus" style="font-size:12px;color:var(--muted)"></span></div>'+
-    '<div id="scansList" onclick="event.stopPropagation()"></div></div></div>';
+    '<div id="scansList" onclick="event.stopPropagation()"></div>'+
+    '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)"><h4 style="font-family:Oswald;font-size:13px;text-transform:uppercase;margin-bottom:10px">Muscle Balance</h4><div id="muscleBalance"></div></div></div></div>';
   html+='<div class="panel"><div class="ph"><h3>Progress Photos</h3><span class="pill">'+(photos||[]).length+'</span></div><div class="pb">'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'+
     '<label class="btn red" style="cursor:pointer">Front<input type="file" accept="image/*" style="display:none" onchange="uploadPhoto(event,&quot;front&quot;)"></label>'+
@@ -614,7 +616,7 @@ async function uploadFile(file, kind){
   const r=await fetch(WORKER+'/file/upload?client='+CURRENT.id+'&kind='+kind+'&ext='+ext+'&ct='+encodeURIComponent(file.type||'application/octet-stream'),{method:'POST',body:buf});
   const d=await r.json(); if(!d.key) throw new Error(d.error||'Upload failed'); return d.key;
 }
-const IB_PROMPT='You are reading an InBody 270 body composition result sheet (PDF or image). Return ONLY a JSON object, no prose, no markdown fences. Shape: {"test_date":"YYYY-MM-DD","weight":number,"lean_body_mass":number,"skeletal_muscle_mass":number,"body_fat_mass":number,"percent_body_fat":number,"bmi":number,"basal_metabolic_rate":number,"total_body_water":number,"history":[{"date":"YYYY-MM-DD","weight":number,"smm":number,"pbf":number}]}. Main Test Date looks like 2026.01.07 -> 2026-01-07. The Body Composition History section has several dated columns with dates like 24.09.01 (YY.MM.DD, year 20YY) -> 2024-09-01, each with Weight, SMM and PBF; include every history column. Use null for any missing value.';
+const IB_PROMPT='You are reading an InBody 270 body composition result sheet (PDF or image). Return ONLY a JSON object, no prose, no markdown fences. Shape: {"test_date":"YYYY-MM-DD","weight":number,"lean_body_mass":number,"skeletal_muscle_mass":number,"body_fat_mass":number,"percent_body_fat":number,"bmi":number,"basal_metabolic_rate":number,"total_body_water":number,"segmental_lean":{"right_arm":number,"left_arm":number,"trunk":number,"right_leg":number,"left_leg":number},"history":[{"date":"YYYY-MM-DD","weight":number,"smm":number,"pbf":number}]}. Main Test Date looks like 2026.01.07 -> 2026-01-07. The Body Composition History section has several dated columns with dates like 24.09.01 (YY.MM.DD, year 20YY) -> 2024-09-01, each with Weight, SMM and PBF; include every history column. The Segmental Lean Analysis section shows each body part (Right Arm, Left Arm, Trunk, Right Leg, Left Leg) as a percentage of a normal/ideal range, e.g. "105.3%" or "98%" — extract these five percentages exactly as shown. Use null for any missing value.';
 async function uploadInbody(ev){
   const file=ev.target.files[0]; ev.target.value=''; if(!file||!CURRENT) return;
   const st=document.getElementById('ibStatus'); st.textContent='Uploading and reading the scan...';
@@ -623,7 +625,8 @@ async function uploadInbody(ev){
     const key=await uploadFile(file,'inbody');
     const j=await aiExtract(file,b64,IB_PROMPT);
     const main={client_id:CURRENT.id, scan_date:j.test_date||new Date().toISOString().slice(0,10), file_url:key, source:'inbody_pdf',
-      weight:j.weight, lean_mass:j.lean_body_mass, skeletal_muscle:j.skeletal_muscle_mass, body_fat_pct:j.percent_body_fat, fat_mass:j.body_fat_mass, bmi:j.bmi};
+      weight:j.weight, lean_mass:j.lean_body_mass, skeletal_muscle:j.skeletal_muscle_mass, body_fat_pct:j.percent_body_fat, fat_mass:j.body_fat_mass, bmi:j.bmi,
+      segmental_json: j.segmental_lean ? JSON.stringify(j.segmental_lean) : null};
     Object.keys(main).forEach(k=>{ if(main[k]==null) delete main[k]; }); main.client_id=CURRENT.id;
     const ins=await db({op:'insert',table:'inbody_scans',values:main});
     if(ins && ins.error) throw new Error(ins.error);
@@ -953,6 +956,20 @@ function renderScans(scans){
   el.innerHTML=real.map(s=>'<div class="row"><div class="main"><div class="name">'+esc(fmtDate(s.scan_date))+'</div><div class="meta">'+
     [s.weight!=null?'Wt '+s.weight:'', s.skeletal_muscle!=null?'SMM '+s.skeletal_muscle:'', s.body_fat_pct!=null?'BF '+s.body_fat_pct+'%':'', s.bmi!=null?'BMI '+s.bmi:''].filter(Boolean).join(' · ')+
     '</div></div>'+(s.file_url?'<a class="btn" target="_blank" href="'+WORKER+'/file/get?key='+encodeURIComponent(s.file_url)+'">View</a>':'')+'</div>').join('');
+  const withSeg = real.find(s=>s.segmental_json);
+  const mbEl = document.getElementById('muscleBalance');
+  if (mbEl) mbEl.innerHTML = renderMuscleBalance(withSeg);
+}
+function renderMuscleBalance(scan){
+  if (!scan || !scan.segmental_json) return '<div class="empty">No segmental data on file yet — the AI reads this automatically from the InBody scan when it includes a Segmental Lean Analysis section.</div>';
+  let seg; try{ seg=JSON.parse(scan.segmental_json); }catch(e){ return ''; }
+  const parts=[['Right Arm',seg.right_arm],['Left Arm',seg.left_arm],['Trunk',seg.trunk],['Right Leg',seg.right_leg],['Left Leg',seg.left_leg]];
+  const rows=parts.filter(p=>p[1]!=null).map(([label,pct])=>{
+    const color = pct>=100?'var(--green)':pct>=90?'var(--amber)':'var(--red)';
+    const width=Math.min(100,(pct/140)*100);
+    return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:600">'+label+'</span><span style="font-weight:700;color:'+color+'">'+pct+'%</span></div><div style="height:8px;background:var(--soft);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+width+'%;background:'+color+';border-radius:4px"></div></div></div>';
+  }).join('');
+  return rows || '<div class="empty">No segmental values could be read from this scan.</div>';
 }
 
 // init

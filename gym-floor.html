@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0E0F11">
+<meta name="theme-color" content="#F0F2F5">
 <title>Gym Floor</title>
 
 <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
@@ -20,9 +20,9 @@
 <style>
 :root{
   --red:#E0192B; --red-dk:#B0121F;
-  --bg:#0E0F11; --panel:#17191C; --panel2:#1F2226;
-  --ink:#F2F3F5; --ink2:#A7ADB5; --ink3:#6B7178;
-  --line:#2A2E33; --green:#2FBF71; --amber:#F5A623;
+  --bg:#F0F2F5; --panel:#FFFFFF; --panel2:#F5F6F8;
+  --ink:#15171A; --ink2:#6B7280; --ink3:#9CA3AF;
+  --line:#E4E7EC; --green:#1E9E5A; --amber:#D98A0B;
   --disp:'Oswald',sans-serif; --body:'Inter',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -145,6 +145,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 #toast{position:absolute;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-80px);background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 18px;font-size:13px;font-weight:700;z-index:99;transition:transform .25s;white-space:nowrap;}
 #toast.show{transform:translateX(-50%) translateY(0);}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -163,7 +164,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     <div style="display:flex;gap:8px;align-items:center">
       <span class="pill" id="syncPill">…</span>
       <button class="btn sm" onclick="openTimer()">⏱</button>
-      <a href="coach-dashboard.html" style="font-size:11px;color:var(--ink2);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;white-space:nowrap">Dashboard →</a>
+      <a href="coach-dashboard-v2.html" style="font-size:11px;color:var(--ink2);text-decoration:none;padding:5px 10px;border:1px solid var(--line);border-radius:8px;white-space:nowrap">Dashboard →</a>
     </div>
   </div>
   <div class="scroll">
@@ -202,6 +203,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     <button class="opt-tile" onclick="openHero()">
       <span class="ic">🎖</span>
       <span><span class="t">HERO WOD</span><br><span class="d">Murph, DT, Chad and more, auto-scaled to this client</span></span>
+    </button>
+    <button class="opt-tile" onclick="openUploadWorkout()">
+      <span class="ic">📄</span>
+      <span><span class="t">Upload Workout</span><br><span class="d">Photo, PDF, or spreadsheet — AI reads it and builds the session</span></span>
     </button>
     <div class="card">
       <h3>Templates</h3>
@@ -282,7 +287,9 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     <div style="display:flex;gap:8px;align-items:flex-start;margin-top:12px">
       <textarea class="note-in" id="exNote" rows="2" placeholder="Exercise note (form cues, pain flags, adjustments)..." onchange="saveExNote()" style="margin-top:0;flex:1"></textarea>
       <button class="btn sm" id="micEx" onclick="voiceNote('exNote','micEx')" style="padding:14px;font-size:18px">🎙</button>
+      <label class="btn sm" style="padding:14px;font-size:18px;cursor:pointer">🎥<input type="file" accept="video/*" capture="environment" style="display:none" onchange="handleFormVideo(event)"></label>
     </div>
+    <div id="videoReview"></div>
   </div>
 
   <div class="log-nav">
@@ -365,6 +372,29 @@ input,select,textarea{font-family:inherit;font-size:16px;}
   </div>
   <div class="bottombar">
     <button class="btn red" id="bGen" onclick="generateProgram()">Generate Program</button>
+  </div>
+</div>
+
+<!-- ============ SCREEN: UPLOAD WORKOUT (AI EXTRACT) ============ -->
+<div class="screen" id="scr-upload">
+  <div class="topbar">
+    <div>
+      <div class="title">Upload Workout</div>
+      <div class="sub" id="upName"></div>
+    </div>
+    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+  </div>
+  <div class="scroll" id="uploadBody">
+    <div class="card">
+      <h3>Photo, PDF, or Spreadsheet</h3>
+      <p style="font-size:12px;color:var(--ink2);margin-bottom:10px">Snap a photo of a written program, upload a PDF, or an Excel/CSV export. AI reads it and builds today's session.</p>
+      <input type="file" id="upFile" accept="image/*,.pdf,.xlsx,.xls,.csv" style="width:100%" onchange="handleUploadFile(event)">
+    </div>
+    <div id="upStatus"></div>
+    <div id="upResult"></div>
+  </div>
+  <div class="bottombar">
+    <button class="btn red" id="upStartBtn" style="display:none" onclick="startFromUpload()">Start Session</button>
   </div>
 </div>
 
@@ -542,6 +572,161 @@ function buildExLib(){
   $('exLib').innerHTML=[...names].sort().map(n=>`<option value="${esc(n)}">`).join('');
 }
 const DEFAULT_EX=['Barbell Bench Press','Incline DB Press','Back Squat','Goblet Squat','Deadlift','Romanian Deadlift','Leg Press','Lat Pulldown','Seated Cable Row','Barbell Row','Overhead Press','DB Shoulder Press','Lateral Raise','Bicep Curl','Hammer Curl','Tricep Pushdown','Skullcrusher','Leg Curl','Leg Extension','Hip Thrust','Glute Bridge','Walking Lunge','Bulgarian Split Squat','Calf Raise','Plank','Dead Bug','Bird Dog','Pallof Press','Cable Crunch','Face Pull','Pull-Up','Push-Up','KB Swing','KB Goblet Squat','Farmer Carry','Row Machine','Assault Bike','Treadmill Run'];
+
+
+/* =====================================================================
+   AI WORKOUT DOCUMENT UPLOAD
+   ===================================================================== */
+let UPLOAD_RESULT = null;
+function openUploadWorkout(){
+  UPLOAD_RESULT = null;
+  $('upStatus').innerHTML = '';
+  $('upResult').innerHTML = '';
+  $('upStartBtn').style.display = 'none';
+  $('upFile').value = '';
+  $('upName').textContent = ((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim();
+  show('scr-upload');
+}
+
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function handleUploadFile(ev){
+  const file = ev.target.files[0];
+  if (!file) return;
+  $('upStatus').innerHTML = '<div class="card"><div class="empty">Reading document...</div></div>';
+  $('upResult').innerHTML = '';
+  $('upStartBtn').style.display = 'none';
+
+  const name = file.name.toLowerCase();
+  let payload;
+  try {
+    if (name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv')) {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array'});
+      let text = '';
+      wb.SheetNames.forEach(sn => { text += XLSX.utils.sheet_to_csv(wb.Sheets[sn]) + '\n'; });
+      payload = { kind:'text', data: text.slice(0,12000) };
+    } else if (name.endsWith('.pdf')) {
+      const b64 = await fileToBase64(file);
+      payload = { kind:'pdf', data: b64 };
+    } else {
+      const b64 = await fileToBase64(file);
+      payload = { kind:'image', media_type: file.type||'image/jpeg', data: b64 };
+    }
+  } catch(e) {
+    $('upStatus').innerHTML = '<div class="card"><div class="empty">Could not read that file. Try a different format.</div></div>';
+    return;
+  }
+
+  $('upStatus').innerHTML = '<div class="card"><div class="empty">AI is reading the workout...</div></div>';
+  try {
+    const r = await fetch(WORKER + '/workout-doc/extract', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    const d = await r.json();
+    $('upStatus').innerHTML = '';
+    if (!d.exercises || !d.exercises.length) {
+      $('upResult').innerHTML = '<div class="card"><div class="empty">No exercises found in that document. Try a clearer photo or a different file.</div></div>';
+      return;
+    }
+    UPLOAD_RESULT = d;
+    $('upResult').innerHTML = '<div class="card"><h3>'+esc(d.title||'Extracted Session')+'</h3>'+
+      d.exercises.map((x,i)=>'<div style="padding:10px 0;border-bottom:1px solid var(--line)"><label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" class="up-ex-check" data-i="'+i+'" checked style="margin-top:3px"><span><b>'+esc(x.name)+'</b>'+(x.prescription?'<br><span style="color:var(--ink2);font-size:12px">'+esc(x.prescription)+'</span>':'')+'</span></label></div>').join('')+
+      '</div>';
+    $('upStartBtn').style.display = 'block';
+  } catch(e) {
+    $('upStatus').innerHTML = '<div class="card"><div class="empty">Could not reach the AI. Try again.</div></div>';
+  }
+}
+
+function startFromUpload(){
+  if (!UPLOAD_RESULT) return;
+  const checks = document.querySelectorAll('.up-ex-check:checked');
+  const chosen = Array.from(checks).map(c => UPLOAD_RESULT.exercises[parseInt(c.dataset.i)]).filter(Boolean);
+  if (!chosen.length) return;
+  newSession(chosen.map(x=>x.name), UPLOAD_RESULT.title||'Uploaded Workout');
+  chosen.forEach((x,i)=>{ if (x.prescription && SESSION.exercises[i]) SESSION.exercises[i].note = x.prescription; });
+  persistActive();
+}
+
+
+/* =====================================================================
+   AI FORM VIDEO REVIEW
+   ===================================================================== */
+function extractFrames(videoEl, count){
+  return new Promise((resolve) => {
+    const frames = [];
+    const canvas = document.createElement('canvas');
+    canvas.width = 480; canvas.height = 480 * (videoEl.videoHeight/videoEl.videoWidth || 1);
+    const ctx = canvas.getContext('2d');
+    const points = Array.from({length:count}, (_,i)=> videoEl.duration * ((i+1)/(count+1)));
+    let i = 0;
+    function capture(){
+      if (i >= points.length) { resolve(frames); return; }
+      videoEl.currentTime = points[i];
+    }
+    videoEl.onseeked = () => {
+      ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+      frames.push(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
+      i++;
+      capture();
+    };
+    capture();
+  });
+}
+
+async function handleFormVideo(ev){
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  const ex = SESSION.exercises[EXI];
+  if (!ex) return;
+  const box = $('videoReview');
+  box.innerHTML = '<div class="card" style="margin-top:10px"><div class="empty">Reading your form...</div></div>';
+
+  const url = URL.createObjectURL(file);
+  const vid = document.createElement('video');
+  vid.src = url; vid.muted = true; vid.playsInline = true;
+  await new Promise(res => { vid.onloadedmetadata = res; });
+
+  let frames = [];
+  try { frames = await extractFrames(vid, 3); } catch(e) {}
+  URL.revokeObjectURL(url);
+
+  if (!frames.length) {
+    box.innerHTML = '<div class="card" style="margin-top:10px"><div class="empty">Could not read that video. Try again.</div></div>';
+    return;
+  }
+
+  let feedback = { observation:'', cue:'', flag:'' };
+  try {
+    const r = await fetch(WORKER + '/exercise-video/review', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ frames, exercise_name: ex.name })});
+    feedback = await r.json();
+  } catch(e) {}
+
+  box.innerHTML = `<div class="card" style="margin-top:10px;border-left:3px solid var(--red)">
+    <div style="font-family:var(--disp);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">AI Form Check</div>
+    ${feedback.observation ? `<div style="font-size:13px;margin-bottom:6px">${esc(feedback.observation)}</div>` : ''}
+    ${feedback.cue ? `<div style="font-size:13px;color:var(--ink2)"><b>Try this:</b> ${esc(feedback.cue)}</div>` : ''}
+    ${feedback.flag ? `<div style="font-size:13px;color:var(--red);margin-top:6px;font-weight:600">\u26A0 ${esc(feedback.flag)}</div>` : ''}
+    <div style="font-size:10px;color:var(--ink3);margin-top:8px">AI coaching note, not a substitute for in-person supervision. Saving clip...</div>
+  </div>`;
+
+  try {
+    const feedbackText = [feedback.observation, feedback.cue, feedback.flag].filter(Boolean).join(' | ');
+    const buf = await file.arrayBuffer();
+    const upRes = await fetch(WORKER + `/exercise-video/upload?client=${CLIENT.id}&exercise=${encodeURIComponent(ex.name)}&session=${encodeURIComponent(SESSION.date||'')}`,
+      {method:'POST', body: buf});
+    const upData = await upRes.json();
+    if (upData.id) await db({op:'update', table:'exercise_videos', id: upData.id, data:{note: feedbackText}});
+  } catch(e) {}
+}
 
 /* =====================================================================
    SESSION LIFECYCLE
