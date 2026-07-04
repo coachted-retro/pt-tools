@@ -172,11 +172,27 @@ async function db(body){
   const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
   return r.json();
 }
+async function loadCoachRoster(){
+  try {
+    const res = await db({op:'select', table:'pt_reps', where:{gym_id:1, active:1}, orderBy:'name asc', limit:50});
+    const reps = (res && res.data) || res.results || res || [];
+    const sel = document.getElementById('m_coach');
+    if (!sel || !Array.isArray(reps)) return;
+    const current = sel.value;
+    reps.forEach(r => {
+      const opt = document.createElement('option');
+      opt.value = r.name; opt.textContent = r.name + (r.role ? ' (' + r.role + ')' : '');
+      sel.appendChild(opt);
+    });
+    if (current) sel.value = current;
+  } catch(e) { console.warn('Coach roster load failed', e); }
+}
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function num(v,d){ const n=parseFloat(v); return isNaN(n)?(d||''):n; }
 function fmtDate(s){ if(!s) return ''; const d=new Date(s.length<=10?s+'T00:00:00':s); return isNaN(d)?s:d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function daysBetween(a,b){ const x=new Date(a), y=new Date(b||Date.now()); return Math.floor((y-x)/86400000); }
 let ALL_CLIENTS=[];
+let COACH_ROSTER_READY = loadCoachRoster();
 let CURRENT=null, EDIT_ID=null;
 const PKG_LABELS={biweekly:'Every 2 weeks ($50/half-hr)',monthly:'Once a month ($50/half-hr)',weekly_2x:'2x/week ($45)',weekly_3x:'3x/week ($45)',weekly_4x:'4x/week ($45)',training:'Training $180',complete:'Complete $249',complete_plus:'Complete+ $349'};
 function setF(id,v){ const e=document.getElementById(id); if(e) e.value=(v==null?'':v); }
@@ -191,7 +207,8 @@ function openEdit(){
   if(!CURRENT) return; EDIT_ID=CURRENT.id; document.getElementById('modalTitle').textContent='Edit Client';
   setF('m_first',CURRENT.first_name); setF('m_last',CURRENT.last_name); setF('m_email',CURRENT.email);
   setF('m_phone',CURRENT.phone); setF('m_gender',CURRENT.gender); setF('m_status',CURRENT.status||'active_pt');
-  setF('m_coach',CURRENT.coach); setF('m_advisor',CURRENT.advisor); setF('m_package',CURRENT.package||'');
+  COACH_ROSTER_READY.then(()=> setF('m_coach',CURRENT.coach));
+  setF('m_advisor',CURRENT.advisor); setF('m_package',CURRENT.package||'');
   setF('m_goal',CURRENT.goal_primary); setF('m_start',CURRENT.training_start_date);
   setF('m_why',CURRENT.my_why||'');
   setF('m_sessions_pw',CURRENT.sessions_per_week||'');
@@ -1017,7 +1034,7 @@ function renderScans(scans){
         <option value="former">No longer training</option>
         <option value="prospect">Prospect</option>
       </select></div>
-      <div class="fld"><label>Trainer</label><input id="m_coach"></div>
+      <div class="fld"><label>Trainer</label><select id="m_coach"><option value="">Unassigned</option></select></div>
       <div class="fld"><label>Advisor</label><input id="m_advisor"></div>
       <div class="fld"><label>Package</label><select id="m_package">
         <option value="">—</option>
