@@ -44,6 +44,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <button onclick="toggleBell()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;position:relative">&#128276;<span id="bell-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:800;border-radius:10px;padding:1px 5px">0</span></button>
     <div id="bell-drop" style="display:none;position:absolute;top:36px;right:0;width:300px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2);z-index:50;color:var(--ink)"></div>
   </div>
+  <a href="coach-calendar.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
   <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
   <a href="command-center.html" style="margin-left:12px">&larr; Command Center</a>
 </div>
@@ -58,6 +59,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <option value="Marin Tyler">Marin Tyler</option>
     </select>
   </div>
+  <div id="today-schedule"></div>
+  <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">My Clients</div>
   <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
 </div>
 <script>
@@ -109,6 +112,31 @@ async function bellTap(notifId, clientId, clientName, workoutTitle){
     body: JSON.stringify({client_id: clientId, coach_name: coach, body: msg})});
 }
 
+async function loadTodaySchedule(){
+  const coach = document.getElementById('coach-select').value;
+  const box = document.getElementById('today-schedule');
+  if (!coach) { box.innerHTML = ''; return; }
+  try {
+    const r = await fetch(WORKER + '/coach/today-schedule?coach=' + encodeURIComponent(coach));
+    const d = await r.json();
+    const rows = d.today || [];
+    if (!rows.length) {
+      box.innerHTML = `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Today's Schedule</div>
+        <div class="card" style="padding:16px;color:var(--muted);font-size:13px">Nothing scheduled today. Build a schedule from any client's profile.</div>`;
+      return;
+    }
+    box.innerHTML = `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Today's Schedule — ${rows.length} client${rows.length===1?'':'s'}</div>` +
+      rows.map(s => `<a class="card" href="gym-floor.html?client=${s.client_id}" style="border-left:4px solid var(--red)">
+        <div class="avatar">${((s.first_name||'?')[0]+(s.last_name||'')[0]).toUpperCase()}</div>
+        <div style="flex:1">
+          <div class="name">${escH(s.first_name)} ${escH(s.last_name)}</div>
+          <div class="sub">${escH(s.program_name)}${s.focus_notes ? ' — ' + escH(s.focus_notes) : ''}</div>
+        </div>
+        <div class="badges"><span class="badge badge-red">Start &rarr;</span></div>
+      </a>`).join('');
+  } catch(e) { box.innerHTML = ''; }
+}
+
 async function loadClients(){
   const coach = document.getElementById('coach-select').value;
   const list = document.getElementById('client-list');
@@ -138,6 +166,7 @@ async function loadClients(){
     }).join('');
   } catch(e) { list.innerHTML = '<div class="empty">Could not load clients.</div>'; }
   loadBell();
+  loadTodaySchedule();
 }
 if (saved) loadClients();
 setInterval(loadBell, 60000);

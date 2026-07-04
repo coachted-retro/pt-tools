@@ -188,9 +188,14 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     </div>
   </div>
   <div class="scroll">
+    <div id="scheduledBanner"></div>
     <button class="opt-tile" onclick="startRepeatLast()">
       <span class="ic">🔁</span>
       <span><span class="t">Repeat Last Workout</span><br><span class="d" id="lastWoDesc">Loading last session...</span></span>
+    </button>
+    <button class="opt-tile" onclick="openRoutineLibrary()">
+      <span class="ic">📚</span>
+      <span><span class="t">Browse Routines</span><br><span class="d">All 12 coach-built programs — pick a day and it loads ready to log</span></span>
     </button>
     <button class="opt-tile" onclick="startFresh()">
       <span class="ic">✚</span>
@@ -398,6 +403,18 @@ input,select,textarea{font-family:inherit;font-size:16px;}
   </div>
 </div>
 
+<!-- ============ SCREEN: ROUTINE LIBRARY ============ -->
+<div class="screen" id="scr-routines">
+  <div class="topbar">
+    <div>
+      <div class="title">Routine Library</div>
+      <div class="sub">12 coach-built programs</div>
+    </div>
+    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+  </div>
+  <div class="scroll" id="routineLibBody"></div>
+</div>
+
 <!-- ============ SCREEN: HERO WOD ============ -->
 <div class="screen" id="scr-hero">
   <div class="topbar">
@@ -562,15 +579,66 @@ async function pickClient(id){
     return `<div class="client-row" onclick="startFromWorkout(${w.id})"><div style="flex:1"><div class="nm">${esc(w.title||'Workout')}</div><div class="mt">${esc(w.workout_date||'')} · ${n} exercises${w.total_volume?' · '+Math.round(w.total_volume).toLocaleString()+' lb vol':''}</div></div><div style="color:var(--ink3)">›</div></div>`;
   }).join(''):'<div class="empty">No sessions yet</div>';
   buildExLib();
+  checkTodaysSchedule();
+}
+
+let TODAYS_SCHEDULED = null;
+
+async function checkTodaysSchedule(){
+  const box = $('scheduledBanner');
+  box.innerHTML = '';
+  TODAYS_SCHEDULED = null;
+  try {
+    const r = await fetch(WORKER + `/schedule/today?client_id=${CLIENT.id}`);
+    const d = await r.json();
+    if (d.today) {
+      TODAYS_SCHEDULED = d.today;
+      let exCount = 0;
+      try { exCount = (JSON.parse(d.today.exercises_json||'[]')||[]).length; } catch(e){}
+      box.innerHTML = `<div class="opt-tile" style="background:linear-gradient(135deg,#15171A,#2a2d33);border:none" onclick="startScheduledProgram()">
+        <span class="ic">📅</span>
+        <span><span class="t" style="color:#fff">Today's Scheduled: ${esc(d.today.program_name)}</span><br><span class="d" style="color:#9CA3AF">${exCount ? exCount + ' exercises planned — ' : ''}${d.today.focus_notes ? esc(d.today.focus_notes) : 'Tap to start this planned session'}</span></span>
+      </div>`;
+    }
+  } catch(e) {}
+}
+
+function startScheduledProgram(){
+  if (!TODAYS_SCHEDULED) return;
+  let items = [];
+  try { items = JSON.parse(TODAYS_SCHEDULED.exercises_json||'[]') || []; } catch(e) {}
+  const names = items.map(x => typeof x === 'string' ? x : x.name).filter(Boolean);
+  newSession(names, TODAYS_SCHEDULED.program_name);
+  items.forEach((x, i) => {
+    const prescription = typeof x === 'string' ? '' : (x.prescription || '');
+    if (prescription && SESSION.exercises[i]) SESSION.exercises[i].note = prescription;
+  });
+  if (TODAYS_SCHEDULED.focus_notes) { SESSION.workoutNote = TODAYS_SCHEDULED.focus_notes; }
+  persistActive();
 }
 function backToClients(){CLIENT=null;show('scr-client');}
 
 /* exercise name library from history */
 function buildExLib(){
   const names=new Set(DEFAULT_EX);
+  ROUTINE_LIBRARY.forEach(b => b.routines.forEach(r => r.exercises.forEach(n => names.add(n))));
   HISTORY.forEach(w=>{try{(JSON.parse(w.exercises_json||'[]')||[]).forEach(x=>{if(x.name)names.add(x.name);});}catch(e){}});
   $('exLib').innerHTML=[...names].sort().map(n=>`<option value="${esc(n)}">`).join('');
 }
+const ROUTINE_LIBRARY = [
+  {id:"upper_lower", icon:"\ud83d\udd01", name:"Upper / Lower Split", routines:[{label:"Day A \u2014 Upper Body Push", exercises:["Barbell Bench Press", "Incline Dumbbell Press", "Overhead Press", "Lateral Raises", "Tricep Pushdown"]}, {label:"Day B \u2014 Lower Body", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Calf Raises"]}, {label:"Day C \u2014 Upper Body Pull", exercises:["Pull-Ups / Lat Pulldown", "Seated Cable Row", "Face Pulls", "Barbell Curl", "Hammer Curl"]}, {label:"Day D \u2014 Lower Body + Core", exercises:["Deadlift", "Bulgarian Split Squat", "Hip Thrust", "Plank", "Cable Crunch"]}]},
+  {id:"push_pull_legs", icon:"\ud83d\udd3a", name:"Push / Pull / Legs", routines:[{label:"Push \u2014 Chest, Shoulders, Triceps", exercises:["Flat Bench Press", "Incline Dumbbell Press", "Shoulder Press", "Cable Fly", "Lateral Raise", "Tricep Dips"]}, {label:"Pull \u2014 Back, Biceps", exercises:["Deadlift", "Pull-Ups", "Barbell Row", "Lat Pulldown", "Face Pulls", "EZ Bar Curl"]}, {label:"Legs \u2014 Quads, Hamstrings, Glutes, Calves", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Walking Lunges", "Leg Curl", "Standing Calf Raise"]}]},
+  {id:"full_body", icon:"\u26a1", name:"Full Body", routines:[{label:"Full Body A", exercises:["Squat", "Bench Press", "Barbell Row", "Overhead Press", "Romanian Deadlift", "Plank"]}, {label:"Full Body B", exercises:["Deadlift", "Incline Dumbbell Press", "Pull-Ups / Lat Pulldown", "Dumbbell Shoulder Press", "Leg Press", "Cable Crunch"]}]},
+  {id:"core_conditioning", icon:"\ud83d\udd25", name:"Core & Conditioning", routines:[{label:"Core + Cardio Circuit", exercises:["Plank Hold", "Dead Bug", "Cable Crunch", "Russian Twist", "Mountain Climbers", "Rowing Machine or Bike"]}, {label:"Glutes & Core", exercises:["Hip Thrust", "Glute Bridge", "Side-Lying Clam Shell", "Bird Dog", "Reverse Crunch", "Pallof Press"]}]},
+  {id:"strength_5x5", icon:"\ud83c\udfcb\ufe0f", name:"Strength Foundation 5\u00d75", routines:[{label:"Workout A", exercises:["Barbell Squat", "Barbell Bench Press", "Barbell Row"]}, {label:"Workout B", exercises:["Barbell Squat", "Overhead Press", "Deadlift"]}]},
+  {id:"fat_loss_circuit", icon:"\u26a1", name:"Fat Loss Circuit", routines:[{label:"Circuit A \u2014 Upper + Lower Superset", exercises:["Dumbbell Press (superset with Row)", "Dumbbell Row", "Goblet Squat (superset with RDL)", "Romanian Deadlift", "Plank to Push-Up"]}, {label:"Circuit B \u2014 Push + Pull Superset", exercises:["Incline Press (superset with Pull-Up)", "Pull-Up or Lat Pulldown", "Shoulder Press (superset with Face Pull)", "Face Pull", "Dip (superset with Curl)", "Barbell Curl"]}]},
+  {id:"functional_strength", icon:"\ud83d\udd29", name:"Functional Strength", routines:[{label:"Day 1 \u2014 Hinge & Push", exercises:["Trap Bar Deadlift or Kettlebell Swing", "Push-Up Variations (tempo)", "Cable Pull-Through", "Farmers Carry", "Pallof Press"]}, {label:"Day 2 \u2014 Squat & Pull", exercises:["Goblet Squat or Safety Bar Squat", "Single-Arm Dumbbell Row", "Step-Up with Dumbbells", "Band Pull-Apart", "Dead Bug"]}, {label:"Day 3 \u2014 Carry & Rotate", exercises:["Single-Leg RDL", "Landmine Press", "Suitcase Carry", "Cable Woodchop", "Plank Row"]}]},
+  {id:"chest_arms", icon:"\ud83d\udcaa", name:"Chest & Arms", routines:[{label:"Chest Specialization Day", exercises:["Flat Barbell Bench Press", "Incline Dumbbell Press", "Low Cable Fly", "Decline Push-Up", "Cable Chest Press"]}, {label:"Arms Specialization Day", exercises:["EZ Bar Preacher Curl", "Skull Crushers", "Incline Dumbbell Curl", "Cable Tricep Pushdown", "Hammer Curl", "Overhead Tricep Extension", "Reverse Curl"]}]},
+  {id:"bodybuilding_5day", icon:"\ud83c\udfc6", name:"Bodybuilding Split", routines:[{label:"Day 1 \u2014 Chest", exercises:["Flat Barbell Bench Press", "Incline Dumbbell Press", "Decline Bench Press", "Cable Fly", "Push-Up Burnout"]}, {label:"Day 2 \u2014 Back", exercises:["Deadlift", "Wide-Grip Pull-Up", "T-Bar Row", "Seated Cable Row", "Straight-Arm Pulldown", "Face Pull"]}, {label:"Day 3 \u2014 Shoulders", exercises:["Overhead Press (Barbell)", "Dumbbell Lateral Raise", "Arnold Press", "Rear Delt Fly", "Cable Lateral Raise", "Shrugs"]}, {label:"Day 4 \u2014 Arms", exercises:["EZ Bar Curl", "Close-Grip Bench Press", "Incline Dumbbell Curl", "Skull Crushers", "Concentration Curl", "Overhead Tricep Extension", "Reverse Curl"]}, {label:"Day 5 \u2014 Legs", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Leg Extension", "Standing Calf Raise"]}]},
+  {id:"beginner_foundation", icon:"\ud83c\udf31", name:"Beginner Foundation", routines:[{label:"Week 1\u20132: Movement Patterns", exercises:["Goblet Squat", "Dumbbell Bench Press", "Seated Cable Row", "Dumbbell Shoulder Press", "Plank"]}, {label:"Week 3\u20134: Adding Load", exercises:["Barbell Squat (light)", "Barbell Bench Press (light)", "Lat Pulldown", "Dumbbell Row", "Romanian Deadlift (dumbbell)", "Plank + Side Plank"]}, {label:"Week 5\u20136: Progressive Overload", exercises:["Barbell Squat", "Barbell Bench Press", "Deadlift (intro)", "Barbell Row", "Overhead Press", "Ab Wheel or Cable Crunch"]}]},
+  {id:"athletic_performance", icon:"\ud83d\ude80", name:"Athletic Performance", routines:[{label:"Power Day A", exercises:["Box Jump", "Power Clean or Hang Clean", "Barbell Squat (explosive)", "Broad Jump", "Med Ball Slam"]}, {label:"Power Day B", exercises:["Trap Bar Jump Deadlift", "Push Press (barbell)", "Single-Leg Bound", "Battle Ropes", "Sprint (treadmill or turf)"]}]},
+  {id:"mobility_recovery", icon:"\ud83e\uddd8", name:"Mobility & Recovery", routines:[{label:"Full Body Mobility Flow", exercises:["Foam Roll \u2014 T-Spine", "Foam Roll \u2014 Lats", "90/90 Hip Stretch", "World's Greatest Stretch", "Cat-Cow", "Thoracic Rotation (half-kneeling)", "Hip Flexor Stretch", "Shoulder CARs (Controlled Articular Rotations)", "Hamstring Floss (banded or towel)"]}, {label:"Pre-Session Activation", exercises:["Band Pull-Apart", "Hip Circle", "Glute Bridge Activation", "Inchworm", "Leg Swing (front-back + lateral)", "Light Goblet Squat (warm-up weight)"]}]}
+];
 const DEFAULT_EX=['Barbell Bench Press','Incline DB Press','Back Squat','Goblet Squat','Deadlift','Romanian Deadlift','Leg Press','Lat Pulldown','Seated Cable Row','Barbell Row','Overhead Press','DB Shoulder Press','Lateral Raise','Bicep Curl','Hammer Curl','Tricep Pushdown','Skullcrusher','Leg Curl','Leg Extension','Hip Thrust','Glute Bridge','Walking Lunge','Bulgarian Split Squat','Calf Raise','Plank','Dead Bug','Bird Dog','Pallof Press','Cable Crunch','Face Pull','Pull-Up','Push-Up','KB Swing','KB Goblet Squat','Farmer Carry','Row Machine','Assault Bike','Treadmill Run'];
 
 
@@ -578,6 +646,39 @@ const DEFAULT_EX=['Barbell Bench Press','Incline DB Press','Back Squat','Goblet 
    AI WORKOUT DOCUMENT UPLOAD
    ===================================================================== */
 let UPLOAD_RESULT = null;
+function openRoutineLibrary(){
+  renderRoutineLibrary();
+  show('scr-routines');
+}
+
+let OPEN_BUNDLE = null;
+
+function renderRoutineLibrary(){
+  const box = $('routineLibBody');
+  box.innerHTML = ROUTINE_LIBRARY.map(b => `
+    <div class="card" style="margin-bottom:10px">
+      <div onclick="toggleBundle('${b.id}')" style="display:flex;align-items:center;gap:12px;cursor:pointer">
+        <span style="font-size:22px">${b.icon}</span>
+        <div style="flex:1"><b>${esc(b.name)}</b><div style="font-size:11px;color:var(--ink2)">${b.routines.length} day${b.routines.length===1?'':'s'}</div></div>
+        <span>${OPEN_BUNDLE===b.id?'\\u2212':'+'}</span>
+      </div>
+      ${OPEN_BUNDLE===b.id ? b.routines.map(r => `
+        <button class="opt-tile" style="margin-top:8px" onclick='startRoutineDay(${JSON.stringify(r.exercises)}, "${esc(r.label)}")'>
+          <span class="ic">\\u25B6</span>
+          <span><span class="t">${esc(r.label)}</span><br><span class="d">${r.exercises.length} exercises</span></span>
+        </button>`).join('') : ''}
+    </div>`).join('');
+}
+
+function toggleBundle(id){
+  OPEN_BUNDLE = OPEN_BUNDLE === id ? null : id;
+  renderRoutineLibrary();
+}
+
+function startRoutineDay(exercises, label){
+  newSession(exercises, label);
+}
+
 function openUploadWorkout(){
   UPLOAD_RESULT = null;
   $('upStatus').innerHTML = '';

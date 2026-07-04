@@ -74,13 +74,14 @@ tr:last-child td{border-bottom:none}
   <a href="client-profile.html" style="color:#9CA3AF;border:1px solid #374151" id="full-profile-link">Full Profile (Edit) &rarr;</a>
 </div>
 <div class="wrap">
-  <div class="hero">
+  <div class="hero" style="flex-wrap:wrap">
     <div>
       <div class="hero-name" id="c-name">Loading...</div>
       <div class="hero-sub" id="c-sub"></div>
     </div>
     <div class="sess-pill"><div class="n" id="c-sessions">—</div><div class="l">Sessions Left</div></div>
-    <a href="gym-floor.html?client=" id="start-workout-btn" style="background:var(--red);color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;white-space:nowrap">Start Workout &rarr;</a>
+    <a href="gym-floor.html?client=" id="start-workout-btn" style="background:var(--red);color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;white-space:nowrap">Build / Log Workout &rarr;</a>
+    <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px">Exercise library, routine bundles, AI Program Builder, and HERO WOD all live here</div>
   </div>
 
   <div class="tabs">
@@ -128,6 +129,22 @@ tr:last-child td{border-bottom:none}
 </div>
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const EXERCISE_DB = [{"name":"90/90 Hip Stretch","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Ab Wheel or Cable Crunch","body_part":"Core","equipment":"Cable","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Arnold Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Assault Bike","body_part":"Cardio","equipment":"Cardio Machine","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Back Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Band Pull-Apart","body_part":"Full Body","equipment":"Band","mechanics":"Isolation","type":"Strength"},{"name":"Barbell Bench Press","body_part":"Chest","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Bench Press (light)","body_part":"Chest","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Curl","body_part":"Biceps","equipment":"Barbell","mechanics":"Isolation","type":"Strength"},{"name":"Barbell Row","body_part":"Back","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Squat","body_part":"Quads","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Squat (explosive)","body_part":"Quads","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Squat (light)","body_part":"Quads","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Battle Ropes","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Bench Press","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Bicep Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Bird Dog","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Box Jump","body_part":"Full Body","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Broad Jump","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Bulgarian Split Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Cable Chest Press","body_part":"Chest","equipment":"Cable","mechanics":"Compound","type":"Strength"},{"name":"Cable Crunch","body_part":"Core","equipment":"Cable","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Cable Fly","body_part":"Chest","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Cable Lateral Raise","body_part":"Back","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Cable Pull-Through","body_part":"Full Body","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Cable Tricep Pushdown","body_part":"Triceps","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Cable Woodchop","body_part":"Full Body","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Calf Raise","body_part":"Calves","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Calf Raises","body_part":"Calves","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Cat-Cow","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Close-Grip Bench Press","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Concentration Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"DB Shoulder Press","body_part":"Shoulders","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Dead Bug","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Deadlift","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Deadlift (intro)","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Decline Bench Press","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Decline Push-Up","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Dip (superset with Curl)","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Dumbbell Bench Press","body_part":"Chest","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Dumbbell Lateral Raise","body_part":"Back","equipment":"Dumbbell","mechanics":"Isolation","type":"Strength"},{"name":"Dumbbell Press (superset with Row)","body_part":"Back","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Dumbbell Row","body_part":"Back","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Dumbbell Shoulder Press","body_part":"Shoulders","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"EZ Bar Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"EZ Bar Preacher Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Face Pull","body_part":"Shoulders","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Face Pulls","body_part":"Shoulders","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Farmer Carry","body_part":"Full Body","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Farmers Carry","body_part":"Full Body","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Flat Barbell Bench Press","body_part":"Chest","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Flat Bench Press","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Foam Roll \u2014 Lats","body_part":"Back","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Foam Roll \u2014 T-Spine","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Glute Bridge","body_part":"Hamstrings/Glutes","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Glute Bridge Activation","body_part":"Hamstrings/Glutes","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Goblet Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Goblet Squat (superset with RDL)","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Goblet Squat or Safety Bar Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Hammer Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Hamstring Floss (banded or towel)","body_part":"Hamstrings/Glutes","equipment":"Band","mechanics":"Isolation","type":"Mobility"},{"name":"Hip Circle","body_part":"Full Body","equipment":"None / Mobility","mechanics":"Isolation","type":"Strength"},{"name":"Hip Flexor Stretch","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Hip Thrust","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Inchworm","body_part":"Full Body","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Incline DB Press","body_part":"Shoulders","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Incline Dumbbell Curl","body_part":"Biceps","equipment":"Dumbbell","mechanics":"Isolation","type":"Strength"},{"name":"Incline Dumbbell Press","body_part":"Shoulders","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Incline Press (superset with Pull-Up)","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"KB Goblet Squat","body_part":"Quads","equipment":"Kettlebell","mechanics":"Compound","type":"Strength"},{"name":"KB Swing","body_part":"Full Body","equipment":"Kettlebell","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Landmine Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Lat Pulldown","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Strength"},{"name":"Lateral Raise","body_part":"Back","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Lateral Raises","body_part":"Back","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Leg Curl","body_part":"Hamstrings/Glutes","equipment":"Machine","mechanics":"Isolation","type":"Strength"},{"name":"Leg Extension","body_part":"Quads","equipment":"Machine","mechanics":"Isolation","type":"Strength"},{"name":"Leg Press","body_part":"Quads","equipment":"Machine","mechanics":"Compound","type":"Strength"},{"name":"Leg Swing (front-back + lateral)","body_part":"Back","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Light Goblet Squat (warm-up weight)","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Low Cable Fly","body_part":"Chest","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Med Ball Slam","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Mountain Climbers","body_part":"Full Body","equipment":"Bodyweight","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Overhead Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Overhead Press (Barbell)","body_part":"Shoulders","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Overhead Tricep Extension","body_part":"Triceps","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Pallof Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Plank","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Plank + Side Plank","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Plank Hold","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Plank Row","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"Plank to Push-Up","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Power Clean or Hang Clean","body_part":"Full Body","equipment":"Various","mechanics":"Compound","type":"Strength"},{"name":"Pull-Up","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"Pull-Up or Lat Pulldown","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Strength"},{"name":"Pull-Ups","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"Pull-Ups / Lat Pulldown","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Strength"},{"name":"Push Press (barbell)","body_part":"Shoulders","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Push-Up","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Push-Up Burnout","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Push-Up Variations (tempo)","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Rear Delt Fly","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Reverse Crunch","body_part":"Core","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Reverse Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Romanian Deadlift","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Romanian Deadlift (dumbbell)","body_part":"Hamstrings/Glutes","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Row Machine","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Cardio/Interval"},{"name":"Rowing Machine or Bike","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Cardio/Interval"},{"name":"Russian Twist","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Seated Cable Row","body_part":"Back","equipment":"Cable","mechanics":"Compound","type":"Strength"},{"name":"Shoulder CARs (Controlled Articular Rotations)","body_part":"Shoulders","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Shoulder Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Shoulder Press (superset with Face Pull)","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Shrugs","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Side-Lying Clam Shell","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Single-Arm Dumbbell Row","body_part":"Back","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Single-Leg Bound","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Single-Leg RDL","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Skull Crushers","body_part":"Triceps","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Skullcrusher","body_part":"Triceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Sprint (treadmill or turf)","body_part":"Cardio","equipment":"Cardio Machine","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Standing Calf Raise","body_part":"Calves","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Step-Up with Dumbbells","body_part":"Quads","equipment":"Dumbbell","mechanics":"Isolation","type":"Strength"},{"name":"Straight-Arm Pulldown","body_part":"Back","equipment":"Various","mechanics":"Compound","type":"Strength"},{"name":"Suitcase Carry","body_part":"Full Body","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"T-Bar Row","body_part":"Back","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Thoracic Rotation (half-kneeling)","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Trap Bar Deadlift or Kettlebell Swing","body_part":"Hamstrings/Glutes","equipment":"Kettlebell","mechanics":"Compound","type":"Cardio/Interval"},{"name":"Trap Bar Jump Deadlift","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Treadmill Run","body_part":"Cardio","equipment":"Cardio Machine","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Tricep Dips","body_part":"Chest","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Tricep Pushdown","body_part":"Triceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Walking Lunge","body_part":"Quads","equipment":"Various","mechanics":"Compound","type":"Strength"},{"name":"Walking Lunges","body_part":"Quads","equipment":"Various","mechanics":"Compound","type":"Strength"},{"name":"Wide-Grip Pull-Up","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"World's Greatest Stretch","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"}];
+const ROUTINE_LIBRARY = [
+  {id:"upper_lower", icon:"\ud83d\udd01", name:"Upper / Lower Split", routines:[{label:"Day A \u2014 Upper Body Push", exercises:["Barbell Bench Press", "Incline Dumbbell Press", "Overhead Press", "Lateral Raises", "Tricep Pushdown"]}, {label:"Day B \u2014 Lower Body", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Calf Raises"]}, {label:"Day C \u2014 Upper Body Pull", exercises:["Pull-Ups / Lat Pulldown", "Seated Cable Row", "Face Pulls", "Barbell Curl", "Hammer Curl"]}, {label:"Day D \u2014 Lower Body + Core", exercises:["Deadlift", "Bulgarian Split Squat", "Hip Thrust", "Plank", "Cable Crunch"]}]},
+  {id:"push_pull_legs", icon:"\ud83d\udd3a", name:"Push / Pull / Legs", routines:[{label:"Push \u2014 Chest, Shoulders, Triceps", exercises:["Flat Bench Press", "Incline Dumbbell Press", "Shoulder Press", "Cable Fly", "Lateral Raise", "Tricep Dips"]}, {label:"Pull \u2014 Back, Biceps", exercises:["Deadlift", "Pull-Ups", "Barbell Row", "Lat Pulldown", "Face Pulls", "EZ Bar Curl"]}, {label:"Legs \u2014 Quads, Hamstrings, Glutes, Calves", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Walking Lunges", "Leg Curl", "Standing Calf Raise"]}]},
+  {id:"full_body", icon:"\u26a1", name:"Full Body", routines:[{label:"Full Body A", exercises:["Squat", "Bench Press", "Barbell Row", "Overhead Press", "Romanian Deadlift", "Plank"]}, {label:"Full Body B", exercises:["Deadlift", "Incline Dumbbell Press", "Pull-Ups / Lat Pulldown", "Dumbbell Shoulder Press", "Leg Press", "Cable Crunch"]}]},
+  {id:"core_conditioning", icon:"\ud83d\udd25", name:"Core & Conditioning", routines:[{label:"Core + Cardio Circuit", exercises:["Plank Hold", "Dead Bug", "Cable Crunch", "Russian Twist", "Mountain Climbers", "Rowing Machine or Bike"]}, {label:"Glutes & Core", exercises:["Hip Thrust", "Glute Bridge", "Side-Lying Clam Shell", "Bird Dog", "Reverse Crunch", "Pallof Press"]}]},
+  {id:"strength_5x5", icon:"\ud83c\udfcb\ufe0f", name:"Strength Foundation 5\u00d75", routines:[{label:"Workout A", exercises:["Barbell Squat", "Barbell Bench Press", "Barbell Row"]}, {label:"Workout B", exercises:["Barbell Squat", "Overhead Press", "Deadlift"]}]},
+  {id:"fat_loss_circuit", icon:"\u26a1", name:"Fat Loss Circuit", routines:[{label:"Circuit A \u2014 Upper + Lower Superset", exercises:["Dumbbell Press (superset with Row)", "Dumbbell Row", "Goblet Squat (superset with RDL)", "Romanian Deadlift", "Plank to Push-Up"]}, {label:"Circuit B \u2014 Push + Pull Superset", exercises:["Incline Press (superset with Pull-Up)", "Pull-Up or Lat Pulldown", "Shoulder Press (superset with Face Pull)", "Face Pull", "Dip (superset with Curl)", "Barbell Curl"]}]},
+  {id:"functional_strength", icon:"\ud83d\udd29", name:"Functional Strength", routines:[{label:"Day 1 \u2014 Hinge & Push", exercises:["Trap Bar Deadlift or Kettlebell Swing", "Push-Up Variations (tempo)", "Cable Pull-Through", "Farmers Carry", "Pallof Press"]}, {label:"Day 2 \u2014 Squat & Pull", exercises:["Goblet Squat or Safety Bar Squat", "Single-Arm Dumbbell Row", "Step-Up with Dumbbells", "Band Pull-Apart", "Dead Bug"]}, {label:"Day 3 \u2014 Carry & Rotate", exercises:["Single-Leg RDL", "Landmine Press", "Suitcase Carry", "Cable Woodchop", "Plank Row"]}]},
+  {id:"chest_arms", icon:"\ud83d\udcaa", name:"Chest & Arms", routines:[{label:"Chest Specialization Day", exercises:["Flat Barbell Bench Press", "Incline Dumbbell Press", "Low Cable Fly", "Decline Push-Up", "Cable Chest Press"]}, {label:"Arms Specialization Day", exercises:["EZ Bar Preacher Curl", "Skull Crushers", "Incline Dumbbell Curl", "Cable Tricep Pushdown", "Hammer Curl", "Overhead Tricep Extension", "Reverse Curl"]}]},
+  {id:"bodybuilding_5day", icon:"\ud83c\udfc6", name:"Bodybuilding Split", routines:[{label:"Day 1 \u2014 Chest", exercises:["Flat Barbell Bench Press", "Incline Dumbbell Press", "Decline Bench Press", "Cable Fly", "Push-Up Burnout"]}, {label:"Day 2 \u2014 Back", exercises:["Deadlift", "Wide-Grip Pull-Up", "T-Bar Row", "Seated Cable Row", "Straight-Arm Pulldown", "Face Pull"]}, {label:"Day 3 \u2014 Shoulders", exercises:["Overhead Press (Barbell)", "Dumbbell Lateral Raise", "Arnold Press", "Rear Delt Fly", "Cable Lateral Raise", "Shrugs"]}, {label:"Day 4 \u2014 Arms", exercises:["EZ Bar Curl", "Close-Grip Bench Press", "Incline Dumbbell Curl", "Skull Crushers", "Concentration Curl", "Overhead Tricep Extension", "Reverse Curl"]}, {label:"Day 5 \u2014 Legs", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Leg Extension", "Standing Calf Raise"]}]},
+  {id:"beginner_foundation", icon:"\ud83c\udf31", name:"Beginner Foundation", routines:[{label:"Week 1\u20132: Movement Patterns", exercises:["Goblet Squat", "Dumbbell Bench Press", "Seated Cable Row", "Dumbbell Shoulder Press", "Plank"]}, {label:"Week 3\u20134: Adding Load", exercises:["Barbell Squat (light)", "Barbell Bench Press (light)", "Lat Pulldown", "Dumbbell Row", "Romanian Deadlift (dumbbell)", "Plank + Side Plank"]}, {label:"Week 5\u20136: Progressive Overload", exercises:["Barbell Squat", "Barbell Bench Press", "Deadlift (intro)", "Barbell Row", "Overhead Press", "Ab Wheel or Cable Crunch"]}]},
+  {id:"athletic_performance", icon:"\ud83d\ude80", name:"Athletic Performance", routines:[{label:"Power Day A", exercises:["Box Jump", "Power Clean or Hang Clean", "Barbell Squat (explosive)", "Broad Jump", "Med Ball Slam"]}, {label:"Power Day B", exercises:["Trap Bar Jump Deadlift", "Push Press (barbell)", "Single-Leg Bound", "Battle Ropes", "Sprint (treadmill or turf)"]}]},
+  {id:"mobility_recovery", icon:"\ud83e\uddd8", name:"Mobility & Recovery", routines:[{label:"Full Body Mobility Flow", exercises:["Foam Roll \u2014 T-Spine", "Foam Roll \u2014 Lats", "90/90 Hip Stretch", "World's Greatest Stretch", "Cat-Cow", "Thoracic Rotation (half-kneeling)", "Hip Flexor Stretch", "Shoulder CARs (Controlled Articular Rotations)", "Hamstring Floss (banded or towel)"]}, {label:"Pre-Session Activation", exercises:["Band Pull-Apart", "Hip Circle", "Glute Bridge Activation", "Inchworm", "Leg Swing (front-back + lateral)", "Light Goblet Squat (warm-up weight)"]}]}
+];
+
 const params = new URLSearchParams(location.search);
 const CLIENT_ID = params.get('client');
 const COACH_NAME = params.get('coach') || localStorage.getItem('coach_crm_name') || 'Coach';
@@ -219,6 +236,249 @@ async function load(){
 
   renderTouchpoints();
   renderChat();
+  loadSchedule();
+}
+
+async function loadSchedule() {
+  const r = await fetch(WORKER + `/schedule/list?client_id=${CLIENT_ID}`);
+  const d = await r.json();
+  const rows = d.upcoming || [];
+  document.getElementById('overview-extra').insertAdjacentHTML('beforeend', `
+    <div class="card">
+      <div style="display:flex;align-items:center;margin-bottom:10px">
+        <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase">Upcoming Schedule</div>
+        <button class="btn" style="margin-left:auto;padding:8px 14px;font-size:12px" onclick="openScheduleModal()">+ Build Schedule</button>
+      </div>
+      <div id="schedule-list">${rows.length ? rows.map(s => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)">
+          <div><b>${fmtDate(s.scheduled_date)}</b> &middot; ${escH(s.program_name)}${s.focus_notes ? ' <span style="color:var(--muted)">— ' + escH(s.focus_notes) + '</span>' : ''}</div>
+          <div style="display:flex;gap:10px">
+            <button onclick='editScheduleItem(${JSON.stringify(s).replace(/'/g,"&apos;")})' style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;font-weight:700">Edit</button>
+            <button onclick="cancelSchedule(${s.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px">Cancel</button>
+          </div>
+        </div>`).join('') : '<div class="empty">No sessions scheduled yet. Build a recurring plan above.</div>'}</div>
+    </div>
+    <div id="schedule-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0">
+      <div style="background:#fff;border-radius:14px;padding:22px;width:min(460px,92vw);max-height:90vh;overflow-y:auto">
+        <div style="font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;margin-bottom:14px">Build a Day</div>
+        <input id="sc-program" placeholder="Name this day (e.g. Chest and Triceps Day, Monday, Day 1)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px">
+
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button id="sc-tab-routine" onclick="scSwitchMode('routine')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);background:var(--ink);color:#fff;font-weight:700;font-size:12px;text-transform:uppercase;cursor:pointer">Use a Routine</button>
+          <button id="sc-tab-custom" onclick="scSwitchMode('custom')" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);font-weight:700;font-size:12px;text-transform:uppercase;cursor:pointer">Build Custom</button>
+        </div>
+
+        <div id="sc-mode-routine">
+          <select id="sc-bundle-select" onchange="scRenderBundleDays()" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px;margin-bottom:8px">
+            <option value="">Choose a program...</option>
+            ${ROUTINE_LIBRARY.map((b,i)=>`<option value="${i}">${b.icon} ${escH(b.name)}</option>`).join('')}
+          </select>
+          <div id="sc-bundle-days"></div>
+        </div>
+
+        <div id="sc-mode-custom" style="display:none">
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input id="sc-manual-name" placeholder="Not in the library? Type an exercise name..." style="flex:1;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px">
+            <button onclick="scAddManualExercise()" style="background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">+ Add</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+            <input id="sc-ex-search" placeholder="Search exercises..." oninput="scFilterExercises()" style="flex:1;min-width:140px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px">
+            <select id="sc-f-part" onchange="scFilterExercises()" style="border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px"><option value="">Body Part</option></select>
+            <select id="sc-f-equip" onchange="scFilterExercises()" style="border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px"><option value="">Equipment</option></select>
+            <select id="sc-f-mech" onchange="scFilterExercises()" style="border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px"><option value="">Mechanics</option></select>
+            <select id="sc-f-type" onchange="scFilterExercises()" style="border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px"><option value="">Type</option></select>
+          </div>
+          <div id="sc-ex-results" style="max-height:160px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:10px"></div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Selected Exercises</div>
+          <div id="sc-selected-list" style="min-height:30px;border:1px dashed var(--line);border-radius:8px;padding:8px;margin-bottom:10px;font-size:13px">
+            <span style="color:var(--muted)">None selected yet — search above and tap to add.</span>
+          </div>
+        </div>
+
+        <textarea id="sc-notes" rows="2" placeholder="Focus notes (optional)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px"></textarea>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Repeat on</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d,i)=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="sc-day" value="${i}"> ${d}</label>`).join('')}
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:6px">
+          <div style="flex:1"><label style="font-size:11px;color:var(--muted)">Start Date</label><input type="date" id="sc-start" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px"></div>
+          <div style="flex:1"><label style="font-size:11px;color:var(--muted)">End Date</label><input type="date" id="sc-end" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px"></div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button onclick="closeScheduleModal()" style="flex:1;border:1px solid var(--line);background:#fff;border-radius:8px;padding:10px;cursor:pointer">Cancel</button>
+          <button onclick="saveSchedule()" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:10px;cursor:pointer;font-weight:700">Save Schedule</button>
+        </div>
+        <div id="sc-msg" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+      </div>
+    </div>`);
+  scPopulateFilters();
+}
+
+let SC_MODE = 'routine';
+let SC_SELECTED = [];
+
+function scSwitchMode(mode){
+  SC_MODE = mode;
+  document.getElementById('sc-mode-routine').style.display = mode==='routine' ? 'block' : 'none';
+  document.getElementById('sc-mode-custom').style.display = mode==='custom' ? 'block' : 'none';
+  document.getElementById('sc-tab-routine').style.background = mode==='routine' ? 'var(--ink)' : '#fff';
+  document.getElementById('sc-tab-routine').style.color = mode==='routine' ? '#fff' : 'var(--ink)';
+  document.getElementById('sc-tab-custom').style.background = mode==='custom' ? 'var(--ink)' : '#fff';
+  document.getElementById('sc-tab-custom').style.color = mode==='custom' ? '#fff' : 'var(--ink)';
+}
+
+function scRenderBundleDays(){
+  const idx = document.getElementById('sc-bundle-select').value;
+  const box = document.getElementById('sc-bundle-days');
+  if (idx === '') { box.innerHTML = ''; return; }
+  const bundle = ROUTINE_LIBRARY[idx];
+  box.innerHTML = bundle.routines.map((r,i) => `
+    <label style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer">
+      <input type="radio" name="sc-bundle-day" value="${idx}:${i}">
+      <span style="font-size:13px"><b>${escH(r.label)}</b> — ${r.exercises.length} exercises</span>
+    </label>`).join('');
+}
+
+function scPopulateFilters(){
+  const parts = [...new Set(EXERCISE_DB.map(e=>e.body_part))].sort();
+  const equips = [...new Set(EXERCISE_DB.map(e=>e.equipment))].sort();
+  const mechs = [...new Set(EXERCISE_DB.map(e=>e.mechanics))].sort();
+  const types = [...new Set(EXERCISE_DB.map(e=>e.type))].sort();
+  document.getElementById('sc-f-part').innerHTML += parts.map(p=>`<option value="${p}">${p}</option>`).join('');
+  document.getElementById('sc-f-equip').innerHTML += equips.map(p=>`<option value="${p}">${p}</option>`).join('');
+  document.getElementById('sc-f-mech').innerHTML += mechs.map(p=>`<option value="${p}">${p}</option>`).join('');
+  document.getElementById('sc-f-type').innerHTML += types.map(p=>`<option value="${p}">${p}</option>`).join('');
+  scFilterExercises();
+}
+
+function scFilterExercises(){
+  const q = (document.getElementById('sc-ex-search').value||'').toLowerCase();
+  const part = document.getElementById('sc-f-part').value;
+  const equip = document.getElementById('sc-f-equip').value;
+  const mech = document.getElementById('sc-f-mech').value;
+  const type = document.getElementById('sc-f-type').value;
+  const results = EXERCISE_DB.filter(e =>
+    (!q || e.name.toLowerCase().includes(q)) &&
+    (!part || e.body_part===part) && (!equip || e.equipment===equip) &&
+    (!mech || e.mechanics===mech) && (!type || e.type===type)
+  ).slice(0,40);
+  document.getElementById('sc-ex-results').innerHTML = results.length ? results.map(e => `
+    <div onclick='scAddExercise(${JSON.stringify(e.name)})' style="padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px">
+      <b>${escH(e.name)}</b> <span style="color:var(--muted);font-size:11px">${e.body_part} &middot; ${e.equipment}</span>
+    </div>`).join('') : '<div style="padding:12px;color:var(--muted);font-size:13px">No matches.</div>';
+}
+
+function scAddExercise(name){
+  if (SC_SELECTED.some(x => x.name.toLowerCase() === name.toLowerCase())) return;
+  SC_SELECTED.push({name, kind:'weighted', sets:'3', reps:'10', weight:'', duration:''});
+  scRenderSelected();
+}
+
+function scAddManualExercise(){
+  const input = document.getElementById('sc-manual-name');
+  const name = input.value.trim();
+  if (!name) return;
+  scAddExercise(name);
+  input.value = '';
+}
+
+function scRemoveExercise(i){
+  SC_SELECTED.splice(i, 1);
+  scRenderSelected();
+}
+
+function scUpdateField(i, field, value){
+  SC_SELECTED[i][field] = value;
+}
+
+function scSetKind(i, kind){
+  SC_SELECTED[i].kind = kind;
+  scRenderSelected();
+}
+
+function scPrescriptionText(item){
+  if (item.kind === 'time') return item.duration ? item.duration : '';
+  if (item.kind === 'bodyweight') return (item.sets && item.reps) ? `${item.sets}x${item.reps} (bodyweight)` : '';
+  return (item.sets && item.reps) ? `${item.sets}x${item.reps}${item.weight ? ' @ '+item.weight+'lb' : ''}` : '';
+}
+
+function scRenderSelected(){
+  const box = document.getElementById('sc-selected-list');
+  if (!SC_SELECTED.length) { box.innerHTML = '<span style="color:var(--muted)">None selected yet — search above, or add a custom exercise.</span>'; return; }
+  box.innerHTML = SC_SELECTED.map((item, i) => `
+    <div style="border:1px solid var(--line);border-radius:8px;padding:8px;margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <b style="font-size:13px">${escH(item.name)}</b>
+        <span onclick="scRemoveExercise(${i})" style="cursor:pointer;color:var(--red);font-weight:700;font-size:16px;line-height:1">&times;</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px">
+        <button onclick="scSetKind(${i},'weighted')" style="flex:1;font-size:10px;padding:5px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-weight:700;text-transform:uppercase;background:${item.kind==='weighted'?'var(--ink)':'#fff'};color:${item.kind==='weighted'?'#fff':'var(--ink)'}">Sets/Reps/Weight</button>
+        <button onclick="scSetKind(${i},'bodyweight')" style="flex:1;font-size:10px;padding:5px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-weight:700;text-transform:uppercase;background:${item.kind==='bodyweight'?'var(--ink)':'#fff'};color:${item.kind==='bodyweight'?'#fff':'var(--ink)'}">Sets/Reps Only</button>
+        <button onclick="scSetKind(${i},'time')" style="flex:1;font-size:10px;padding:5px;border-radius:6px;border:1px solid var(--line);cursor:pointer;font-weight:700;text-transform:uppercase;background:${item.kind==='time'?'var(--ink)':'#fff'};color:${item.kind==='time'?'#fff':'var(--ink)'}">By Time</button>
+      </div>
+      ${item.kind === 'time' ? `
+        <input placeholder="e.g. 45s, or 3 rounds x 30s" value="${escH(item.duration)}" oninput="scUpdateField(${i},'duration',this.value)" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px">
+      ` : `
+        <div style="display:flex;gap:6px">
+          <input placeholder="Sets" value="${escH(item.sets)}" oninput="scUpdateField(${i},'sets',this.value)" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px">
+          <input placeholder="Reps" value="${escH(item.reps)}" oninput="scUpdateField(${i},'reps',this.value)" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px">
+          ${item.kind === 'weighted' ? `<input placeholder="Weight (lb)" value="${escH(item.weight)}" oninput="scUpdateField(${i},'weight',this.value)" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px">` : ''}
+        </div>
+      `}
+    </div>`).join('');
+}
+
+function openScheduleModal(){
+  document.getElementById('schedule-modal').style.display='flex';
+  SC_SELECTED = [];
+  SC_MODE = 'routine';
+  setTimeout(() => { scSwitchMode('routine'); scRenderSelected(); }, 0);
+}
+function closeScheduleModal(){ document.getElementById('schedule-modal').style.display='none'; }
+
+async function saveSchedule(){
+  const program = document.getElementById('sc-program').value.trim();
+  const notes = document.getElementById('sc-notes').value.trim();
+  const weekdays = Array.from(document.querySelectorAll('.sc-day:checked')).map(c => parseInt(c.value));
+  const start = document.getElementById('sc-start').value;
+  const end = document.getElementById('sc-end').value;
+  const msg = document.getElementById('sc-msg');
+  if (!program || !weekdays.length || !start || !end) { msg.textContent = 'Name the day, at least one repeat day, and both dates are required.'; return; }
+
+  let exercises = [];
+  if (SC_MODE === 'routine') {
+    const picked = document.querySelector('input[name="sc-bundle-day"]:checked');
+    if (!picked) { msg.textContent = 'Pick a program day, or switch to Build Custom.'; return; }
+    const [bIdx, rIdx] = picked.value.split(':').map(Number);
+    exercises = ROUTINE_LIBRARY[bIdx].routines[rIdx].exercises.map(n => ({name: n, prescription: ''}));
+  } else {
+    if (!SC_SELECTED.length) { msg.textContent = 'Add at least one exercise, or switch to Use a Routine.'; return; }
+    exercises = SC_SELECTED.map(item => ({name: item.name, prescription: scPrescriptionText(item)}));
+  }
+
+  msg.textContent = 'Building schedule...';
+  const r = await fetch(WORKER + '/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({client_id: CLIENT_ID, program_name: program, focus_notes: notes, weekdays, start_date: start, end_date: end, coach_name: COACH_NAME, exercises})});
+  const d = await r.json();
+  if (d.created_count != null) { closeScheduleModal(); load(); }
+  else { msg.textContent = d.error || 'Something went wrong.'; }
+}
+
+async function editScheduleItem(s){
+  const newDate = prompt('Reschedule to (YYYY-MM-DD), or leave as-is:', s.scheduled_date);
+  if (newDate === null) return;
+  const newProgram = prompt('Program name:', s.program_name || '');
+  if (newProgram === null) return;
+  const newNotes = prompt('Focus notes:', s.focus_notes || '');
+  await fetch(WORKER + '/schedule/update', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id: s.id, scheduled_date: newDate, program_name: newProgram, focus_notes: newNotes||''})});
+  load();
+}
+
+async function cancelSchedule(id){
+  await fetch(WORKER + '/schedule/cancel', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id})});
+  load();
 }
 
 function renderTouchpoints(){
