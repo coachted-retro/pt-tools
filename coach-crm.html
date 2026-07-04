@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Clients — Coach CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--lred:#FEF2F2;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:18px;color:#fff;text-transform:uppercase}
+.topbar .logo span{color:var(--red)}
+.topbar a{margin-left:auto;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
+.wrap{max-width:900px;margin:0 auto;padding:24px 20px 60px}
+.picker{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.picker select{flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:'Inter';font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;text-decoration:none;color:inherit}
+.card:hover{border-color:var(--red)}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:800;font-size:16px;color:var(--muted);flex-shrink:0}
+.name{font-weight:700;font-size:14px}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.badges{margin-left:auto;display:flex;gap:8px;align-items:center}
+.badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px}
+.badge-red{background:var(--lred);color:var(--red)}
+.badge-muted{background:var(--soft);color:var(--muted)}
+.empty{color:var(--muted);padding:30px;text-align:center}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">Coach <span>CRM</span></div>
+  <a href="command-center.html">&larr; Command Center</a>
+</div>
+<div class="wrap">
+  <div class="picker">
+    <label style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted)">Coach</label>
+    <select id="coach-select" onchange="loadClients()">
+      <option value="">Select your name</option>
+      <option value="Ted Scholl">Ted Scholl</option>
+      <option value="Danielle Pellegrini">Danielle Pellegrini</option>
+      <option value="Roman Benedetti">Roman Benedetti</option>
+      <option value="Marin Tyler">Marin Tyler</option>
+    </select>
+  </div>
+  <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const saved = localStorage.getItem('coach_crm_name');
+if (saved) document.getElementById('coach-select').value = saved;
+
+async function loadClients(){
+  const coach = document.getElementById('coach-select').value;
+  const list = document.getElementById('client-list');
+  if (!coach){ list.innerHTML = '<div class="empty">Select your name above to see your clients.</div>'; return; }
+  localStorage.setItem('coach_crm_name', coach);
+  list.innerHTML = '<div class="empty">Loading...</div>';
+  try {
+    const r = await fetch(WORKER + '/coach/clients?coach=' + encodeURIComponent(coach));
+    const d = await r.json();
+    const clients = d.clients || [];
+    if (!clients.length){ list.innerHTML = '<div class="empty">No clients assigned to you yet.</div>'; return; }
+    list.innerHTML = clients.map(c => {
+      const initials = ((c.first_name||'?')[0] + (c.last_name||'')[0]).toUpperCase();
+      const daysSince = c.last_touchpoint ? Math.floor((Date.now() - new Date(c.last_touchpoint+'Z')) / 86400000) : null;
+      const stale = daysSince === null || daysSince > 14;
+      return `<a class="card" href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(coach)}">
+        <div class="avatar">${escH(initials)}</div>
+        <div style="flex:1">
+          <div class="name">${escH(c.first_name)} ${escH(c.last_name)}</div>
+          <div class="sub">${escH(c.goal_primary||'No goal set')} &middot; ${c.sessions_remaining ?? '—'} sessions left</div>
+        </div>
+        <div class="badges">
+          ${c.unread_messages > 0 ? `<span class="badge badge-red">${c.unread_messages} new msg</span>` : ''}
+          ${stale ? `<span class="badge badge-red">Touch base</span>` : `<span class="badge badge-muted">${daysSince}d ago</span>`}
+        </div>
+      </a>`;
+    }).join('');
+  } catch(e) { list.innerHTML = '<div class="empty">Could not load clients.</div>'; }
+}
+if (saved) loadClients();
+</script>
+</body>
+</html>

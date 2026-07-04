@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Profile — Coach CRM</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--lred:#FEF2F2;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:18px;color:#fff;text-transform:uppercase}
+.topbar .logo span{color:var(--red)}
+.topbar a{margin-left:auto;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
+.wrap{max-width:900px;margin:0 auto;padding:24px 20px 60px}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.hero-name{font-family:'Oswald';font-size:22px;font-weight:800}
+.hero-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.sess-pill{margin-left:auto;background:var(--soft);border-radius:10px;padding:10px 16px;text-align:center}
+.sess-pill .n{font-family:'Oswald';font-size:22px;font-weight:800}
+.sess-pill .l{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.tab{font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+.tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pane{display:none}
+.pane.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-family:'Oswald';font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);background:var(--soft)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px}
+tr:last-child td{border-bottom:none}
+.empty{color:var(--muted);padding:16px;text-align:center;font-size:13px}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+.photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;background:var(--soft)}
+.tp-item{padding:10px 0;border-bottom:1px solid var(--line)}
+.tp-type{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:8px;background:var(--soft);color:var(--muted);margin-right:6px}
+.field-row{display:flex;gap:8px;margin-bottom:8px}
+.field-row select,.field-row input{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.field-row input{flex:1}
+.btn{font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;background:var(--red);color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer}
+.chat-box{max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px}
+.msg{max-width:75%;padding:8px 12px;border-radius:12px;font-size:13px}
+.msg.coach{align-self:flex-end;background:var(--red);color:#fff;border-bottom-right-radius:2px}
+.msg.client{align-self:flex-start;background:var(--soft);border-bottom-left-radius:2px}
+.msg .t{font-size:9px;opacity:.7;margin-top:3px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">Coach <span>CRM</span></div>
+  <a href="coach-crm.html">&larr; My Clients</a>
+</div>
+<div class="wrap">
+  <div class="hero">
+    <div>
+      <div class="hero-name" id="c-name">Loading...</div>
+      <div class="hero-sub" id="c-sub"></div>
+    </div>
+    <div class="sess-pill"><div class="n" id="c-sessions">—</div><div class="l">Sessions Left</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-p="overview" onclick="switchPane('overview')">Overview</button>
+    <button class="tab" data-p="workouts" onclick="switchPane('workouts')">Workout History</button>
+    <button class="tab" data-p="photos" onclick="switchPane('photos')">Photos</button>
+    <button class="tab" data-p="touch" onclick="switchPane('touch')">Touchpoints</button>
+    <button class="tab" data-p="chat" onclick="switchPane('chat')">Chat</button>
+  </div>
+
+  <div class="pane active" id="pane-overview">
+    <div class="card" id="overview-stats"></div>
+  </div>
+
+  <div class="pane" id="pane-workouts">
+    <div class="card"><table><thead><tr><th>Date</th><th>Session</th><th>Notes</th></tr></thead><tbody id="workouts-body"></tbody></table></div>
+  </div>
+
+  <div class="pane" id="pane-photos">
+    <div class="card"><div class="photo-grid" id="photo-grid"></div></div>
+  </div>
+
+  <div class="pane" id="pane-touch">
+    <div class="card">
+      <div class="field-row">
+        <select id="tp-type"><option value="note">Note</option><option value="text">Text</option><option value="call">Call</option><option value="email">Email</option></select>
+        <input id="tp-body" placeholder="What did you cover / follow up on?">
+        <button class="btn" onclick="logTouchpoint()">Log</button>
+      </div>
+      <div id="tp-list"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="pane-chat">
+    <div class="card">
+      <div class="chat-box" id="chat-box"></div>
+      <div class="field-row" style="margin-top:10px">
+        <input id="chat-input" placeholder="Message your client...">
+        <button class="btn" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const params = new URLSearchParams(location.search);
+const CLIENT_ID = params.get('client');
+const COACH_NAME = params.get('coach') || localStorage.getItem('coach_crm_name') || 'Coach';
+let DATA = null;
+
+function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(s){ return s ? new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; }
+
+function switchPane(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.p===name));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active', p.id==='pane-'+name));
+  if (name==='chat') markMessagesRead();
+}
+
+async function load(){
+  const r = await fetch(WORKER + `/coach/client-detail?client_id=${CLIENT_ID}`);
+  DATA = await r.json();
+  const c = DATA.client || {};
+  document.getElementById('c-name').textContent = (c.first_name||'') + ' ' + (c.last_name||'');
+  document.getElementById('c-sub').textContent = [c.goal_primary, c.package].filter(Boolean).join(' \\u00B7 ');
+  document.getElementById('c-sessions').textContent = c.sessions_remaining ?? '—';
+
+  const scan = (DATA.scans||[])[0] || {};
+  document.getElementById('overview-stats').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px">
+      <div><div style="font-family:'Oswald';font-size:20px;font-weight:800">${scan.weight||'—'}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Latest Weight</div></div>
+      <div><div style="font-family:'Oswald';font-size:20px;font-weight:800">${scan.body_fat_pct||'—'}${scan.body_fat_pct?'%':''}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Body Fat</div></div>
+      <div><div style="font-family:'Oswald';font-size:20px;font-weight:800">${c.sessions_total||'—'}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Package Size</div></div>
+      <div><div style="font-family:'Oswald';font-size:20px;font-weight:800">${(DATA.sessions||[]).length + (DATA.selfWorkouts||[]).length}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase">Logged Workouts</div></div>
+    </div>
+    <div style="margin-top:14px;font-size:13px;color:var(--muted)">Phone: ${escH(c.phone||'—')} &middot; Email: ${escH(c.email||'—')}</div>`;
+
+  const allWorkouts = [
+    ...(DATA.sessions||[]).map(s=>({date:s.session_date, label:'Coached Session', notes:s.notes||''})),
+    ...(DATA.selfWorkouts||[]).map(s=>({date:s.workout_date, label:s.title||'Self-guided', notes:s.notes||''}))
+  ].sort((a,b)=> new Date(b.date) - new Date(a.date));
+  document.getElementById('workouts-body').innerHTML = allWorkouts.length ? allWorkouts.map(w =>
+    `<tr><td>${fmtDate(w.date)}</td><td>${escH(w.label)}</td><td style="color:var(--muted)">${escH(w.notes)}</td></tr>`
+  ).join('') : '<tr><td colspan="3" class="empty">No workouts logged yet.</td></tr>';
+
+  const photos = DATA.photos || [];
+  document.getElementById('photo-grid').innerHTML = photos.length ? photos.map(p =>
+    `<img src="${WORKER}/photo/get?key=${encodeURIComponent(p.r2_key)}" alt="${escH(p.pose||'')}" loading="lazy">`
+  ).join('') : '<div class="empty">No progress photos yet.</div>';
+
+  renderTouchpoints();
+  renderChat();
+}
+
+function renderTouchpoints(){
+  const tps = DATA.touchpoints || [];
+  document.getElementById('tp-list').innerHTML = tps.length ? tps.map(t => `
+    <div class="tp-item"><span class="tp-type">${escH(t.type)}</span>${escH(t.body)}
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${escH(t.coach_name)} \\u00B7 ${fmtDate(t.created_at)}</div>
+    </div>`).join('') : '<div class="empty">No touchpoints logged yet.</div>';
+}
+
+async function logTouchpoint(){
+  const type = document.getElementById('tp-type').value;
+  const body = document.getElementById('tp-body').value.trim();
+  if (!body) return;
+  await fetch(WORKER + '/coach/touchpoint', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({client_id:CLIENT_ID, coach_name:COACH_NAME, type, body})});
+  document.getElementById('tp-body').value = '';
+  const r = await fetch(WORKER + `/coach/client-detail?client_id=${CLIENT_ID}`);
+  DATA = await r.json();
+  renderTouchpoints();
+}
+
+function renderChat(){
+  const msgs = DATA.messages || [];
+  const box = document.getElementById('chat-box');
+  box.innerHTML = msgs.length ? msgs.map(m => `
+    <div class="msg ${m.sender==='coach'?'coach':'client'}">${escH(m.body)}<div class="t">${fmtDate(m.created_at)}</div></div>
+  `).join('') : '<div class="empty">No messages yet. Say hi!</div>';
+  box.scrollTop = box.scrollHeight;
+}
+
+async function sendChat(){
+  const input = document.getElementById('chat-input');
+  const body = input.value.trim();
+  if (!body) return;
+  await fetch(WORKER + '/portal/messages/send', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({client_id:CLIENT_ID, coach_name:COACH_NAME, sender:'coach', body})});
+  input.value = '';
+  const r = await fetch(WORKER + `/portal/messages?client_id=${CLIENT_ID}`);
+  const d = await r.json();
+  DATA.messages = d.messages || [];
+  renderChat();
+}
+
+async function markMessagesRead(){
+  await fetch(WORKER + '/portal/messages/read', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({client_id:CLIENT_ID, mark_sender:'client'})});
+}
+
+load();
+</script>
+</body>
+</html>

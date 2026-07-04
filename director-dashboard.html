@@ -313,7 +313,7 @@ async function loadRegionBoard(){
       const isUs = g.gym_id===GYM_ID;
       return `<tr style="${isUs?'background:var(--lred)':''}">
         <td style="font-family:'Oswald';font-weight:800;color:var(--muted)">${i+1}</td>
-        <td style="font-weight:${isUs?'800':'600'};font-size:13px">${escR(g.name)}${isUs?' ⭐':''}</td>
+        <td style="font-weight:${isUs?'800':'600'};font-size:13px"><a href="gym-profile.html?gym_id=${g.gym_id}" style="color:inherit;text-decoration:underline dotted">${escR(g.name)}${isUs?' ⭐':''}</a></td>
         <td>${fmtM(g.goal)}</td>
         <td style="font-family:'Oswald';font-weight:700">${fmtM(g.actual)}</td>
         <td style="font-family:'Oswald';font-weight:700;color:${color}">${g.pct==null?'—':g.pct+'%'}</td>
