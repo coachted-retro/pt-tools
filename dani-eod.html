@@ -289,6 +289,9 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
       <div class="field"><label>Tomorrow's Focus</label>
         <textarea id="game-plan" placeholder="What's the priority tomorrow — Welcome Workouts, floor coverage, follow-ups, events..." oninput="updateStatus('plan')"></textarea>
       </div>
+      <div class="field"><label style="color:var(--red)">Is there anything you would like Keelin to help you with tomorrow?</label>
+        <textarea id="ask-keelin" placeholder="This gets flagged directly to Keelin's help queue." oninput="updateStatus('plan')"></textarea>
+      </div>
     </div>
   </div>
 
@@ -506,6 +509,7 @@ async function confirmSubmit() {
     notable_wins: document.getElementById('notable-wins').value,
     areas_improvement: document.getElementById('areas-improvement').value,
     game_plan: document.getElementById('game-plan').value,
+    ask_keelin: document.getElementById('ask-keelin').value,
     additional_notes: document.getElementById('pt-monitoring').value,
     notes: notes,
     kpi: {

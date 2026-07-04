@@ -473,6 +473,9 @@ table.log-table .del-btn:hover{color:var(--red)}
         </div>
       </div>
       <div class="notes-list" id="notesList"></div>
+      <div class="field" style="margin-top:14px"><label style="color:var(--red)">Is there anything you would like Keelin to help you with tomorrow?</label>
+        <textarea id="ask-keelin" placeholder="This gets flagged directly to Keelin's help queue."></textarea>
+      </div>
     </div>
   </div>
 
@@ -816,6 +819,7 @@ function collectFormData() {
   return {
     date: TODAY,
     authorName: document.getElementById('authorName').value,
+    ask_keelin: document.getElementById('ask-keelin').value,
     shiftStart: document.getElementById('shiftStart').value,
     shiftEnd: document.getElementById('shiftEnd').value,
     kpi: {

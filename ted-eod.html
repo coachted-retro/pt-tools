@@ -147,14 +147,46 @@ textarea{resize:vertical;min-height:72px}
     </div>
     <div class="section-body">
       <div class="field-row two">
-        <div class="field"><label>Booked</label><input type="number" id="ww-booked" placeholder="0" oninput="updateStatus('ww')"></div>
-        <div class="field"><label>Showed</label><input type="number" id="ww-showed" placeholder="0" oninput="updateStatus('ww')"></div>
+        <div class="field"><label>How many WW were booked today?</label><input type="number" id="ww-booked" placeholder="0" oninput="updateStatus('ww')"></div>
+        <div class="field"><label>How many showed?</label><input type="number" id="ww-showed" placeholder="0" oninput="updateStatus('ww')"></div>
       </div>
       <div class="field-row two">
-        <div class="field"><label>Closed / Signed Up</label><input type="number" id="ww-closed" placeholder="0" oninput="updateStatus('ww')"></div>
-        <div class="field"><label>Follow-Up Needed</label><input type="number" id="ww-followup" placeholder="0" oninput="updateStatus('ww')"></div>
+        <div class="field"><label>Rescheduled</label><input type="number" id="ww-rescheduled" placeholder="0" oninput="updateStatus('ww')"></div>
+        <div class="field"><label>Cancelled / No-Showed</label><input type="number" id="ww-noshowed" placeholder="0" oninput="updateStatus('ww')"></div>
       </div>
-      <div class="field"><label>No-Shows (names + notes)</label><textarea id="ww-noshows" placeholder="e.g. Amelia Stefanowski — called, rescheduling..." oninput="updateStatus('ww')"></textarea></div>
+      <div class="field-row two">
+        <div class="field"><label>Did you update UDFs?</label>
+          <select id="ww-udf" onchange="updateStatus('ww')"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="na">N/A — none today</option></select></div>
+        <div class="field"><label>Did you add a note to each session?</label>
+          <select id="ww-session-notes" onchange="updateStatus('ww')"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="na">N/A — none today</option></select></div>
+      </div>
+      <div class="field-row two">
+        <div class="field"><label>Did you add a member alert?</label>
+          <select id="ww-alert" onchange="updateStatus('ww')"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="na">N/A — none needed</option></select></div>
+        <div class="field"><label>WW that turned into paying PT clients</label><input type="number" id="ww-closed" placeholder="0" oninput="updateStatus('ww')"></div>
+      </div>
+      <div class="field"><label>Bought / No Buy — with objection reason if applicable</label><textarea id="ww-noshows" placeholder="e.g. Amelia Stefanowski — no buy, price objection. Mike Chen — bought, 12-pack." oninput="updateStatus('ww')"></textarea></div>
+      <div class="field"><label>If no buy, did you book the 6-week follow-up?</label>
+        <select id="ww-followup-booked" onchange="updateStatus('ww')"><option value="">Select</option><option value="yes">Yes — all booked</option><option value="partial">Some booked</option><option value="no">Not yet</option><option value="na">N/A — no no-buys today</option></select></div>
+    </div>
+  </div>
+
+
+  <!-- SECTION: SALES BREAKDOWN -->
+  <div class="section collapsed" id="sec-sales">
+    <div class="section-header" onclick="toggleSection('sec-sales')">
+      <span class="section-num">03</span>
+      <span class="section-title">Sales Breakdown</span>
+      <span class="section-status status-empty" id="status-sales">Empty</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="field"><label>Total PT sales made today ($)</label><input type="number" id="sales-total" placeholder="0" oninput="updateStatus('sales')"></div>
+      <div class="field-row two">
+        <div class="field"><label>New Business</label><input type="number" id="sales-new" placeholder="0" oninput="updateStatus('sales')"></div>
+        <div class="field"><label>Renewals</label><input type="number" id="sales-renewal" placeholder="0" oninput="updateStatus('sales')"></div>
+      </div>
+      <div class="field"><label>Upgrades</label><input type="number" id="sales-upgrade" placeholder="0" oninput="updateStatus('sales')"></div>
     </div>
   </div>
 
@@ -230,17 +262,26 @@ textarea{resize:vertical;min-height:72px}
     </div>
   </div>
 
-  <!-- SECTION 8: GAME PLAN -->
+  <!-- SECTION 8: REFLECTIONS -->
   <div class="section collapsed" id="sec-plan">
     <div class="section-header" onclick="toggleSection('sec-plan')">
       <span class="section-num">08</span>
-      <span class="section-title">Game Plan for Tomorrow</span>
+      <span class="section-title">Reflections</span>
       <span class="section-status status-empty" id="status-plan">Empty</span>
       <span class="chevron">▾</span>
     </div>
     <div class="section-body">
+      <div class="field"><label>List at least ONE positive thing you are leaving work with today</label>
+        <textarea id="reflect-positive" placeholder="Something you learned, an objection you won over, anything that made you feel good." oninput="updateStatus('plan')"></textarea>
+      </div>
+      <div class="field"><label>List at least ONE thing you want to learn or get better at</label>
+        <textarea id="reflect-improve" placeholder="Something you observed with yourself today." oninput="updateStatus('plan')"></textarea>
+      </div>
       <div class="field"><label>What's the focus tomorrow</label>
         <textarea id="game-plan" placeholder="e.g. Floor pulls before 11am. Follow up with Maria. Fill open WW slots." oninput="updateStatus('plan')"></textarea>
+      </div>
+      <div class="field"><label style="color:var(--red)">Is there anything you would like Keelin to help you with tomorrow?</label>
+        <textarea id="ask-keelin" placeholder="This gets flagged directly to Keelin's help queue — she'll see it first thing." oninput="updateStatus('plan')"></textarea>
       </div>
     </div>
   </div>
@@ -291,7 +332,7 @@ let sessionNotes = {};
 
 document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
-const SECTIONS = ['sessions','ww','leads','monitoring','frozen','renewals','wins','plan','notes'];
+const SECTIONS = ['sessions','ww','sales','leads','monitoring','frozen','renewals','wins','plan','notes'];
 
 function toggleSection(id) { document.getElementById(id).classList.toggle('collapsed'); }
 
@@ -519,10 +560,24 @@ async function confirmSubmit() {
     ww: {
       booked: document.getElementById('ww-booked').value,
       showed: document.getElementById('ww-showed').value,
+      rescheduled: document.getElementById('ww-rescheduled').value,
+      noshowed: document.getElementById('ww-noshowed').value,
+      udf_updated: document.getElementById('ww-udf').value,
+      session_notes_added: document.getElementById('ww-session-notes').value,
+      member_alert_added: document.getElementById('ww-alert').value,
       closed: document.getElementById('ww-closed').value,
-      followup: document.getElementById('ww-followup').value,
+      followup_booked: document.getElementById('ww-followup-booked').value,
       noshows: document.getElementById('ww-noshows').value
     },
+    sales: {
+      total: document.getElementById('sales-total').value,
+      new_business: document.getElementById('sales-new').value,
+      renewals: document.getElementById('sales-renewal').value,
+      upgrades: document.getElementById('sales-upgrade').value
+    },
+    reflect_positive: document.getElementById('reflect-positive').value,
+    reflect_improve: document.getElementById('reflect-improve').value,
+    ask_keelin: document.getElementById('ask-keelin').value,
     session_notes: sessionNotes,
     auto_summary: {
       active_clients: allClients.filter(c=>c.status==='active_pt').length,

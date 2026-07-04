@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Club Profile — The Body Shoppe</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--lred:#FEF2F2;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:18px;color:#fff;text-transform:uppercase}
+.topbar .logo span{color:var(--red)}
+.topbar a{margin-left:auto;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 20px 60px}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.hero-name{font-family:'Oswald';font-size:24px;font-weight:800;text-transform:uppercase}
+.hero-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.hero-note{margin-left:auto;background:var(--soft);border-radius:10px;padding:10px 16px;font-size:13px;max-width:280px}
+.big-pct{font-family:'Oswald';font-size:34px;font-weight:800}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .v{font-family:'Oswald';font-size:24px;font-weight:800}
+.kpi .l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:2px}
+.kpi .target{font-size:10px;color:var(--muted);margin-top:4px}
+.section-hdr{display:flex;align-items:center;gap:10px;margin:22px 0 12px}
+.section-title{font-family:'Oswald';font-size:15px;font-weight:800;text-transform:uppercase;white-space:nowrap}
+.section-line{flex:1;height:1px;background:var(--line)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-family:'Oswald';font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);background:var(--soft)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px}
+tr:last-child td{border-bottom:none}
+.empty{color:var(--muted);padding:16px;text-align:center;font-size:13px}
+.badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:var(--lred);color:var(--red)}
+.trend-row{display:flex;align-items:flex-end;gap:8px;height:100px;margin-top:8px}
+.trend-bar{flex:1;background:var(--soft);border-radius:4px 4px 0 0;position:relative;display:flex;align-items:flex-end;justify-content:center}
+.trend-bar .fill{width:100%;background:var(--red);border-radius:4px 4px 0 0}
+.trend-label{position:absolute;bottom:-18px;font-size:9px;color:var(--muted);white-space:nowrap}
+.help-row{padding:10px 12px;background:var(--lred);border-radius:8px;margin-bottom:6px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <img src="assets/retro-fitness-logo.png" alt="Retro Fitness" style="height:28px;width:auto">
+  <a href="keelin-dashboard.html">&larr; Command Center</a>
+</div>
+<div class="wrap">
+  <div class="hero">
+    <div>
+      <div class="hero-name" id="g-name">Loading...</div>
+      <div class="hero-sub" id="g-sub"></div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div class="big-pct" id="g-pct">—</div>
+      <div class="hero-sub">to TCV goal</div>
+    </div>
+    <div class="hero-note" id="g-note" style="display:none"></div>
+  </div>
+
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="section-hdr"><div class="section-title">6-Month Trend</div><div class="section-line"></div></div>
+  <div class="card"><div class="trend-row" id="trend-row"></div></div>
+
+  <div class="section-hdr"><div class="section-title">Coaches</div><div class="section-line"></div></div>
+  <div class="card"><table><thead><tr><th>Coach</th><th>Role</th><th>Sales</th><th>Total</th></tr></thead><tbody id="reps-body"></tbody></table></div>
+
+  <div class="section-hdr"><div class="section-title">Recent Sales</div><div class="section-line"></div></div>
+  <div class="card"><table><thead><tr><th>Date</th><th>Client</th><th>Package</th><th>Type</th><th>Amount</th><th>Coach</th></tr></thead><tbody id="sales-body"></tbody></table></div>
+
+  <div class="section-hdr"><div class="section-title">EOD Log</div><div class="section-line"></div></div>
+  <div class="card" id="eod-card"></div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const params = new URLSearchParams(location.search);
+const GYM_ID = params.get('gym_id') || '1';
+const MONTH = params.get('month') || new Date().toISOString().slice(0,7);
+
+function fmtMoney(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function load(){
+  const r = await fetch(WORKER + `/region/gym?gym_id=${GYM_ID}&month=${MONTH}`);
+  const d = await r.json();
+  const g = d.gym || {};
+  document.getElementById('g-name').textContent = g.name || 'Club';
+  document.getElementById('g-sub').textContent = [g.city, g.state].filter(Boolean).join(', ') + (g.director ? ' \\u00B7 ' + g.director : '');
+  const pctEl = document.getElementById('g-pct');
+  const goal = d.goal || 0, actual = d.actual || 0;
+  const pct = goal ? Math.round(actual/goal*100) : null;
+  pctEl.textContent = pct==null ? '—' : pct + '%';
+  pctEl.style.color = pct==null ? 'var(--muted)' : pct>=90 ? 'var(--green)' : pct>=50 ? 'var(--amber)' : 'var(--red)';
+  if (d.note){
+    const ne = document.getElementById('g-note');
+    ne.style.display='block'; ne.textContent = "Keelin: " + d.note + ' ' + (d.emoji||'');
+  }
+
+  const f = d.funnel || {};
+  const kpis = [
+    { v: fmtMoney(actual), l: 'MTD PT Sales', t: 'Goal: ' + fmtMoney(goal) },
+    { v: f.total_joins||0, l: 'New Members' },
+    { v: (f.booked_pct||0)+'%', l: 'Sets Booked', t: 'Corp min: 70%', warn: (f.booked_pct||0) < 70 },
+    { v: (f.show_pct||0)+'%', l: 'WW Show Rate' },
+    { v: (f.close_pct||0)+'%', l: 'Close Rate', t: 'Target: 33-40%', warn: (f.close_pct||0) < 33 },
+    { v: f.open_loops||0, l: 'Open Loops', warn: (f.open_loops||0) > 0 },
+    { v: d.open_help_count||0, l: 'Open Help Requests', warn: (d.open_help_count||0) > 0 }
+  ];
+  document.getElementById('kpi-grid').innerHTML = kpis.map(k =>
+    `<div class="kpi"><div class="v" style="color:${k.warn?'var(--red)':'var(--ink)'}">${k.v}</div><div class="l">${k.l}</div>${k.t?`<div class="target">${k.t}</div>`:''}</div>`
+  ).join('');
+
+  const trend = d.trend || [];
+  const maxVal = Math.max(...trend.map(t=>Math.max(t.total,t.goal)), 1);
+  document.getElementById('trend-row').innerHTML = trend.map(t => {
+    const h = Math.round((t.total/maxVal)*80);
+    const color = t.goal && t.total >= t.goal ? 'var(--green)' : 'var(--red)';
+    const mLabel = new Date(t.month+'-15').toLocaleDateString('en-US',{month:'short'});
+    return `<div class="trend-bar" style="height:80px"><div class="fill" style="height:${h}px;background:${color}"></div><div class="trend-label">${mLabel}</div></div>`;
+  }).join('');
+
+  const reps = d.reps || [];
+  document.getElementById('reps-body').innerHTML = reps.length ? reps.map(r =>
+    `<tr><td>${escH(r.name)}</td><td style="color:var(--muted)">${escH(r.role)}</td><td>${r.sale_count}</td><td style="font-family:'Oswald';font-weight:700">${fmtMoney(r.total)}</td></tr>`
+  ).join('') : '<tr><td colspan="4" class="empty">No coaches on file.</td></tr>';
+
+  const sales = d.recent_sales || [];
+  document.getElementById('sales-body').innerHTML = sales.length ? sales.map(s =>
+    `<tr><td>${escH(s.sale_date)}</td><td>${escH(s.client_name)}</td><td>${escH(s.package_name)}</td><td><span class="badge">${escH(s.sale_type||'new')}</span></td><td style="font-family:'Oswald';font-weight:700">${fmtMoney(s.amount)}</td><td>${escH(s.sold_by)}</td></tr>`
+  ).join('') : '<tr><td colspan="6" class="empty">No sales yet.</td></tr>';
+
+  const eods = d.eod_log || [];
+  document.getElementById('eod-card').innerHTML = eods.length ? eods.map(e => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--line)">
+      <div style="display:flex;justify-content:space-between"><span style="font-weight:700">${escH(e.author_name)}</span><span style="color:var(--muted);font-size:11px">${escH(e.log_date)}</span></div>
+      ${e.ask_keelin ? `<div class="help-row" style="margin-top:6px">\\uD83D\\uDC4B Asked Keelin: ${escH(e.ask_keelin)}</div>` : ''}
+    </div>`).join('') : '<div class="empty">No EODs submitted yet.</div>';
+}
+load();
+</script>
+</body>
+</html>
