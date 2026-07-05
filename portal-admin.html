@@ -139,6 +139,32 @@
   </div>
 
   <div class="panel">
+    <h3>Community &amp; Industry News Feed</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Everything here shows on the app's home feed. Birthdays and work anniversaries post themselves automatically once dates are on file in Add Client / Staff Setup — nothing to do for those. Use this for industry news, personal life events, and recognition.</p>
+    <div class="grid2">
+      <div class="fld"><label>Category</label>
+        <select id="feed-category">
+          <option value="industry_news">Industry News</option>
+          <option value="personal">Personal (family news, weddings, etc.)</option>
+          <option value="recognition">Employee/Member of the Month</option>
+          <option value="event">Special Event Coming Up</option>
+        </select></div>
+      <div class="fld"><label>Pin to top?</label>
+        <select id="feed-pinned"><option value="0">No</option><option value="1">Yes</option></select></div>
+    </div>
+    <div class="fld" style="margin-bottom:12px"><label>Title</label>
+      <input id="feed-title" type="text" placeholder="e.g. Recovery science is catching up to training science"></div>
+    <div class="fld" style="margin-bottom:12px"><label>Body</label>
+      <input id="feed-body" type="text" placeholder="A sentence or two of detail"></div>
+    <div class="fld" style="margin-bottom:12px"><label>Event date (only for Special Event)</label>
+      <input id="feed-event-date" type="date"></div>
+    <button class="btn" onclick="generateNewsDraft()">AI Draft (Industry News)</button>
+    <button class="btn red" onclick="postFeedItem()">Post to Feed</button>
+    <div class="status" id="feed-status"></div>
+    <div id="feed-list" style="margin-top:14px"></div>
+  </div>
+
+  <div class="panel">
     <h3>Meal Photos</h3>
     <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Attach a photo to any meal library item — paste a URL to a photo you own the rights to (your own photos, or licensed stock). Shows up in meal plans, the swap picker, and the consultation demo. Leave blank to fall back to a generic icon.</p>
     <div id="meal-photos-list"><div class="status">Loading meal library...</div></div>
@@ -365,6 +391,66 @@ async function hideEvent(id, btn){
   }catch(e){ btn.textContent='Hide'; btn.disabled=false; }
 }
 
+async function loadFeedList(){
+  const el=document.getElementById('feed-list');
+  try{
+    const r=await fetch(WORKER+'/feed/list?limit=30');
+    const d=await r.json();
+    const posts=(d.posts||[]).filter(p=>!p.auto);
+    if(!posts.length){ el.innerHTML='<div class="status">No manual posts yet.</div>'; return; }
+    el.innerHTML=posts.map(p=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+      <div style="flex:1">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--red)">${esc(p.category.replace(/_/g,' '))}${p.pinned?' &middot; PINNED':''}</div>
+        <div style="font-weight:700;font-size:13px">${esc(p.title)}</div>
+        ${p.body?`<div style="font-size:12px;color:var(--muted)">${esc(p.body)}</div>`:''}
+      </div>
+      <button class="btn" onclick="deleteFeedItem(${p.id})">Delete</button>
+    </div>`).join('');
+  }catch(e){ el.innerHTML='<div class="status">Could not load feed.</div>'; }
+}
+
+async function generateNewsDraft(){
+  const status=document.getElementById('feed-status');
+  status.textContent='Drafting...';
+  try{
+    const r=await fetch(WORKER+'/feed/generate-news-draft',{method:'POST',headers:{'X-Admin-Key':ADMIN_KEY}});
+    const d=await r.json();
+    if(!d.ok){ status.textContent=d.error||'Could not generate a draft'; return; }
+    document.getElementById('feed-category').value='industry_news';
+    document.getElementById('feed-title').value=d.title||'';
+    document.getElementById('feed-body').value=d.body||'';
+    status.textContent='Draft ready below — edit as needed, then Post to Feed.';
+  }catch(e){ status.textContent='Connection error'; }
+}
+
+async function postFeedItem(){
+  const category=document.getElementById('feed-category').value;
+  const title=document.getElementById('feed-title').value.trim();
+  const body=document.getElementById('feed-body').value.trim();
+  const eventDate=document.getElementById('feed-event-date').value;
+  const pinned=document.getElementById('feed-pinned').value==='1';
+  const status=document.getElementById('feed-status');
+  if(!title){ status.textContent='Title is required'; return; }
+  status.textContent='Posting...';
+  try{
+    const r=await fetch(WORKER+'/feed/create',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},
+      body:JSON.stringify({category,title,body,event_date:eventDate||null,pinned,created_by:'Ted'})});
+    const d=await r.json();
+    if(!d.ok){ status.textContent=d.error||'Could not post'; return; }
+    status.textContent='Posted.';
+    document.getElementById('feed-title').value='';
+    document.getElementById('feed-body').value='';
+    document.getElementById('feed-event-date').value='';
+    loadFeedList();
+  }catch(e){ status.textContent='Connection error'; }
+}
+
+async function deleteFeedItem(id){
+  if(!confirm('Remove this post?')) return;
+  await fetch(WORKER+'/feed/delete',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({id})});
+  loadFeedList();
+}
+
 async function loadMealPhotos(){
   const el=document.getElementById('meal-photos-list');
   try{
@@ -403,6 +489,7 @@ async function saveMealPhoto(btn){
 }
 
 loadMealPhotos();
+loadFeedList();
 </script>
 </body>
 </html>

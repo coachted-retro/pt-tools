@@ -199,7 +199,7 @@ function setF(id,v){ const e=document.getElementById(id); if(e) e.value=(v==null
 function getF(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openAdd(){
   EDIT_ID=null; document.getElementById('modalTitle').textContent='New Client';
-  ['m_first','m_last','m_email','m_phone','m_coach','m_advisor','m_goal','m_start'].forEach(i=>setF(i,''));
+  ['m_first','m_last','m_email','m_phone','m_coach','m_advisor','m_goal','m_start','m_birthday'].forEach(i=>setF(i,''));
   setF('m_gender',''); setF('m_status','active_pt'); setF('m_package','');
   document.getElementById('clientModal').classList.add('open');
 }
@@ -210,6 +210,7 @@ function openEdit(){
   COACH_ROSTER_READY.then(()=> setF('m_coach',CURRENT.coach));
   setF('m_advisor',CURRENT.advisor); setF('m_package',CURRENT.package||'');
   setF('m_goal',CURRENT.goal_primary); setF('m_start',CURRENT.training_start_date);
+  setF('m_birthday',CURRENT.birthday||'');
   setF('m_why',CURRENT.my_why||'');
   setF('m_sessions_pw',CURRENT.sessions_per_week||'');
   document.getElementById('clientModal').classList.add('open');
@@ -220,7 +221,7 @@ async function saveClient(){
   const vals={
     first_name:getF('m_first'), last_name:getF('m_last'), email:getF('m_email'), phone:getF('m_phone'),
     gender:getF('m_gender'), status:getF('m_status'), coach:getF('m_coach'), advisor:getF('m_advisor'),
-    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
+    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), birthday:getF('m_birthday')||null, my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
   };
   if(!vals.first_name && !vals.last_name){ alert('Enter a name'); btn.disabled=false; btn.textContent='Save'; return; }
   async function write(v){ return EDIT_ID ? db({op:'update',table:'clients',values:v,where:{id:EDIT_ID}}) : db({op:'insert',table:'clients',values:v}); }
@@ -1070,6 +1071,7 @@ function renderMuscleBalance(scan){
         </optgroup>
       </select></div>
       <div class="fld"><label>Training start date</label><input id="m_start" type="date"></div>
+      <div class="fld"><label>Birthday</label><input id="m_birthday" type="date"></div>
       <div class="fld"><label>Sessions / Week</label><select id="m_sessions_pw"><option value="">—</option><option value="1">1x / week (4 sessions)</option><option value="2">2x / week (8 sessions)</option><option value="3">3x / week (12 sessions)</option></select></div>
       <div class="fld full"><label>Primary goal</label><input id="m_goal"></div>
       <div class="fld full"><label>My Why (1 sentence — why they started)</label><input id="m_why" placeholder="e.g. I want to be around for my grandkids."></div>

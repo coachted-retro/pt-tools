@@ -90,7 +90,7 @@ const ALLOWED_TABLES = new Set([
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
-  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins',
+  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins','feed_posts',
   'daily_content','client_wins','gym_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
@@ -1092,6 +1092,92 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!id) return bad('id required', cors);
         await env.DB.prepare('UPDATE gym_events SET visible=0 WHERE id=?').bind(id).run();
         return ok({ hidden: true }, cors);
+      }
+
+      // ── COMMUNITY & INDUSTRY NEWS FEED ─────────────────────────────
+      // Manual posts (industry news, personal life events, recognition,
+      // special events) plus auto-detected birthdays/work-anniversaries
+      // computed live from clients/staff_roster — nothing to maintain
+      // once those dates are on file.
+      if (url.pathname === '/feed/list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const limit = Math.min(parseInt(url.searchParams.get('limit')||'30',10), 100);
+        const postsRes = await env.DB.prepare(
+          'SELECT * FROM feed_posts ORDER BY pinned DESC, created_at DESC LIMIT ?'
+        ).bind(limit).all();
+        const posts = postsRes.results || [];
+
+        const todayMMDD = new Date().toISOString().slice(5,10);
+        const autoItems = [];
+        try {
+          const clientBdays = await env.DB.prepare(
+            "SELECT id, first_name, last_name, birthday FROM clients WHERE birthday IS NOT NULL AND substr(birthday,6,5)=?"
+          ).bind(todayMMDD).all();
+          (clientBdays.results||[]).forEach(c => autoItems.push({
+            id: 'auto-cb-'+c.id, category: 'birthday', title: ((c.first_name||'')+' '+(c.last_name||'')).trim()+"'s Birthday",
+            body: 'Wish them a happy birthday next time you see them!', created_at: new Date().toISOString(), pinned: 1, auto: true
+          }));
+          const staffBdays = await env.DB.prepare(
+            "SELECT id, name, birthday FROM staff_roster WHERE birthday IS NOT NULL AND substr(birthday,6,5)=? AND active=1"
+          ).bind(todayMMDD).all();
+          (staffBdays.results||[]).forEach(s => autoItems.push({
+            id: 'auto-sb-'+s.id, category: 'birthday', title: s.name+"'s Birthday",
+            body: 'Wish them a happy birthday today!', created_at: new Date().toISOString(), pinned: 1, auto: true
+          }));
+          const staffAnniv = await env.DB.prepare(
+            "SELECT id, name, hire_date FROM staff_roster WHERE hire_date IS NOT NULL AND substr(hire_date,6,5)=? AND active=1"
+          ).bind(todayMMDD).all();
+          (staffAnniv.results||[]).forEach(s => {
+            const years = new Date().getFullYear() - parseInt(String(s.hire_date).slice(0,4),10);
+            if (years > 0) autoItems.push({
+              id: 'auto-sa-'+s.id, category: 'anniversary', title: s.name+"'s Work Anniversary",
+              body: 'Celebrating ' + years + ' year' + (years===1?'':'s') + ' with Retro Fitness today!', created_at: new Date().toISOString(), pinned: 1, auto: true
+            });
+          });
+        } catch(e) {}
+
+        return ok({ posts: [...autoItems, ...posts] }, cors);
+      }
+
+      if (url.pathname === '/feed/create' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const b = await request.json();
+        if (!b.category || !b.title) return bad('category and title required', cors);
+        const ins = await env.DB.prepare(
+          `INSERT INTO feed_posts (category,title,body,image_url,featured_client_id,featured_staff_id,event_date,pinned,created_by,created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?)`
+        ).bind(b.category, b.title, b.body||'', b.image_url||null, b.featured_client_id||null, b.featured_staff_id||null, b.event_date||null, b.pinned?1:0, b.created_by||'', new Date().toISOString()).run();
+        return ok({ id: ins.meta?.last_row_id }, cors);
+      }
+
+      if (url.pathname === '/feed/delete' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const { id } = await request.json();
+        if (!id) return bad('id required', cors);
+        await env.DB.prepare('DELETE FROM feed_posts WHERE id=?').bind(id).run();
+        return ok({ deleted: true }, cors);
+      }
+
+      if (url.pathname === '/feed/generate-news-draft' && request.method === 'POST') {
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const prompt = `Write a short fitness-industry news item for a gym's internal community feed — the kind of thing a gym owner would want their staff and members to know about: a trend in strength training, nutrition science, gym equipment, or the fitness business generally. Return ONLY valid JSON, no markdown: {"title":"short headline, 8-12 words","body":"2-3 sentences, confident and informative, written for people who already train seriously"}. No emojis, no em dashes.`;
+        const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json','x-api-key':env.ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
+          body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:400, messages:[{role:'user',content:prompt}] })
+        });
+        const aiData = await aiResp.json();
+        const text = (aiData.content||[]).filter(b=>b.type==='text').map(b=>b.text||'').join('').trim();
+        let parsed;
+        try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+        catch(e) { return bad('Could not generate a draft, try again', cors); }
+        return ok({ title: parsed.title||'', body: parsed.body||'' }, cors);
       }
 
       // ── CLIENT PORTAL DATA ───────────────────────────────────────
