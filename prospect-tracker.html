@@ -2178,6 +2178,14 @@ function callGoToBusiness(id) {
   switchTab('businesses');
   loadBizLeads().then(() => openBizLead(parseInt(id, 10)));
 }
+
+// Deep-link support: ?tab=calllist lets a staff quick-link jump straight
+// to the Call List tab and build today's queue automatically.
+const _urlParams = new URLSearchParams(window.location.search);
+if (_urlParams.get('tab') === 'calllist') {
+  switchTab('calllist');
+  buildCallList();
+}
 </script>
 </body>
 </html>

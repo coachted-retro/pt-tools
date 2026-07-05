@@ -90,7 +90,7 @@ const ALLOWED_TABLES = new Set([
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
-  'client_auth','challenges','challenge_entries','daily_logs','self_workouts',
+  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth',
   'daily_content','client_wins','gym_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
@@ -445,6 +445,107 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const { email } = await request.json();
         await env.DB.prepare('UPDATE client_auth SET active=0 WHERE email=?').bind(email.toLowerCase().trim()).run();
         return ok({ revoked: true }, cors);
+      }
+
+      // ── STAFF AUTH (separate login tier — coaches, MEAs, floor techs, management) ──
+      if (url.pathname === '/staff/login' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const { email, pin } = await request.json();
+        if (!email || !pin) return bad('email and pin required', cors);
+        const row = await env.DB.prepare('SELECT * FROM staff_auth WHERE email=? AND active=1').bind(email.toLowerCase().trim()).first();
+        if (!row) return ok({ ok: false, error: 'Invalid email or PIN' }, cors);
+        const hash = await sha256(pin);
+        if (hash !== row.pin_hash) return ok({ ok: false, error: 'Invalid email or PIN' }, cors);
+        const staff = await env.DB.prepare('SELECT * FROM staff_roster WHERE id=? AND active=1').bind(row.staff_id).first();
+        if (!staff) return ok({ ok: false, error: 'Staff record not found or inactive' }, cors);
+        await env.DB.prepare('UPDATE staff_auth SET last_login=? WHERE id=?').bind(new Date().toISOString(), row.id).run();
+        const token = await makeToken(row.staff_id, email, env.JWT_SECRET || 'bs-secret-2024');
+        return ok({ token, staff_id: row.staff_id, name: staff.name, role: staff.role, must_change: row.must_change_pin }, cors);
+      }
+
+      if (url.pathname === '/staff/change-pin' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const { email, old_pin, new_pin } = await request.json();
+        if (!email || !old_pin || !new_pin) return bad('missing fields', cors);
+        if (!/^\d{4,6}$/.test(new_pin)) return bad('PIN must be 4-6 digits', cors);
+        const row = await env.DB.prepare('SELECT * FROM staff_auth WHERE email=? AND active=1').bind(email.toLowerCase().trim()).first();
+        if (!row) return bad('Not found', cors);
+        if (await sha256(old_pin) !== row.pin_hash) return bad('Current PIN incorrect', cors);
+        const hash = await sha256(new_pin);
+        await env.DB.prepare('UPDATE staff_auth SET pin_hash=?, must_change_pin=0 WHERE id=?').bind(hash, row.id).run();
+        return ok({ changed: true }, cors);
+      }
+
+      if (url.pathname === '/staff/provision' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const { staff_id, email, pin } = await request.json();
+        if (!staff_id || !email || !pin) return bad('staff_id, email, pin required', cors);
+        if (!/^\d{4,6}$/.test(pin)) return bad('PIN must be 4-6 digits', cors);
+        const hash = await sha256(pin);
+        await env.DB.prepare('INSERT OR REPLACE INTO staff_auth (staff_id,email,pin_hash,must_change_pin,active) VALUES (?,?,?,1,1)')
+          .bind(staff_id, email.toLowerCase().trim(), hash).run();
+        return ok({ provisioned: true }, cors);
+      }
+
+      if (url.pathname === '/staff/revoke' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const { email } = await request.json();
+        await env.DB.prepare('UPDATE staff_auth SET active=0 WHERE email=?').bind(email.toLowerCase().trim()).run();
+        return ok({ revoked: true }, cors);
+      }
+
+      if (url.pathname === '/staff/reset-request' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const { email } = await request.json();
+        if (!email) return bad('email required', cors);
+        const em = email.toLowerCase().trim();
+        const row = await env.DB.prepare('SELECT * FROM staff_auth WHERE email=?').bind(em).first();
+        if (row) {
+          const code = String(Math.floor(100000 + Math.random() * 900000));
+          const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+          await env.DB.prepare('UPDATE staff_auth SET reset_code_hash=?, reset_expires=?, active=1 WHERE id=?')
+            .bind(await sha256(code), expires, row.id).run();
+          if (!env.RESEND_KEY) {
+            return ok({ sent: false, mail_configured: false, reason: 'RESEND_KEY is not set on this Worker — no email provider configured, so no email was sent.' }, cors);
+          }
+          try {
+            const mailResp = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from: env.MAIL_FROM || 'onboarding@resend.dev',
+                to: [em],
+                subject: 'Retro Strong: Your staff PIN reset code',
+                html: '<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto"><h2 style="color:#E0192B">RETRO STRONG</h2><p>Use this code to reset your staff PIN. It expires in 15 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:6px;background:#F5F6F8;padding:16px;text-align:center;border-radius:10px">' + code + '</div><p style="color:#888;font-size:12px">If you did not request this, you can ignore this email.</p></div>'
+              })
+            });
+            const mailData = await mailResp.json().catch(() => ({}));
+            if (!mailResp.ok) return ok({ sent: false, mail_configured: true, reason: 'Resend rejected the send: ' + (mailData.message || mailResp.status) }, cors);
+          } catch (e) {
+            return ok({ sent: false, mail_configured: true, reason: 'Network error reaching Resend: ' + e.message }, cors);
+          }
+        }
+        return ok({ sent: true }, cors);
+      }
+
+      if (url.pathname === '/staff/reset-confirm' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const { email, code, new_pin } = await request.json();
+        if (!email || !code || !new_pin) return bad('email, code, new_pin required', cors);
+        if (!/^\d{4,6}$/.test(new_pin)) return ok({ ok: false, error: 'PIN must be 4-6 digits.' }, cors);
+        const em = email.toLowerCase().trim();
+        const row = await env.DB.prepare('SELECT * FROM staff_auth WHERE email=?').bind(em).first();
+        if (!row || !row.reset_code_hash) return ok({ ok: false, error: 'Invalid or expired code.' }, cors);
+        if (!row.reset_expires || new Date(row.reset_expires) < new Date()) return ok({ ok: false, error: 'Code expired. Request a new one.' }, cors);
+        if (await sha256(String(code).trim()) !== row.reset_code_hash) return ok({ ok: false, error: 'Invalid or expired code.' }, cors);
+        const hash = await sha256(new_pin);
+        await env.DB.prepare('UPDATE staff_auth SET pin_hash=?, must_change_pin=0, active=1, reset_code_hash=NULL, reset_expires=NULL WHERE id=?')
+          .bind(hash, row.id).run();
+        return ok({ ok: true, reset: true }, cors);
       }
 
 

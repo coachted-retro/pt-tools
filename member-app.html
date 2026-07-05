@@ -358,7 +358,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-box">
+  <div class="login-box" id="member-login-box">
     <div class="login-logo" style="text-align:center">
       <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" style="max-width:240px;width:100%;height:auto;display:block;margin:0 auto;border-radius:10px" onerror="this.style.display='none'">
     </div>
@@ -370,6 +370,37 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <div class="login-err" id="l-err" style="display:none"></div>
     <div class="login-hint" style="margin-top:12px"><a href="#" onclick="showReset(event)" style="color:var(--red);font-weight:700;text-decoration:none">Forgot password? / First time? Set one up</a></div>
     <div class="login-hint">Don't have an account? Ask your coach to set you up.</div>
+    <div class="login-hint" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px"><a href="#" onclick="showStaffLogin(event)" style="color:var(--ink3);font-weight:700">Staff Login →</a></div>
+  </div>
+
+  <div class="login-box" id="staff-login-box" style="display:none">
+    <h2 style="font-size:18px">Staff Login</h2>
+    <p>Coaches, MEAs, floor techs, and management</p>
+    <div class="fld"><label>Email</label><input id="s-email" type="email" placeholder="you@retrofh.com" autocomplete="email"></div>
+    <div class="fld"><label>PIN</label><input id="s-pin" type="password" inputmode="numeric" maxlength="6" placeholder="4-6 digit PIN" autocomplete="current-password"></div>
+    <button class="login-btn" onclick="doStaffLogin()">Sign In</button>
+    <div class="login-err" id="s-err" style="display:none"></div>
+    <div class="login-hint" style="margin-top:12px"><a href="#" onclick="showStaffReset(event)" style="color:var(--red);font-weight:700;text-decoration:none">Forgot PIN?</a></div>
+    <div class="login-hint"><a href="#" onclick="hideStaffLogin(event)" style="color:var(--ink3)">← Back to member login</a></div>
+  </div>
+
+  <div class="login-box" id="staff-reset-box" style="display:none">
+    <h2 style="font-size:18px">Reset Staff PIN</h2>
+    <div id="staff-reset-step1">
+      <p>Enter your work email. We'll send a 6-digit code.</p>
+      <div class="fld"><label>Email</label><input id="sr-email" type="email" placeholder="you@retrofh.com" autocomplete="email"></div>
+      <button class="login-btn" onclick="staffResetRequest()">Send Code</button>
+    </div>
+    <div id="staff-reset-step2" style="display:none">
+      <p>Check your email for the code, then choose a new PIN.</p>
+      <div class="fld"><label>6-Digit Code</label><input id="sr-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000"></div>
+      <div class="fld"><label>New PIN</label><input id="sr-pin1" type="password" inputmode="numeric" maxlength="6" placeholder="4-6 digits" autocomplete="new-password"></div>
+      <div class="fld"><label>Confirm PIN</label><input id="sr-pin2" type="password" inputmode="numeric" maxlength="6" placeholder="Repeat it" autocomplete="new-password"></div>
+      <button class="login-btn" onclick="staffResetConfirm()">Set PIN</button>
+      <div class="login-hint" style="margin-top:10px"><a href="#" onclick="staffResetRequest(event)" style="color:var(--ink3)">Resend code</a></div>
+    </div>
+    <div class="login-err" id="sr-err" style="display:none"></div>
+    <div class="login-hint"><a href="#" onclick="hideStaffReset(event)" style="color:var(--ink3)">Back to staff login</a></div>
   </div>
 
   <div class="login-box" id="reset-box" style="display:none;margin-top:14px">
@@ -590,6 +621,21 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <button class="tab-btn" onclick="switchTab('profile')" id="tab-profile"><span class="tab-icon">👤</span>Profile</button>
   </div>
 
+</div>
+
+<!-- STAFF SHELL (role-based landing, separate from the member app) -->
+<div id="staff-shell" style="display:none;flex-direction:column;height:100%">
+  <div class="topbar">
+    <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" style="height:34px;width:auto;border-radius:6px;flex-shrink:0" onerror="this.style.display='none'">
+    <div style="flex:1;min-width:0;margin-left:10px">
+      <div id="staff-greeting-name" style="font-weight:700;font-size:14px"></div>
+      <div id="staff-greeting-role" style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;font-weight:700"></div>
+    </div>
+    <button class="avatar-btn" onclick="doStaffLogout()" title="Log Out">&#8618;</button>
+  </div>
+  <div style="flex:1;overflow-y:auto">
+    <div class="scroll-pad" id="staff-home-body"></div>
+  </div>
 </div>
 
 <!-- FINISH SCREEN -->
@@ -1412,6 +1458,129 @@ async function doLogin() {
     localStorage.setItem('member_session', JSON.stringify(SESSION));
     startApp();
   } catch(e) { errEl.textContent = 'Could not connect. Try again.'; errEl.style.display = 'block'; }
+}
+
+// ── STAFF LOGIN (separate tier — coaches, MEAs, floor techs, management) ──
+let STAFF_SESSION = null;
+
+function showStaffLogin(e) { if (e) e.preventDefault(); document.getElementById('member-login-box').style.display = 'none'; document.getElementById('staff-login-box').style.display = 'block'; }
+function hideStaffLogin(e) { if (e) e.preventDefault(); document.getElementById('member-login-box').style.display = 'block'; document.getElementById('staff-login-box').style.display = 'none'; document.getElementById('s-err').style.display = 'none'; }
+function showStaffReset(e) { if (e) e.preventDefault(); document.getElementById('staff-login-box').style.display = 'none'; document.getElementById('staff-reset-box').style.display = 'block'; const se = document.getElementById('s-email').value.trim(); if (se) document.getElementById('sr-email').value = se; }
+function hideStaffReset(e) { if (e) e.preventDefault(); document.getElementById('staff-reset-box').style.display = 'none'; document.getElementById('staff-login-box').style.display = 'block'; document.getElementById('staff-reset-step2').style.display = 'none'; document.getElementById('staff-reset-step1').style.display = 'block'; document.getElementById('sr-err').style.display = 'none'; }
+
+async function doStaffLogin() {
+  const email = document.getElementById('s-email').value.trim();
+  const pin = document.getElementById('s-pin').value;
+  const errEl = document.getElementById('s-err');
+  errEl.style.display = 'none';
+  if (!email || !pin) { errEl.textContent = 'Please enter email and PIN.'; errEl.style.display = 'block'; return; }
+  try {
+    const r = await fetch(WORKER + '/staff/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, pin}) });
+    const d = await r.json();
+    if (!d.ok) { errEl.textContent = d.error || 'Invalid email or PIN.'; errEl.style.display = 'block'; return; }
+    STAFF_SESSION = { staff_id: d.staff_id, token: d.token, email, name: d.name, role: d.role };
+    localStorage.setItem('staff_session', JSON.stringify(STAFF_SESSION));
+    startStaffApp();
+  } catch(e) { errEl.textContent = 'Could not connect. Try again.'; errEl.style.display = 'block'; }
+}
+
+async function staffResetRequest(e) {
+  if (e) e.preventDefault();
+  const errEl = document.getElementById('sr-err');
+  errEl.style.display = 'none';
+  const email = document.getElementById('sr-email').value.trim();
+  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return; }
+  try {
+    const r = await fetch(WORKER + '/staff/reset-request', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+    const d = await r.json();
+    if (d.sent === false) {
+      errEl.textContent = 'Email could not be sent (' + (d.reason || 'unknown reason') + '). Ask management to reset your PIN directly.';
+      errEl.style.display = 'block';
+      return;
+    }
+    document.getElementById('staff-reset-step1').style.display = 'none';
+    document.getElementById('staff-reset-step2').style.display = 'block';
+  } catch (err) {
+    errEl.textContent = 'Could not reach the server. Try again.'; errEl.style.display = 'block';
+  }
+}
+
+async function staffResetConfirm() {
+  const errEl = document.getElementById('sr-err');
+  errEl.style.display = 'none';
+  const email = document.getElementById('sr-email').value.trim();
+  const code = document.getElementById('sr-code').value.trim();
+  const pin1 = document.getElementById('sr-pin1').value;
+  const pin2 = document.getElementById('sr-pin2').value;
+  if (!code || !pin1 || !pin2) { errEl.textContent = 'Fill in all fields.'; errEl.style.display = 'block'; return; }
+  if (pin1 !== pin2) { errEl.textContent = 'PINs do not match.'; errEl.style.display = 'block'; return; }
+  if (!/^\d{4,6}$/.test(pin1)) { errEl.textContent = 'PIN must be 4-6 digits.'; errEl.style.display = 'block'; return; }
+  try {
+    const r = await fetch(WORKER + '/staff/reset-confirm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, code, new_pin: pin1}) });
+    const d = await r.json();
+    if (!d.ok) { errEl.textContent = d.error || 'Could not reset PIN.'; errEl.style.display = 'block'; return; }
+    hideStaffReset();
+    document.getElementById('s-email').value = email;
+  } catch(e) { errEl.textContent = 'Could not connect. Try again.'; errEl.style.display = 'block'; }
+}
+
+function doStaffLogout() {
+  localStorage.removeItem('staff_session');
+  STAFF_SESSION = null;
+  document.getElementById('staff-shell').style.display = 'none';
+  hideStaffLogin();
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function startStaffApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('staff-shell').style.display = 'flex';
+  document.getElementById('staff-greeting-name').textContent = STAFF_SESSION.name;
+  document.getElementById('staff-greeting-role').textContent = (STAFF_SESSION.role || '').replace(/_/g,' ');
+  renderStaffHome();
+}
+
+function staffCard(title, sub, href, icon, comingSoon) {
+  if (comingSoon) {
+    return `<div class="card"><div class="card-body" style="opacity:.55">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:22px">${icon}</div>
+        <div><div style="font-weight:700;font-size:14px">${esc(title)}</div><div style="font-size:12px;color:var(--ink3)">${esc(sub)} — coming soon</div></div>
+      </div></div></div>`;
+  }
+  return `<a class="card" href="${href}" style="text-decoration:none;color:inherit"><div class="card-body" style="width:100%">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:22px">${icon}</div>
+      <div><div style="font-weight:700;font-size:14px">${esc(title)}</div><div style="font-size:12px;color:var(--ink3)">${esc(sub)}</div></div>
+    </div></div></a>`;
+}
+
+function renderStaffHome() {
+  const el = document.getElementById('staff-home-body');
+  const role = (STAFF_SESSION.role || '').toLowerCase();
+  const name = encodeURIComponent(STAFF_SESSION.name);
+  let cards = '';
+
+  if (role === 'pt coach' || role === "men's training lead") {
+    cards += staffCard('My Clients', 'Your full roster and daily dashboard', 'coach-crm.html?coach='+name+'&locked=1', '👥');
+    cards += staffCard('My Calendar', "Today's sessions and the week ahead", 'coach-calendar.html?coach='+name+'&locked=1', '📅');
+    cards += staffCard('Log a Workout', 'Floor logging, offline-ready', 'gym-floor.html', '💪');
+  } else if (role === 'mea') {
+    cards += staffCard('My Call List', 'Today\'s people + business calls, ranked by priority', 'prospect-tracker.html?tab=calllist', '📞');
+    cards += staffCard('Prospect Tracker', 'People and Businesses pipeline', 'prospect-tracker.html', '🎯');
+  } else if (role === 'floor tech') {
+    cards += staffCard('Maintenance Punch List', 'Daily log, repairs, and equipment notes', '#', '🔧', true);
+  } else if (role === 'general manager' || role === 'director of fitness' || role === 'regional director') {
+    cards += staffCard('Command Center', 'Every tool, one place', 'command-center.html', '🏢');
+    cards += staffCard('Coverage Board', 'Staff shifts and PT sessions, one calendar', '#', '🗓', true);
+    cards += staffCard('Prospect Tracker', 'People, Businesses, and the daily Call List', 'prospect-tracker.html', '🎯');
+  } else {
+    cards += staffCard('Command Center', 'Every tool, one place', 'command-center.html', '🏢');
+  }
+
+  cards += staffCard('My HR & Payroll', 'Pay stubs, PTO, documents', '#', '💼', true);
+
+  el.innerHTML = `<div class="sec-label">Quick Access</div>${cards}`;
 }
 
 
@@ -3200,7 +3369,9 @@ if (IS_DEMO) {
   startApp();
 } else {
   const saved = localStorage.getItem('member_session');
+  const savedStaff = localStorage.getItem('staff_session');
   if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); startGuestMode(); } }
+  else if (savedStaff) { try { STAFF_SESSION = JSON.parse(savedStaff); startStaffApp(); } catch(e) { localStorage.removeItem('staff_session'); startGuestMode(); } }
   else { startGuestMode(); }
 }
 </script>

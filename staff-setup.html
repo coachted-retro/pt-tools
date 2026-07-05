@@ -206,10 +206,32 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   </div>
 </div>
 
+<!-- SET LOGIN MODAL -->
+<div class="modal-overlay" id="loginModalOverlay">
+  <div class="modal">
+    <h2>Set Staff Login</h2>
+    <p style="font-size:13px;color:var(--muted,#6B7280);margin:0 0 14px">This is separate from Edit — it's what lets them sign into Retro Strong as staff. Give them the email and PIN directly; they can change the PIN themselves after logging in.</p>
+    <input type="hidden" id="loginStaffId">
+    <div class="field">
+      <label>Login Email</label>
+      <input type="email" id="loginEmail" placeholder="name@retrofh.com">
+    </div>
+    <div class="field">
+      <label>PIN (4-6 digits)</label>
+      <input type="text" id="loginPin" inputmode="numeric" maxlength="6" placeholder="e.g. 1234">
+    </div>
+    <div class="modal-actions">
+      <button class="action-btn btn-cancel" onclick="closeLoginModal()">Cancel</button>
+      <button class="btn-save" onclick="saveLogin()">Save Login</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const ADMIN_KEY = 'retro-admin-2024';
 let roster = [];
 
 const ROLE_GROUPS = {
@@ -279,6 +301,7 @@ function renderGroup(containerId, roles) {
       <div style="font-size:12px;color:${e.active ? 'var(--green)' : 'var(--muted)'}">${e.active ? 'Active' : 'Inactive'}</div>
       <div class="row-actions">
         <button class="action-btn btn-edit" onclick="editEmployee(${e.id})">Edit</button>
+        <button class="action-btn btn-edit" onclick="openLoginModal(${e.id})">Set Login</button>
         <button class="action-btn ${e.active ? 'btn-deactivate' : 'btn-activate'}" onclick="toggleActive(${e.id}, ${e.active ? 0 : 1})">${e.active ? 'Deactivate' : 'Activate'}</button>
       </div>
     </div>
@@ -323,6 +346,37 @@ function openModal(id) {
 
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function openLoginModal(id) {
+  const emp = roster.find(e => e.id === id);
+  if (!emp) return;
+  document.getElementById('loginStaffId').value = id;
+  document.getElementById('loginEmail').value = emp.email || '';
+  document.getElementById('loginPin').value = '';
+  document.getElementById('loginModalOverlay').classList.add('open');
+}
+
+function closeLoginModal() {
+  document.getElementById('loginModalOverlay').classList.remove('open');
+}
+
+async function saveLogin() {
+  const staffId = document.getElementById('loginStaffId').value;
+  const email = document.getElementById('loginEmail').value.trim();
+  const pin = document.getElementById('loginPin').value.trim();
+  if (!email) { showToast('Email is required'); return; }
+  if (!/^\d{4,6}$/.test(pin)) { showToast('PIN must be 4-6 digits'); return; }
+  try {
+    const r = await fetch(WORKER + '/staff/provision', {
+      method: 'POST', headers: {'Content-Type':'application/json', 'X-Admin-Key': ADMIN_KEY},
+      body: JSON.stringify({ staff_id: parseInt(staffId), email, pin })
+    });
+    const d = await r.json();
+    if (!d.ok) { showToast(d.error || 'Could not save login'); return; }
+    showToast('Login saved — share the email and PIN with them directly.');
+    closeLoginModal();
+  } catch(e) { showToast('Connection error, try again'); }
 }
 
 function updateEODTemplate() {
@@ -384,6 +438,9 @@ function showToast(msg) {
 
 document.getElementById('modalOverlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeModal();
+});
+document.getElementById('loginModalOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeLoginModal();
 });
 
 loadRoster();
