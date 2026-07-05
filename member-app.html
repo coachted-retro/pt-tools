@@ -452,6 +452,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-nutrition-demo"></div>
         <div id="home-habits"></div>
         <div id="home-here-now"></div>
+        <div id="home-challenge"></div>
+        <div id="home-buddy"></div>
         <div id="home-happening"></div>
         <div id="home-coachs-edge"></div>
         <div id="home-circle"></div>
@@ -2066,6 +2068,163 @@ async function loadPublicHomeContent() {
   loadCircle();
   loadHereNow();
   loadReferralLeaderboard();
+  loadChallenge();
+  if (SESSION && SESSION.client_id) loadBuddyMatching();
+}
+
+let CHALLENGE = null;
+async function loadChallenge() {
+  const el = document.getElementById('home-challenge');
+  if (!el) return;
+  try {
+    const clientParam = (SESSION && SESSION.client_id) ? '?client_id=' + SESSION.client_id : '';
+    const r = await fetch(WORKER + '/challenge/current' + clientParam);
+    const d = await r.json();
+    CHALLENGE = d;
+    if (!d || !d.challenge) { el.innerHTML = ''; return; }
+    const ch = d.challenge;
+    const lb = d.leaderboard || [];
+    const teamLb = d.team_leaderboard || [];
+    const mine = (SESSION && SESSION.client_id) ? lb.find(x => String(x.client_id) === String(SESSION.client_id)) : null;
+    el.innerHTML = `<div class="sec-label">This Month's Challenge</div>
+      <div class="card" style="border-top:3px solid var(--red)"><div class="card-body">
+        <div style="font-family:'Oswald';text-transform:uppercase;font-weight:700;font-size:16px">${esc(ch.title)}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">${esc(ch.tagline||'')}</div>
+        ${mine ? `<div style="font-size:13px;margin-bottom:8px">Your points: <b style="color:var(--red);font-size:18px">${mine.total}</b></div>` : ''}
+        ${d.my_team ? `<div style="font-size:12px;color:var(--ink3);margin-bottom:8px">Team: <b>${esc(d.my_team.name)}</b></div>` : ''}
+        <button class="action-btn" onclick="openChallengeModal()">View Challenge &amp; Log Activity</button>
+      </div></div>`;
+  } catch(e) { el.innerHTML = ''; }
+}
+
+function openChallengeModal() {
+  if (!CHALLENGE || !CHALLENGE.challenge) return;
+  const ch = CHALLENGE.challenge;
+  const lb = CHALLENGE.leaderboard || [];
+  const teamLb = CHALLENGE.team_leaderboard || [];
+  const rules = (ch.rules||'').split('|').map(r=>r.trim()).filter(Boolean);
+  const canAct = !!(SESSION && SESSION.client_id);
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('mm-title').textContent = ch.title;
+  document.getElementById('mm-body').innerHTML = `
+    <div style="font-size:13px;line-height:1.6;margin-bottom:12px">${esc(ch.description||'')}</div>
+    ${rules.length ? '<ul style="font-size:13px;color:var(--ink3);padding-left:18px;margin-bottom:12px">'+rules.map(r=>'<li style="margin-bottom:4px">'+esc(r)+'</li>').join('')+'</ul>' : ''}
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:16px"><b>Points:</b> ${esc(ch.points_system||'')}</div>
+    <div class="sec-label" style="margin:0 0 8px">Individual Leaderboard</div>
+    ${lb.length ? lb.slice(0,10).map((row,i) => `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">
+      <div style="font-family:'Oswald';font-weight:800;color:var(--red);width:20px">${i+1}</div>
+      <div style="flex:1;font-weight:600;font-size:13px">${esc(row.first_name||'Member')}${canAct && String(row.client_id)===String(SESSION.client_id)?' (You)':''}</div>
+      <div style="font-size:12px;color:var(--ink3)">${row.total} pts</div>
+    </div>`).join('') : '<div class="empty-state">No entries yet — be the first.</div>'}
+    <div class="sec-label" style="margin:16px 0 8px">Team Leaderboard</div>
+    ${teamLb.length ? teamLb.slice(0,10).map((row,i) => `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">
+      <div style="font-family:'Oswald';font-weight:800;color:var(--red);width:20px">${i+1}</div>
+      <div style="flex:1;font-weight:600;font-size:13px">${esc(row.name)} <span style="color:var(--ink3);font-weight:400">(${row.member_count})</span></div>
+      <div style="font-size:12px;color:var(--ink3)">${row.total} pts</div>
+    </div>`).join('') : '<div class="empty-state">No teams yet.</div>'}
+    ${canAct ? `<button class="action-btn secondary" style="margin-top:14px" onclick="openTeamPicker()">Join or Switch Teams</button>
+      <div class="fld" style="margin-top:16px"><label>Log an activity</label><input id="ch-act-input" placeholder="30 min walk, hit all meals, 8 cups water..."></div>
+      <button class="action-btn" onclick="submitChallengeLog()">Log It (+1 point)</button>
+      <div class="mm-status" id="mm-status"></div>` : `<div class="mm-status" style="margin-top:14px">Log in to join a team and log activities.</div>`}`;
+}
+
+async function submitChallengeLog() {
+  const status = document.getElementById('mm-status');
+  const act = document.getElementById('ch-act-input').value.trim();
+  if (!act) { status.textContent = 'Describe what you did'; return; }
+  status.textContent = 'Logging...';
+  try {
+    const r = await fetch(WORKER + '/challenge/log', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: SESSION.client_id, challenge_id: CHALLENGE.challenge.id, entry_date: new Date().toISOString().slice(0,10), activity: act, points: 1 }) });
+    const d = await r.json();
+    status.textContent = 'Logged! Total points: ' + d.total;
+    document.getElementById('ch-act-input').value = '';
+    loadChallenge();
+  } catch(e) { status.textContent = 'Could not log, try again.'; }
+}
+
+async function openTeamPicker() {
+  document.getElementById('mm-title').textContent = 'Join a Team';
+  const body = document.getElementById('mm-body');
+  body.innerHTML = '<div class="empty-state">Loading teams...</div>';
+  try {
+    const r = await fetch(WORKER + '/groups/list?type=team');
+    const d = await r.json();
+    const groups = d.groups || [];
+    body.innerHTML = (groups.length ? groups.map(g => `<div class="mm-item-row" style="cursor:pointer" onclick="joinTeam(${g.id})">
+        <div class="mm-item-name">${esc(g.name)}</div>
+        <div class="mm-item-macro">${g.member_count} member${g.member_count===1?'':'s'}</div>
+      </div>`).join('') : '<div class="empty-state">No teams yet — start one below.</div>') +
+      `<div class="fld" style="margin-top:14px"><label>Or start a new team</label><input id="new-team-name" placeholder="Team name"></div>
+      <button class="action-btn" onclick="createTeam()">Create &amp; Join</button>
+      <div class="mm-status" id="mm-status"></div>`;
+  } catch(e) { body.innerHTML = '<div class="empty-state">Could not load teams.</div>'; }
+}
+
+async function joinTeam(groupId) {
+  try {
+    await fetch(WORKER + '/groups/join', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ group_id: groupId, client_id: SESSION.client_id }) });
+    closeMealModal();
+    loadChallenge();
+  } catch(e) {}
+}
+
+async function createTeam() {
+  const name = document.getElementById('new-team-name').value.trim();
+  const status = document.getElementById('mm-status');
+  if (!name) { status.textContent = 'Give your team a name'; return; }
+  status.textContent = 'Creating...';
+  try {
+    await fetch(WORKER + '/groups/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, type:'team', client_id: SESSION.client_id }) });
+    closeMealModal();
+    loadChallenge();
+  } catch(e) { status.textContent = 'Could not create team.'; }
+}
+
+const BUDDY_GOALS = ['Lose Fat','Build Muscle','General Fitness','Athletic Performance'];
+async function loadBuddyMatching() {
+  const el = document.getElementById('home-buddy');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/buddy/matches?client_id=' + SESSION.client_id);
+    const d = await r.json();
+    if (!d.opted_in) {
+      el.innerHTML = `<div class="sec-label">Find a Workout Buddy</div>
+        <div class="card"><div class="card-body">
+          <div style="font-size:13px;color:var(--ink3);margin-bottom:10px">Get matched with someone chasing a similar goal — opt in and we'll show you who's a fit.</div>
+          <select id="buddy-goal-select" style="width:100%;padding:10px;border:1.5px solid var(--line);border-radius:9px;margin-bottom:10px">
+            ${BUDDY_GOALS.map(g=>`<option value="${g}">${g}</option>`).join('')}
+          </select>
+          <button class="action-btn" onclick="buddyOptIn()">Find My Buddy</button>
+        </div></div>`;
+      return;
+    }
+    const matches = d.matches || [];
+    el.innerHTML = `<div class="sec-label">Find a Workout Buddy</div>
+      <div class="card"><div class="card-body">
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Matched on: <b>${esc(d.my_goal)}</b></div>
+        ${matches.length ? matches.map(m => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+          <div style="flex:1;font-weight:600;font-size:13px">${esc((m.first_name||'').trim())} ${esc((m.last_name||'')[0]||'')}.</div>
+          <div style="font-size:11px;color:var(--ink3)">${esc(m.goal_type)}</div>
+        </div>`).join('') : '<div class="empty-state">No matches yet — check back as more people opt in.</div>'}
+        <button class="action-btn secondary" style="margin-top:10px" onclick="buddyOptOut()">Opt Out</button>
+      </div></div>`;
+  } catch(e) { el.innerHTML = ''; }
+}
+
+async function buddyOptIn() {
+  const goal = document.getElementById('buddy-goal-select').value;
+  try {
+    await fetch(WORKER + '/buddy/optin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ client_id: SESSION.client_id, goal_type: goal }) });
+    loadBuddyMatching();
+  } catch(e) {}
+}
+
+async function buddyOptOut() {
+  try {
+    await fetch(WORKER + '/buddy/optout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ client_id: SESSION.client_id }) });
+    loadBuddyMatching();
+  } catch(e) {}
 }
 
 async function loadHereNow() {

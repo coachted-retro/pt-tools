@@ -90,7 +90,7 @@ const ALLOWED_TABLES = new Set([
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
-  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins',
+  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins',
   'daily_content','client_wins','gym_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
@@ -818,15 +818,106 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
 
       if (url.pathname === '/challenge/current' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
+        const clientId = url.searchParams.get('client_id');
         const ch = await env.DB.prepare('SELECT * FROM challenges WHERE active=1 ORDER BY generated_at DESC LIMIT 1').first();
         if (!ch) return ok({ challenge: null }, cors);
         const entries = await env.DB.prepare(
           'SELECT ce.client_id, SUM(ce.points) as total, c.first_name, c.last_name FROM challenge_entries ce JOIN clients c ON c.id=ce.client_id WHERE ce.challenge_id=? GROUP BY ce.client_id ORDER BY total DESC LIMIT 20'
         ).bind(ch.id).all();
-        return ok({ challenge: ch, leaderboard: entries.results||[] }, cors);
+        const teamRows = await env.DB.prepare(
+          `SELECT g.id, g.name, COALESCE(SUM(ce.points),0) total, COUNT(DISTINCT gm.client_id) member_count
+           FROM member_groups g
+           LEFT JOIN group_members gm ON gm.group_id = g.id
+           LEFT JOIN challenge_entries ce ON ce.client_id = gm.client_id AND ce.challenge_id = ?
+           WHERE g.type='team' GROUP BY g.id ORDER BY total DESC LIMIT 20`
+        ).bind(ch.id).all();
+        let myTeam = null;
+        if (clientId) {
+          myTeam = await env.DB.prepare(
+            `SELECT g.id, g.name FROM member_groups g JOIN group_members gm ON gm.group_id=g.id WHERE gm.client_id=? AND g.type='team' LIMIT 1`
+          ).bind(clientId).first();
+        }
+        return ok({ challenge: ch, leaderboard: entries.results||[], team_leaderboard: teamRows.results||[], my_team: myTeam||null }, cors);
       }
 
-      if (url.pathname === '/challenge/log' && request.method === 'POST') {
+      // ── TEAMS (small opt-in groups for team challenges) ─────────────
+      if (url.pathname === '/groups/list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const type = url.searchParams.get('type') || 'team';
+        const rows = await env.DB.prepare(
+          `SELECT g.id, g.name, COUNT(gm.client_id) member_count FROM member_groups g
+           LEFT JOIN group_members gm ON gm.group_id=g.id WHERE g.type=? GROUP BY g.id ORDER BY g.name ASC`
+        ).bind(type).all();
+        return ok({ groups: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/groups/create' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.name) return bad('name required', cors);
+        const ins = await env.DB.prepare('INSERT INTO member_groups (name,type,created_at) VALUES (?,?,?)')
+          .bind(b.name, b.type||'team', new Date().toISOString()).run();
+        if (b.client_id) {
+          await env.DB.prepare('INSERT OR IGNORE INTO group_members (group_id,client_id,joined_at) VALUES (?,?,?)')
+            .bind(ins.meta?.last_row_id, b.client_id, new Date().toISOString()).run();
+        }
+        return ok({ id: ins.meta?.last_row_id }, cors);
+      }
+
+      if (url.pathname === '/groups/join' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.group_id || !b.client_id) return bad('group_id, client_id required', cors);
+        const grp = await env.DB.prepare("SELECT type FROM member_groups WHERE id=?").bind(b.group_id).first();
+        if (grp && grp.type === 'team') {
+          await env.DB.prepare(`DELETE FROM group_members WHERE client_id=? AND group_id IN (SELECT id FROM member_groups WHERE type='team')`).bind(b.client_id).run();
+        }
+        await env.DB.prepare('INSERT OR IGNORE INTO group_members (group_id,client_id,joined_at) VALUES (?,?,?)')
+          .bind(b.group_id, b.client_id, new Date().toISOString()).run();
+        return ok({ joined: true }, cors);
+      }
+
+      if (url.pathname === '/groups/leave' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.group_id || !b.client_id) return bad('group_id, client_id required', cors);
+        await env.DB.prepare('DELETE FROM group_members WHERE group_id=? AND client_id=?').bind(b.group_id, b.client_id).run();
+        return ok({ left: true }, cors);
+      }
+
+      // ── BUDDY MATCHING (opt-in, matched by goal) ────────────────────
+      if (url.pathname === '/buddy/optin' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id || !b.goal_type) return bad('client_id, goal_type required', cors);
+        await env.DB.prepare('INSERT INTO buddy_optins (client_id,goal_type,preferred_time,active,created_at) VALUES (?,?,?,1,?) ON CONFLICT(client_id) DO UPDATE SET goal_type=excluded.goal_type, preferred_time=excluded.preferred_time, active=1')
+          .bind(b.client_id, b.goal_type, b.preferred_time||'', new Date().toISOString()).run();
+        return ok({ opted_in: true }, cors);
+      }
+
+      if (url.pathname === '/buddy/optout' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id) return bad('client_id required', cors);
+        await env.DB.prepare('UPDATE buddy_optins SET active=0 WHERE client_id=?').bind(b.client_id).run();
+        return ok({ opted_out: true }, cors);
+      }
+
+      if (url.pathname === '/buddy/matches' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const clientId = url.searchParams.get('client_id');
+        if (!clientId) return bad('client_id required', cors);
+        const me = await env.DB.prepare('SELECT * FROM buddy_optins WHERE client_id=? AND active=1').bind(clientId).first();
+        if (!me) return ok({ opted_in: false, matches: [] }, cors);
+        const rows = await env.DB.prepare(
+          `SELECT b.client_id, b.goal_type, b.preferred_time, c.first_name, c.last_name FROM buddy_optins b
+           JOIN clients c ON c.id = b.client_id
+           WHERE b.active=1 AND b.client_id != ? AND b.goal_type = ? LIMIT 10`
+        ).bind(clientId, me.goal_type).all();
+        return ok({ opted_in: true, my_goal: me.goal_type, matches: rows.results || [] }, cors);
+      }
+
+
         if (!env.DB) return bad('No DB', cors);
         const body = await request.json();
         if (!body.client_id || !body.challenge_id) return bad('client_id and challenge_id required', cors);
