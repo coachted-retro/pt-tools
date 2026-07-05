@@ -103,7 +103,7 @@ function renderView(staff, profile, isMine) {
       ${(profile.public_email || profile.public_phone) ? `<div class="sec-label">Contact</div><div class="body-text">${profile.public_email?esc(profile.public_email)+'<br>':''}${profile.public_phone?esc(profile.public_phone):''}</div>` : ''}
     </div>
     ${isMine ? `<button class="action-btn secondary" onclick="showEdit()">Edit My Profile</button>` : ''}
-    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--ink3,#6B7280)">Powered by <b style="color:var(--red,#E0192B)">Retro Strong</b></div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--ink3,#6B7280);display:flex;align-items:center;justify-content:center;gap:5px"><img src="icons-strong/icon-192.png" alt="" style="width:14px;height:14px;border-radius:3px" onerror="this.style.display='none'"> Powered by <b style="color:var(--red,#E0192B)">Retro Strong</b></div>
   `;
   window._currentStaff = staff;
   window._currentProfile = profile;
