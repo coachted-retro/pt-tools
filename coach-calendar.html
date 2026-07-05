@@ -50,7 +50,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <body>
 <div class="topbar">
   <div class="logo">Coach <span>Calendar</span></div>
-  <a href="coach-crm.html">&larr; My Clients</a>
+  <button onclick="syncClubOS()" id="sync-btn" style="margin-left:auto;background:none;border:1px solid #374151;color:#9CA3AF;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700;font-size:12px;cursor:pointer">&#8635; Sync Club OS</button>
+  <a href="coach-crm.html" style="margin-left:12px">&larr; My Clients</a>
 </div>
 <div class="wrap">
   <div class="picker">
@@ -105,6 +106,26 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <button onclick="confirmBulkReassign()" style="background:var(--red);color:#fff;border:none">Reassign Day</button>
     </div>
     <div id="bulk-msg" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>
+</div>
+
+<div class="modal" id="add-event-modal">
+  <div class="modal-box">
+    <div style="font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;margin-bottom:4px">Add Event</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">A one-time entry for this specific date — a consultation, a follow-up, anything not part of a recurring plan.</div>
+    <label style="font-size:11px;color:var(--muted)">Client</label>
+    <select id="ae-client"><option value="">Loading...</option></select>
+    <label style="font-size:11px;color:var(--muted)">Date</label>
+    <input type="date" id="ae-date">
+    <label style="font-size:11px;color:var(--muted)">What is this?</label>
+    <input id="ae-program" placeholder="e.g. Initial Consultation, 6-Week Follow-Up, Monthly Check-In">
+    <label style="font-size:11px;color:var(--muted)">Notes</label>
+    <textarea id="ae-notes" rows="2" placeholder="Optional"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button onclick="closeAddEvent()" style="border:1px solid var(--line);background:#fff">Cancel</button>
+      <button onclick="saveAddEvent()" style="background:var(--red);color:#fff;border:none">Save</button>
+    </div>
+    <div id="ae-msg" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
   </div>
 </div>
 
@@ -172,6 +193,22 @@ async function confirmBulkReassign(){
   }
 }
 
+async function syncClubOS(){
+  const btn = document.getElementById('sync-btn');
+  btn.textContent = 'Syncing...'; btn.disabled = true;
+  try {
+    const r = await fetch(WORKER + '/schedule/sync-clubos', {method:'POST'});
+    const d = await r.json();
+    if (d.synced != null) {
+      alert('Synced ' + d.synced + ' appointments from Club OS.');
+      renderCalendar();
+    } else {
+      alert('Sync failed: ' + (d.error || 'unknown error'));
+    }
+  } catch(e) { alert('Could not reach the sync service.'); }
+  btn.textContent = '\u21BB Sync Club OS'; btn.disabled = false;
+}
+
 function init(){
   document.getElementById('dow-row').innerHTML = ['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');
   renderCalendar();
@@ -194,6 +231,13 @@ async function renderCalendar(){
     (d.days||[]).forEach(row => MONTH_DAYS[row.scheduled_date] = row.n);
   } catch(e) { MONTH_DAYS = {}; }
 
+  let CLUBOS_DAYS = {};
+  try {
+    const r2 = await fetch(WORKER + `/schedule/clubos-month?month=${monthStr}`);
+    const d2 = await r2.json();
+    (d2.days||[]).forEach(row => CLUBOS_DAYS[row.d] = row.n);
+  } catch(e) {}
+
   const firstDow = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const todayStr = new Date().toISOString().slice(0,10);
@@ -202,8 +246,13 @@ async function renderCalendar(){
   for (let day=1; day<=daysInMonth; day++){
     const dateStr = monthStr + '-' + String(day).padStart(2,'0');
     const has = MONTH_DAYS[dateStr];
+    const hasClubOS = CLUBOS_DAYS[dateStr];
     cells += `<div class="day ${dateStr===todayStr?'today':''}" onclick="openDay('${dateStr}')">
-      <div class="n">${day}</div>${has ? '<div class="dot"></div>' : ''}
+      <div class="n">${day}</div>
+      <div style="display:flex;gap:2px;margin-top:2px">
+        ${has ? '<div class="dot"></div>' : ''}
+        ${hasClubOS ? '<div class="dot" style="background:#2563EB"></div>' : ''}
+      </div>
     </div>`;
   }
   document.getElementById('cal-grid').innerHTML = cells;
@@ -213,23 +262,79 @@ async function openDay(dateStr){
   const coach = document.getElementById('coach-select').value;
   const panel = document.getElementById('day-panel');
   panel.innerHTML = '<div class="empty-state">Loading...</div>';
-  const r = await fetch(WORKER + `/schedule/day?date=${dateStr}` + (coach?`&coach=${encodeURIComponent(coach)}`:''));
+  const [r, r2] = await Promise.all([
+    fetch(WORKER + `/schedule/day?date=${dateStr}` + (coach?`&coach=${encodeURIComponent(coach)}`:'')),
+    fetch(WORKER + `/schedule/clubos-day?date=${dateStr}`)
+  ]);
   const d = await r.json();
+  const d2 = await r2.json();
   const rows = d.sessions || [];
-  panel.innerHTML = `<h3>${new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h3>` +
-    (rows.length ? rows.map(s => `
+  const clubosRows = d2.appointments || [];
+  let html = `<h3>${new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h3>`;
+
+  if (clubosRows.length) {
+    html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#2563EB;margin:10px 0 4px">Club OS Bookings</div>` +
+      clubosRows.map(a => `
+        <div class="sess-item" style="border-left:3px solid #2563EB;padding-left:10px">
+          <div class="name">${esc(a.summary||'Booking')}</div>
+          <div class="prog">${new Date(a.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}${a.location ? ' \u00B7 ' + esc(a.location) : ''}</div>
+        </div>`).join('');
+  }
+
+  html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:10px 0 4px">${clubosRows.length ? 'Retro One Schedule' : ''}</div>`;
+  html += rows.length ? rows.map(s => `
       <div class="sess-item">
         <div class="top">
           <div>
-            <div class="name">${esc(s.first_name)} ${esc(s.last_name)}</div>
+            <a href="coach-client-profile.html?client=${s.client_id}&coach=${encodeURIComponent(s.assigned_coach||s.default_coach||'')}" style="color:inherit;text-decoration:underline dotted">
+              <div class="name">${esc(s.first_name)} ${esc(s.last_name)}</div>
+            </a>
             <div class="prog">${esc(s.program_name)}${s.focus_notes ? ' — ' + esc(s.focus_notes) : ''}</div>
             <div class="prog" style="margin-top:2px">Coach: ${esc(s.assigned_coach || s.default_coach || '—')}</div>
           </div>
           <button class="edit-btn" onclick='openEdit(${JSON.stringify(s).replace(/'/g,"&apos;")})'>Edit</button>
         </div>
-      </div>`).join('') : '<div class="empty-state">Nothing scheduled this day.</div>');
+      </div>`).join('') : (clubosRows.length ? '' : '<div class="empty-state">Nothing scheduled this day.</div>');
+
+  html += `<button onclick="openAddEvent('${dateStr}')" style="width:100%;margin-top:12px;background:var(--card);border:1px dashed var(--line);color:var(--red);border-radius:8px;padding:12px;font-weight:700;cursor:pointer">+ Add Event to This Day</button>`;
+  panel.innerHTML = html;
 }
 
+async function openAddEvent(dateStr){
+  document.getElementById('ae-date').value = dateStr;
+  document.getElementById('ae-program').value = '';
+  document.getElementById('ae-notes').value = '';
+  document.getElementById('ae-msg').textContent = '';
+  const sel = document.getElementById('ae-client');
+  if (!sel.dataset.loaded) {
+    try {
+      const r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:300})});
+      const d = await r.json();
+      const clients = (d && d.results) || [];
+      sel.innerHTML = '<option value="">Select client...</option>' + clients.map(c => `<option value="${c.id}">${esc((c.first_name||'')+' '+(c.last_name||''))}</option>`).join('');
+      sel.dataset.loaded = '1';
+    } catch(e) { sel.innerHTML = '<option value="">Could not load clients</option>'; }
+  }
+  document.getElementById('add-event-modal').style.display = 'flex';
+}
+function closeAddEvent(){ document.getElementById('add-event-modal').style.display = 'none'; }
+
+async function saveAddEvent(){
+  const clientId = document.getElementById('ae-client').value;
+  const dateStr = document.getElementById('ae-date').value;
+  const program = document.getElementById('ae-program').value.trim();
+  const notes = document.getElementById('ae-notes').value.trim();
+  const msg = document.getElementById('ae-msg');
+  if (!clientId || !dateStr || !program) { msg.textContent = 'Client, date, and a program name are required.'; return; }
+  msg.textContent = 'Saving...';
+  const dow = new Date(dateStr+'T00:00:00').getDay();
+  const r = await fetch(WORKER + '/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({client_id: clientId, program_name: program, focus_notes: notes, weekdays:[dow], start_date: dateStr, end_date: dateStr})});
+  const d = await r.json();
+  if (d.created_count) { closeAddEvent(); renderCalendar(); openDay(dateStr); }
+  else { msg.textContent = d.error || 'Something went wrong.'; }
+}
 function openEdit(s){
   EDIT_ID = s.id;
   document.getElementById('edit-title').textContent = 'Edit — ' + s.first_name + ' ' + s.last_name;

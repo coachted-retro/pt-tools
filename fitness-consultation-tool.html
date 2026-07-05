@@ -2859,6 +2859,7 @@ async function finalizeDecline() {
 
   // 1. Write prospect/lead to D1 (primary)
   var clientName = gv('name') || '';
+  var advisorName = gv('advisor-name') || '';
   try {
     var declinePayload = {
       first_name: (clientName.split(' ')[0] || clientName),
@@ -2870,6 +2871,7 @@ async function finalizeDecline() {
       goals: gv('goals') || null,
       medical_notes: gv('medical') || null,
       status: 'prospect',
+      coach: advisorName || null,
       coach_notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
     };
     Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
@@ -2877,6 +2879,14 @@ async function finalizeDecline() {
       var clientId = d.id;
       if (clientId) {
         dbCall({ op:'insert', table:'followups', values: { client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' } }).catch(function(){});
+        // Actually put it on the coach's calendar, not just the followups log
+        var dow = followDate.getDay();
+        fetch('https://broken-cake-e9c2.tedscholl.workers.dev/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({
+            client_id: clientId, program_name: '6-Week Follow-Up', focus_notes: 'Re-engagement — declined ' + new Date().toISOString().slice(0,10) + ', reason: ' + reason,
+            weekdays: [dow], start_date: followDate.toISOString().slice(0,10), end_date: followDate.toISOString().slice(0,10),
+            coach_name: advisorName, assigned_coach: advisorName
+          })}).catch(function(){});
       }
     }).catch(function(){});
   } catch(e) {}
