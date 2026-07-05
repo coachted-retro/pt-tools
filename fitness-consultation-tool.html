@@ -1574,7 +1574,7 @@
               <input type="checkbox" id="nutrition-addon-chk" disabled style="width:20px;height:20px;flex-shrink:0;">
               <div style="flex:1">
                 <div style="font-weight:700;font-size:14px">Weekly Chef-Crafted Meal Plan</div>
-                <div style="font-size:12px;color:var(--text2);margin-top:2px">AI + chef-built recipes, grocery list, and macro targets from InBody — emailed every Saturday.</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:2px">Nutrition assessed from your InBody scan and answers given during this consultation — emailed every Saturday.</div>
               </div>
             </div>
           </div>
@@ -3557,6 +3557,13 @@ function toggleNutritionAddon() {
   var chk = document.getElementById('nutrition-addon-chk');
   if (card) card.classList.toggle('pkg-selected', nutritionAddon);
   if (chk) chk.checked = nutritionAddon;
+
+  if (!nutritionAddon) {
+    // The preferences panel should only ever be visible when the add-on
+    // is actually included — hide it immediately if it was showing.
+    var np = document.getElementById('nutrition-panel');
+    if (np) np.style.display = 'none';
+  }
 
   var tp = document.getElementById('terms-panel');
   if (tp && tp.style.display === 'block') {
