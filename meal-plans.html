@@ -239,9 +239,10 @@ function renderPlanEditor(clientId){
     const rows=slots.map(slot=>{
       const m=day.meals&&day.meals[slot]; if(!m) return '';
       const base=findLibItem(slot,m.item); const macros=scaleMacros(base,m.portion_mult||1);
+      const suppTag=(base&&base.supplement)?' <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--red-dk);background:#FDEAEC;padding:2px 6px;border-radius:8px">1st Phorm</span>':'';
       return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">'+
         '<div style="width:60px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">'+slot+'</div>'+
-        '<div style="flex:1;font-size:13px">'+esc(m.item)+' <span style="color:var(--muted);font-size:11px">('+macros.calories+' kcal, '+macros.protein_g+'g pro)</span></div>'+
+        '<div style="flex:1;font-size:13px">'+esc(m.item)+suppTag+' <span style="color:var(--muted);font-size:11px">('+macros.calories+' kcal, '+macros.protein_g+'g pro)</span></div>'+
         '<button class="btn" style="padding:5px 10px;font-size:11px" onclick="adminSwap('+clientId+','+dayIdx+',\''+slot+'\')">Swap</button></div>';
     }).join('');
     return '<div style="margin-bottom:10px"><div style="font-family:\'Oswald\';text-transform:uppercase;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px">'+esc(day.label||'Day '+(dayIdx+1))+'</div>'+rows+'</div>';
@@ -259,7 +260,7 @@ function adminSwap(clientId,dayIdx,slot){
   const picker=document.getElementById('swap-picker-'+clientId);
   picker.innerHTML='<div style="background:var(--soft);border-radius:10px;padding:10px;margin-top:8px">'+
     '<div class="meta" style="margin-bottom:6px">Swap '+slot+' — currently '+esc(current.item)+'</div>'+
-    top.map(opt=>'<div style="padding:6px 4px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)" onclick="adminApplySwap('+clientId+','+dayIdx+',\''+slot+'\',\''+esc(opt.name).replace(/'/g,"\\\'")+'\')">'+esc(opt.name)+' <span style="color:var(--muted);font-size:11px">('+opt.calories+' kcal)</span></div>').join('')+
+    top.map(opt=>'<div style="padding:6px 4px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)" onclick="adminApplySwap('+clientId+','+dayIdx+',\''+slot+'\',\''+esc(opt.name).replace(/'/g,"\\'")+'\')">'+esc(opt.name)+(opt.supplement?' <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--red-dk);background:#FDEAEC;padding:2px 6px;border-radius:8px">1st Phorm</span>':'')+' <span style="color:var(--muted);font-size:11px">('+opt.calories+' kcal)</span></div>').join('')+
     '</div>';
 }
 
