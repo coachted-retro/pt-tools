@@ -1065,11 +1065,51 @@ async function syncFromSheet() {
       const localOnly = prospects.filter(p => !d1Keys.includes((p.name + p.phone).toLowerCase().replace(/\D/g,'')));
       prospects = [...d1Prospects, ...localOnly];
     }
+
+    // --- Club OS re-engagement contacts (past trial visitors who never
+    // signed up) — imported once into the D1 prospect_log table, never
+    // previously read back into this tool since it only read localStorage.
+    const plResp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({op:'select', table:'prospect_log', orderBy:'id desc', limit:500})
+    });
+    const plData = await plResp.json();
+    if (plData.results && Array.isArray(plData.results)) {
+      const existingKeys = prospects.map(p => (p.name + p.phone).toLowerCase().replace(/\D/g,''));
+      const plProspects = plData.results
+        .filter(r => r.name && r.name.trim())
+        .map(r => {
+          const key = (String(r.name||'') + String(r.phone||'')).toLowerCase().replace(/\D/g,'');
+          if (existingKeys.includes(key)) return null;
+          const cold = /dead|declined|do_not_call/i.test(r.status||'');
+          return {
+            id: 'pl_' + r.id,
+            name: r.name,
+            phone: String(r.phone||''),
+            email: String(r.email||''),
+            type: 'Club OS Re-engagement',
+            interest: cold ? 'Cold' : 'Warm',
+            timeframe: '',
+            referred: r.source || 'Club OS',
+            advisor: '',
+            notes: (r.touchpoint_count ? r.touchpoint_count + ' past touchpoint(s) on file. ' : '') + (r.campaign_tag ? 'Campaign: ' + r.campaign_tag : ''),
+            date: r.created_at ? r.created_at.slice(0,10) : new Date().toLocaleDateString('en-US'),
+            lastContactHint: r.last_contact_date || null,
+            _prospect_log_id: r.id
+          };
+        })
+        .filter(Boolean);
+      prospects = [...prospects, ...plProspects];
+    }
     
     // Touchpoints loaded from localStorage (D1 migration pending)
 
     // Booked consultations from D1 appointment_status (pending)
 
+    renderList(document.getElementById('search-input') ? document.getElementById('search-input').value : '');
+    updateStats();
+    updateTabCounts();
+    if (indicator) indicator.style.display = 'none';
   } catch(e) {
     console.warn('Sheet sync failed, using local data:', e);
     if (indicator) { indicator.style.display = 'none'; }
@@ -2092,8 +2132,11 @@ async function buildCallList() {
     let score;
     if (dueDate && dueDate <= todayStr) score = -1000000 - daysBetween(today, new Date(dueDate + 'T00:00:00'));
     else if (dueDate) score = daysBetween(new Date(dueDate + 'T00:00:00'), today);
-    else score = last ? -daysBetween(today, new Date(last.date)) : -99999;
-    return { type:'person', id:p.id, name:p.name, phone:p.phone, sub:p.interest + ' lead', last: last ? last.date+' — '+last.outcome : 'Never contacted', dueDate, score };
+    else if (last) score = -daysBetween(today, new Date(last.date));
+    else if (p.lastContactHint) score = -daysBetween(today, new Date(p.lastContactHint + 'T00:00:00'));
+    else score = -99999;
+    const lastLabel = last ? last.date+' — '+last.outcome : (p.lastContactHint ? p.lastContactHint + ' (Club OS)' : 'Never contacted');
+    return { type:'person', id:p.id, name:p.name, phone:p.phone, sub:p.interest + ' lead', last: lastLabel, dueDate, score };
   });
 
   const bizRows = BIZ_LEADS.filter(l => !['won','dead'].includes(l.status)).map(l => {
