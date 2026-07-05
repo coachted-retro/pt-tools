@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<meta name="theme-color" content="#E0192B">
+<title>Join the Team — Retro Fitness Fairless Hills</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--red-dk:#B8101F;--ink:#15171A;--ink2:#374151;--ink3:#6B7280;--bg:#F2F4F7;--card:#FFFFFF;--soft:#F8F9FB;--line:#E5E7EB;--green:#1E9E5A;--green-lt:#E3F5EC;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+.hero{background:var(--ink);color:#fff;padding:32px 20px 26px;text-align:center}
+.hero .kicker{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#F87171;margin-bottom:8px}
+.hero h1{font-family:'Oswald';font-size:26px;font-weight:800;text-transform:uppercase;line-height:1.15}
+.hero p{font-size:13px;color:#D1D5DB;margin-top:8px;max-width:420px;margin-left:auto;margin-right:auto}
+.wrap{max-width:520px;margin:0 auto;padding:22px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.section-label{font-family:'Oswald';font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px}
+.field{margin-bottom:14px}
+label{font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--ink3);display:block;margin-bottom:5px}
+label .req{color:var(--red)}
+input[type=text],input[type=tel],input[type=email],select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-family:'Inter';font-size:14px;color:var(--ink);background:#fff}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
+textarea{resize:vertical;min-height:90px;line-height:1.5}
+.hint{font-size:11px;color:var(--ink3);margin-top:5px;line-height:1.4}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.submit-btn{width:100%;font-family:'Oswald';font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:15px;border-radius:10px;cursor:pointer;margin-top:4px}
+.submit-btn:hover{background:var(--red-dk)}
+.submit-btn:disabled{background:#D1D5DB;cursor:not-allowed}
+.err{background:#FEF2F2;color:var(--red);border:1px solid #FCA5A5;border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:14px;display:none}
+.done{display:none;text-align:center;padding:40px 20px}
+.done .check{width:56px;height:56px;border-radius:50%;background:var(--green-lt);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px}
+.done h2{font-family:'Oswald';font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:8px}
+.done p{font-size:13px;color:var(--ink3);max-width:360px;margin:0 auto}
+.footer-badge{text-align:center;font-size:11px;color:var(--ink3);margin-top:8px}
+.footer-badge b{color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="kicker">We're Hiring</div>
+  <h1>Join Retro Fitness<br>Fairless Hills</h1>
+  <p>Tell us a little about yourself. A member of our management team will follow up personally.</p>
+</div>
+
+<div class="wrap">
+  <form class="card" id="applyForm" onsubmit="submitApp(event)">
+    <div class="section-label">Your Info</div>
+    <div class="field">
+      <label>Full Name <span class="req">*</span></label>
+      <input type="text" id="fName" required autocomplete="name">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="fPhone" autocomplete="tel">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="fEmail" autocomplete="email">
+      </div>
+    </div>
+    <div class="hint" style="margin:-6px 0 14px">Give us at least one way to reach you.</div>
+
+    <div class="section-label">The Role</div>
+    <div class="field">
+      <label>Position You're Interested In <span class="req">*</span></label>
+      <select id="fRole" required>
+        <option value="">-- Select a Role --</option>
+        <option value="MEA">Member Experience Associate (Front Desk)</option>
+        <option value="PT Coach">Personal Training Coach</option>
+        <option value="Men's Training Lead">Men's Training Lead</option>
+        <option value="Floor Tech">Floor Tech (Cleaning & Maintenance)</option>
+        <option value="General Manager">Management</option>
+        <option value="Other">Something Else</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Availability</label>
+      <input type="text" id="fAvailability" placeholder="e.g. Weekday mornings, full-time, weekends only">
+    </div>
+
+    <div class="section-label">How Did You Hear About Us?</div>
+    <div class="field">
+      <select id="fSource" onchange="toggleReferral()">
+        <option value="Walk-in">I'm already a member / walked in</option>
+        <option value="Referral">Referred by a staff member</option>
+        <option value="Social Media">Social Media</option>
+        <option value="Job Board">Indeed / Job Board</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="field" id="referralField" style="display:none">
+      <label>Who Referred You?</label>
+      <input type="text" id="fReferredBy">
+    </div>
+
+    <div class="section-label">Tell Us About Yourself</div>
+    <div class="field">
+      <label>Experience / Background</label>
+      <textarea id="fResume" placeholder="Relevant work history, certifications, or anything you'd like us to know."></textarea>
+      <div class="hint">No resume file needed — just type or paste in your background.</div>
+    </div>
+    <div class="field">
+      <label>Why Retro Fitness?</label>
+      <textarea id="fCoverNote" placeholder="A couple sentences on why you want to work here."></textarea>
+    </div>
+
+    <div class="err" id="errBox"></div>
+    <button type="submit" class="submit-btn" id="submitBtn">Submit Application</button>
+    <div class="footer-badge">Powered by <b>Retro Strong</b></div>
+  </form>
+
+  <div class="card done" id="doneCard">
+    <div class="check">✓</div>
+    <h2>Application Received</h2>
+    <p>Thanks for your interest in joining the Retro Fitness Fairless Hills team. We review every application personally — we'll be in touch soon.</p>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+function toggleReferral() {
+  document.getElementById('referralField').style.display =
+    document.getElementById('fSource').value === 'Referral' ? 'block' : 'none';
+}
+
+async function submitApp(e) {
+  e.preventDefault();
+  const errBox = document.getElementById('errBox');
+  errBox.style.display = 'none';
+
+  const name = document.getElementById('fName').value.trim();
+  const role = document.getElementById('fRole').value;
+  const phone = document.getElementById('fPhone').value.trim();
+  const email = document.getElementById('fEmail').value.trim();
+
+  if (!name || !role) { errBox.textContent = 'Name and position are required.'; errBox.style.display = 'block'; return; }
+  if (!phone && !email) { errBox.textContent = 'Please provide a phone number or email so we can reach you.'; errBox.style.display = 'block'; return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+
+  const payload = {
+    name, phone: phone || null, email: email || null,
+    role_applied: role,
+    availability: document.getElementById('fAvailability').value.trim() || null,
+    source: document.getElementById('fSource').value,
+    referred_by: document.getElementById('fReferredBy').value.trim() || null,
+    resume_text: document.getElementById('fResume').value.trim() || null,
+    cover_note: document.getElementById('fCoverNote').value.trim() || null
+  };
+
+  try {
+    const r = await fetch(WORKER + '/candidate/apply', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'Submit failed');
+    document.getElementById('applyForm').style.display = 'none';
+    document.getElementById('doneCard').style.display = 'block';
+  } catch (err) {
+    errBox.textContent = 'Something went wrong submitting your application. Please try again.';
+    errBox.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Submit Application';
+  }
+}
+</script>
+</body>
+</html>
