@@ -90,7 +90,7 @@ const ALLOWED_TABLES = new Set([
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
-  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins','feed_posts',
+  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins','feed_posts','class_rsvps',
   'daily_content','client_wins','gym_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
@@ -1137,6 +1137,39 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
         const result = await populateDailyFeedItems(env, new Date().toISOString().slice(0,10));
         return ok(result, cors);
+      }
+
+      // ── CLASS RSVPS (real, synced, date-specific — replaces the old ──
+      // localStorage-only "I'm Going" that never left the device) ──────
+      if (url.pathname === '/classes/rsvp' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id || !b.class_name || !b.class_date) return bad('client_id, class_name, class_date required', cors);
+        const existing = await env.DB.prepare('SELECT id FROM class_rsvps WHERE client_id=? AND class_name=? AND class_date=?')
+          .bind(b.client_id, b.class_name, b.class_date).first();
+        if (existing) {
+          await env.DB.prepare('DELETE FROM class_rsvps WHERE id=?').bind(existing.id).run();
+          return ok({ going: false }, cors);
+        } else {
+          await env.DB.prepare('INSERT INTO class_rsvps (client_id,class_name,class_date,class_time,status,created_at) VALUES (?,?,?,?,?,?)')
+            .bind(b.client_id, b.class_name, b.class_date, b.class_time||'', 'going', new Date().toISOString()).run();
+          return ok({ going: true }, cors);
+        }
+      }
+
+      if (url.pathname === '/classes/going' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const className = url.searchParams.get('class_name');
+        const classDate = url.searchParams.get('class_date');
+        const clientId = url.searchParams.get('client_id');
+        if (!className || !classDate) return bad('class_name, class_date required', cors);
+        const rows = await env.DB.prepare(
+          `SELECT r.client_id, c.first_name FROM class_rsvps r JOIN clients c ON c.id=r.client_id
+           WHERE r.class_name=? AND r.class_date=?`
+        ).bind(className, classDate).all();
+        const going = rows.results || [];
+        const myGoing = clientId ? going.some(g => String(g.client_id) === String(clientId)) : false;
+        return ok({ count: going.length, names: going.slice(0,5).map(g=>g.first_name), my_going: myGoing }, cors);
       }
 
       if (url.pathname === '/feed/generate-news-draft' && request.method === 'POST') {
@@ -2907,6 +2940,23 @@ async function detectAutoWins(env){
     await env.DB.prepare('INSERT INTO client_wins (client_id,headline,detail,win_type,source,visible,created_at) VALUES (?,?,?,?,?,1,?)')
       .bind(s.client_id, headline, hit+' sessions in the books. That is real commitment.', 'session_milestone', 'auto', new Date().toISOString()).run();
     created++;
+  }
+
+  // Class attendance consistency — now buildable since class_rsvps is real,
+  // synced data instead of the old localStorage-only "I'm Going" toggle.
+  const classStreaks = await env.DB.prepare(
+    `SELECT client_id, COUNT(*) n FROM class_rsvps WHERE class_date >= date('now','-14 day') AND class_date <= date('now') GROUP BY client_id HAVING n>=4`
+  ).all();
+  for (const s of (classStreaks.results||[])) {
+    const cl = await env.DB.prepare('SELECT first_name FROM clients WHERE id=?').bind(s.client_id).first();
+    const name = (cl && cl.first_name) || 'A member';
+    const headline = name+' hit '+s.n+' classes over the last two weeks';
+    const dupe = await env.DB.prepare("SELECT id FROM client_wins WHERE client_id=? AND win_type='class_streak' AND created_at >= date('now','-7 day')").bind(s.client_id).first();
+    if (!dupe) {
+      await env.DB.prepare('INSERT INTO client_wins (client_id,headline,detail,win_type,source,visible,created_at) VALUES (?,?,?,?,?,1,?)')
+        .bind(s.client_id, headline, 'Showing up to class after class. That\'s discipline.', 'class_streak', 'auto', new Date().toISOString()).run();
+      created++;
+    }
   }
 
   return { created };

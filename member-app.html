@@ -796,7 +796,7 @@ function demoGoal() {
 
 
 let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null, demoNutrition: null, demoMeals: [], dailyLogs: [] };
-let goingClasses = new Set(JSON.parse(localStorage.getItem('going_classes')||'[]'));
+// goingClasses removed — class RSVPs now sync to D1 via /classes/rsvp, not localStorage.
 let slExCount = 0;
 
 // ── EXERCISE FORM CUES ───────────────────────────────────────
@@ -2415,6 +2415,7 @@ function startGuestMode() {
   avatar.onclick = showLoginFromGuest;
   renderHomeExtras();
   loadPublicHomeContent();
+  renderClasses();
 }
 
 function showLoginFromGuest() {
@@ -2856,17 +2857,24 @@ function selectDay(day) {
   renderClassList();
 }
 
-function renderClassList() {
+function nextDateForDay(dayName) {
+  const today = new Date();
+  const targetIdx = DAYS.indexOf(dayName);
+  const diff = (targetIdx - today.getDay() + 7) % 7;
+  const d = new Date(today);
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0,10);
+}
+
+async function renderClassList() {
   const el = document.getElementById('class-list');
   const dayData = CLASS_SCHEDULE.find(d => d.day === selectedDay);
   if (!dayData || !dayData.classes.length) {
     el.innerHTML = `<div class="empty"><div class="e-icon">😴</div><div class="e-title">Rest Day</div>No classes scheduled for ${selectedDay}.</div>`;
     return;
   }
-  el.innerHTML = dayData.classes.map(cls => {
-    const key = selectedDay + '-' + cls.name + '-' + cls.time;
-    const going = goingClasses.has(key);
-    return `<div class="class-card">
+  const classDate = nextDateForDay(selectedDay);
+  el.innerHTML = dayData.classes.map(cls => `<div class="class-card">
       <div class="class-time-col">
         <div class="class-time">${cls.time.replace('am','').replace('pm','')}</div>
         <div class="class-ampm">${cls.time.includes('am')?'AM':'PM'}</div>
@@ -2875,16 +2883,43 @@ function renderClassList() {
         <div class="class-name">${esc(cls.name)}</div>
         <div class="class-instr">with ${esc(cls.instructor)}</div>
         <div class="class-loc">📍 ${esc(cls.location)}</div>
+        <div class="class-social" id="social-${esc(cls.name).replace(/\s+/g,'-')}" style="font-size:11px;color:var(--ink3);margin-top:3px"></div>
       </div>
-      <button class="going-btn ${going?'going':'not-going'}" onclick="toggleGoing('${key}', this)">${going?'✓ Going':'I\'m Going'}</button>
-    </div>`;
-  }).join('');
+      <button class="going-btn not-going" id="btn-${esc(cls.name).replace(/\s+/g,'-')}" onclick="toggleGoing('${esc(cls.name).replace(/'/g,"\\'")}','${classDate}','${cls.time}', this)">I'm Going</button>
+    </div>`).join('');
+
+  if (SESSION && SESSION.client_id) {
+    dayData.classes.forEach(cls => loadClassSocialProof(cls.name, classDate));
+  }
 }
 
-function toggleGoing(key, btn) {
-  if (goingClasses.has(key)) { goingClasses.delete(key); btn.className='going-btn not-going'; btn.textContent="I\'m Going"; }
-  else { goingClasses.add(key); btn.className='going-btn going'; btn.textContent='✓ Going'; }
-  localStorage.setItem('going_classes', JSON.stringify([...goingClasses]));
+async function loadClassSocialProof(className, classDate) {
+  const key = className.replace(/\s+/g,'-');
+  try {
+    const r = await fetch(WORKER + '/classes/going?class_name=' + encodeURIComponent(className) + '&class_date=' + classDate + (SESSION?'&client_id='+SESSION.client_id:''));
+    const d = await r.json();
+    const socialEl = document.getElementById('social-'+key);
+    if (socialEl) {
+      socialEl.textContent = d.count > 0 ? `${d.count} going${d.names.length?': '+d.names.join(', '):''}` : '';
+    }
+    const btn = document.getElementById('btn-'+key);
+    if (btn && d.my_going) { btn.className = 'going-btn going'; btn.textContent = '✓ Going'; }
+  } catch(e) {}
+}
+
+async function toggleGoing(className, classDate, classTime, btn) {
+  if (!SESSION || !SESSION.client_id) { alert('Log in to RSVP for a class.'); return; }
+  const going = btn.classList.contains('going');
+  btn.disabled = true;
+  try {
+    const r = await fetch(WORKER + '/classes/rsvp', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: SESSION.client_id, class_name: className, class_date: classDate, class_time: classTime }) });
+    const d = await r.json();
+    btn.className = d.going ? 'going-btn going' : 'going-btn not-going';
+    btn.textContent = d.going ? '✓ Going' : "I'm Going";
+    loadClassSocialProof(className, classDate);
+  } catch(e) {}
+  btn.disabled = false;
 }
 
 // ── PROGRESS ─────────────────────────────────────────────────

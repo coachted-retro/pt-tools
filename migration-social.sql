@@ -39,3 +39,17 @@ CREATE TABLE IF NOT EXISTS buddy_optins (
   created_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS class_rsvps (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id INTEGER NOT NULL,
+  class_name TEXT NOT NULL,
+  class_date TEXT NOT NULL,
+  class_time TEXT,
+  status TEXT DEFAULT 'going',
+  created_at TEXT,
+  UNIQUE(client_id, class_name, class_date)
+);
+CREATE INDEX IF NOT EXISTS idx_class_rsvps_date ON class_rsvps(class_date);
+CREATE INDEX IF NOT EXISTS idx_class_rsvps_client ON class_rsvps(client_id);
+
+
