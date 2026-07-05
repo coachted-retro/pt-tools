@@ -322,7 +322,10 @@
 <!-- TAB BAR -->
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('prospects')">
-    Prospects <span class="tab-count" id="tc-prospects">0</span>
+    People <span class="tab-count" id="tc-prospects">0</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('businesses')">
+    Businesses <span class="tab-count" id="tc-businesses">0</span>
   </button>
 </div>
 
@@ -474,6 +477,61 @@
   </div>
 </div>
 </div><!-- end tab-prospects -->
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 2: BUSINESSES (referral partners + corporate accounts) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="tab-businesses" class="tab-panel">
+<div class="container">
+
+  <div class="panel" style="background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:14px;padding:18px;margin-bottom:16px">
+    <h3 style="font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 10px">Run the Harvester</h3>
+    <p style="font-size:13px;color:var(--muted,#6B7280);line-height:1.6;margin:0 0 14px">Pulls nearby referral partners and corporate wellness prospects — chiropractors, physical therapy, med spas, nutritionists, fire/police/EMS, and local employers.</p>
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div class="field" style="flex:1;min-width:200px"><label>Category (optional)</label>
+        <select id="biz-h-category">
+          <option value="">All categories</option>
+          <option value="chiropractor">Chiropractor</option>
+          <option value="physical_therapy">Physical Therapy</option>
+          <option value="med_spa">Med Spa</option>
+          <option value="nutritionist">Nutritionist</option>
+          <option value="fire_department">Fire Department</option>
+          <option value="police">Police</option>
+          <option value="ems">EMS</option>
+          <option value="employer">Corporate / Employer</option>
+        </select></div>
+      <button class="btn-primary" onclick="runBizHarvest()" id="biz-harvest-btn">Run Harvester</button>
+    </div>
+    <div class="status-msg" id="biz-harvest-status" style="margin-top:8px"></div>
+  </div>
+
+  <div class="main-grid">
+    <div class="prospects-list-panel" style="background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:14px;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h3 style="font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:14px;margin:0">Pipeline (<span id="biz-lead-count">0</span>)</h3>
+        <button class="btn-outline" style="font-size:11px;padding:5px 10px" onclick="showBizAddForm()">+ Add</button>
+      </div>
+      <div id="biz-add-form" style="display:none;margin-bottom:14px;padding:12px;background:#F5F6F8;border-radius:10px">
+        <div class="field"><label>Business name</label><input id="biz-m-name" type="text" placeholder="e.g. Sunrise Physical Therapy"></div>
+        <div class="field"><label>Type</label>
+          <select id="biz-m-type"><option value="referral_partner">Referral Partner</option><option value="corporate">Corporate / Employer</option></select></div>
+        <div class="field"><label>Phone</label><input id="biz-m-phone" type="text"></div>
+        <div class="field"><label>Email</label><input id="biz-m-email" type="email"></div>
+        <div class="field"><label>Address</label><input id="biz-m-address" type="text"></div>
+        <button class="btn-primary" style="width:100%;margin-top:6px" onclick="addBizManual()">Add Prospect</button>
+        <div class="status-msg" id="biz-manual-status"></div>
+      </div>
+      <input id="biz-search" placeholder="Search by name, phone, or notes..." style="width:100%;margin-bottom:10px;padding:8px 10px;border:1px solid var(--line,#E4E7EC);border-radius:8px;font-size:13px" oninput="renderBizList()">
+      <div id="biz-list"></div>
+    </div>
+
+    <div class="prospect-detail-panel" id="biz-detail" style="background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:14px;padding:20px">
+      <div class="empty-state" style="text-align:center;color:var(--muted,#6B7280);padding:40px 20px">Select a business to view details, update status, and log notes.</div>
+    </div>
+  </div>
+
+</div>
+</div><!-- end tab-businesses -->
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- TAB 2: BOOKED CONSULTATIONS -->
@@ -840,9 +898,9 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  const idx = ['prospects','bc'].indexOf(tab);
+  const idx = ['prospects','businesses'].indexOf(tab);
   document.querySelectorAll('.tab-btn')[idx].classList.add('active');
-  if (tab === 'bc') { renderBC(); renderCalendar(); loadGcalAppts().then(renderCalendar); }
+  if (tab === 'businesses') loadBizLeads();
 }
 
 // ══════════════════════════════════════════════════
@@ -1766,6 +1824,141 @@ document.getElementById('tp-date').value = new Date().toISOString().split('T')[0
 initCalendar();
 renderCalendar();
 syncFromSheet(); // pull Sheet → localStorage on every load
+
+// ══════════════════════════════════════════════════
+// BUSINESSES TAB (referral partners + corporate accounts)
+// Ported from the standalone prospecting.html harvester and the
+// business-lead drawer that used to live in command-center.html,
+// consolidated here so People and Businesses share one card.
+// ══════════════════════════════════════════════════
+const BIZ_WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let BIZ_LEADS = [];
+let BIZ_SELECTED = null;
+
+function escBiz(s) { return (s==null?'':String(s)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+async function bizDb(body) {
+  const r = await fetch(BIZ_WORKER + '/db', { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+async function loadBizLeads() {
+  const d = await bizDb({ op:'select', table:'leads', orderBy:'id DESC', limit:300 });
+  BIZ_LEADS = d.results || [];
+  document.getElementById('tc-businesses').textContent = BIZ_LEADS.length;
+  renderBizList();
+}
+
+function renderBizList() {
+  const q = (document.getElementById('biz-search').value || '').toLowerCase();
+  const list = document.getElementById('biz-list');
+  document.getElementById('biz-lead-count').textContent = BIZ_LEADS.length;
+  const filtered = BIZ_LEADS.filter(l => !q ||
+    (l.business_name||'').toLowerCase().includes(q) ||
+    (l.phone||'').includes(q) || (l.email||'').toLowerCase().includes(q));
+  list.innerHTML = filtered.length ? filtered.map(l => `
+    <div class="prospect-card ${BIZ_SELECTED===l.id?'selected':''}" style="cursor:pointer;padding:10px;border-radius:8px;border:1px solid var(--line,#E4E7EC);margin-bottom:8px;${BIZ_SELECTED===l.id?'border-color:var(--red,#E0192B);background:#FDEAEC':''}" onclick="openBizLead(${l.id})">
+      <div style="font-weight:700;font-size:13px">${escBiz(l.business_name)}</div>
+      <div style="font-size:11px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.3px;margin-top:2px">${escBiz((l.lead_type||'').replace(/_/g,' '))} &middot; ${escBiz(l.status||'new')}</div>
+    </div>`).join('') : '<div class="empty-state" style="text-align:center;color:var(--muted,#6B7280);padding:20px">No businesses yet. Run the harvester or add one manually.</div>';
+}
+
+function showBizAddForm() {
+  const f = document.getElementById('biz-add-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function addBizManual() {
+  const name = document.getElementById('biz-m-name').value.trim();
+  const type = document.getElementById('biz-m-type').value;
+  const phone = document.getElementById('biz-m-phone').value.trim();
+  const email = document.getElementById('biz-m-email').value.trim();
+  const address = document.getElementById('biz-m-address').value.trim();
+  const st = document.getElementById('biz-manual-status');
+  if (!name) { st.textContent = 'Business name required.'; return; }
+  st.textContent = 'Adding...';
+  await bizDb({ op:'insert', table:'leads', values:{ lead_type:type, business_name:name, phone, email, address, category:'manual', status:'new' } });
+  st.textContent = 'Added.';
+  ['biz-m-name','biz-m-phone','biz-m-email','biz-m-address'].forEach(id => document.getElementById(id).value = '');
+  loadBizLeads();
+}
+
+async function runBizHarvest() {
+  const category = document.getElementById('biz-h-category').value;
+  const btn = document.getElementById('biz-harvest-btn');
+  const st = document.getElementById('biz-harvest-status');
+  btn.disabled = true;
+  st.textContent = 'Searching nearby prospects, this can take a moment...';
+  try {
+    const r = await fetch(BIZ_WORKER + '/harvest/run', { method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify({ category: category||undefined, limit: 20 }) });
+    const d = await r.json();
+    if (d.ok && d.summary) {
+      st.textContent = d.summary.inserted + ' new prospects added, ' + d.summary.skipped_dupe + ' already in the pipeline, ' + d.summary.found + ' found total.';
+      loadBizLeads();
+    } else { st.textContent = 'Error: ' + (d.error || 'try again'); }
+  } catch(e) { st.textContent = 'Connection error: ' + e.message; }
+  btn.disabled = false;
+}
+
+async function openBizLead(id) {
+  BIZ_SELECTED = id;
+  renderBizList();
+  const l = BIZ_LEADS.find(x => x.id === id);
+  if (!l) return;
+  const detail = document.getElementById('biz-detail');
+  detail.innerHTML = '<div class="empty-state" style="text-align:center;color:var(--muted,#6B7280);padding:20px">Loading...</div>';
+  const tp = await bizDb({ op:'select', table:'touchpoints', where:{ lead_id:id }, orderBy:'contact_date DESC' });
+  const tps = tp.results || [];
+  const statuses = ['new','contacted','qualified','meeting_set','partner_active','won','dead'];
+  detail.innerHTML = `
+    <h3 style="font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:16px;margin:0 0 4px">${escBiz(l.business_name)}</h3>
+    <div style="font-size:12px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.3px;margin-bottom:16px">${escBiz((l.lead_type||'').replace(/_/g,' '))} &middot; ${escBiz((l.category||'').replace(/_/g,' '))}</div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280);margin-bottom:6px">Details</div>
+      <div style="font-size:13px;line-height:1.8">
+        Phone: ${escBiz(l.phone||'—')}<br>
+        Email: ${escBiz(l.email||'—')}<br>
+        Address: ${escBiz(l.address||'—')}<br>
+        ${l.city ? 'City: ' + escBiz(l.city) + ' ' + escBiz(l.state||'') + ' ' + escBiz(l.zip||'') + '<br>' : ''}
+        ${l.distance_mi != null ? 'Distance: ' + l.distance_mi + ' mi' : ''}
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280);margin-bottom:6px">Status &amp; Next Step</div>
+      <div class="field"><label>Status</label>
+        <select id="biz-status">${statuses.map(s => `<option value="${s}" ${l.status===s?'selected':''}>${s.replace(/_/g,' ')}</option>`).join('')}</select></div>
+      <div class="field"><label>Next action</label><input id="biz-next-action" value="${escBiz(l.next_action||'')}" placeholder="e.g. call to set intro meeting"></div>
+      <div class="field"><label>Next action date</label><input id="biz-next-date" type="date" value="${escBiz(l.next_action_date||'')}"></div>
+      <button class="btn-primary" onclick="saveBizLead(${id})">Save</button>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280);margin-bottom:6px">Log a Note</div>
+      <div class="field"><label>Channel</label><select id="biz-tch"><option>call</option><option>email</option><option>in_person</option><option>text</option></select></div>
+      <div class="field"><label>Note</label><textarea id="biz-tsum" placeholder="What happened?"></textarea></div>
+      <button class="btn-outline" onclick="logBizTouch(${id})">Add Note</button>
+      ${tps.length ? '<div style="margin-top:14px">' + tps.map(t => `
+        <div style="padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC)">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280)">${escBiz(t.channel||'')} &middot; ${escBiz(t.contact_date||'')}</div>
+          <div style="font-size:13px;margin-top:2px">${escBiz(t.summary||'')}</div>
+        </div>`).join('') + '</div>' : ''}
+    </div>`;
+}
+
+async function saveBizLead(id) {
+  const status = document.getElementById('biz-status').value;
+  const na = document.getElementById('biz-next-action').value;
+  const nad = document.getElementById('biz-next-date').value;
+  await bizDb({ op:'update', table:'leads', values:{ status, next_action:na, next_action_date:nad, updated_at:new Date().toISOString() }, where:{ id } });
+  await loadBizLeads();
+  openBizLead(id);
+}
+
+async function logBizTouch(id) {
+  const channel = document.getElementById('biz-tch').value;
+  const summary = document.getElementById('biz-tsum').value;
+  if (!summary.trim()) return;
+  await bizDb({ op:'insert', table:'touchpoints', values:{ lead_id:id, contact_date:new Date().toISOString().split('T')[0], channel, direction:'outbound', summary } });
+  openBizLead(id);
+}
 </script>
 </body>
 </html>
