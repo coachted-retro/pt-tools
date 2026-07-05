@@ -455,6 +455,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-community-feed"></div>
         <div id="home-challenge"></div>
         <div id="home-buddy"></div>
+        <div id="home-coaches"></div>
         <div id="home-happening"></div>
         <div id="home-coachs-edge"></div>
         <div id="home-circle"></div>
@@ -1573,6 +1574,7 @@ function renderStaffHome() {
     cards += staffCard('My Clients', 'Your full roster and daily dashboard', 'coach-crm.html?coach='+name+'&locked=1', '👥');
     cards += staffCard('My Calendar', "Today's sessions and the week ahead", 'coach-calendar.html?coach='+name+'&locked=1', '📅');
     cards += staffCard('Log a Workout', 'Floor logging, offline-ready', 'gym-floor.html', '💪');
+    cards += staffCard('My Coach Profile', 'Edit your public bio, photo, and specialties', 'coach-profile.html?staff_id='+STAFF_SESSION.staff_id, '🧑‍🏫');
   } else if (role === 'mea') {
     cards += staffCard('My Call List', 'Today\'s people + business calls, ranked by priority', 'prospect-tracker.html?tab=calllist', '📞');
     cards += staffCard('Prospect Tracker', 'People and Businesses pipeline', 'prospect-tracker.html', '🎯');
@@ -2071,7 +2073,34 @@ async function loadPublicHomeContent() {
   loadReferralLeaderboard();
   loadChallenge();
   loadCommunityFeed();
+  loadMeetYourCoaches();
   if (SESSION && SESSION.client_id) loadBuddyMatching();
+}
+
+async function loadMeetYourCoaches() {
+  const el = document.getElementById('home-coaches');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/coaches/public-list');
+    const d = await r.json();
+    const coaches = d.coaches || [];
+    if (!coaches.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="sec-label">Meet Your Coaches</div>
+      <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch">
+        ${coaches.map(c => {
+          const photo = c.photo_url
+            ? `<img src="${esc(c.photo_url)}" style="width:100%;height:100px;object-fit:cover;border-radius:12px 12px 0 0" onerror="this.style.display='none'">`
+            : `<div style="width:100%;height:100px;background:var(--soft);border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:center;font-size:32px">🏋️</div>`;
+          return `<a href="coach-profile.html?staff_id=${c.id}" style="text-decoration:none;color:inherit;flex-shrink:0;width:130px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+            ${photo}
+            <div style="padding:8px">
+              <div style="font-weight:700;font-size:12px">${esc(c.name)}</div>
+              <div style="font-size:10px;color:var(--ink3);margin-top:2px">${esc(c.tagline || c.role)}</div>
+            </div>
+          </a>`;
+        }).join('')}
+      </div>`;
+  } catch(e) { el.innerHTML = ''; }
 }
 
 function cleanFeedTitle(t) { return String(t||'').replace(/\s*#[a-z]*\d+$/i, ''); }

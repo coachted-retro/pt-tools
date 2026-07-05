@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Coach Profile — Retro Strong</title>
+<link rel="icon" type="image/x-icon" href="favicon-strong.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
+<link rel="manifest" href="retro-strong.webmanifest">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--red-dk:#B8101F;--red-lt:#FEF2F2;--ink:#15171A;--ink3:#6B7280;--bg:#F2F4F7;--card:#FFFFFF;--soft:#F8F9FB;--line:#E5E7EB;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 16px;height:56px}
+.topbar img{height:32px;border-radius:6px}
+.topbar a{margin-left:auto;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 12px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
+.wrap{max-width:520px;margin:0 auto;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:14px}
+.photo-wrap{width:100%;height:220px;border-radius:12px;overflow:hidden;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:14px}
+.photo-wrap img{width:100%;height:100%;object-fit:cover}
+.name{font-family:'Oswald';text-transform:uppercase;font-weight:800;font-size:22px}
+.role{font-size:12px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.tagline{font-size:14px;color:var(--ink3);margin-top:8px;font-style:italic}
+.sec-label{font-family:'Oswald';text-transform:uppercase;letter-spacing:.4px;font-size:12px;color:var(--red);font-weight:700;margin:16px 0 8px}
+.body-text{font-size:13px;line-height:1.7;color:var(--ink)}
+.tag{display:inline-block;background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:5px 12px;font-size:12px;font-weight:600;margin:0 6px 6px 0}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:4px}
+.fld input,.fld textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:9px;font-family:'Inter';font-size:14px;background:var(--soft)}
+.action-btn{width:100%;background:var(--red);color:#fff;font-family:'Oswald';font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:13px;border-radius:10px;border:none;cursor:pointer;margin-top:6px}
+.action-btn.secondary{background:var(--soft);color:var(--ink);border:1px solid var(--line)}
+.status-msg{font-size:12px;color:var(--ink3);text-align:center;margin-top:8px}
+.empty-state{text-align:center;color:var(--ink3);padding:30px;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" onerror="this.style.display='none'">
+  <a href="member-app.html">&larr; Back</a>
+</div>
+
+<div class="wrap" id="wrap">
+  <div class="empty-state">Loading...</div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const params = new URLSearchParams(window.location.search);
+const staffId = parseInt(params.get('staff_id'), 10);
+
+function esc(s) { return String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function getStaffSession() {
+  try { return JSON.parse(localStorage.getItem('staff_session') || 'null'); } catch(e) { return null; }
+}
+
+async function load() {
+  if (!staffId) { document.getElementById('wrap').innerHTML = '<div class="empty-state">No coach specified.</div>'; return; }
+  try {
+    const r = await fetch(WORKER + '/coaches/profile?staff_id=' + staffId);
+    const d = await r.json();
+    if (!d.ok) { document.getElementById('wrap').innerHTML = '<div class="empty-state">Could not find that coach.</div>'; return; }
+    const staff = d.staff, profile = d.profile || {};
+    const session = getStaffSession();
+    const isMine = session && String(session.staff_id) === String(staffId);
+    renderView(staff, profile, isMine);
+  } catch(e) { document.getElementById('wrap').innerHTML = '<div class="empty-state">Could not load profile.</div>'; }
+}
+
+function renderView(staff, profile, isMine) {
+  const specialties = (profile.specialties || '').split(',').map(s=>s.trim()).filter(Boolean);
+  const photo = profile.photo_url
+    ? `<img src="${esc(profile.photo_url)}" onerror="this.style.display='none'">`
+    : `🏋️`;
+  document.getElementById('wrap').innerHTML = `
+    <div class="card">
+      <div class="photo-wrap">${photo}</div>
+      <div class="name">${esc(staff.name)}</div>
+      <div class="role">${esc(staff.role)}</div>
+      ${profile.tagline ? `<div class="tagline">"${esc(profile.tagline)}"</div>` : ''}
+      ${profile.bio ? `<div class="sec-label">About</div><div class="body-text">${esc(profile.bio)}</div>` : ''}
+      ${specialties.length ? `<div class="sec-label">Specialties</div>${specialties.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}` : ''}
+      ${profile.certifications ? `<div class="sec-label">Certifications</div><div class="body-text">${esc(profile.certifications)}</div>` : ''}
+      ${(profile.public_email || profile.public_phone) ? `<div class="sec-label">Contact</div><div class="body-text">${profile.public_email?esc(profile.public_email)+'<br>':''}${profile.public_phone?esc(profile.public_phone):''}</div>` : ''}
+    </div>
+    ${isMine ? `<button class="action-btn secondary" onclick="showEdit()">Edit My Profile</button>` : ''}
+  `;
+  window._currentStaff = staff;
+  window._currentProfile = profile;
+}
+
+function showEdit() {
+  renderEdit(window._currentStaff, window._currentProfile || {});
+}
+
+function renderEdit(staff, profile) {
+  document.getElementById('wrap').innerHTML = `
+    <div class="card">
+      <div class="name" style="margin-bottom:14px">Edit Your Profile</div>
+      <div class="fld"><label>Photo URL</label><input id="e-photo" value="${esc(profile.photo_url||'')}" placeholder="Link to your photo"></div>
+      <div class="fld"><label>Tagline</label><input id="e-tagline" value="${esc(profile.tagline||'')}" placeholder="A short line about your style"></div>
+      <div class="fld"><label>Bio / Background</label><textarea id="e-bio" rows="5" placeholder="Your history, how you got into training, what drives you">${esc(profile.bio||'')}</textarea></div>
+      <div class="fld"><label>Specialties (comma separated)</label><input id="e-specialties" value="${esc(profile.specialties||'')}" placeholder="Strength training, weight loss, mobility"></div>
+      <div class="fld"><label>Certifications</label><input id="e-certs" value="${esc(profile.certifications||'')}" placeholder="e.g. NASM-CPT, CSCS"></div>
+      <div class="fld"><label>Public Email (optional)</label><input id="e-email" value="${esc(profile.public_email||'')}" type="email"></div>
+      <div class="fld"><label>Public Phone (optional)</label><input id="e-phone" value="${esc(profile.public_phone||'')}" type="tel"></div>
+      <button class="action-btn" onclick="saveProfile(${staff.id})">Save Profile</button>
+      <button class="action-btn secondary" onclick="load()">Cancel</button>
+      <div class="status-msg" id="save-status"></div>
+    </div>
+  `;
+}
+
+async function saveProfile(staffIdToSave) {
+  const status = document.getElementById('save-status');
+  status.textContent = 'Saving...';
+  const values = {
+    staff_id: staffIdToSave,
+    photo_url: document.getElementById('e-photo').value.trim(),
+    tagline: document.getElementById('e-tagline').value.trim(),
+    bio: document.getElementById('e-bio').value.trim(),
+    specialties: document.getElementById('e-specialties').value.trim(),
+    certifications: document.getElementById('e-certs').value.trim(),
+    public_email: document.getElementById('e-email').value.trim(),
+    public_phone: document.getElementById('e-phone').value.trim()
+  };
+  try {
+    const r = await fetch(WORKER + '/coaches/profile/update', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(values) });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not save'; return; }
+    status.textContent = 'Saved!';
+    setTimeout(load, 600);
+  } catch(e) { status.textContent = 'Connection error, try again'; }
+}
+
+load();
+</script>
+</body>
+</html>

@@ -90,7 +90,7 @@ const ALLOWED_TABLES = new Set([
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
-  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins','feed_posts','class_rsvps',
+  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins','feed_posts','class_rsvps','coach_profiles',
   'daily_content','client_wins','gym_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
@@ -1191,6 +1191,48 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           `SELECT class_name, COUNT(*) n FROM guest_pass_log WHERE class_name IS NOT NULL AND clicked_at >= datetime('now','-30 day') GROUP BY class_name ORDER BY n DESC LIMIT 20`
         ).all();
         return ok({ by_class: rows.results || [] }, cors);
+      }
+
+      // ── MEET YOUR COACHES (public bios + self-service editing) ──────
+      const COACH_ROLES = ['PT Coach', "Men's Training Lead"];
+      if (url.pathname === '/coaches/public-list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const rows = await env.DB.prepare(
+          `SELECT s.id, s.name, s.role, p.photo_url, p.tagline, p.specialties
+           FROM staff_roster s LEFT JOIN coach_profiles p ON p.staff_id = s.id
+           WHERE s.active=1 AND s.role IN (?,?) ORDER BY s.name ASC`
+        ).bind(COACH_ROLES[0], COACH_ROLES[1]).all();
+        return ok({ coaches: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/coaches/profile' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const staffId = url.searchParams.get('staff_id');
+        if (!staffId) return bad('staff_id required', cors);
+        const staff = await env.DB.prepare('SELECT id, name, role FROM staff_roster WHERE id=?').bind(staffId).first();
+        if (!staff) return bad('Coach not found', cors);
+        const profile = await env.DB.prepare('SELECT * FROM coach_profiles WHERE staff_id=?').bind(staffId).first();
+        return ok({ staff, profile: profile || null }, cors);
+      }
+
+      if (url.pathname === '/coaches/profile/update' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.staff_id) return bad('staff_id required', cors);
+        const values = {
+          photo_url: b.photo_url || null, tagline: b.tagline || null, bio: b.bio || null,
+          specialties: b.specialties || null, certifications: b.certifications || null,
+          public_email: b.public_email || null, public_phone: b.public_phone || null,
+          updated_at: new Date().toISOString()
+        };
+        await env.DB.prepare(
+          `INSERT INTO coach_profiles (staff_id,photo_url,tagline,bio,specialties,certifications,public_email,public_phone,updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?)
+           ON CONFLICT(staff_id) DO UPDATE SET photo_url=excluded.photo_url, tagline=excluded.tagline, bio=excluded.bio,
+             specialties=excluded.specialties, certifications=excluded.certifications, public_email=excluded.public_email,
+             public_phone=excluded.public_phone, updated_at=excluded.updated_at`
+        ).bind(b.staff_id, values.photo_url, values.tagline, values.bio, values.specialties, values.certifications, values.public_email, values.public_phone, values.updated_at).run();
+        return ok({ saved: true }, cors);
       }
 
       if (url.pathname === '/feed/generate-news-draft' && request.method === 'POST') {
