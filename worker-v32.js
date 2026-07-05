@@ -88,7 +88,7 @@ const ALLOWED_TABLES = new Set([
   'clients','consultations','followups','checkins','programs','training_sessions',
   'lead_sources','leads','touchpoints','outreach_log',
   'progress_photos','measurements','eod_reports','appointment_status',
-  'meal_profiles','meal_plans','meals','recipes','pantry_items',
+  'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts',
   'daily_content','client_wins','gym_events',
@@ -210,7 +210,29 @@ export default {
       }
 
       if (url.pathname === '/mealplan/library' && request.method === 'GET') {
-        return ok({ library: MEAL_LIBRARY }, cors);
+        let photoMap = {};
+        if (env.DB) {
+          try {
+            const rows = await env.DB.prepare('SELECT item_name, photo_url FROM meal_photos').all();
+            (rows.results||[]).forEach(r => { if (r.photo_url) photoMap[r.item_name] = r.photo_url; });
+          } catch(e) {}
+        }
+        const withPhotos = {};
+        for (const cat of Object.keys(MEAL_LIBRARY)) {
+          withPhotos[cat] = MEAL_LIBRARY[cat].map(m => ({ ...m, photo_url: photoMap[m.name] || null }));
+        }
+        return ok({ library: withPhotos }, cors);
+      }
+
+      if (url.pathname === '/mealplan/set-photo' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const b = await request.json();
+        if (!b.item_name) return bad('item_name required', cors);
+        await env.DB.prepare('INSERT INTO meal_photos (item_name,photo_url,updated_at) VALUES (?,?,?) ON CONFLICT(item_name) DO UPDATE SET photo_url=excluded.photo_url, updated_at=excluded.updated_at')
+          .bind(b.item_name, b.photo_url || null, new Date().toISOString()).run();
+        return ok({ saved: true }, cors);
       }
 
       if (url.pathname === '/photo/upload' && request.method === 'POST') {

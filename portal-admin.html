@@ -138,6 +138,12 @@
     <div id="events-list" style="margin-top:14px"></div>
   </div>
 
+  <div class="panel">
+    <h3>Meal Photos</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Attach a photo to any meal library item — paste a URL to a photo you own the rights to (your own photos, or licensed stock). Shows up in meal plans, the swap picker, and the consultation demo. Leave blank to fall back to a generic icon.</p>
+    <div id="meal-photos-list"><div class="status">Loading meal library...</div></div>
+  </div>
+
 </div>
 
 <script>
@@ -358,6 +364,45 @@ async function hideEvent(id, btn){
     loadEventsList();
   }catch(e){ btn.textContent='Hide'; btn.disabled=false; }
 }
+
+async function loadMealPhotos(){
+  const el=document.getElementById('meal-photos-list');
+  try{
+    const r=await fetch(WORKER+'/mealplan/library');
+    const d=await r.json();
+    const lib=d.library||{};
+    let html='';
+    for(const cat of ['breakfast','lunch','dinner','snack']){
+      html+='<div style="font-family:\'Oswald\';text-transform:uppercase;letter-spacing:.4px;font-size:12px;color:var(--red);margin:16px 0 8px;font-weight:700">'+cat+'</div>';
+      html+=(lib[cat]||[]).map(m=>{
+        const safeName=esc(m.name).replace(/"/g,'&quot;');
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">'+
+          '<div style="width:44px;height:44px;border-radius:8px;background:var(--soft);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px">'+
+          (m.photo_url?'<img src="'+esc(m.photo_url)+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'&#127869;')+
+          '</div>'+
+          '<div style="flex:1;min-width:0;font-size:13px;font-weight:600">'+esc(m.name)+'</div>'+
+          '<input type="text" value="'+esc(m.photo_url||'')+'" placeholder="Photo URL" data-item="'+safeName+'" style="flex:2;min-width:0" class="mp-photo-input">'+
+          '<button class="btn" onclick="saveMealPhoto(this)">Save</button>'+
+        '</div>';
+      }).join('');
+    }
+    el.innerHTML = html || '<div class="status">No meal library items found.</div>';
+  }catch(e){ el.innerHTML='<div class="status">Could not load meal library.</div>'; }
+}
+
+async function saveMealPhoto(btn){
+  const row = btn.closest('div');
+  const input = row.querySelector('.mp-photo-input');
+  const itemName = input.getAttribute('data-item');
+  const photoUrl = input.value.trim();
+  btn.textContent='Saving...'; btn.disabled=true;
+  try{
+    await fetch(WORKER+'/mealplan/set-photo',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({item_name:itemName,photo_url:photoUrl||null})});
+    btn.textContent='Saved'; setTimeout(()=>{ btn.textContent='Save'; btn.disabled=false; },1200);
+  }catch(e){ btn.textContent='Error'; btn.disabled=false; }
+}
+
+loadMealPhotos();
 </script>
 </body>
 </html>

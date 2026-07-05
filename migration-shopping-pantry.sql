@@ -16,3 +16,13 @@ CREATE TABLE IF NOT EXISTS pantry_items (
 );
 
 CREATE INDEX IF NOT EXISTS idx_pantry_client ON pantry_items(client_id);
+
+-- Photos per meal library item (and per generated recipe), so the meal
+-- plan, recipe bank, and consultation demo can all show a real photo
+-- instead of a generic food icon. Keyed by the exact item/recipe name.
+CREATE TABLE IF NOT EXISTS meal_photos (
+  item_name TEXT PRIMARY KEY,
+  photo_url TEXT,
+  updated_at TEXT
+);
+
