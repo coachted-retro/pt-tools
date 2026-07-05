@@ -446,19 +446,26 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
           await env.DB.prepare('UPDATE client_auth SET reset_code_hash=?, reset_expires=?, active=1 WHERE id=?')
             .bind(await sha256(code), expires, row.id).run();
-          if (env.RESEND_KEY) {
-            try {
-              await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  from: env.MAIL_FROM || 'onboarding@resend.dev',
-                  to: [em],
-                  subject: 'Retro Fitness Member App: Your verification code',
-                  html: '<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto"><h2 style="color:#E0192B">RETRO FITNESS</h2><p>Use this code to set your Member App password. It expires in 15 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:6px;background:#F5F6F8;padding:16px;text-align:center;border-radius:10px">' + code + '</div><p style="color:#888;font-size:12px">If you did not request this, you can ignore this email.</p></div>'
-                })
-              });
-            } catch (e) {}
+          if (!env.RESEND_KEY) {
+            return ok({ sent: false, mail_configured: false, reason: 'RESEND_KEY is not set on this Worker — no email provider configured, so no email was sent.' }, cors);
+          }
+          try {
+            const mailResp = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from: env.MAIL_FROM || 'onboarding@resend.dev',
+                to: [em],
+                subject: 'Retro Fitness Member App: Your verification code',
+                html: '<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto"><h2 style="color:#E0192B">RETRO FITNESS</h2><p>Use this code to set your Member App password. It expires in 15 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:6px;background:#F5F6F8;padding:16px;text-align:center;border-radius:10px">' + code + '</div><p style="color:#888;font-size:12px">If you did not request this, you can ignore this email.</p></div>'
+              })
+            });
+            const mailData = await mailResp.json().catch(() => ({}));
+            if (!mailResp.ok) {
+              return ok({ sent: false, mail_configured: true, reason: 'Resend rejected the send: ' + (mailData.message || mailResp.status) }, cors);
+            }
+          } catch (e) {
+            return ok({ sent: false, mail_configured: true, reason: 'Network error reaching Resend: ' + e.message }, cors);
           }
         }
         return ok({ sent: true }, cors);

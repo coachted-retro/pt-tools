@@ -2050,7 +2050,13 @@ async function resetRequest(e) {
   const email = document.getElementById('r-email').value.trim();
   if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return; }
   try {
-    await fetch(WORKER + '/auth/reset-request', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+    const r = await fetch(WORKER + '/auth/reset-request', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+    const d = await r.json();
+    if (d.sent === false) {
+      errEl.textContent = 'Email could not be sent (' + (d.reason || 'unknown reason') + '). Ask your coach to set your password directly.';
+      errEl.style.display = 'block';
+      return;
+    }
     document.getElementById('reset-step1').style.display = 'none';
     document.getElementById('reset-step2').style.display = 'block';
   } catch (err) {
