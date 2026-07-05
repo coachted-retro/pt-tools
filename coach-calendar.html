@@ -51,10 +51,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <div class="topbar">
   <div class="logo">Coach <span>Calendar</span></div>
   <button onclick="syncClubOS()" id="sync-btn" style="margin-left:auto;background:none;border:1px solid #374151;color:#9CA3AF;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700;font-size:12px;cursor:pointer">&#8635; Sync Club OS</button>
-  <a href="coach-crm.html" style="margin-left:12px">&larr; My Clients</a>
+  <a href="coach-crm.html" id="back-link" style="margin-left:12px">&larr; My Clients</a>
 </div>
 <div class="wrap">
-  <div class="picker">
+  <div class="picker" id="picker-wrap">
     <select id="coach-select" onchange="init()">
       <option value="">All Coaches</option>
       <option value="Ted Scholl">Ted Scholl</option>
@@ -65,7 +65,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <option value="James">James</option>
     </select>
   </div>
-  <button onclick="openBulkModal()" style="width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;cursor:pointer;margin-bottom:14px">&#128683; Coach Is Out — Reassign a Full Day</button>
+  <div class="picker" id="locked-header" style="display:none;background:var(--ink);color:#fff">
+    <div style="font-family:'Oswald';font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#9CA3AF">Coach</div>
+    <div style="font-family:'Oswald';font-size:20px;font-weight:800;text-transform:uppercase" id="locked-name"></div>
+  </div>
+  <button onclick="openBulkModal()" id="bulk-btn" style="width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;cursor:pointer;margin-bottom:14px">&#128683; Coach Is Out — Reassign a Full Day</button>
 
   <div class="month-nav">
     <button onclick="shiftMonth(-1)">&lsaquo;</button>
@@ -161,6 +165,14 @@ let VIEW_MONTH = new Date();
 let MONTH_DAYS = {};
 let EDIT_ID = null;
 
+const urlParams = new URLSearchParams(window.location.search);
+const URL_COACH = urlParams.get('coach') || '';
+const IS_LOCKED = urlParams.get('locked') === '1' && !!URL_COACH;
+
+// Returns the active coach filter: the locked identity when locked,
+// otherwise whatever is picked in the open dropdown (or '' for All Coaches).
+function coach(){ return IS_LOCKED ? URL_COACH : document.getElementById('coach-select').value; }
+
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtDate(s){ return s ? new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : ''; }
 
@@ -211,6 +223,14 @@ async function syncClubOS(){
 
 function init(){
   document.getElementById('dow-row').innerHTML = ['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');
+  if (IS_LOCKED) {
+    document.getElementById('picker-wrap').style.display = 'none';
+    document.getElementById('locked-header').style.display = 'block';
+    document.getElementById('locked-name').textContent = URL_COACH;
+    document.getElementById('bulk-btn').style.display = 'none';
+    document.getElementById('sync-btn').style.display = 'none';
+    document.getElementById('back-link').href = 'coach-crm.html?coach=' + encodeURIComponent(URL_COACH) + '&locked=1';
+  }
   renderCalendar();
 }
 
@@ -223,9 +243,9 @@ async function renderCalendar(){
   const y = VIEW_MONTH.getFullYear(), m = VIEW_MONTH.getMonth();
   document.getElementById('month-label').textContent = VIEW_MONTH.toLocaleDateString('en-US',{month:'long',year:'numeric'});
   const monthStr = y + '-' + String(m+1).padStart(2,'0');
-  const coach = document.getElementById('coach-select').value;
+  const c = coach();
   try {
-    const r = await fetch(WORKER + `/schedule/month?month=${monthStr}` + (coach?`&coach=${encodeURIComponent(coach)}`:''));
+    const r = await fetch(WORKER + `/schedule/month?month=${monthStr}` + (c?`&coach=${encodeURIComponent(c)}`:''));
     const d = await r.json();
     MONTH_DAYS = {};
     (d.days||[]).forEach(row => MONTH_DAYS[row.scheduled_date] = row.n);
@@ -245,25 +265,23 @@ async function renderCalendar(){
   for (let i=0; i<firstDow; i++) cells += '<div class="day empty"></div>';
   for (let day=1; day<=daysInMonth; day++){
     const dateStr = monthStr + '-' + String(day).padStart(2,'0');
-    const has = MONTH_DAYS[dateStr];
-    const hasClubOS = CLUBOS_DAYS[dateStr];
+    const n = MONTH_DAYS[dateStr] || 0;
+    const nClubOS = CLUBOS_DAYS[dateStr] || 0;
+    const total = n + nClubOS;
     cells += `<div class="day ${dateStr===todayStr?'today':''}" onclick="openDay('${dateStr}')">
       <div class="n">${day}</div>
-      <div style="display:flex;gap:2px;margin-top:2px">
-        ${has ? '<div class="dot"></div>' : ''}
-        ${hasClubOS ? '<div class="dot" style="background:#2563EB"></div>' : ''}
-      </div>
+      ${total ? `<div class="count-badge" style="font-size:10px;font-weight:700;margin-top:2px;color:${n?'var(--red)':'#2563EB'}">${total}</div>` : ''}
     </div>`;
   }
   document.getElementById('cal-grid').innerHTML = cells;
 }
 
 async function openDay(dateStr){
-  const coach = document.getElementById('coach-select').value;
+  const c = coach();
   const panel = document.getElementById('day-panel');
   panel.innerHTML = '<div class="empty-state">Loading...</div>';
   const [r, r2] = await Promise.all([
-    fetch(WORKER + `/schedule/day?date=${dateStr}` + (coach?`&coach=${encodeURIComponent(coach)}`:'')),
+    fetch(WORKER + `/schedule/day?date=${dateStr}` + (c?`&coach=${encodeURIComponent(c)}`:'')),
     fetch(WORKER + `/schedule/clubos-day?date=${dateStr}`)
   ]);
   const d = await r.json();

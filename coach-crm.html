@@ -49,7 +49,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <button onclick="toggleBell()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;position:relative">&#128276;<span id="bell-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:800;border-radius:10px;padding:1px 5px">0</span></button>
     <div id="bell-drop" style="display:none;position:absolute;top:36px;right:0;width:300px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2);z-index:50;color:var(--ink)"></div>
   </div>
-  <a href="coach-calendar.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
+  <a href="coach-calendar.html" id="calendar-link" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
   <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
   <a href="command-center.html" style="margin-left:12px">&larr; Command Center</a>
 </div>
@@ -90,6 +90,7 @@ if (IS_LOCKED) {
   document.getElementById('locked-name').textContent = URL_COACH;
   document.getElementById('picker-box').style.display = 'none';
   document.getElementById('coach-select').value = URL_COACH;
+  document.getElementById('calendar-link').href = 'coach-calendar.html?coach=' + encodeURIComponent(URL_COACH) + '&locked=1';
   localStorage.setItem('coach_crm_name', URL_COACH);
 } else if (saved) {
   document.getElementById('coach-select').value = saved;
