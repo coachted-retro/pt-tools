@@ -730,7 +730,7 @@ window.fetch = function(url, opts) {
 };
 // ── COACH TED LINK HUB ──────────────────────────────────────
 const GUEST_PASS_URL = 'https://tr.ee/yourguestpass';
-const SUPPLEMENT_URL = 'https://tr.ee/coachteds1stPhorm';
+const SUPPLEMENT_URL = 'https://1stphorm.com/?a_aid=coachted';
 const BOOK_FIRST_WORKOUT_URL = 'https://linktr.ee/tedscholl';
 const BOOK_CONSULT_URL = 'https://linktr.ee/tedscholl';
 let SESSION = null;
@@ -2749,7 +2749,10 @@ async function loadPartners() {
   try {
     const r = await fetch(WORKER + '/portal/partners');
     const d = await r.json();
-    const list = d.partners || [];
+    // 1st Phorm already has its own dedicated card above (Nutritional Supplement
+    // Resource) — filter it out here so this section stays empty until there
+    // are other real affiliate partners to show, instead of duplicating it.
+    const list = (d.partners || []).filter(p => !/1st\s*phorm/i.test(p.name || ''));
     if (!list.length) { el.innerHTML = ''; return; }
     el.innerHTML = `<div class="sec-label">Member Perks — Club Partners</div>` + list.map(p => `
       <div class="card"><div class="card-body" style="display:flex;gap:12px;align-items:center">
