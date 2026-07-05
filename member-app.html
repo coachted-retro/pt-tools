@@ -231,6 +231,61 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .finish-count{font-family:'Oswald';font-size:52px;font-weight:800;color:var(--red);margin:12px 0}
 .finish-label{font-size:13px;color:var(--ink3);margin-bottom:28px}
 .finish-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
+/* ── NUTRITION TRACKER (ported from client-portal.html) ── */
+.nutri-daybar{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px}
+.nutri-daynav{width:32px;height:32px;border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--ink3);flex-shrink:0}
+.nutri-daybar input{border:1.5px solid var(--line);border-radius:9px;padding:8px 10px;font-family:'Inter';font-size:13px;font-weight:600;background:var(--soft);text-align:center}
+.nutri-rings{display:flex;justify-content:center;gap:28px;margin-bottom:18px}
+.nutri-ring-box{position:relative;width:120px;height:120px}
+.ring-svg{width:120px;height:120px;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--soft);stroke-width:10}
+.ring-fg{fill:none;stroke:var(--red);stroke-width:10;stroke-linecap:round;stroke-dasharray:326.7;stroke-dashoffset:326.7;transition:stroke-dashoffset .5s}
+.ring-fg.protein{stroke:var(--blue)}
+.ring-center{position:absolute;top:0;left:0;width:120px;height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-num{font-family:'Oswald';font-size:26px;font-weight:700;color:var(--ink);line-height:1}
+.ring-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);margin-top:3px}
+.macro-bar-row{margin-bottom:10px}
+.macro-bar-label{display:flex;justify-content:space-between;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);margin-bottom:5px}
+.macro-bar-track{background:var(--soft);border-radius:6px;height:8px;overflow:hidden}
+.macro-bar-fill{height:8px;border-radius:6px;width:0%;transition:width .5s}
+.macro-bar-fill.carb{background:var(--amber)}
+.macro-bar-fill.fat{background:#8B5CF6}
+.nutri-target-note{font-size:11px;color:var(--ink3);text-align:center;margin-top:10px}
+.log-path-row{display:flex;gap:10px;margin-bottom:14px}
+.log-path-btn{flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:14px 8px;text-align:center;cursor:pointer;font-size:22px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.log-path-btn span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3)}
+.log-path-btn:active{background:var(--soft)}
+.meal-row{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.meal-row:last-child{border-bottom:none}
+.meal-thumb{width:48px;height:48px;border-radius:9px;object-fit:cover;background:var(--soft);flex-shrink:0}
+.meal-thumb-ph{width:48px;height:48px;border-radius:9px;background:var(--soft);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink3)}
+.meal-row-main{flex:1;min-width:0}
+.meal-row-name{font-weight:700;font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meal-row-meta{font-size:11px;color:var(--ink3);margin-top:2px}
+.meal-row-macros{font-size:12px;font-weight:700;color:var(--red);text-align:right;flex-shrink:0}
+.meal-modal{display:none;position:fixed;inset:0;background:rgba(13,14,16,.55);z-index:100;align-items:flex-end;justify-content:center}
+.meal-modal.open{display:flex}
+.meal-modal-inner{background:var(--card);border-radius:18px 18px 0 0;width:100%;max-width:600px;max-height:88vh;overflow-y:auto;padding-bottom:20px}
+.meal-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:2}
+.meal-modal-title{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:16px}
+.meal-modal-close{font-size:24px;color:var(--ink3);cursor:pointer;line-height:1;padding:2px 6px}
+.meal-modal-body{padding:16px}
+.mm-camera-btn{display:block;width:100%;text-align:center;background:var(--soft);border:1.5px dashed var(--line);border-radius:12px;padding:32px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink3)}
+.mm-item-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.mm-item-row:last-child{border-bottom:none}
+.mm-item-name{flex:1}
+.mm-item-macro{font-size:11px;color:var(--ink3)}
+.mm-total-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.mm-total-box{background:var(--soft);border-radius:9px;padding:9px 4px;text-align:center}
+.mm-total-box input{width:100%;border:none;background:transparent;font-family:'Oswald';font-size:16px;font-weight:700;color:var(--ink);text-align:center;outline:none}
+.mm-total-box .mtl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);margin-top:2px}
+.mm-portion-row{display:flex;align-items:center;justify-content:center;gap:14px;margin:12px 0}
+.mm-portion-btn{width:36px;height:36px;border-radius:8px;background:var(--soft);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;cursor:pointer;color:var(--ink)}
+.mm-portion-val{font-family:'Oswald';font-size:15px;font-weight:700;min-width:70px;text-align:center}
+.mm-type-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.mm-type-btn{flex:1;min-width:70px;padding:8px 4px;border:1.5px solid var(--line);border-radius:8px;text-align:center;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);background:var(--soft)}
+.mm-type-btn.sel{border-color:var(--red);color:var(--red);background:var(--red-lt)}
+.mm-status{font-size:12px;color:var(--ink3);text-align:center;margin-top:8px}
 </style>
 </head>
 <body>
@@ -353,6 +408,68 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       </div>
     </div>
 
+    <!-- NUTRITION -->
+    <div class="screen" id="scr-nutrition">
+      <div class="scroll-pad">
+        <div class="card">
+          <div class="card-body">
+            <div class="nutri-daybar">
+              <div class="nutri-daynav" onclick="shiftNutritionDay(-1)">&#8592;</div>
+              <input type="date" id="nutri-date" onchange="loadNutritionDay()">
+              <div class="nutri-daynav" onclick="shiftNutritionDay(1)">&#8594;</div>
+            </div>
+            <div class="nutri-rings">
+              <div class="nutri-ring-box">
+                <svg viewBox="0 0 120 120" class="ring-svg">
+                  <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+                  <circle class="ring-fg" id="ring-cal" cx="60" cy="60" r="52"></circle>
+                </svg>
+                <div class="ring-center"><div class="ring-num" id="cal-num">0</div><div class="ring-label" id="cal-label">kcal</div></div>
+              </div>
+              <div class="nutri-ring-box">
+                <svg viewBox="0 0 120 120" class="ring-svg">
+                  <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+                  <circle class="ring-fg protein" id="ring-pro" cx="60" cy="60" r="52"></circle>
+                </svg>
+                <div class="ring-center"><div class="ring-num" id="pro-num">0</div><div class="ring-label" id="pro-label">protein g</div></div>
+              </div>
+            </div>
+            <div class="macro-bar-row">
+              <div class="macro-bar-label"><span>Carbs</span><span id="carb-txt">0g</span></div>
+              <div class="macro-bar-track"><div class="macro-bar-fill carb" id="carb-fill"></div></div>
+            </div>
+            <div class="macro-bar-row">
+              <div class="macro-bar-label"><span>Fat</span><span id="fat-txt">0g</span></div>
+              <div class="macro-bar-track"><div class="macro-bar-fill fat" id="fat-fill"></div></div>
+            </div>
+            <div class="nutri-target-note" id="nutri-target-note"></div>
+          </div>
+        </div>
+
+        <div class="log-path-row">
+          <div class="log-path-btn" onclick="openMealCapture('photo')">&#128248;<span>Photo</span></div>
+          <div class="log-path-btn" onclick="openMealCapture('barcode')">&#128274;<span>Scan</span></div>
+          <div class="log-path-btn" onclick="openMealCapture('manual')">&#9000;<span>Search</span></div>
+        </div>
+
+        <div class="card"><div class="card-body">
+          <div class="sec-label" style="margin:0 0 8px">Today's Meals</div>
+          <div id="meal-list"><div class="empty-state">No meals logged yet</div></div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- MEAL CAPTURE MODAL -->
+    <div class="meal-modal" id="meal-modal">
+      <div class="meal-modal-inner">
+        <div class="meal-modal-head">
+          <div class="meal-modal-title" id="mm-title">Log a meal</div>
+          <div class="meal-modal-close" onclick="closeMealModal()">&times;</div>
+        </div>
+        <div class="meal-modal-body" id="mm-body"></div>
+      </div>
+    </div>
+
     <!-- CLASSES -->
     <div class="screen" id="scr-classes">
       <div class="scroll-pad">
@@ -381,6 +498,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('home')" id="tab-home"><span class="tab-icon">🏠</span>Home</button>
     <button class="tab-btn" onclick="switchTab('training')" id="tab-training"><span class="tab-icon">💪</span>Training</button>
+    <button class="tab-btn" onclick="switchTab('nutrition')" id="tab-nutrition"><span class="tab-icon">🥗</span>Nutrition</button>
     <button class="tab-btn" onclick="switchTab('classes')" id="tab-classes"><span class="tab-icon">🗓</span>Classes</button>
     <button class="tab-btn" onclick="switchTab('progress')" id="tab-progress"><span class="tab-icon">📈</span>Progress</button>
     <button class="tab-btn" onclick="switchTab('profile')" id="tab-profile"><span class="tab-icon">👤</span>Profile</button>
@@ -1407,6 +1525,7 @@ async function startApp() {
   loadPublicHomeContent();
   checkChatUnread();
   renderTraining();
+  initNutrition();
   renderClasses();
   renderProgress();
   renderProfile();
@@ -1538,7 +1657,7 @@ async function loadCircle() {
 
 // ── GUEST MODE (no login required to browse) ──────────────────
 let GUEST_MODE = false;
-const GATED_TABS = ['training','progress','profile'];
+const GATED_TABS = ['training','nutrition','progress','profile'];
 
 function startGuestMode() {
   GUEST_MODE = true;
@@ -2110,6 +2229,243 @@ async function loadUpcomingSchedule(){
 }
 
 // ── PROFILE ──────────────────────────────────────────────────
+// ── NUTRITION (ported from client-portal.html) ────────────────
+let MM_STATE = null;
+
+function initNutrition() {
+  const dateEl = document.getElementById('nutri-date');
+  if (!dateEl) return;
+  dateEl.value = new Date().toISOString().slice(0,10);
+  loadNutritionDay();
+}
+
+function shiftNutritionDay(delta) {
+  const d = document.getElementById('nutri-date');
+  const dt = new Date(d.value + 'T00:00:00');
+  dt.setDate(dt.getDate() + delta);
+  d.value = dt.toISOString().slice(0,10);
+  loadNutritionDay();
+}
+
+function setNutritionRing(el, numEl, val, max) {
+  const CIRC = 326.7;
+  const pct = max > 0 ? Math.max(0, Math.min(1, val/max)) : 0;
+  el.style.strokeDashoffset = String(CIRC - CIRC*pct);
+  numEl.textContent = Math.round(val);
+}
+
+async function loadNutritionDay() {
+  if (!SESSION || !SESSION.client_id) return;
+  const date = document.getElementById('nutri-date').value || new Date().toISOString().slice(0,10);
+  const listEl = document.getElementById('meal-list');
+  listEl.innerHTML = '<div class="empty-state">Loading...</div>';
+  try {
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'meals', where:{ client_id: SESSION.client_id, meal_date: date }, orderBy:'meal_time' }) });
+    const d = await r.json();
+    const meals = (d.results || []).filter(m => String(m.client_id) === String(SESSION.client_id));
+    renderNutritionDay(meals);
+  } catch(e) { listEl.innerHTML = '<div class="empty-state">Could not load meals</div>'; }
+}
+
+function renderNutritionDay(meals) {
+  const mp = DATA.mealProfile || null;
+  const targetCal = mp && mp.calories ? mp.calories : 0;
+  const targetPro = mp && mp.protein_g ? mp.protein_g : 0;
+  const targetCarb = mp && mp.carbs_g ? mp.carbs_g : 0;
+  const targetFat = mp && mp.fat_g ? mp.fat_g : 0;
+
+  let cal=0, pro=0, carb=0, fat=0;
+  meals.forEach(m => { cal += Number(m.calories)||0; pro += Number(m.protein_g)||0; carb += Number(m.carbs_g)||0; fat += Number(m.fat_g)||0; });
+
+  setNutritionRing(document.getElementById('ring-cal'), document.getElementById('cal-num'), cal, targetCal || Math.max(cal,1));
+  document.getElementById('cal-label').textContent = targetCal ? ('/ '+targetCal+' kcal') : 'kcal';
+  setNutritionRing(document.getElementById('ring-pro'), document.getElementById('pro-num'), pro, targetPro || Math.max(pro,1));
+  document.getElementById('pro-label').textContent = targetPro ? ('/ '+targetPro+'g protein') : 'protein g';
+
+  document.getElementById('carb-txt').textContent = Math.round(carb)+'g'+(targetCarb ? (' / '+targetCarb+'g') : '');
+  document.getElementById('carb-fill').style.width = (targetCarb ? Math.min(100,(carb/targetCarb)*100) : 0)+'%';
+  document.getElementById('fat-txt').textContent = Math.round(fat)+'g'+(targetFat ? (' / '+targetFat+'g') : '');
+  document.getElementById('fat-fill').style.width = (targetFat ? Math.min(100,(fat/targetFat)*100) : 0)+'%';
+
+  document.getElementById('nutri-target-note').textContent = mp && targetCal
+    ? '' : 'No macro targets on file yet — ask your coach to set them at your next check-in.';
+
+  const listEl = document.getElementById('meal-list');
+  if (!meals.length) { listEl.innerHTML = '<div class="empty-state">No meals logged yet</div>'; return; }
+  listEl.innerHTML = meals.map(m => {
+    let items = [];
+    try { items = JSON.parse(m.items_json||'[]'); } catch(e) {}
+    const name = items.length ? items.map(i=>i.name).join(', ') : (m.meal_type||'Meal');
+    const thumb = m.photo_key
+      ? '<img class="meal-thumb" src="'+WORKER+'/photo/get?key='+encodeURIComponent(m.photo_key)+'" onerror="this.replaceWith(Object.assign(document.createElement(\'div\'),{className:\'meal-thumb-ph\',textContent:\'\\uD83C\\uDF7D\'}))">'
+      : '<div class="meal-thumb-ph">&#127869;</div>';
+    return '<div class="meal-row">'+thumb+
+      '<div class="meal-row-main"><div class="meal-row-name">'+esc(name)+'</div>'+
+      '<div class="meal-row-meta">'+(m.meal_type||'meal')+(m.meal_time?(' &middot; '+m.meal_time):'')+'</div></div>'+
+      '<div class="meal-row-macros">'+Math.round(m.calories||0)+' kcal<br>'+Math.round(m.protein_g||0)+'g pro</div></div>';
+  }).join('');
+}
+
+function openMealCapture(mode) {
+  MM_STATE = { mode, mealType:'lunch', portionMult:1, items:[], total:{calories:0,protein_g:0,carbs_g:0,fat_g:0}, photo_key:null, source:mode };
+  document.getElementById('meal-modal').classList.add('open');
+  const titles = { photo:'Snap your plate', barcode:'Scan a barcode', manual:'Search a food' };
+  document.getElementById('mm-title').textContent = titles[mode] || 'Log a meal';
+  const body = document.getElementById('mm-body');
+  if (mode==='photo') {
+    body.innerHTML = '<input type="file" accept="image/*" capture="environment" id="mm-photo-input" style="display:none" onchange="handlePhotoCapture(event)">'+
+      '<label for="mm-photo-input" class="mm-camera-btn">&#128248; Tap to take a photo of your plate</label>'+
+      '<div class="mm-status" id="mm-status"></div>';
+  } else if (mode==='barcode') {
+    body.innerHTML = '<div class="mm-status" style="margin-bottom:10px">Enter or scan the barcode number on the package.</div>'+
+      '<div class="fld"><label>Barcode number (UPC/EAN)</label><input id="mm-barcode-input" inputmode="numeric" placeholder="e.g. 0123456789012"></div>'+
+      '<button class="action-btn" onclick="lookupBarcode()">Look Up</button>'+
+      '<div class="mm-status" id="mm-status"></div>';
+  } else {
+    body.innerHTML = '<div class="fld"><label>What did you eat?</label><input id="mm-desc-input" placeholder="e.g. grilled chicken breast and rice"></div>'+
+      '<div class="fld"><label>Portion (optional)</label><input id="mm-portion-input" placeholder="e.g. 6 oz chicken, 1 cup rice"></div>'+
+      '<button class="action-btn" onclick="manualEstimate()">Estimate Macros</button>'+
+      '<div class="mm-status" id="mm-status"></div>';
+  }
+}
+
+function closeMealModal() {
+  document.getElementById('meal-modal').classList.remove('open');
+  MM_STATE = null;
+}
+
+async function handlePhotoCapture(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  document.getElementById('mm-status').textContent = 'Analyzing your plate...';
+  try {
+    const r = await fetch(WORKER+'/nutrition/photo?client='+SESSION.client_id+'&meal_type='+MM_STATE.mealType, {
+      method:'POST', headers:{'Content-Type': file.type || 'image/jpeg'}, body: file
+    });
+    const d = await r.json();
+    if (!d.ok) { document.getElementById('mm-status').textContent = d.error||'Could not analyze photo'; return; }
+    MM_STATE.photo_key = d.photo_key;
+    MM_STATE.items = d.items || [];
+    MM_STATE.total = d.total || {calories:0,protein_g:0,carbs_g:0,fat_g:0};
+    renderMealReview();
+  } catch(e) { document.getElementById('mm-status').textContent = 'Connection error, try again'; }
+}
+
+async function lookupBarcode() {
+  const code = (document.getElementById('mm-barcode-input').value||'').trim();
+  if (!code) return;
+  document.getElementById('mm-status').textContent = 'Looking up product...';
+  try {
+    const r = await fetch('https://world.openfoodfacts.org/api/v2/product/'+encodeURIComponent(code)+'.json');
+    const d = await r.json();
+    if (d.status !== 1 || !d.product) { document.getElementById('mm-status').textContent = 'Product not found. Try Search instead.'; return; }
+    const p = d.product;
+    const n = p.nutriments || {};
+    const name = p.product_name || p.generic_name || 'Scanned product';
+    const serving = p.serving_size || '1 serving';
+    const item = {
+      name: name, portion: serving,
+      calories: Math.round(n['energy-kcal_serving'] ?? n['energy-kcal_100g'] ?? 0),
+      protein_g: Math.round(n['proteins_serving'] ?? n['proteins_100g'] ?? 0),
+      carbs_g: Math.round(n['carbohydrates_serving'] ?? n['carbohydrates_100g'] ?? 0),
+      fat_g: Math.round(n['fat_serving'] ?? n['fat_100g'] ?? 0)
+    };
+    MM_STATE.items = [item];
+    MM_STATE.total = { calories:item.calories, protein_g:item.protein_g, carbs_g:item.carbs_g, fat_g:item.fat_g };
+    renderMealReview();
+  } catch(e) { document.getElementById('mm-status').textContent = 'Lookup failed, try Search instead'; }
+}
+
+async function manualEstimate() {
+  const description = (document.getElementById('mm-desc-input').value||'').trim();
+  const portion = (document.getElementById('mm-portion-input').value||'').trim();
+  if (!description) { document.getElementById('mm-status').textContent = 'Enter what you ate'; return; }
+  document.getElementById('mm-status').textContent = 'Estimating macros...';
+  try {
+    const r = await fetch(WORKER+'/nutrition/estimate', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ description, portion }) });
+    const d = await r.json();
+    if (!d.ok) { document.getElementById('mm-status').textContent = d.error||'Could not estimate'; return; }
+    MM_STATE.items = d.items || [];
+    MM_STATE.total = d.total || {calories:0,protein_g:0,carbs_g:0,fat_g:0};
+    renderMealReview();
+  } catch(e) { document.getElementById('mm-status').textContent = 'Connection error, try again'; }
+}
+
+function renderMealReview() {
+  const body = document.getElementById('mm-body');
+  const t = MM_STATE.total;
+  const itemsHtml = (MM_STATE.items||[]).map(i =>
+    '<div class="mm-item-row"><div class="mm-item-name">'+esc(i.name)+'<div class="mm-item-macro">'+esc(i.portion||'')+'</div></div>'+
+    '<div class="mm-item-macro">'+Math.round(i.calories||0)+' kcal</div></div>'
+  ).join('') || '<div class="mm-status">No items identified — you can still adjust the totals below.</div>';
+
+  body.innerHTML =
+    '<div class="mm-type-row" id="mm-type-row">'+
+      ['breakfast','lunch','dinner','snack'].map(t2=>'<div class="mm-type-btn'+(t2===MM_STATE.mealType?' sel':'')+'" onclick="selectMealType(this,\''+t2+'\')">'+t2+'</div>').join('')+
+    '</div>'+
+    itemsHtml+
+    '<div class="mm-portion-row">'+
+      '<div class="mm-portion-btn" onclick="adjustPortion(-0.25)">&minus;</div>'+
+      '<div class="mm-portion-val" id="mm-portion-val">'+Math.round(MM_STATE.portionMult*100)+'% portion</div>'+
+      '<div class="mm-portion-btn" onclick="adjustPortion(0.25)">&plus;</div>'+
+    '</div>'+
+    '<div class="mm-total-row">'+
+      '<div class="mm-total-box"><input type="number" id="mm-cal" value="'+Math.round(t.calories||0)+'"><div class="mtl">kcal</div></div>'+
+      '<div class="mm-total-box"><input type="number" id="mm-pro" value="'+Math.round(t.protein_g||0)+'"><div class="mtl">protein</div></div>'+
+      '<div class="mm-total-box"><input type="number" id="mm-carb" value="'+Math.round(t.carbs_g||0)+'"><div class="mtl">carbs</div></div>'+
+      '<div class="mm-total-box"><input type="number" id="mm-fat" value="'+Math.round(t.fat_g||0)+'"><div class="mtl">fat</div></div>'+
+    '</div>'+
+    '<button class="action-btn" onclick="confirmSaveMeal()">Save to Today\'s Log</button>'+
+    '<div class="mm-status" id="mm-status"></div>';
+}
+
+function selectMealType(el, type) {
+  MM_STATE.mealType = type;
+  document.querySelectorAll('#mm-type-row .mm-type-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function adjustPortion(delta) {
+  MM_STATE.portionMult = Math.max(0.25, Math.round((MM_STATE.portionMult + delta) * 100) / 100);
+  const scale = (base) => Math.round((base||0) * MM_STATE.portionMult);
+  const orig = MM_STATE.total;
+  document.getElementById('mm-cal').value = scale(orig.calories);
+  document.getElementById('mm-pro').value = scale(orig.protein_g);
+  document.getElementById('mm-carb').value = scale(orig.carbs_g);
+  document.getElementById('mm-fat').value = scale(orig.fat_g);
+  document.getElementById('mm-portion-val').textContent = Math.round(MM_STATE.portionMult*100)+'% portion';
+}
+
+async function confirmSaveMeal() {
+  const status = document.getElementById('mm-status');
+  status.textContent = 'Saving...';
+  const now = new Date();
+  const payload = {
+    client_id: SESSION.client_id,
+    meal_date: document.getElementById('nutri-date').value || now.toISOString().slice(0,10),
+    meal_time: now.toTimeString().slice(0,5),
+    meal_type: MM_STATE.mealType,
+    photo_key: MM_STATE.photo_key || null,
+    calories: Number(document.getElementById('mm-cal').value)||0,
+    protein_g: Number(document.getElementById('mm-pro').value)||0,
+    carbs_g: Number(document.getElementById('mm-carb').value)||0,
+    fat_g: Number(document.getElementById('mm-fat').value)||0,
+    items_json: JSON.stringify(MM_STATE.items||[]),
+    source: MM_STATE.source,
+    logged_at: now.toISOString()
+  };
+  try {
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'meals', values: payload }) });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error||'Save failed'; return; }
+    closeMealModal();
+    loadNutritionDay();
+  } catch(e) { status.textContent = 'Connection error, try again'; }
+}
+
 function renderProfile() {
   const c = DATA.client;
   if (!c) return;
