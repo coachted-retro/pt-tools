@@ -2537,9 +2537,30 @@ function renderFbFeed() {
   tryParse();
 }
 
-async function claimClassGuestPass(className, classDate) {
-  fetch(WORKER + '/guest-pass/click', { method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ class_name: className, class_date: classDate, source: 'class_promo' }) }).catch(()=>{});
+function claimClassGuestPass(className, classDate) {
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('mm-title').textContent = 'Grab Your Free Guest Pass';
+  document.getElementById('mm-body').innerHTML = `
+    <div class="mm-status" style="margin-bottom:12px;text-align:left">Quick and easy — we'll text/email you the details for <b>${esc(className)}</b>.</div>
+    <div class="fld"><label>Name</label><input id="gp-name" placeholder="Full name"></div>
+    <div class="fld"><label>Phone</label><input id="gp-phone" type="tel" placeholder="(555) 555-5555"></div>
+    <div class="fld"><label>Email</label><input id="gp-email" type="email" placeholder="you@email.com"></div>
+    <button class="action-btn" onclick="submitClassGuestPass('${esc(className).replace(/'/g,"\\'")}','${classDate}')">Get My Guest Pass</button>
+    <div class="mm-status" id="mm-status"></div>`;
+}
+
+async function submitClassGuestPass(className, classDate) {
+  const name = document.getElementById('gp-name').value.trim();
+  const phone = document.getElementById('gp-phone').value.trim();
+  const email = document.getElementById('gp-email').value.trim();
+  const status = document.getElementById('mm-status');
+  if (!name || (!phone && !email)) { status.textContent = 'Name plus a phone or email so we can reach you.'; return; }
+  status.textContent = 'Just a sec...';
+  try {
+    await fetch(WORKER + '/guest-pass/click', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ class_name: className, class_date: classDate, source: 'class_promo', name, phone, email }) });
+  } catch(e) {}
+  closeMealModal();
   window.open(GUEST_PASS_URL, '_blank', 'noopener');
 }
 

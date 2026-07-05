@@ -1178,6 +1178,10 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const b = await request.json();
         await env.DB.prepare('INSERT INTO guest_pass_log (class_name,class_date,source,clicked_at) VALUES (?,?,?,?)')
           .bind(b.class_name||null, b.class_date||null, b.source||'class_promo', new Date().toISOString()).run();
+        if (b.name && (b.phone || b.email)) {
+          await env.DB.prepare('INSERT INTO prospect_log (name,email,phone,source,status,campaign_tag,created_at) VALUES (?,?,?,?,?,?,?)')
+            .bind(b.name, b.email||'', b.phone||'', 'Class Guest Pass', 'new', b.class_name||'', new Date().toISOString()).run();
+        }
         return ok({ logged: true }, cors);
       }
 
