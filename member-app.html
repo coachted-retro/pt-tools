@@ -286,6 +286,47 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .mm-type-btn{flex:1;min-width:70px;padding:8px 4px;border:1.5px solid var(--line);border-radius:8px;text-align:center;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);background:var(--soft)}
 .mm-type-btn.sel{border-color:var(--red);color:var(--red);background:var(--red-lt)}
 .mm-status{font-size:12px;color:var(--ink3);text-align:center;margin-top:8px}
+
+/* ── MEAL PLAN, RECIPE BANK, HABITS, PHOTO COMPARE ── */
+.week-plan{font-size:13px;line-height:1.6}
+.shop-list{font-size:13px;column-count:2;column-gap:16px;line-height:1.8}
+@media(max-width:400px){.shop-list{column-count:1}}
+.mp-ack-box{padding:4px 0}
+.mp-ack-title{font-family:'Oswald';text-transform:uppercase;letter-spacing:.4px;font-size:15px;color:var(--red);margin-bottom:10px}
+.mp-ack-text{font-size:13px;line-height:1.6;color:var(--ink);margin-bottom:16px}
+.mp-ack-check{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--ink);margin-bottom:14px;cursor:pointer}
+.mp-ack-check input{margin-top:2px;width:16px;height:16px;flex-shrink:0}
+.mp-ack-note{font-size:11px;color:var(--ink3);margin-bottom:12px;font-style:italic}
+.rf-chip{padding:6px 12px;border:1.5px solid var(--line);border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);background:var(--soft);cursor:pointer;display:inline-block;margin:0 6px 6px 0}
+.rf-chip.sel{border-color:var(--red);color:var(--red);background:var(--red-lt)}
+.recipe-filter-row{margin-bottom:10px}
+.recipe-card{border:1.5px solid var(--line);border-radius:12px;padding:13px;margin-bottom:10px;cursor:pointer}
+.recipe-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.recipe-card-title{font-weight:700;font-size:14px;color:var(--ink)}
+.recipe-card-meta{font-size:11px;color:var(--ink3);margin-top:3px;text-transform:uppercase;letter-spacing:.3px;font-weight:700}
+.recipe-card-macros{font-size:11px;color:var(--red);font-weight:700;text-align:right;flex-shrink:0;white-space:nowrap}
+.recipe-detail h4{font-family:'Oswald';text-transform:uppercase;letter-spacing:.4px;font-size:12px;color:var(--ink3);margin:14px 0 6px}
+.recipe-detail ul{margin:0;padding-left:18px;font-size:13px;line-height:1.7}
+.recipe-detail ol{margin:0;padding-left:18px;font-size:13px;line-height:1.7}
+.supp-note{background:var(--red-lt);border:1px solid #FBD5D5;border-radius:9px;padding:10px 12px;font-size:12px;color:var(--red-dk);margin-top:14px}
+.supp-note a{color:var(--red-dk);font-weight:700}
+.habit-row{display:flex;gap:10px}
+.habit-chip{flex:1;border-radius:12px;border:1.5px solid var(--line);background:var(--soft);padding:12px 6px;text-align:center;cursor:pointer}
+.habit-chip.hit{border-color:var(--green);background:var(--green-lt)}
+.habit-chip .hc-icon{font-size:20px}
+.habit-chip .hc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3);margin-top:4px}
+.habit-chip .hc-streak{font-family:'Oswald';font-size:15px;font-weight:700;color:var(--ink);margin-top:2px}
+.habit-chip.hit .hc-streak{color:var(--green)}
+.pc-pose-row{display:flex;gap:6px;margin-bottom:12px}
+.pc-pose-btn{flex:1;padding:7px 4px;border:1.5px solid var(--line);border-radius:8px;text-align:center;cursor:pointer;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);background:var(--soft)}
+.pc-pose-btn.sel{border-color:var(--red);color:var(--red);background:var(--red-lt)}
+.pc-slider-wrap{position:relative;width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--soft)}
+.pc-slider-wrap img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+.pc-img-after{clip-path:inset(0 0 0 50%)}
+.pc-handle-line{position:absolute;top:0;bottom:0;left:50%;width:3px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.4);pointer-events:none}
+.pc-handle-dot{position:absolute;top:50%;left:50%;width:34px;height:34px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none}
+.pc-slider-range{width:100%;margin-top:10px;accent-color:var(--red)}
+.pc-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);font-weight:700;margin-top:4px}
 </style>
 </head>
 <body>
@@ -352,6 +393,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="today-workout-card"></div>
         <div class="kpi-strip" id="home-kpis" style="display:none"></div>
         <div id="home-nutrition-demo"></div>
+        <div id="home-habits"></div>
         <div id="home-happening"></div>
         <div id="home-coachs-edge"></div>
         <div id="home-circle"></div>
@@ -456,6 +498,23 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
           <div class="sec-label" style="margin:0 0 8px">Today's Meals</div>
           <div id="meal-list"><div class="empty-state">No meals logged yet</div></div>
         </div></div>
+
+        <div class="card"><div class="card-body">
+          <div class="sec-label" style="margin:0 0 8px">This Week's Meal Plan</div>
+          <div id="meal-plan-body"><div class="empty-state">Loading your meal plan...</div></div>
+        </div></div>
+        <div class="card" id="shopping-card"><div class="card-body">
+          <div class="sec-label" style="margin:0 0 8px">Shopping List</div>
+          <div id="shopping-body"></div>
+        </div></div>
+
+        <div class="card" id="recipe-bank-card" style="display:none"><div class="card-body">
+          <div class="sec-label" style="margin:0 0 8px">Chef Ted's Recipe Bank</div>
+          <div class="recipe-filter-row" id="recipe-filters"></div>
+          <div id="recipe-list"><div class="empty-state">Loading your recipes...</div></div>
+          <button class="action-btn" onclick="generateRecipes()" style="margin-top:12px">Get More Recipes</button>
+          <div class="mm-status" id="recipe-gen-status"></div>
+        </div></div>
       </div>
     </div>
 
@@ -481,6 +540,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <!-- PROGRESS -->
     <div class="screen" id="scr-progress">
       <div class="scroll-pad">
+        <div class="card" id="photo-compare-card"><div class="card-body">
+          <div class="sec-label" style="margin:0 0 8px">Photo Comparison</div>
+          <div id="photo-compare-body"><div class="empty-state">Loading photos...</div></div>
+        </div></div>
         <div id="progress-body"></div>
       </div>
     </div>
@@ -610,7 +673,7 @@ function demoGoal() {
 }
 
 
-let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null, demoNutrition: null, demoMeals: [] };
+let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null, demoNutrition: null, demoMeals: [], dailyLogs: [] };
 let goingClasses = new Set(JSON.parse(localStorage.getItem('going_classes')||'[]'));
 let slExCount = 0;
 
@@ -1522,12 +1585,14 @@ async function startApp() {
   shell.style.display = 'flex';
   await loadPortalData();
   renderHome(); renderHomeExtras();
+  renderHabits(DATA.dailyLogs || []);
   loadPublicHomeContent();
   checkChatUnread();
   renderTraining();
   initNutrition();
   renderClasses();
   renderProgress();
+  loadPhotoCompare();
   renderProfile();
 }
 
@@ -1557,6 +1622,7 @@ async function loadPortalData() {
     DATA.mealPlan = d.mealPlan;
     DATA.tier = d.tier;
     DATA.mealProfile = d.mealProfile;
+    DATA.dailyLogs = d.dailyLogs || [];
     // Update greeting
     const name = DATA.client ? (DATA.client.first_name || 'Friend') : 'Friend';
     const hr = new Date().getHours();
@@ -2237,6 +2303,8 @@ function initNutrition() {
   if (!dateEl) return;
   dateEl.value = new Date().toISOString().slice(0,10);
   loadNutritionDay();
+  renderMealPlan(DATA.mealPlan);
+  loadRecipes();
 }
 
 function shiftNutritionDay(delta) {
@@ -2464,6 +2532,251 @@ async function confirmSaveMeal() {
     closeMealModal();
     loadNutritionDay();
   } catch(e) { status.textContent = 'Connection error, try again'; }
+}
+
+// ── MEAL PLAN (ported from client-portal.html) ────────────────
+window._pendingMealPlan = null;
+function renderMealPlan(mp) {
+  if (!mp || !mp.plan_html) {
+    document.getElementById('meal-plan-body').innerHTML = '<div class="empty-state">Your meal plan will appear here once it\'s ready.</div>';
+    document.getElementById('shopping-body').innerHTML = '';
+    return;
+  }
+  window._pendingMealPlan = mp;
+  if (!mp.ack_at) {
+    document.getElementById('meal-plan-body').innerHTML =
+      '<div class="mp-ack-box">'+
+        '<div class="mp-ack-title">Before you view this plan</div>'+
+        '<p class="mp-ack-text">This meal plan is a general nutrition recommendation from your coach based on your goals and body composition. It is not medical or dietetic advice. Please consult your physician or a registered dietitian before starting this plan or making any significant change to your diet, especially if you have a medical condition, are pregnant, or take medication.</p>'+
+        '<label class="mp-ack-check"><input type="checkbox" id="mp-ack-checkbox" onchange="document.getElementById(\'mp-ack-submit\').disabled=!this.checked || !document.getElementById(\'mp-ack-name\').value.trim()"> I have read and understand this disclaimer.</label>'+
+        '<div class="fld"><label>Type your full name as your digital signature</label><input id="mp-ack-name" placeholder="Full name" oninput="document.getElementById(\'mp-ack-submit\').disabled=!this.value.trim() || !document.getElementById(\'mp-ack-checkbox\').checked"></div>'+
+        '<button class="action-btn" id="mp-ack-submit" disabled onclick="acknowledgeMealPlan()">Sign &amp; View My Plan</button>'+
+        '<div class="mm-status" id="mp-ack-status"></div>'+
+      '</div>';
+    document.getElementById('shopping-body').innerHTML = '<div class="empty-state">Available once you sign the disclaimer above.</div>';
+    return;
+  }
+  document.getElementById('meal-plan-body').innerHTML = '<div class="mp-ack-note">Signed by '+esc(mp.ack_signature||'')+' on '+esc((mp.ack_at||'').slice(0,10))+'</div><div class="week-plan">'+mp.plan_html+'</div>';
+  document.getElementById('shopping-body').innerHTML = mp.shopping_list ? '<div class="shop-list">'+esc(mp.shopping_list).replace(/\n/g,'<br>')+'</div>' : '<div class="empty-state">Shopping list will appear here.</div>';
+}
+
+async function acknowledgeMealPlan() {
+  const mp = window._pendingMealPlan;
+  if (!mp || !mp.id) return;
+  const name = (document.getElementById('mp-ack-name').value||'').trim();
+  const status = document.getElementById('mp-ack-status');
+  if (!name) { status.textContent = 'Enter your full name'; return; }
+  status.textContent = 'Saving...';
+  const now = new Date().toISOString();
+  try {
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'meal_plans', values:{ ack_signature:name, ack_at:now }, where:{ id:mp.id } }) });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error||'Could not save, try again'; return; }
+    mp.ack_signature = name; mp.ack_at = now;
+    renderMealPlan(mp);
+  } catch(e) { status.textContent = 'Connection error, try again'; }
+}
+
+// ── RECIPE BANK (ported from client-portal.html) ──────────────
+const FPLINK_URL = 'https://1stphorm.com/?a_aid=coachted';
+let RECIPE_ALL = [], RECIPE_FILTER = { meal:'all', prep:'all' };
+
+async function loadRecipes() {
+  const pkg = (DATA.client && DATA.client.package || '').toLowerCase();
+  const card = document.getElementById('recipe-bank-card');
+  if (pkg !== 'complete' && pkg !== 'complete_plus') { if (card) card.style.display = 'none'; return; }
+  if (card) card.style.display = 'block';
+  const list = document.getElementById('recipe-list');
+  try {
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'recipes', where:{ client_id: SESSION.client_id }, orderBy:'created_at DESC', limit:100 }) });
+    const d = await r.json();
+    RECIPE_ALL = (d.results||[]).filter(rc=>String(rc.client_id)===String(SESSION.client_id));
+    renderRecipeFilters();
+    renderRecipeList();
+    if (!RECIPE_ALL.length) generateRecipes();
+  } catch(e) { if (list) list.innerHTML = '<div class="empty-state">Could not load recipes</div>'; }
+}
+
+function renderRecipeFilters() {
+  const meals = ['all','breakfast','lunch','dinner','snack'];
+  document.getElementById('recipe-filters').innerHTML =
+    meals.map(m=>'<div class="rf-chip'+(RECIPE_FILTER.meal===m?' sel':'')+'" onclick="setRecipeFilter(\'meal\',\''+m+'\')">'+m+'</div>').join('') +
+    '<div class="rf-chip'+(RECIPE_FILTER.prep==='quick'?' sel':'')+'" onclick="setRecipeFilter(\'prep\',\''+(RECIPE_FILTER.prep==='quick'?'all':'quick')+'\')">under 15 min</div>';
+}
+
+function setRecipeFilter(kind, val) { RECIPE_FILTER[kind] = val; renderRecipeFilters(); renderRecipeList(); }
+
+function renderRecipeList() {
+  let list = RECIPE_ALL;
+  if (RECIPE_FILTER.meal !== 'all') list = list.filter(r=>r.meal_type===RECIPE_FILTER.meal);
+  if (RECIPE_FILTER.prep === 'quick') list = list.filter(r=>Number(r.prep_min)>0 && Number(r.prep_min)<=15);
+  const el = document.getElementById('recipe-list');
+  if (!list.length) { el.innerHTML = '<div class="empty-state">No recipes match yet</div>'; return; }
+  el.innerHTML = list.map((r,i) =>
+    '<div class="recipe-card" onclick="openRecipeDetail('+RECIPE_ALL.indexOf(list[i])+')">'+
+      '<div class="recipe-card-head"><div><div class="recipe-card-title">'+esc(r.title)+'</div>'+
+      '<div class="recipe-card-meta">'+(r.meal_type||'')+(r.prep_min?(' &middot; '+r.prep_min+' min'):'')+'</div></div>'+
+      '<div class="recipe-card-macros">'+Math.round(r.calories||0)+' kcal<br>'+Math.round(r.protein_g||0)+'g pro</div></div></div>'
+  ).join('');
+}
+
+function openRecipeDetail(idx) {
+  const r = RECIPE_ALL[idx];
+  if (!r) return;
+  let ingredients=[], steps=[];
+  try { ingredients = JSON.parse(r.ingredients_json||'[]'); } catch(e) {}
+  try { steps = JSON.parse(r.steps_json||'[]'); } catch(e) {}
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('mm-title').textContent = r.title;
+  document.getElementById('mm-body').innerHTML =
+    '<div class="recipe-card-meta" style="margin-bottom:10px">'+(r.meal_type||'')+(r.prep_min?(' &middot; '+r.prep_min+' min'):'')+' &middot; '+Math.round(r.calories||0)+' kcal &middot; '+Math.round(r.protein_g||0)+'g protein &middot; '+Math.round(r.carbs_g||0)+'g carbs &middot; '+Math.round(r.fat_g||0)+'g fat</div>'+
+    '<div class="recipe-detail"><h4>Ingredients</h4><ul>'+ingredients.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'+
+    '<h4>Steps</h4><ol>'+steps.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol></div>'+
+    (r.supplement_note ? '<div class="supp-note">'+esc(r.supplement_note)+' <a href="'+FPLINK_URL+'" target="_blank">Shop 1st Phorm</a></div>' : '')+
+    '<button class="action-btn" onclick="logRecipeAsMeal('+idx+')" style="margin-top:16px">Log This Meal</button>'+
+    '<div class="mm-status" id="mm-status"></div>';
+}
+
+async function logRecipeAsMeal(idx) {
+  const r = RECIPE_ALL[idx];
+  if (!r) return;
+  const status = document.getElementById('mm-status');
+  if (status) status.textContent = 'Logging...';
+  const now = new Date();
+  const payload = {
+    client_id: SESSION.client_id, meal_date: now.toISOString().slice(0,10), meal_time: now.toTimeString().slice(0,5),
+    meal_type: r.meal_type || 'snack', photo_key: null,
+    calories: r.calories||0, protein_g: r.protein_g||0, carbs_g: r.carbs_g||0, fat_g: r.fat_g||0,
+    items_json: JSON.stringify([{ name:r.title, portion:'1 serving', calories:r.calories||0, protein_g:r.protein_g||0, carbs_g:r.carbs_g||0, fat_g:r.fat_g||0 }]),
+    source: 'recipe', logged_at: now.toISOString()
+  };
+  try {
+    const res = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'meals', values: payload }) });
+    const d = await res.json();
+    if (!d.ok) { if (status) status.textContent = d.error||'Save failed'; return; }
+    closeMealModal();
+    loadNutritionDay();
+  } catch(e) { if (status) status.textContent = 'Connection error'; }
+}
+
+async function generateRecipes() {
+  const status = document.getElementById('recipe-gen-status');
+  if (status) status.textContent = "Chef Ted is cooking up some recipes...";
+  try {
+    const r = await fetch(WORKER+'/recipes/generate', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: SESSION.client_id, count:6 }) });
+    const d = await r.json();
+    if (!d.ok) { if (status) status.textContent = d.error||'Could not generate recipes'; return; }
+    RECIPE_ALL = [...(d.recipes||[]), ...RECIPE_ALL];
+    renderRecipeList();
+    if (status) status.textContent = '';
+  } catch(e) { if (status) status.textContent = 'Connection error'; }
+}
+
+// ── DAILY HABITS (ported from client-portal.html) ─────────────
+const HABIT_TARGETS = { hydration: 8, sleep_hours: 7, steps: 8000 };
+function habitDateStr(offsetDays) { const d = new Date(); d.setDate(d.getDate()+offsetDays); return d.toISOString().slice(0,10); }
+
+function computeStreak(logs, key, threshold) {
+  const byDate = {}; logs.forEach(l => { byDate[l.log_date] = l; });
+  let streak = 0, i = 0;
+  while (true) {
+    const row = byDate[habitDateStr(-i)];
+    if (!row || !(Number(row[key]) >= threshold)) break;
+    streak++; i++;
+    if (i > 60) break;
+  }
+  return streak;
+}
+
+function renderHabits(logs) {
+  const el = document.getElementById('home-habits');
+  if (!el) return;
+  if (!SESSION || !SESSION.client_id) { el.innerHTML = ''; return; }
+  const today = habitDateStr(0);
+  const todayRow = logs.find(l => l.log_date === today) || {};
+  const items = [
+    { key:'hydration', label:'Water', icon:'&#128167;', val: todayRow.hydration, target: HABIT_TARGETS.hydration },
+    { key:'sleep_hours', label:'Sleep', icon:'&#128564;', val: todayRow.sleep_hours, target: HABIT_TARGETS.sleep_hours },
+    { key:'steps', label:'Steps', icon:'&#128099;', val: todayRow.steps, target: HABIT_TARGETS.steps }
+  ];
+  const html = '<div class="sec-label">Daily Habits</div><div class="card"><div class="card-body"><div class="habit-row">' + items.map(it => {
+    const hit = Number(it.val) >= it.target;
+    const streak = computeStreak(logs, it.key, it.target);
+    return '<div class="habit-chip'+(hit?' hit':'')+'" onclick="toggleHabit(\''+it.key+'\','+it.target+')">'+
+      '<div class="hc-icon">'+it.icon+'</div><div class="hc-label">'+it.label+'</div>'+
+      '<div class="hc-streak">'+(streak>0?(streak+'&#128293;'):(hit?'&#10003;':'tap'))+'</div></div>';
+  }).join('') + '</div></div></div>';
+  el.innerHTML = html;
+}
+
+async function toggleHabit(key, target) {
+  const logs = DATA.dailyLogs || [];
+  const today = habitDateStr(0);
+  const todayRow = logs.find(l => l.log_date === today) || {};
+  const isHit = Number(todayRow[key]) >= target;
+  const body = { client_id: SESSION.client_id, log_date: today };
+  const apiKey = key === 'hydration' ? 'hydration' : (key === 'sleep_hours' ? 'sleep' : 'steps');
+  body[apiKey] = isHit ? null : target;
+  try {
+    const r = await fetch(WORKER+'/portal/log-day', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (d.ok) { await loadPortalData(); renderHabits(DATA.dailyLogs || []); }
+  } catch(e) {}
+}
+
+// ── PHOTO COMPARISON (ported from client-portal.html) ─────────
+let PC_PHOTOS = {}, PC_POSE = 'front';
+
+async function loadPhotoCompare() {
+  const body = document.getElementById('photo-compare-body');
+  if (!body) return;
+  if (!SESSION || !SESSION.client_id) { body.innerHTML = '<div class="empty-state">Log in to see your progress photos.</div>'; return; }
+  try {
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'progress_photos', where:{ client_id: SESSION.client_id }, orderBy:'captured_at' }) });
+    const d = await r.json();
+    const photos = (d.results||[]).filter(p=>String(p.client_id)===String(SESSION.client_id));
+    PC_PHOTOS = {};
+    photos.forEach(p => { const pose = p.pose||'other'; (PC_PHOTOS[pose] = PC_PHOTOS[pose]||[]).push(p); });
+    const poses = Object.keys(PC_PHOTOS).filter(p => PC_PHOTOS[p].length >= 2);
+    if (!poses.length) { body.innerHTML = '<div class="empty-state">Need at least 2 photos of the same pose to compare. Keep logging progress photos with your coach.</div>'; return; }
+    PC_POSE = poses.includes('front') ? 'front' : poses[0];
+    body.innerHTML = '<div class="pc-pose-row" id="pc-pose-row"></div><div id="pc-slider-area"></div>';
+    document.getElementById('pc-pose-row').innerHTML = poses.map(p =>
+      '<div class="pc-pose-btn'+(p===PC_POSE?' sel':'')+'" onclick="selectPose(this,\''+p+'\')">'+p+'</div>').join('');
+    renderPhotoSlider();
+  } catch(e) { body.innerHTML = '<div class="empty-state">Could not load photos</div>'; }
+}
+
+function selectPose(el, pose) {
+  PC_POSE = pose;
+  document.querySelectorAll('#pc-pose-row .pc-pose-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  renderPhotoSlider();
+}
+
+function renderPhotoSlider() {
+  const list = PC_PHOTOS[PC_POSE] || [];
+  const first = list[0], last = list[list.length-1];
+  const area = document.getElementById('pc-slider-area');
+  area.innerHTML =
+    '<div class="pc-slider-wrap">'+
+      '<img src="'+WORKER+'/photo/get?key='+encodeURIComponent(first.r2_key)+'">'+
+      '<img class="pc-img-after" id="pc-after-img" src="'+WORKER+'/photo/get?key='+encodeURIComponent(last.r2_key)+'">'+
+      '<div class="pc-handle-line" id="pc-handle-line"></div>'+
+      '<div class="pc-handle-dot">&#8596;</div>'+
+    '</div>'+
+    '<input type="range" class="pc-slider-range" min="0" max="100" value="50" oninput="movePcSlider(this.value)">'+
+    '<div class="pc-labels"><span>'+(first.captured_at||'').slice(0,10)+'</span><span>'+(last.captured_at||'').slice(0,10)+'</span></div>';
+}
+
+function movePcSlider(val) {
+  document.getElementById('pc-after-img').style.clipPath = 'inset(0 0 0 '+val+'%)';
+  document.getElementById('pc-handle-line').style.left = val+'%';
 }
 
 function renderProfile() {
