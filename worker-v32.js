@@ -25,7 +25,7 @@ const ALLOWED_TABLES = new Set([
   'clients','consultations','followups','checkins','programs','training_sessions',
   'lead_sources','leads','touchpoints','outreach_log',
   'progress_photos','measurements','eod_reports','appointment_status',
-  'meal_profiles','meal_plans','meals','recipes','nutrition_logs',
+  'meal_profiles','meal_plans','meals','recipes',
   'inbody_scans','workouts',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts',
   'daily_content','client_wins','gym_events',
@@ -57,28 +57,6 @@ async function verifyToken(token, secret) {
   const expected = (await sha256(payload + secret)).slice(0,16);
   if (sig !== expected) return null;
   try { const d = JSON.parse(atob(payload)); if (d.exp < Date.now()) return null; return d; } catch(e) { return null; }
-}
-
-// Accumulates a meal's macros into that client's running daily total.
-// Called any time a meal is logged (photo scan or text estimate) so that
-// nutrition_logs holds one row per client per day representing the full
-// day's intake, which /coach/clients and /nutrition/summary read back
-// to compute real macro-adherence graphs instead of a placeholder.
-async function logNutrition(env, clientId, logDate, totals) {
-  if (!clientId || !totals) return;
-  const cal = Number(totals.calories) || 0;
-  const pro = Number(totals.protein_g) || 0;
-  const carb = Number(totals.carbs_g) || 0;
-  const fat = Number(totals.fat_g) || 0;
-  if (!cal && !pro && !carb && !fat) return;
-  const existing = await env.DB.prepare('SELECT id,calories,protein_g,carbs_g,fat_g FROM nutrition_logs WHERE client_id=? AND log_date=?').bind(clientId, logDate).first();
-  if (existing) {
-    await env.DB.prepare('UPDATE nutrition_logs SET calories=?, protein_g=?, carbs_g=?, fat_g=? WHERE id=?')
-      .bind((existing.calories||0)+cal, (existing.protein_g||0)+pro, (existing.carbs_g||0)+carb, (existing.fat_g||0)+fat, existing.id).run();
-  } else {
-    await env.DB.prepare('INSERT INTO nutrition_logs (client_id,log_date,calories,protein_g,carbs_g,fat_g,created_at) VALUES (?,?,?,?,?,?,?)')
-      .bind(clientId, logDate, cal, pro, carb, fat, new Date().toISOString()).run();
-  }
 }
 
 export default {
@@ -260,8 +238,6 @@ export default {
         let parsed;
         try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
         catch(e) { return ok({ photo_key:key, items:[], total:{calories:0,protein_g:0,carbs_g:0,fat_g:0}, parse_error:true }, cors); }
-        const logDate = p.get('log_date') || new Date().toISOString().slice(0,10);
-        if (parsed.total) { try { await logNutrition(env, client, logDate, parsed.total); } catch(e) {} }
         return ok({ photo_key:key, items:parsed.items||[], total:parsed.total||{calories:0,protein_g:0,carbs_g:0,fat_g:0} }, cors);
       }
 
@@ -282,10 +258,6 @@ export default {
         let parsed;
         try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
         catch(e) { return ok({ items:[], total:{calories:0,protein_g:0,carbs_g:0,fat_g:0}, parse_error:true }, cors); }
-        if (body.client_id && parsed.total) {
-          const logDate = body.log_date || new Date().toISOString().slice(0,10);
-          try { await logNutrition(env, body.client_id, logDate, parsed.total); } catch(e) {}
-        }
         return ok({ items:parsed.items||[], total:parsed.total||{calories:0,protein_g:0,carbs_g:0,fat_g:0} }, cors);
       }
 
@@ -1226,20 +1198,30 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           }
           c.workout_weekly_series = weekCounts;
 
-          // --- Macro adherence: daily logged intake vs meal_profiles target, last 14 days ---
+          // --- Macro adherence: daily logged meals (real 'meals' table from client-portal.html) vs meal_profiles target, last 14 days ---
           const mp = await env.DB.prepare('SELECT calories,protein_g,carbs_g,fat_g FROM meal_profiles WHERE client_id=? LIMIT 1').bind(c.id).first();
-          const logs = await env.DB.prepare(
-            'SELECT log_date, calories, protein_g, carbs_g, fat_g FROM nutrition_logs WHERE client_id=? AND log_date>=? ORDER BY log_date ASC'
+          const mealRows = await env.DB.prepare(
+            'SELECT meal_date, calories, protein_g, carbs_g, fat_g FROM meals WHERE client_id=? AND meal_date>=? ORDER BY meal_date ASC'
           ).bind(c.id, since14).all();
+          const dayTotals = {};
+          for (const mr of (mealRows.results || [])) {
+            const d = mr.meal_date;
+            if (!dayTotals[d]) dayTotals[d] = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+            dayTotals[d].calories += Number(mr.calories) || 0;
+            dayTotals[d].protein_g += Number(mr.protein_g) || 0;
+            dayTotals[d].carbs_g += Number(mr.carbs_g) || 0;
+            dayTotals[d].fat_g += Number(mr.fat_g) || 0;
+          }
           const macroSeries = [];
           let sumPct = 0, cnt = 0;
           const pctFor = (actual, target) => target ? Math.max(0, 100 - Math.abs(actual - target) / target * 100) : null;
-          for (const lr of (logs.results || [])) {
+          for (const d of Object.keys(dayTotals).sort()) {
             if (!mp || !mp.calories) break;
-            const parts = [pctFor(lr.calories, mp.calories), pctFor(lr.protein_g, mp.protein_g), pctFor(lr.carbs_g, mp.carbs_g), pctFor(lr.fat_g, mp.fat_g)].filter(v => v != null);
+            const t = dayTotals[d];
+            const parts = [pctFor(t.calories, mp.calories), pctFor(t.protein_g, mp.protein_g), pctFor(t.carbs_g, mp.carbs_g), pctFor(t.fat_g, mp.fat_g)].filter(v => v != null);
             if (!parts.length) continue;
             const dayPct = Math.round(parts.reduce((a, b) => a + b, 0) / parts.length);
-            macroSeries.push({ date: lr.log_date, pct: dayPct });
+            macroSeries.push({ date: d, pct: dayPct });
             sumPct += dayPct; cnt++;
           }
           c.macro_avg_pct = cnt ? Math.round(sumPct / cnt) : null;
