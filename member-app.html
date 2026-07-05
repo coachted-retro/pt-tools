@@ -1569,24 +1569,113 @@ function renderStaffHome() {
     cards += staffCard('My Call List', 'Today\'s people + business calls, ranked by priority', 'prospect-tracker.html?tab=calllist', '📞');
     cards += staffCard('Prospect Tracker', 'People and Businesses pipeline', 'prospect-tracker.html', '🎯');
   } else if (role === 'floor tech') {
-    cards += staffCard('Maintenance Punch List', 'Daily log, repairs, and equipment notes', '#', '🔧', true);
+    cards += staffCard('Maintenance &amp; Cleaning Punch List', "Today's list — check off what's done", '#punch-list-section', '🔧');
   } else if (role === 'general manager' || role === 'director of fitness' || role === 'regional director') {
     cards += staffCard('Command Center', 'Every tool, one place', 'command-center.html', '🏢');
     cards += staffCard('Coverage Board', 'Staff shifts and PT sessions, one calendar', 'coverage-board.html', '🗓');
     cards += staffCard('Prospect Tracker', 'People, Businesses, and the daily Call List', 'prospect-tracker.html', '🎯');
+    cards += staffCard('Maintenance &amp; Cleaning Punch List', 'Oversight on what needs attention', '#punch-list-section', '🔧');
   } else {
     cards += staffCard('Command Center', 'Every tool, one place', 'command-center.html', '🏢');
   }
 
-  cards += staffCard('My HR & Payroll', 'Pay stubs, PTO, documents', '#', '💼', true);
+  cards += staffCard('My HR & Payroll', 'Personal info, documents, PTO, payroll', 'my-hr.html?staff_id='+STAFF_SESSION.staff_id, '💼');
 
+  const showPunchList = (role === 'floor tech' || role === 'general manager' || role === 'director of fitness' || role === 'regional director');
   el.innerHTML = `<div class="sec-label">Quick Access</div>${cards}
     <div class="sec-label" style="margin-top:16px">My Schedule</div>
     <div class="card"><div class="card-body"><div id="my-shifts-body"><div class="empty-state">Loading...</div></div></div></div>
     <div class="sec-label" style="margin-top:16px">Open Shifts — Need Coverage</div>
-    <div class="card"><div class="card-body"><div id="open-shifts-body"><div class="empty-state">Loading...</div></div></div></div>`;
+    <div class="card"><div class="card-body"><div id="open-shifts-body"><div class="empty-state">Loading...</div></div></div></div>
+    ${showPunchList ? `
+    <div id="punch-list-section">
+      <div class="sec-label" style="margin-top:16px">Cleaning Punch List</div>
+      <div class="card"><div class="card-body">
+        <div id="punch-cleaning-body"><div class="empty-state">Loading...</div></div>
+        <button class="wp-swap-btn" style="margin-top:10px" onclick="openAddPunchItem('cleaning')">+ Add Item</button>
+      </div></div>
+      <div class="sec-label" style="margin-top:16px">Maintenance Punch List</div>
+      <div class="card"><div class="card-body">
+        <div id="punch-maintenance-body"><div class="empty-state">Loading...</div></div>
+        <button class="wp-swap-btn" style="margin-top:10px" onclick="openAddPunchItem('maintenance')">+ Add Item</button>
+      </div></div>
+    </div>` : ''}`;
   loadMyShifts();
   loadOpenShifts();
+  if (showPunchList) { loadPunchList('cleaning'); loadPunchList('maintenance'); }
+}
+
+async function loadPunchList(category) {
+  const el = document.getElementById('punch-' + category + '-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/punch-list/list?category=' + category + '&status=open');
+    const d = await r.json();
+    const items = d.items || [];
+    if (!items.length) { el.innerHTML = '<div class="empty-state">Nothing open right now.</div>'; return; }
+    const urgent = items.filter(i => i.urgency === 'urgent');
+    const normal = items.filter(i => i.urgency !== 'urgent');
+    let html = '';
+    if (urgent.length) html += '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--red);margin-bottom:6px">Needs Immediate Attention</div>' + urgent.map(i => punchRow(i)).join('');
+    if (normal.length) html += '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--ink3);margin:12px 0 6px">Not Urgent</div>' + normal.map(i => punchRow(i)).join('');
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load.</div>'; }
+}
+
+function punchRow(item) {
+  return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+    <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);flex-shrink:0;cursor:pointer" onclick="resolvePunchItem(${item.id},'${item.category}')"></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:13px;font-weight:600">${esc(item.description)}</div>
+      ${item.area ? `<div style="font-size:11px;color:var(--ink3)">${esc(item.area)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+async function resolvePunchItem(id, category) {
+  try {
+    await fetch(WORKER + '/punch-list/resolve', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, resolved_by: STAFF_SESSION ? STAFF_SESSION.name : '' }) });
+    loadPunchList(category);
+  } catch(e) {}
+}
+
+function openAddPunchItem(category) {
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('mm-title').textContent = 'Add to ' + (category === 'cleaning' ? 'Cleaning' : 'Maintenance') + ' List';
+  document.getElementById('mm-body').innerHTML = `
+    <div class="fld"><label>What needs attention?</label><input id="punch-desc-input" placeholder="e.g. Treadmill 4 belt squeaking"></div>
+    <div class="fld"><label>Area (optional)</label><input id="punch-area-input" placeholder="e.g. Cardio floor, Locker room"></div>
+    <div class="mm-type-row">
+      <div class="mm-type-btn sel" id="urgency-normal" onclick="selectPunchUrgency('normal')">Not Urgent</div>
+      <div class="mm-type-btn" id="urgency-urgent" onclick="selectPunchUrgency('urgent')">Needs Immediate Attention</div>
+    </div>
+    <button class="action-btn" onclick="savePunchItem('${category}')">Add to List</button>
+    <div class="mm-status" id="mm-status"></div>`;
+}
+
+let _punchUrgency = 'normal';
+function selectPunchUrgency(u) {
+  _punchUrgency = u;
+  document.getElementById('urgency-normal').classList.toggle('sel', u === 'normal');
+  document.getElementById('urgency-urgent').classList.toggle('sel', u === 'urgent');
+}
+
+async function savePunchItem(category) {
+  const desc = document.getElementById('punch-desc-input').value.trim();
+  const area = document.getElementById('punch-area-input').value.trim();
+  const status = document.getElementById('mm-status');
+  if (!desc) { status.textContent = 'Describe what needs attention'; return; }
+  status.textContent = 'Saving...';
+  try {
+    const r = await fetch(WORKER + '/punch-list/create', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ category, description: desc, area, urgency: _punchUrgency, reported_by: STAFF_SESSION ? STAFF_SESSION.name : '' }) });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not save'; return; }
+    closeMealModal();
+    _punchUrgency = 'normal';
+    loadPunchList(category);
+  } catch(e) { status.textContent = 'Connection error'; }
 }
 
 async function loadMyShifts() {

@@ -90,7 +90,7 @@ const ALLOWED_TABLES = new Set([
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
-  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts',
+  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items',
   'daily_content','client_wins','gym_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
@@ -667,6 +667,61 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
             message: b.covering_name + ' is covering ' + shift.staff_name + "'s " + shift.role + ' shift ' + whenText + ' (' + shift.start_time + '-' + shift.end_time + ').'
           })).run();
         return ok({ covered: true }, cors);
+      }
+
+      // ── FLOOR TECH PUNCH LIST (cleaning + maintenance) ──────────────
+      if (url.pathname === '/punch-list/list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const category = url.searchParams.get('category'); // 'cleaning' | 'maintenance' | omit for both
+        const status = url.searchParams.get('status') || 'open';
+        let q = "SELECT * FROM punch_list_items WHERE status=?";
+        const binds = [status];
+        if (category) { q += ' AND category=?'; binds.push(category); }
+        q += " ORDER BY CASE urgency WHEN 'urgent' THEN 0 ELSE 1 END, reported_at DESC LIMIT 200";
+        const rows = await env.DB.prepare(q).bind(...binds).all();
+        return ok({ items: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/punch-list/create' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.category || !b.description) return bad('category and description required', cors);
+        const now = new Date().toISOString();
+        const ins = await env.DB.prepare(
+          `INSERT INTO punch_list_items (gym_id,category,description,area,urgency,status,reported_by,reported_at)
+           VALUES (?,?,?,?,?,'open',?,?)`
+        ).bind(b.gym_id||1, b.category, b.description, b.area||'', b.urgency==='urgent'?'urgent':'normal', b.reported_by||'', now).run();
+        return ok({ id: ins.meta?.last_row_id }, cors);
+      }
+
+      if (url.pathname === '/punch-list/resolve' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        await env.DB.prepare("UPDATE punch_list_items SET status='done', resolved_by=?, resolved_at=? WHERE id=?")
+          .bind(b.resolved_by||'', new Date().toISOString(), b.id).run();
+        return ok({ resolved: true }, cors);
+      }
+
+      if (url.pathname === '/punch-list/reopen' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        await env.DB.prepare("UPDATE punch_list_items SET status='open', resolved_by=NULL, resolved_at=NULL WHERE id=?").bind(b.id).run();
+        return ok({ reopened: true }, cors);
+      }
+
+      if (url.pathname === '/punch-list/update' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        const fields = [], binds = [];
+        if (b.urgency != null) { fields.push('urgency=?'); binds.push(b.urgency==='urgent'?'urgent':'normal'); }
+        if (b.notes != null) { fields.push('notes=?'); binds.push(b.notes); }
+        if (!fields.length) return bad('nothing to update', cors);
+        binds.push(b.id);
+        await env.DB.prepare(`UPDATE punch_list_items SET ${fields.join(', ')} WHERE id=?`).bind(...binds).run();
+        return ok({ updated: true }, cors);
       }
 
 
