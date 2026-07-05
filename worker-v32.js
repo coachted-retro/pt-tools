@@ -1,6 +1,69 @@
 const OUTSCRAPER_BASE = "https://api.outscraper.com/maps/search-v3";
 const FPLINK = "https://1stphorm.com/?a_aid=coachted";
 
+// --- Approved meal library. All health-conscious whole-food options —
+// lean proteins, vegetables, whole grains, healthy fats. The AI meal
+// plan generator builds each day primarily FROM this list (scaling
+// portions to hit that client's targets) rather than freely inventing
+// meals, so what a client sees stays consistent, grocery-shoppable,
+// and reviewed by Ted rather than open-ended AI improvisation. ---
+const MEAL_LIBRARY = {
+  breakfast: [
+    { name: 'Egg white veggie scramble + whole grain toast', calories: 380, protein_g: 32, carbs_g: 34, fat_g: 12, tags: ['high-protein'] },
+    { name: 'Greek yogurt, berries, granola, honey', calories: 340, protein_g: 24, carbs_g: 45, fat_g: 8, tags: ['vegetarian','quick'] },
+    { name: 'Overnight oats with protein powder and banana', calories: 420, protein_g: 30, carbs_g: 55, fat_g: 9, tags: ['vegetarian','meal-prep'] },
+    { name: 'Two whole eggs, turkey bacon, avocado, fruit', calories: 450, protein_g: 28, carbs_g: 22, fat_g: 26, tags: ['low-carb'] },
+    { name: 'Protein smoothie (whey, spinach, frozen fruit, almond milk)', calories: 320, protein_g: 30, carbs_g: 38, fat_g: 6, tags: ['quick'] },
+    { name: 'Cottage cheese, pineapple, walnuts', calories: 300, protein_g: 26, carbs_g: 24, fat_g: 12, tags: ['vegetarian','quick'] },
+    { name: 'Veggie egg muffins (meal-prepped) + fruit', calories: 350, protein_g: 27, carbs_g: 20, fat_g: 18, tags: ['meal-prep'] },
+    { name: 'Oatmeal with peanut butter and sliced banana', calories: 440, protein_g: 18, carbs_g: 58, fat_g: 16, tags: ['vegetarian'] },
+    { name: 'Turkey sausage, sweet potato hash, eggs', calories: 460, protein_g: 30, carbs_g: 34, fat_g: 20, tags: [] },
+    { name: 'Breakfast burrito (eggs, black beans, salsa, whole wheat wrap)', calories: 410, protein_g: 26, carbs_g: 42, fat_g: 14, tags: ['vegetarian-option'] },
+    { name: 'Protein pancakes with Greek yogurt topping', calories: 400, protein_g: 32, carbs_g: 40, fat_g: 10, tags: ['vegetarian'] },
+    { name: 'Smoked salmon, whole grain toast, avocado', calories: 420, protein_g: 26, carbs_g: 28, fat_g: 20, tags: [] }
+  ],
+  lunch: [
+    { name: 'Grilled chicken bowl — rice, black beans, veggies, salsa', calories: 560, protein_g: 42, carbs_g: 58, fat_g: 14, tags: ['meal-prep'] },
+    { name: 'Turkey and avocado wrap, side salad', calories: 480, protein_g: 32, carbs_g: 36, fat_g: 20, tags: ['quick'] },
+    { name: 'Big salad — grilled chicken, chickpeas, mixed greens, olive oil vinaigrette', calories: 460, protein_g: 36, carbs_g: 28, fat_g: 20, tags: ['low-carb'] },
+    { name: 'Tuna salad (Greek yogurt based) over greens with crackers', calories: 420, protein_g: 34, carbs_g: 30, fat_g: 14, tags: ['quick'] },
+    { name: 'Turkey chili with beans, side of cornbread', calories: 520, protein_g: 38, carbs_g: 50, fat_g: 14, tags: ['meal-prep'] },
+    { name: 'Grilled shrimp, quinoa, roasted vegetables', calories: 480, protein_g: 34, carbs_g: 44, fat_g: 14, tags: [] },
+    { name: 'Chicken burrito bowl with cauliflower rice', calories: 440, protein_g: 40, carbs_g: 30, fat_g: 16, tags: ['low-carb'] },
+    { name: 'Lentil soup with whole grain bread', calories: 440, protein_g: 22, carbs_g: 62, fat_g: 10, tags: ['vegetarian'] },
+    { name: 'Steak and sweet potato bowl with greens', calories: 560, protein_g: 42, carbs_g: 44, fat_g: 20, tags: [] },
+    { name: 'Chickpea and vegetable curry over brown rice', calories: 500, protein_g: 20, carbs_g: 70, fat_g: 14, tags: ['vegetarian'] },
+    { name: 'Turkey burger (no bun), roasted sweet potato, side salad', calories: 470, protein_g: 38, carbs_g: 32, fat_g: 18, tags: ['low-carb'] },
+    { name: 'Egg salad (Greek yogurt based) over greens with fruit', calories: 400, protein_g: 26, carbs_g: 26, fat_g: 20, tags: ['vegetarian','quick'] }
+  ],
+  dinner: [
+    { name: 'Baked salmon, roasted broccoli, brown rice', calories: 560, protein_g: 40, carbs_g: 42, fat_g: 22, tags: [] },
+    { name: 'Lean beef stir-fry with mixed vegetables over rice', calories: 580, protein_g: 40, carbs_g: 52, fat_g: 18, tags: [] },
+    { name: 'Grilled chicken breast, roasted potatoes, green beans', calories: 540, protein_g: 44, carbs_g: 44, fat_g: 16, tags: [] },
+    { name: 'Turkey meatballs, whole wheat pasta, marinara, side salad', calories: 560, protein_g: 36, carbs_g: 58, fat_g: 16, tags: [] },
+    { name: 'Baked cod, quinoa, roasted asparagus', calories: 460, protein_g: 36, carbs_g: 36, fat_g: 14, tags: ['low-carb'] },
+    { name: 'Sheet pan chicken fajitas (peppers, onions, whole wheat tortilla)', calories: 520, protein_g: 38, carbs_g: 46, fat_g: 16, tags: [] },
+    { name: 'Grilled pork tenderloin, roasted Brussels sprouts, sweet potato', calories: 540, protein_g: 38, carbs_g: 40, fat_g: 18, tags: [] },
+    { name: 'Shrimp and vegetable stir-fry over cauliflower rice', calories: 420, protein_g: 34, carbs_g: 26, fat_g: 16, tags: ['low-carb'] },
+    { name: 'Tofu and vegetable stir-fry over brown rice', calories: 480, protein_g: 24, carbs_g: 60, fat_g: 14, tags: ['vegetarian'] },
+    { name: 'Turkey chili over baked potato', calories: 520, protein_g: 36, carbs_g: 52, fat_g: 14, tags: ['meal-prep'] },
+    { name: 'Grilled chicken Caesar salad (light dressing, whole wheat croutons)', calories: 460, protein_g: 40, carbs_g: 24, fat_g: 20, tags: ['low-carb'] },
+    { name: 'Black bean and vegetable enchiladas (corn tortilla)', calories: 500, protein_g: 22, carbs_g: 62, fat_g: 16, tags: ['vegetarian'] }
+  ],
+  snack: [
+    { name: '1st Phorm protein shake', calories: 150, protein_g: 25, carbs_g: 5, fat_g: 2, tags: ['quick'], supplement: true },
+    { name: 'Greek yogurt with berries', calories: 160, protein_g: 15, carbs_g: 18, fat_g: 2, tags: ['vegetarian','quick'] },
+    { name: 'Apple with almond butter', calories: 200, protein_g: 5, carbs_g: 26, fat_g: 10, tags: ['vegetarian','quick'] },
+    { name: 'Cottage cheese with pineapple', calories: 150, protein_g: 16, carbs_g: 14, fat_g: 2, tags: ['vegetarian'] },
+    { name: 'Hard-boiled eggs (2) with a piece of fruit', calories: 180, protein_g: 14, carbs_g: 12, fat_g: 10, tags: ['quick'] },
+    { name: 'Handful of almonds + string cheese', calories: 220, protein_g: 12, carbs_g: 8, fat_g: 16, tags: ['low-carb'] },
+    { name: 'Protein bar (1st Phorm)', calories: 200, protein_g: 20, carbs_g: 18, fat_g: 7, tags: ['quick'], supplement: true },
+    { name: 'Baby carrots and hummus', calories: 150, protein_g: 5, carbs_g: 18, fat_g: 7, tags: ['vegetarian'] },
+    { name: 'Rice cakes with peanut butter', calories: 190, protein_g: 6, carbs_g: 24, fat_g: 9, tags: ['vegetarian'] },
+    { name: 'Edamame (steamed, salted)', calories: 140, protein_g: 12, carbs_g: 12, fat_g: 5, tags: ['vegetarian'] }
+  ]
+};
+
 // --- Gym location: Retro Fitness of Fairless Hills, 516 Lincoln Hwy, 19030 ---
 const GYM_LAT = 40.1762, GYM_LON = -74.8530, RADIUS_MI = 10;
 
@@ -144,6 +207,10 @@ export default {
         if (!env.DB) return bad('D1 binding "DB" not found.', cors);
         const o = await request.json().catch(() => ({}));
         return ok(await generateMealPlans(env, { clientId: o.client }), cors);
+      }
+
+      if (url.pathname === '/mealplan/library' && request.method === 'GET') {
+        return ok({ library: MEAL_LIBRARY }, cors);
       }
 
       if (url.pathname === '/photo/upload' && request.method === 'POST') {
@@ -2090,7 +2157,17 @@ async function buildMealPlan(env, r, inbody){
   const macroLine = (r.calories || r.protein_g)
     ? `Coach-set targets: ${r.calories||'?'} kcal, protein ${r.protein_g||'?'}g, carbs ${r.carbs_g||'?'}g, fat ${r.fat_g||'?'}g. Use these.`
     : 'No coach-set targets; compute sensible ones from the stats and goal.';
-  const sys = `You are a nutrition planning assistant for Retro Fitness personal training. Build a practical 7-day meal plan for one client from their body composition and goal. Compute sensible daily calories and macros and state them up top. Strictly avoid every excluded food and allergen listed. If a medical condition is listed, do NOT design around it; instead add a clear note advising the client to consult their physician or a registered dietitian, and keep the plan general and conservative. Output clean simple HTML only (headings, paragraphs, lists; no html or body wrapper): a short macro summary, a 7-day plan with breakfast, lunch, dinner and one snack per day with approximate portions, a few simple recipes, and a consolidated shopping list grouped by aisle. Add one short 1st Phorm supplement suggestion using this link: ${FPLINK}. End with exactly one italic paragraph, for every client regardless of medical history, stating plainly: this plan is a general nutrition recommendation only, not medical or dietetic advice, and the client should consult their physician or a registered dietitian before starting it or making any significant change to their diet. Include no workout, training, sets, reps or exercise content. Plain accessible language, no emojis, no em dashes.`;
+  const libraryText = ['breakfast','lunch','dinner','snack'].map(cat =>
+    cat.toUpperCase() + ' OPTIONS:\n' + MEAL_LIBRARY[cat].map(m =>
+      `- ${m.name} (${m.calories} kcal, ${m.protein_g}g protein, ${m.carbs_g}g carbs, ${m.fat_g}g fat)`).join('\n')
+  ).join('\n\n');
+  const sys = `You are a nutrition planning assistant for Retro Fitness personal training. Build a practical 7-day meal plan for one client from their body composition and goal. Compute sensible daily calories and macros and state them up top.
+
+APPROVED MEAL LIBRARY — build the week primarily FROM these options, scaling portions up or down to hit the day's targets and mixing them across the week for variety. Only introduce a meal outside this list if needed to respect an allergy or exclusion, and keep any substitution in the same health-conscious style (lean protein, vegetables, whole grains, healthy fats):
+
+${libraryText}
+
+Strictly avoid every excluded food and allergen listed. If a medical condition is listed, do NOT design around it; instead add a clear note advising the client to consult their physician or a registered dietitian, and keep the plan general and conservative. Output clean simple HTML only (headings, paragraphs, lists; no html or body wrapper): a short macro summary, a 7-day plan with breakfast, lunch, dinner and one snack per day with approximate portions drawn from the library above, a few simple recipes, and a consolidated shopping list grouped by aisle. Add one short 1st Phorm supplement suggestion using this link: ${FPLINK}. End with exactly one italic paragraph, for every client regardless of medical history, stating plainly: this plan is a general nutrition recommendation only, not medical or dietetic advice, and the client should consult their physician or a registered dietitian before starting it or making any significant change to their diet. Include no workout, training, sets, reps or exercise content. Plain accessible language, no emojis, no em dashes.`;
   const user = `Client: ${name}, age ${r.age||'n/a'}, ${r.gender||'n/a'}. Goal: ${goal}.
 InBody: weight ${inbody.w||'n/a'}, lean mass ${inbody.ln||'n/a'}, body fat percent ${inbody.bf||'n/a'}.
 ${macroLine}
