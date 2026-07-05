@@ -975,7 +975,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok({ opted_in: true, my_goal: me.goal_type, matches: rows.results || [] }, cors);
       }
 
-
+      if (url.pathname === '/challenge/log' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const body = await request.json();
         if (!body.client_id || !body.challenge_id) return bad('client_id and challenge_id required', cors);
