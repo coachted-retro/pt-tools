@@ -2062,6 +2062,15 @@ function openConfig() {
 
 // Show config on load if not configured
 window.addEventListener('load', () => {
+  // Pre-fill from an existing client profile (e.g. "Start Initial Consultation"
+  // clicked from client-profile.html) so the coach isn't retyping info that's
+  // already on file, and this consultation updates that same client record
+  // instead of creating a duplicate.
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _existingClientId = _urlParams.get('client_id');
+  if (_existingClientId) {
+    loadExistingClientForConsult(_existingClientId);
+  }
   // Check if opened with a draft ID in the URL hash
   var hash = window.location.hash;
   if (hash && hash.indexOf('draft=') >= 0) {
@@ -2725,6 +2734,21 @@ async function dbCall(body) {
   } catch(e) { console.error('D1 call failed:', e.message); return { ok:false, error: e.message }; }
 }
 
+window.EXISTING_CLIENT_ID = null;
+async function loadExistingClientForConsult(id) {
+  try {
+    var r = await dbCall({ op:'select', table:'clients', where:{ id: parseInt(id,10) }, limit:1 });
+    var c = r.results && r.results[0];
+    if (!c) return;
+    window.EXISTING_CLIENT_ID = c.id;
+    var nameEl = document.getElementById('name'); if (nameEl) nameEl.value = ((c.first_name||'')+' '+(c.last_name||'')).trim();
+    var emailEl = document.getElementById('email'); if (emailEl) emailEl.value = c.email || '';
+    var phoneEl = document.getElementById('phone'); if (phoneEl) phoneEl.value = c.phone || '';
+    var ageEl = document.getElementById('age'); if (ageEl && c.age) ageEl.value = c.age;
+    if (c.gender && typeof selectGender === 'function') selectGender(c.gender);
+  } catch(e) { console.warn('Could not pre-fill from existing client:', e.message); }
+}
+
 // Writes a clients row (if one doesn't already exist for this email) and a
 // meal_profiles row, but ONLY when the selected package has nutrition enabled
 // (Complete / Complete+). Every other package skips this entirely, no row
@@ -2808,7 +2832,13 @@ async function finalizeAccept() {
     };
     Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]==null) delete clientPayload[k]; });
 
-    var clientData = await dbCall({ op:'insert', table:'clients', values: clientPayload });
+    var clientData;
+    if (window.EXISTING_CLIENT_ID) {
+      clientData = await dbCall({ op:'update', table:'clients', values: clientPayload, where:{ id: window.EXISTING_CLIENT_ID } });
+      if (clientData.ok !== false) clientData = { ok: true, id: window.EXISTING_CLIENT_ID };
+    } else {
+      clientData = await dbCall({ op:'insert', table:'clients', values: clientPayload });
+    }
     if (!clientData.ok) { throw new Error('Client save failed: ' + (clientData.error || 'unknown error')); }
     window._enrolledClientId = clientData.id || null;
     var _pl = document.getElementById('profileLink'); if(_pl && window._enrolledClientId) _pl.href = 'client-profile.html?client='+window._enrolledClientId;
@@ -2882,7 +2912,10 @@ async function finalizeDecline() {
       coach_notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
     };
     Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
-    dbCall({ op:'insert', table:'clients', values: declinePayload }).then(function(d){
+    var _declineSave = window.EXISTING_CLIENT_ID
+      ? dbCall({ op:'update', table:'clients', values: declinePayload, where:{ id: window.EXISTING_CLIENT_ID } }).then(function(d){ return { ok: d.ok!==false, id: window.EXISTING_CLIENT_ID }; })
+      : dbCall({ op:'insert', table:'clients', values: declinePayload });
+    _declineSave.then(function(d){
       var clientId = d.id;
       if (clientId) {
         dbCall({ op:'insert', table:'followups', values: { client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' } }).catch(function(){});

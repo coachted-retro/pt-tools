@@ -1105,38 +1105,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const postsRes = await env.DB.prepare(
           'SELECT * FROM feed_posts ORDER BY pinned DESC, created_at DESC LIMIT ?'
         ).bind(limit).all();
-        const posts = postsRes.results || [];
-
-        const todayMMDD = new Date().toISOString().slice(5,10);
-        const autoItems = [];
-        try {
-          const clientBdays = await env.DB.prepare(
-            "SELECT id, first_name, last_name, birthday FROM clients WHERE birthday IS NOT NULL AND substr(birthday,6,5)=?"
-          ).bind(todayMMDD).all();
-          (clientBdays.results||[]).forEach(c => autoItems.push({
-            id: 'auto-cb-'+c.id, category: 'birthday', title: ((c.first_name||'')+' '+(c.last_name||'')).trim()+"'s Birthday",
-            body: 'Wish them a happy birthday next time you see them!', created_at: new Date().toISOString(), pinned: 1, auto: true
-          }));
-          const staffBdays = await env.DB.prepare(
-            "SELECT id, name, birthday FROM staff_roster WHERE birthday IS NOT NULL AND substr(birthday,6,5)=? AND active=1"
-          ).bind(todayMMDD).all();
-          (staffBdays.results||[]).forEach(s => autoItems.push({
-            id: 'auto-sb-'+s.id, category: 'birthday', title: s.name+"'s Birthday",
-            body: 'Wish them a happy birthday today!', created_at: new Date().toISOString(), pinned: 1, auto: true
-          }));
-          const staffAnniv = await env.DB.prepare(
-            "SELECT id, name, hire_date FROM staff_roster WHERE hire_date IS NOT NULL AND substr(hire_date,6,5)=? AND active=1"
-          ).bind(todayMMDD).all();
-          (staffAnniv.results||[]).forEach(s => {
-            const years = new Date().getFullYear() - parseInt(String(s.hire_date).slice(0,4),10);
-            if (years > 0) autoItems.push({
-              id: 'auto-sa-'+s.id, category: 'anniversary', title: s.name+"'s Work Anniversary",
-              body: 'Celebrating ' + years + ' year' + (years===1?'':'s') + ' with Retro Fitness today!', created_at: new Date().toISOString(), pinned: 1, auto: true
-            });
-          });
-        } catch(e) {}
-
-        return ok({ posts: [...autoItems, ...posts] }, cors);
+        return ok({ posts: postsRes.results || [] }, cors);
       }
 
       if (url.pathname === '/feed/create' && request.method === 'POST') {
@@ -1160,6 +1129,14 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!id) return bad('id required', cors);
         await env.DB.prepare('DELETE FROM feed_posts WHERE id=?').bind(id).run();
         return ok({ deleted: true }, cors);
+      }
+
+      if (url.pathname === '/feed/run-auto-scan' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const result = await populateDailyFeedItems(env, new Date().toISOString().slice(0,10));
+        return ok(result, cors);
       }
 
       if (url.pathname === '/feed/generate-news-draft' && request.method === 'POST') {
@@ -2331,6 +2308,8 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
     }
     const today = new Date().toISOString().slice(0,10);
     ctx.waitUntil(generateEODReport(env, today));
+    ctx.waitUntil(populateDailyFeedItems(env, today));
+    ctx.waitUntil(detectAutoWins(env));
   }
 };
 
@@ -2339,6 +2318,77 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
 // If the day is empty, no report is written, exactly as requested,
 // no blank clutter in the log. If there is real activity, AI writes
 // a plain-language recap and it is saved once, keyed by report_date.
+// ---------------- Daily feed auto-population ----------------
+// Runs nightly via cron (piggybacking the existing EOD trigger) so
+// birthdays, staff work anniversaries, and client gym anniversaries
+// post themselves to the Community & Industry News feed with zero
+// ongoing admin effort. Also callable on demand via /feed/run-auto-scan
+// for testing or to catch up after adding new birthday/hire/start dates.
+async function populateDailyFeedItems(env, dateStr) {
+  const mmdd = dateStr.slice(5,10);
+  const year = parseInt(dateStr.slice(0,4), 10);
+  let created = 0;
+
+  async function alreadyPosted(category, refId, dateStr) {
+    const row = await env.DB.prepare(
+      "SELECT id FROM feed_posts WHERE category=? AND created_by='system' AND title LIKE ? AND substr(created_at,1,10)=?"
+    ).bind(category, '%#'+refId+'%', dateStr).first();
+    return !!row;
+  }
+
+  // Client birthdays
+  const clientBdays = await env.DB.prepare(
+    "SELECT id, first_name, last_name FROM clients WHERE birthday IS NOT NULL AND substr(birthday,6,5)=?"
+  ).bind(mmdd).all();
+  for (const c of (clientBdays.results||[])) {
+    if (await alreadyPosted('birthday', c.id, dateStr)) continue;
+    const name = ((c.first_name||'')+' '+(c.last_name||'')).trim();
+    await env.DB.prepare('INSERT INTO feed_posts (category,title,body,pinned,created_by,created_at) VALUES (?,?,?,1,?,?)')
+      .bind('birthday', name+"'s Birthday #"+c.id, 'Wish them a happy birthday next time you see them!', 'system', new Date().toISOString()).run();
+    created++;
+  }
+
+  // Staff birthdays
+  const staffBdays = await env.DB.prepare(
+    "SELECT id, name FROM staff_roster WHERE birthday IS NOT NULL AND substr(birthday,6,5)=? AND active=1"
+  ).bind(mmdd).all();
+  for (const s of (staffBdays.results||[])) {
+    if (await alreadyPosted('birthday', 's'+s.id, dateStr)) continue;
+    await env.DB.prepare('INSERT INTO feed_posts (category,title,body,pinned,created_by,created_at) VALUES (?,?,?,1,?,?)')
+      .bind('birthday', s.name+"'s Birthday #s"+s.id, 'Wish them a happy birthday today!', 'system', new Date().toISOString()).run();
+    created++;
+  }
+
+  // Staff work anniversaries (from hire_date)
+  const staffAnniv = await env.DB.prepare(
+    "SELECT id, name, hire_date FROM staff_roster WHERE hire_date IS NOT NULL AND substr(hire_date,6,5)=? AND active=1"
+  ).bind(mmdd).all();
+  for (const s of (staffAnniv.results||[])) {
+    const years = year - parseInt(String(s.hire_date).slice(0,4),10);
+    if (years <= 0) continue;
+    if (await alreadyPosted('anniversary', 'sa'+s.id, dateStr)) continue;
+    await env.DB.prepare('INSERT INTO feed_posts (category,title,body,pinned,created_by,created_at) VALUES (?,?,?,1,?,?)')
+      .bind('anniversary', s.name+"'s Work Anniversary #sa"+s.id, 'Celebrating '+years+' year'+(years===1?'':'s')+' with Retro Fitness today!', 'system', new Date().toISOString()).run();
+    created++;
+  }
+
+  // Client gym membership anniversaries (from training_start_date)
+  const clientAnniv = await env.DB.prepare(
+    "SELECT id, first_name, last_name, training_start_date FROM clients WHERE training_start_date IS NOT NULL AND substr(training_start_date,6,5)=?"
+  ).bind(mmdd).all();
+  for (const c of (clientAnniv.results||[])) {
+    const years = year - parseInt(String(c.training_start_date).slice(0,4),10);
+    if (years <= 0) continue;
+    if (await alreadyPosted('anniversary', 'ca'+c.id, dateStr)) continue;
+    const name = ((c.first_name||'')+' '+(c.last_name||'')).trim();
+    await env.DB.prepare('INSERT INTO feed_posts (category,title,body,pinned,created_by,created_at) VALUES (?,?,?,1,?,?)')
+      .bind('anniversary', name+"'s Member Anniversary #ca"+c.id, 'Celebrating '+years+' year'+(years===1?'':'s')+' training with us today!', 'system', new Date().toISOString()).run();
+    created++;
+  }
+
+  return { created };
+}
+
 async function generateEODReport(env, dateStr) {
   const [consults, checkins, followups, clients] = await Promise.all([
     env.DB.prepare('SELECT * FROM consultations WHERE consult_date=?').bind(dateStr).all(),
@@ -2822,6 +2872,43 @@ async function detectAutoWins(env){
       created++;
     }
   }
+
+  // Gym check-in consistency — recognizes people showing up to work out on
+  // their own, not just PT sessions, using the opt-in presence check-ins.
+  const checkinStreaks = await env.DB.prepare(
+    `SELECT client_id, COUNT(*) n FROM presence_checkins WHERE checked_in_at >= datetime('now','-14 day') GROUP BY client_id HAVING n>=6`
+  ).all();
+  for (const s of (checkinStreaks.results||[])) {
+    const cl = await env.DB.prepare('SELECT first_name FROM clients WHERE id=?').bind(s.client_id).first();
+    const name = (cl && cl.first_name) || 'A member';
+    const headline = name+' checked in '+s.n+' times over the last two weeks';
+    const dupe = await env.DB.prepare("SELECT id FROM client_wins WHERE client_id=? AND win_type='checkin_streak' AND created_at >= date('now','-7 day')").bind(s.client_id).first();
+    if (!dupe) {
+      await env.DB.prepare('INSERT INTO client_wins (client_id,headline,detail,win_type,source,visible,created_at) VALUES (?,?,?,?,?,1,?)')
+        .bind(s.client_id, headline, 'Consistency is the whole game.', 'checkin_streak', 'auto', new Date().toISOString()).run();
+      created++;
+    }
+  }
+
+  // PT session count milestones — round numbers of completed training
+  // sessions (10, 25, 50, 100, 150, 200...).
+  const milestones = [10, 25, 50, 100, 150, 200, 250, 300];
+  const sessionCounts = await env.DB.prepare(
+    `SELECT client_id, COUNT(*) n FROM training_sessions GROUP BY client_id HAVING n>=10`
+  ).all();
+  for (const s of (sessionCounts.results||[])) {
+    const hit = milestones.filter(m => m <= s.n).pop();
+    if (!hit) continue;
+    const dupe = await env.DB.prepare("SELECT id FROM client_wins WHERE client_id=? AND win_type='session_milestone' AND detail LIKE ?").bind(s.client_id, '%'+hit+' sessions%').first();
+    if (dupe) continue;
+    const cl = await env.DB.prepare('SELECT first_name FROM clients WHERE id=?').bind(s.client_id).first();
+    const name = (cl && cl.first_name) || 'A member';
+    const headline = name+' just hit '+hit+' training sessions';
+    await env.DB.prepare('INSERT INTO client_wins (client_id,headline,detail,win_type,source,visible,created_at) VALUES (?,?,?,?,?,1,?)')
+      .bind(s.client_id, headline, hit+' sessions in the books. That is real commitment.', 'session_milestone', 'auto', new Date().toISOString()).run();
+    created++;
+  }
+
   return { created };
 }
 

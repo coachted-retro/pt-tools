@@ -324,6 +324,8 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   const tenure = start? (daysBetween(start)+' days training') : 'start date not set';
   const statusCls = (client.status||'').indexOf('active')>=0?'active':((client.status||'')==='prospect'?'prospect':'');
   const pkg = client.package? client.package : (client.goal_primary||'');
+  const lastCheckin = checkins && checkins.length ? checkins[checkins.length-1] : null;
+  const nextCheckin = lastCheckin ? lastCheckin.next_checkin : null;
 
   let html='';
   // header
@@ -335,6 +337,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     (client.goal_primary?'<span>Goal: <b>'+esc(client.goal_primary)+'</b></span>':'')+
     (client.package?'<span>Package: <b>'+esc(PKG_LABELS[client.package]||client.package)+'</b></span>':'')+
     (start?'<span>Started: <b>'+esc(fmtDate(start))+'</b> ('+tenure+')</span>':'<span>'+tenure+'</span>')+
+    (nextCheckin?'<span>Next Check-In: <b style="color:var(--red,#E0192B)">'+esc(fmtDate(nextCheckin))+'</b></span>':'')+
     (client.email?'<span>'+esc(client.email)+'</span>':'')+
     (client.phone?'<span>'+esc(client.phone)+'</span>':'')+
     '</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'+
@@ -349,7 +352,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<a class="btn red" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Start Check-In</a>'+
     '<a class="btn" href="gym-floor.html?client='+client.id+'">Log Session</a>'+
     '<a class="btn" href="meal-plans.html">Build Meal Plan</a>'+
-    '<a class="btn" href="fitness-consultation-tool.html'+q+'">New Consultation</a>'+
+    '<a class="btn" href="fitness-consultation-tool.html?client_id='+client.id+'">'+(start?'New Consultation':'Start Initial Consultation')+'</a>'+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
     '</div>';
 

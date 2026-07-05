@@ -161,6 +161,10 @@
     <button class="btn" onclick="generateNewsDraft()">AI Draft (Industry News)</button>
     <button class="btn red" onclick="postFeedItem()">Post to Feed</button>
     <div class="status" id="feed-status"></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+      <button class="btn" onclick="runFeedAutoScan()">Run Today's Birthday/Anniversary Scan Now</button>
+      <span style="font-size:12px;color:var(--muted);margin-left:8px">Runs automatically every night — use this to test or catch up after adding new dates.</span>
+    </div>
     <div id="feed-list" style="margin-top:14px"></div>
   </div>
 
@@ -182,6 +186,7 @@ function log(id, msg, cls){
   el.scrollTop=el.scrollHeight;
 }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function cleanFeedTitle(t){ return String(t||'').replace(/\s*#[a-z]*\d+$/i, ''); }
 
 async function db(body){
   const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
@@ -396,12 +401,12 @@ async function loadFeedList(){
   try{
     const r=await fetch(WORKER+'/feed/list?limit=30');
     const d=await r.json();
-    const posts=(d.posts||[]).filter(p=>!p.auto);
-    if(!posts.length){ el.innerHTML='<div class="status">No manual posts yet.</div>'; return; }
+    const posts=d.posts||[];
+    if(!posts.length){ el.innerHTML='<div class="status">No posts yet.</div>'; return; }
     el.innerHTML=posts.map(p=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
       <div style="flex:1">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--red)">${esc(p.category.replace(/_/g,' '))}${p.pinned?' &middot; PINNED':''}</div>
-        <div style="font-weight:700;font-size:13px">${esc(p.title)}</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--red)">${esc(p.category.replace(/_/g,' '))}${p.pinned?' &middot; PINNED':''}${p.created_by==='system'?' &middot; AUTO':''}</div>
+        <div style="font-weight:700;font-size:13px">${esc(cleanFeedTitle(p.title))}</div>
         ${p.body?`<div style="font-size:12px;color:var(--muted)">${esc(p.body)}</div>`:''}
       </div>
       <button class="btn" onclick="deleteFeedItem(${p.id})">Delete</button>
@@ -449,6 +454,18 @@ async function deleteFeedItem(id){
   if(!confirm('Remove this post?')) return;
   await fetch(WORKER+'/feed/delete',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({id})});
   loadFeedList();
+}
+
+async function runFeedAutoScan(){
+  const status=document.getElementById('feed-status');
+  status.textContent='Scanning...';
+  try{
+    const r=await fetch(WORKER+'/feed/run-auto-scan',{method:'POST',headers:{'X-Admin-Key':ADMIN_KEY}});
+    const d=await r.json();
+    if(!d.ok){ status.textContent=d.error||'Scan failed'; return; }
+    status.textContent=d.created+' new item'+(d.created===1?'':'s')+' posted.';
+    loadFeedList();
+  }catch(e){ status.textContent='Connection error'; }
 }
 
 async function loadMealPhotos(){
