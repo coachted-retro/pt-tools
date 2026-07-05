@@ -234,6 +234,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 </style>
 </head>
 <body>
+<div id="fb-root"></div>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=0&version=v21.0"></script>
 
 <!-- LOGIN -->
 <div id="login-screen">
@@ -300,6 +302,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-referral"></div>
         <div id="home-supplement"></div>
         <div id="home-partners"></div>
+        <div id="home-fb-feed"></div>
         <div class="sec-label">Community</div>
         <div id="community-feed"></div>
       </div>
@@ -1522,6 +1525,29 @@ function renderHomeExtras() {
     </div></div>`;
 
   loadPartners();
+  renderFbFeed();
+}
+
+const FB_PAGE_URL = 'https://www.facebook.com/RetroFitness.FairlessHills.PA/';
+function renderFbFeed() {
+  const el = document.getElementById('home-fb-feed');
+  if (!el || el.dataset.rendered) return;
+  el.dataset.rendered = '1';
+  el.innerHTML = `<div class="sec-label">Retro Fitness Fairless Hills — Facebook</div>
+    <div class="card"><div class="card-body" style="padding:8px;overflow:hidden">
+      <div class="fb-page" data-href="${FB_PAGE_URL}" data-tabs="timeline" data-width="" data-height="500"
+        data-small-header="true" data-adapt-container-width="true" data-hide-cover="false" data-show-facepile="false">
+        <blockquote cite="${FB_PAGE_URL}" class="fb-xfbml-parse-ignore">
+          <a href="${FB_PAGE_URL}">Retro Fitness of Fairless Hills</a>
+        </blockquote>
+      </div>
+    </div></div>`;
+  let tries = 0;
+  const tryParse = () => {
+    if (window.FB && window.FB.XFBML) { window.FB.XFBML.parse(el); return; }
+    if (++tries < 40) setTimeout(tryParse, 250);
+  };
+  tryParse();
 }
 
 async function shareGuestPass() {
