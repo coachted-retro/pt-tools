@@ -1255,11 +1255,14 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       const COACH_ROLES = ['PT Coach', "Men's Training Lead"];
       if (url.pathname === '/coaches/public-list' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
+        const today = new Date().toISOString().slice(0,10);
         const rows = await env.DB.prepare(
-          `SELECT s.id, s.name, s.role, p.photo_url, p.tagline, p.specialties
+          `SELECT s.id, s.name, s.role, s.hire_date, p.photo_url, p.tagline, p.specialties,
+            (SELECT COUNT(*) FROM scheduled_sessions ss LEFT JOIN clients c2 ON c2.id = ss.client_id
+             WHERE COALESCE(NULLIF(ss.assigned_coach,''), c2.coach) = s.name AND ss.scheduled_date <= ?) AS sessions_coached
            FROM staff_roster s LEFT JOIN coach_profiles p ON p.staff_id = s.id
            WHERE s.active=1 AND s.role IN (?,?) ORDER BY s.name ASC`
-        ).bind(COACH_ROLES[0], COACH_ROLES[1]).all();
+        ).bind(today, COACH_ROLES[0], COACH_ROLES[1]).all();
         return ok({ coaches: rows.results || [] }, cors);
       }
 
@@ -1267,8 +1270,14 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const staffId = url.searchParams.get('staff_id');
         if (!staffId) return bad('staff_id required', cors);
-        const staff = await env.DB.prepare('SELECT id, name, role FROM staff_roster WHERE id=?').bind(staffId).first();
+        const staff = await env.DB.prepare('SELECT id, name, role, hire_date FROM staff_roster WHERE id=?').bind(staffId).first();
         if (!staff) return bad('Coach not found', cors);
+        const today = new Date().toISOString().slice(0,10);
+        const sessionCount = await env.DB.prepare(
+          `SELECT COUNT(*) n FROM scheduled_sessions ss LEFT JOIN clients c2 ON c2.id = ss.client_id
+           WHERE COALESCE(NULLIF(ss.assigned_coach,''), c2.coach) = ? AND ss.scheduled_date <= ?`
+        ).bind(staff.name, today).first();
+        staff.sessions_coached = sessionCount?.n || 0;
         const profile = await env.DB.prepare('SELECT * FROM coach_profiles WHERE staff_id=?').bind(staffId).first();
         return ok({ staff, profile: profile || null }, cors);
       }
