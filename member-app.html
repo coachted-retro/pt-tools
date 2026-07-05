@@ -375,6 +375,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <div class="login-hint">Don't have an account? Ask your coach to set you up.</div>
     <div class="login-hint" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px"><a href="#" onclick="showStaffLogin(event)" style="color:var(--ink3);font-weight:700">Staff Login →</a></div>
   </div>
+  <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--ink3)">Powered by <b style="color:var(--red)">Retro Strong</b></div>
 
   <div class="login-box" id="staff-login-box" style="display:none">
     <h2 style="font-size:18px">Staff Login</h2>
@@ -467,6 +468,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-fb-feed"></div>
         <div class="sec-label">Community</div>
         <div id="community-feed"></div>
+        <div style="text-align:center;padding:20px 0 8px;font-size:11px;color:var(--ink3)">Powered by <b style="color:var(--red)">Retro Strong</b></div>
       </div>
     </div>
 
@@ -1991,9 +1993,10 @@ async function startApp() {
   document.getElementById('login-screen').style.display = 'none';
   if (IS_DEMO) {
     const banner = document.createElement('div');
-    banner.style.cssText = 'background:#15171A;color:#fff;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#15171A;color:#fff;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px';
     banner.textContent = 'DEMO PREVIEW · Your app, ready to activate';
     document.body.prepend(banner);
+    document.getElementById('app-shell').style.paddingTop = '27px';
   }
   const shell = document.getElementById('app-shell');
   shell.style.display = 'flex';
