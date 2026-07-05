@@ -309,7 +309,7 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section">Steps</div>
-      <button class="nav-item active" id="nav-0" onclick="goPage(0)"><span class="pip">1</span> Upload & pre-fill</button>
+      <button class="nav-item active" id="nav-0" onclick="goPage(0)"><span class="pip">1</span> Welcome</button>
       <button class="nav-item" id="nav-1" onclick="goPage(1)"><span class="pip">2</span> Member details</button>
       <button class="nav-item" id="nav-2" onclick="goPage(2)"><span class="pip">3</span> Training review</button>
       <button class="nav-item" id="nav-3" onclick="goPage(3)"><span class="pip">4</span> Diet & nutrition</button>
@@ -333,7 +333,7 @@
       <a id="profileLink" href="client-profile.html" target="_blank" style="color:#B0121F;font-weight:600;text-decoration:none;white-space:nowrap">Open client profile →</a>
     </div>
     <div class="topbar">
-      <div style="display:flex;align-items:center;gap:12px"><a href="command-center.html" style="font-size:12px;padding:6px 12px;border:1px solid #DADEE3;border-radius:6px;text-decoration:none;color:#444;white-space:nowrap">← Command Center</a><div class="breadcrumb">Monthly Check-In &rsaquo; <strong id="breadcrumb-label">Upload & pre-fill</strong></div></div>
+      <div style="display:flex;align-items:center;gap:12px"><a href="command-center.html" style="font-size:12px;padding:6px 12px;border:1px solid #DADEE3;border-radius:6px;text-decoration:none;color:#444;white-space:nowrap">← Command Center</a><div class="breadcrumb">Monthly Check-In &rsaquo; <strong id="breadcrumb-label">Welcome</strong></div></div>
       <div class="topbar-right">
         <div class="advisor-field">
           <label>Advisor:</label>
@@ -347,7 +347,14 @@
 
       <!-- PAGE 0: UPLOAD -->
       <div class="page active" id="page-0">
-        <div class="page-header"><h2>Upload documents</h2><p>Upload the member's latest InBody scan PDF or any other document. The AI will extract and pre-fill all matching fields automatically.</p></div>
+        <div class="page-header"><h2 id="welcome-heading">Welcome</h2><p>Enter the member's name, then upload their latest InBody scan — we'll take it from there.</p></div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Member name</div>
+          <div class="field" style="position:relative">
+            <input type="text" id="name" placeholder="Full name" oninput="onNameInput()" onblur="onNameBlur()" autocomplete="off">
+            <div id="name-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:20;background:var(--card,#fff);border:1px solid var(--border,#E5E7EB);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.10)"></div>
+          </div>
+        </div>
         <div class="card">
           <div class="card-title"><span class="dot"></span> Document upload</div>
           <div class="upload-zone" id="upload-zone" ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)" onclick="document.getElementById('pdf-input').click()">
@@ -381,27 +388,26 @@
             <div class="field"><label>Program start date</label><input type="date" id="program-start" onchange="updateDates();rememberStartDate()"><small id="start-hint" style="display:none;font-size:11px;color:var(--success);margin-top:4px;font-weight:600;"></small></div>
           </div>
           <div class="grid2">
-            <div class="field"><label>Member name</label><input type="text" id="name" placeholder="Full name" onblur="lookupClient()"></div>
             <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="(555) 000-0000" onblur="lookupClient()"></div>
+            <div class="field"><label>Email</label><input type="email" id="email" placeholder="member@email.com" onblur="lookupClient()"></div>
           </div>
           <div class="grid2">
-            <div class="field"><label>Email</label><input type="email" id="email" placeholder="member@email.com" onblur="lookupClient()"></div>
             <div class="field"><label>Gender</label>
               <select id="gender"><option value="">Select...</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
             </div>
-          </div>
-         <div class="grid2">
             <div class="field"><label>Age</label><input type="number" id="age" placeholder="e.g. 34"></div>
+          </div>
+          <div class="grid2">
             <div class="field"><label>Assigned Coach / Trainer</label>
               <input type="text" id="client-coach" placeholder="e.g. Coach Ted">
             </div>
-          </div>
-          <div class="grid2">
             <div class="field"><label>Training frequency</label>
               <select id="training-freq"><option value="">Select...</option><option>1x per week</option><option>2x per week</option><option>3x per week</option><option>4x per week</option><option>1x every other week</option></select>
             </div>
-            <div class="field"><label>Next check-in date</label><input type="date" id="next-checkin" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600"></div>
           </div>
+          <div class="grid2">
+            <div class="field"><label>Next check-in date</label><input type="date" id="next-checkin" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600"></div>
+            <div class="field"></div>
           </div>
         </div>
         <div class="nav-row">
@@ -498,12 +504,89 @@
         <div class="card">
           <div class="card-title"><span class="dot blue"></span> Typical daily meals</div>
           <div class="grid2">
-            <div class="field"><label>Typical breakfast</label><textarea id="breakfast" placeholder="What does breakfast look like most mornings?"></textarea></div>
-            <div class="field"><label>Typical lunch</label><textarea id="lunch" placeholder="What does lunch look like most days?"></textarea></div>
+            <div class="field">
+              <label>Typical breakfast</label>
+              <select id="breakfast-type" onchange="mealTypeChanged('breakfast')">
+                <option value="">Select...</option>
+                <option value="none">Not at all — skips breakfast</option>
+                <option value="eggs_toast">Eggs & toast</option>
+                <option value="cereal_oatmeal">Cereal or oatmeal</option>
+                <option value="grab_and_go">Grabs something out (Wawa, McDonald's, etc.)</option>
+                <option value="other">Other (describe)</option>
+              </select>
+              <select id="breakfast-meat" style="display:none;margin-top:8px" onchange="composeMeal('breakfast')">
+                <option value="">Add a meat? (optional)</option>
+                <option value="none">None</option>
+                <option value="bacon">Bacon</option>
+                <option value="sausage">Sausage</option>
+                <option value="turkey_bacon">Turkey bacon</option>
+                <option value="turkey_sausage">Turkey sausage</option>
+              </select>
+              <input type="text" id="breakfast-other" style="display:none;margin-top:8px" placeholder="Describe..." oninput="composeMeal('breakfast')">
+              <input type="hidden" id="breakfast">
+            </div>
+            <div class="field">
+              <label>Typical lunch</label>
+              <select id="lunch-type" onchange="mealTypeChanged('lunch')">
+                <option value="">Select...</option>
+                <option value="fast_food">Fast food / on the road</option>
+                <option value="pbj">Packed lunch — PB&J</option>
+                <option value="chicken_wrap">Packed lunch — chicken wrap or sandwich</option>
+                <option value="rice_chicken">Rice & chicken</option>
+                <option value="other">Other (describe)</option>
+              </select>
+              <input type="text" id="lunch-other" style="display:none;margin-top:8px" placeholder="Describe..." oninput="composeMeal('lunch')">
+              <input type="hidden" id="lunch">
+            </div>
           </div>
-          <div class="grid2">
-            <div class="field"><label>Typical dinner</label><textarea id="dinner" placeholder="What does dinner look like most evenings?"></textarea></div>
-            <div class="field"><label>Snacks</label><textarea id="snacks" placeholder="What are they snacking on between meals?"></textarea></div>
+          <div class="grid3">
+            <div class="field">
+              <label>Dinner — protein</label>
+              <select id="dinner-protein" onchange="composeMeal('dinner')">
+                <option value="">Select...</option>
+                <option value="chicken">Chicken</option>
+                <option value="beef">Beef</option>
+                <option value="fish">Fish / seafood</option>
+                <option value="pork">Pork</option>
+                <option value="turkey">Turkey</option>
+                <option value="plant">Plant-based / vegetarian</option>
+                <option value="varies">Varies day to day</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Dinner — starch</label>
+              <select id="dinner-starch" onchange="composeMeal('dinner')">
+                <option value="">Select...</option>
+                <option value="none">None</option>
+                <option value="white_potato">White potato</option>
+                <option value="sweet_potato">Sweet potato</option>
+                <option value="rice">Rice</option>
+                <option value="pasta">Pasta</option>
+                <option value="bread">Bread</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Dinner — vegetables?</label>
+              <select id="dinner-veg" onchange="composeMeal('dinner')">
+                <option value="">Select...</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+                <option value="sometimes">Sometimes</option>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" id="dinner">
+          <div class="field">
+            <label>Snacks</label>
+            <select id="snacks">
+              <option value="">Select...</option>
+              <option value="healthy">Leans healthy — fruit, nuts, yogurt, protein bars</option>
+              <option value="junk">Relies on fast food / junk food</option>
+              <option value="mixed">Mix of both</option>
+              <option value="rarely">Doesn't really snack</option>
+            </select>
           </div>
         </div>
         <div class="card">
@@ -759,7 +842,7 @@ function updateDates(){
 }
 
 let currentPage=0;
-const pageLabels=['Upload & pre-fill','Member details','Training review','Diet & nutrition','Wellbeing & lifestyle','InBody comparison','Assessment & save'];
+const pageLabels=['Welcome','Member details','Training review','Diet & nutrition','Wellbeing & lifestyle','InBody comparison','Assessment & save'];
 
 function goPage(n){
   document.getElementById('page-'+currentPage).classList.remove('active');
@@ -813,18 +896,9 @@ function handleFiles(files){
   listEl.innerHTML=uploadedFiles.map((f,i)=>`<div class="file-chip" id="fchip-${i}"><span style="font-size:18px">${f.type.includes('pdf')?'📄':'🖼️'}</span><span class="fn">${f.name}</span><span class="fs">${(f.size/1024).toFixed(0)} KB</span><span class="fst" id="fst-${i}">Ready</span></div>`).join('');
   document.getElementById('parse-btn').style.display='block';
   setStatus('upload-status','','');
-  // Auto-advance: if 2+ PDFs uploaded, auto-parse and go to member info page
-  const pdfs = uploadedFiles.filter(f => f.type.includes('pdf') || f.name.toLowerCase().endsWith('.pdf'));
-  if (pdfs.length >= 2) {
-    setStatus('upload-status','info','✓ 2 InBody PDFs detected — reading and auto-filling...');
-    setTimeout(function() {
-      parseAllFiles().then(function() {
-        goPage(1);
-      }).catch(function() {
-        goPage(1); // still advance even if parse fails
-      });
-    }, 400);
-  }
+  // Auto-read as soon as a file lands — advisor shouldn't have to click.
+  setStatus('upload-status','info','✓ Document detected — reading and auto-filling...');
+  setTimeout(function() { parseAllFiles(); }, 400);
 }
 
 function setStatus(id,type,msg){
@@ -859,10 +933,11 @@ Two scans: older=prev_, newer=now_. Single scan=now_. seg values are PERCENTAGE 
     const parsed=JSON.parse(data.content.map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim());
     autoFill(parsed);
     const n=Object.entries(parsed).filter(([k,v])=>v).length;
-    setStatus('upload-status','success',('[OK] '+n+' fields auto-filled.'));
+    setStatus('upload-status','success',('✓ '+n+' fields auto-filled. Moving to the next step...'));
     const pv=document.getElementById('parsed-preview'); pv.style.display='block';
     pv.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>('  '+k+': '+v)).join('\n');
-    btn.innerHTML='? Re-upload or add more'; btn.disabled=false;
+    btn.innerHTML='✓ Re-upload or add more'; btn.disabled=false;
+    setTimeout(() => goPage(1), 1200);
   } catch(e){ setStatus('upload-status','error','? Error: '+e.message); btn.innerHTML='? Read documents & auto-fill'; btn.disabled=false; }
 }
 
@@ -884,6 +959,72 @@ function autoFill(d){
 
 let assessmentText='';
 function gv(id){ return (document.getElementById(id)||{}).value||''; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function updateWelcome() {
+  const name = gv('name');
+  const first = name.trim().split(' ')[0];
+  const el = document.getElementById('welcome-heading');
+  if (el) el.textContent = first ? ('Welcome, ' + first + '!') : 'Welcome';
+}
+
+const MEAL_LABELS = {
+  breakfast_type: {
+    none: 'Skips breakfast',
+    eggs_toast: 'Eggs & toast',
+    cereal_oatmeal: 'Cereal or oatmeal',
+    grab_and_go: "Grabs something out (Wawa, McDonald's, etc.)"
+  },
+  breakfast_meat: { bacon:'bacon', sausage:'sausage', turkey_bacon:'turkey bacon', turkey_sausage:'turkey sausage' },
+  lunch_type: {
+    fast_food: 'Fast food / on the road',
+    pbj: 'Packed lunch — PB&J',
+    chicken_wrap: 'Packed lunch — chicken wrap or sandwich',
+    rice_chicken: 'Rice & chicken'
+  },
+  dinner_protein: { chicken:'Chicken', beef:'Beef', fish:'Fish / seafood', pork:'Pork', turkey:'Turkey', plant:'Plant-based', varies:'Varies day to day', other:'Other protein' },
+  dinner_starch: { none:'no starch', white_potato:'white potato', sweet_potato:'sweet potato', rice:'rice', pasta:'pasta', bread:'bread', other:'other starch' },
+  dinner_veg: { yes:'with vegetables', no:'no vegetables', sometimes:'vegetables sometimes' }
+};
+
+function mealTypeChanged(which) {
+  if (which === 'breakfast') {
+    const t = document.getElementById('breakfast-type').value;
+    document.getElementById('breakfast-meat').style.display = (t === 'eggs_toast') ? 'block' : 'none';
+    document.getElementById('breakfast-other').style.display = (t === 'other') ? 'block' : 'none';
+  }
+  if (which === 'lunch') {
+    document.getElementById('lunch-other').style.display = (document.getElementById('lunch-type').value === 'other') ? 'block' : 'none';
+  }
+  composeMeal(which);
+}
+
+function composeMeal(which) {
+  if (which === 'breakfast') {
+    const t = document.getElementById('breakfast-type').value;
+    let text = '';
+    if (t === 'other') text = document.getElementById('breakfast-other').value;
+    else if (t) {
+      text = MEAL_LABELS.breakfast_type[t] || '';
+      const meat = document.getElementById('breakfast-meat').value;
+      if (t === 'eggs_toast' && meat && meat !== 'none') text += ' with ' + (MEAL_LABELS.breakfast_meat[meat] || meat);
+    }
+    document.getElementById('breakfast').value = text;
+  }
+  if (which === 'lunch') {
+    const t = document.getElementById('lunch-type').value;
+    document.getElementById('lunch').value = (t === 'other') ? document.getElementById('lunch-other').value : (MEAL_LABELS.lunch_type[t] || '');
+  }
+  if (which === 'dinner') {
+    const p = document.getElementById('dinner-protein').value;
+    const s = document.getElementById('dinner-starch').value;
+    const v = document.getElementById('dinner-veg').value;
+    const parts = [];
+    if (p) parts.push(MEAL_LABELS.dinner_protein[p] || p);
+    if (s) parts.push(MEAL_LABELS.dinner_starch[s] || s);
+    if (v) parts.push(MEAL_LABELS.dinner_veg[v] || v);
+    document.getElementById('dinner').value = parts.join(', ');
+  }
+}
 
 
 function formatAssessmentSections(text) {
@@ -1476,10 +1617,49 @@ function _matchClient(all,email,phone,name){
       || (name && all.find(x=>(((x.first_name||'')+' '+(x.last_name||'')).trim().toLowerCase())===name))
       || null;
 }
+let CLIENTS_CACHE = null;
+async function getClientsCached(){
+  if (!CLIENTS_CACHE) CLIENTS_CACHE = await _allClients();
+  return CLIENTS_CACHE;
+}
+
+let nameInputTimer = null;
+function onNameInput(){
+  updateWelcome();
+  clearTimeout(nameInputTimer);
+  nameInputTimer = setTimeout(showNameSuggestions, 220);
+}
+async function showNameSuggestions(){
+  const box = document.getElementById('name-suggestions');
+  const q = gv('name').trim().toLowerCase();
+  if (q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const all = await getClientsCached();
+  const matches = all.filter(c => (((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase()).includes(q)).slice(0, 6);
+  if (!matches.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.innerHTML = matches.map((c,i) => `
+    <div onmousedown="selectClientSuggestion(${i})" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border,#F0F0F0)">
+      <div style="font-weight:600">${esc((c.first_name||'')+' '+(c.last_name||''))}</div>
+      <div style="font-size:11px;color:var(--text3,#888)">${esc(c.phone||c.email||'')}</div>
+    </div>`).join('');
+  box.style.display = 'block';
+  window._nameSuggestMatches = matches;
+}
+function selectClientSuggestion(i){
+  const c = (window._nameSuggestMatches||[])[i];
+  if (!c) return;
+  document.getElementById('name-suggestions').style.display = 'none';
+  _fillFromClient(c);
+  updateWelcome();
+}
+function onNameBlur(){
+  setTimeout(() => { document.getElementById('name-suggestions').style.display = 'none'; }, 150);
+  lookupClient();
+}
+
 async function lookupClient(){
   const email=gv('email'), phone=gv('phone'), name=gv('name');
   if(!email && !phone && !name) return;
-  const all=await _allClients();
+  const all=await getClientsCached();
   const c=_matchClient(all,email,phone,name);
   MATCHED_CLIENT=c;
   const hint=document.getElementById('start-hint');
@@ -1490,6 +1670,7 @@ async function lookupClient(){
   } else if(hint){ hint.style.display='none'; }
   const cc=document.getElementById('client-coach');
   if(c && c.coach && cc && !cc.value){ cc.value=c.coach; }
+  if(c && c.id) _fillPrevFromLastCheckin(c.id);
 }
 async function rememberStartDate(){
   const start=gv('program-start'); const coach=gv('client-coach');
@@ -1542,6 +1723,8 @@ async function _saveCheckinToD1(){
       prev_body_fat_pct:pf(gv('prev-pbf')), now_body_fat_pct:pf(gv('now-pbf')),
       prev_fat_mass:pf(gv('prev-fat')), now_fat_mass:pf(gv('now-fat')),
       prev_bmi:pf(gv('prev-bmi')), now_bmi:pf(gv('now-bmi')),
+      now_seg_la:pf(gv('now-seg-la')), now_seg_ra:pf(gv('now-seg-ra')), now_seg_trunk:pf(gv('now-seg-trunk')),
+      now_seg_ll:pf(gv('now-seg-ll')), now_seg_rl:pf(gv('now-seg-rl')),
       training_freq:gv('training-freq'), wins:gv('wins-list'),
       assessment_summary:(assessmentText||'').substring(0,2000), advisor_notes:gv('advisor-notes')
     };
@@ -1559,6 +1742,9 @@ async function _fillPrevFromLastCheckin(clientId){
     const set=(id,v)=>{ const e=document.getElementById(id); if(e&&!e.value&&v!=null&&v!=='') e.value=v; };
     set('prev-weight',last.now_weight); set('prev-lean',last.now_lean);
     set('prev-pbf',last.now_body_fat_pct); set('prev-fat',last.now_fat_mass); set('prev-bmi',last.now_bmi);
+    set('prev-seg-la',last.now_seg_la); set('prev-seg-ra',last.now_seg_ra); set('prev-seg-trunk',last.now_seg_trunk);
+    set('prev-seg-ll',last.now_seg_ll); set('prev-seg-rl',last.now_seg_rl);
+    refreshSeg();
     const note=document.getElementById('prev-autofill-note');
     if(note){ note.style.display='block'; note.textContent='Previous column pulled from last check-in ('+(last.checkin_date||'')+').'; }
   }catch(e){}
@@ -1580,8 +1766,9 @@ function _fillFromClient(c){
     const nm=q.get('name'), em=q.get('email'), cid=q.get('client');
     if(nm){ const e=document.getElementById('name'); if(e&&!e.value) e.value=nm; }
     if(em){ const e=document.getElementById('email'); if(e&&!e.value) e.value=em; }
-    if(cid){ _db({op:'select',table:'clients',where:{id:cid},limit:1}).then(d=>{ const c=(d.results||[])[0]; if(c) _fillFromClient(c); }); }
+    if(cid){ _db({op:'select',table:'clients',where:{id:cid},limit:1}).then(d=>{ const c=(d.results||[])[0]; if(c){ _fillFromClient(c); updateWelcome(); } }); }
     else if(nm||em){ setTimeout(lookupClient,300); }
+    updateWelcome();
   }catch(e){}
 })();
 </script>
