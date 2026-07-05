@@ -47,7 +47,48 @@
 </div>
 
 <div class="wrap">
-  <div class="note">Complete and Complete+ clients. A new plan generates automatically every Monday and posts straight to the client's app, locked behind a disclaimer and digital signature until they sign it. Use Rebuild here to force a fresh plan mid-week if something's changed \u2014 it replaces what's showing in their app and resets their signature for the new plan.</div>
+  <div class="note">Complete and Complete+ clients. A new plan generates automatically every Monday and posts straight to the client's app, locked behind a disclaimer and digital signature until they sign it. Use Rebuild here to force a fresh plan mid-week if something's changed — it replaces what's showing in their app and resets their signature for the new plan.</div>
+
+  <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div class="name">Meal Library</div>
+      <button class="btn" onclick="toggleLibrary()" id="lib-toggle-btn">Show Library</button>
+    </div>
+    <div class="meta" style="margin-bottom:8px">Every option the AI builds plans from — always here for reference, whether or not you have Complete clients yet. Add photos in Member Portal → Meal Photos.</div>
+    <div id="library-body" style="display:none;margin-top:10px"></div>
+  </div>
+
+  <div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+    <div class="name" style="margin-bottom:8px">Set Up a Client's Nutrition Profile</div>
+    <div class="meta" style="margin-bottom:12px">This is the step that gets a client showing up below — package, goal, and any exclusions. No need to redo the whole consultation to test or fix this.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Client</label>
+        <select id="np-client" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"><option value="">Select a client...</option></select></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Package</label>
+        <select id="np-package" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px">
+          <option value="training">Training (no nutrition)</option>
+          <option value="complete">Complete</option>
+          <option value="complete_plus">Complete+</option>
+        </select></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Goal</label>
+        <input id="np-goal" placeholder="e.g. lose fat, build muscle" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Coach-set calories (optional)</label>
+        <input id="np-calories" type="number" placeholder="leave blank to auto-calculate" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Excluded proteins</label>
+        <input id="np-excl-protein" placeholder="e.g. shellfish" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Excluded vegetables</label>
+        <input id="np-excl-veg" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Allergies / conditions</label>
+        <input id="np-allergies" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    </div>
+    <button class="btn red" onclick="saveNutritionProfile()">Save Profile</button>
+    <div class="st" id="np-status" style="text-align:left;margin-top:8px"></div>
+  </div>
+
   <div id="list"></div>
 </div>
 
@@ -68,23 +109,168 @@ async function load(){
     db({op:'select',table:'clients',limit:1000})
   ]);
   (cl.results||[]).forEach(c=>CLIENTS[c.id]=c);
+  populateClientDropdown(cl.results||[]);
   const profiles=(pf.results||[]).filter(p=>p.package==='complete'||p.package==='complete_plus');
   const el=document.getElementById('list');
   if(!profiles.length){
-    el.innerHTML='<div class="empty"><div class="big">No Complete clients yet</div>Set a client’s package to Complete or Complete+ on the nutrition preference page, and they’ll show up here ready for a weekly plan.</div>';
+    el.innerHTML='<div class="empty"><div class="big">No Complete clients yet</div>Use "Set Up a Client&#39;s Nutrition Profile" above to get someone showing up here — no need to redo the whole consultation.</div>';
     return;
   }
   el.innerHTML=profiles.map(p=>{
     const c=CLIENTS[p.client_id]||{};
     const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||('Client #'+p.client_id);
     const pkg=p.package==='complete_plus'?'Complete+':'Complete';
-    return '<div class="card" id="card-'+p.client_id+'">'+
+    return '<div class="card" id="card-'+p.client_id+'" style="flex-direction:column;align-items:stretch">'+
+      '<div style="display:flex;align-items:center;gap:14px;width:100%">'+
       '<div class="main"><div class="name">'+esc(nm)+'</div>'+
-      '<div class="meta">'+pkg+' \\u00b7 goal: '+esc(p.goal_type||'n/a')+(c.email?' \\u00b7 '+esc(c.email):'')+'</div></div>'+
+      '<div class="meta">'+pkg+' &middot; goal: '+esc(p.goal_type||'n/a')+(c.email?' &middot; '+esc(c.email):'')+'</div></div>'+
       '<div class="st" id="st-'+p.client_id+'"></div>'+
       '<div class="act"><span class="pill">'+pkg+'</span>'+
-      '<button class="btn red" id="btn-'+p.client_id+'" onclick="buildPlan('+p.client_id+')">Build plan</button></div></div>';
+      '<button class="btn" onclick="togglePlanEditor('+p.client_id+')" id="editbtn-'+p.client_id+'">View / Edit Plan</button>'+
+      '<button class="btn red" id="btn-'+p.client_id+'" onclick="buildPlan('+p.client_id+')">Build plan</button></div>'+
+      '</div>'+
+      '<div id="editor-'+p.client_id+'" style="display:none;width:100%;margin-top:12px;border-top:1px solid var(--line);padding-top:12px"></div>'+
+    '</div>';
   }).join('');
+}
+
+function populateClientDropdown(clients){
+  const sel=document.getElementById('np-client');
+  const sorted=[...clients].sort((a,b)=>(a.last_name||'').localeCompare(b.last_name||''));
+  sel.innerHTML='<option value="">Select a client...</option>'+sorted.map(c=>
+    '<option value="'+c.id+'">'+esc(((c.first_name||'')+' '+(c.last_name||'')).trim())+'</option>').join('');
+}
+
+async function saveNutritionProfile(){
+  const clientId=document.getElementById('np-client').value;
+  const status=document.getElementById('np-status');
+  if(!clientId){ status.textContent='Pick a client first'; return; }
+  status.textContent='Saving...';
+  const values={
+    client_id:+clientId,
+    package:document.getElementById('np-package').value,
+    goal_type:document.getElementById('np-goal').value.trim(),
+    calories:document.getElementById('np-calories').value?+document.getElementById('np-calories').value:null,
+    excluded_proteins:document.getElementById('np-excl-protein').value.trim(),
+    excluded_vegetables:document.getElementById('np-excl-veg').value.trim(),
+    allergies:document.getElementById('np-allergies').value.trim(),
+    updated_at:new Date().toISOString()
+  };
+  try{
+    const existing=await db({op:'select',table:'meal_profiles',where:{client_id:+clientId},limit:1});
+    if(existing.results && existing.results[0]){
+      await db({op:'update',table:'meal_profiles',values:values,where:{client_id:+clientId}});
+    } else {
+      await db({op:'insert',table:'meal_profiles',values:values});
+    }
+    status.textContent='Saved — refreshing list below...';
+    await load();
+    status.textContent='Saved.';
+  }catch(e){ status.textContent='Error: '+e.message; }
+}
+
+let LIBRARY_CACHE=null;
+async function toggleLibrary(){
+  const body=document.getElementById('library-body');
+  const btn=document.getElementById('lib-toggle-btn');
+  if(body.style.display==='none'){
+    body.style.display='block'; btn.textContent='Hide Library';
+    if(!LIBRARY_CACHE){
+      body.innerHTML='<div class="meta">Loading...</div>';
+      try{
+        const r=await fetch(WORKER+'/mealplan/library');
+        const d=await r.json();
+        LIBRARY_CACHE=d.library||{};
+      }catch(e){ LIBRARY_CACHE={}; }
+    }
+    renderLibrary();
+  } else {
+    body.style.display='none'; btn.textContent='Show Library';
+  }
+}
+
+function renderLibrary(){
+  const body=document.getElementById('library-body');
+  const cats=['breakfast','lunch','dinner','snack'];
+  body.innerHTML=cats.map(cat=>{
+    const items=LIBRARY_CACHE[cat]||[];
+    return '<div style="font-family:\'Oswald\';text-transform:uppercase;letter-spacing:.4px;font-size:12px;color:var(--red);font-weight:700;margin:14px 0 8px">'+cat+'</div>'+
+      items.map(m=>{
+        const thumb=m.photo_url?'<img src="'+esc(m.photo_url)+'" style="width:40px;height:40px;border-radius:8px;object-fit:cover" onerror="this.style.display=\'none\'">':'<div style="width:40px;height:40px;border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center">&#127869;</div>';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">'+thumb+
+          '<div style="flex:1;font-size:13px;font-weight:600">'+esc(m.name)+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+m.calories+' kcal &middot; '+m.protein_g+'g pro</div></div>';
+      }).join('');
+  }).join('');
+}
+
+let PLAN_CACHE={};
+async function togglePlanEditor(clientId){
+  const el=document.getElementById('editor-'+clientId);
+  const btn=document.getElementById('editbtn-'+clientId);
+  if(el.style.display==='none'){
+    el.style.display='block'; btn.textContent='Hide Plan';
+    el.innerHTML='<div class="meta">Loading plan...</div>';
+    try{
+      const r=await db({op:'select',table:'meal_plans',where:{client_id:clientId},orderBy:'id DESC',limit:1});
+      const mp=(r.results||[])[0];
+      if(!mp){ el.innerHTML='<div class="meta">No plan generated yet — use Build Plan first.</div>'; return; }
+      PLAN_CACHE[clientId]=mp;
+      if(!LIBRARY_CACHE){
+        const lr=await fetch(WORKER+'/mealplan/library'); const ld=await lr.json(); LIBRARY_CACHE=ld.library||{};
+      }
+      renderPlanEditor(clientId);
+    }catch(e){ el.innerHTML='<div class="meta">Could not load plan.</div>'; }
+  } else {
+    el.style.display='none'; btn.textContent='View / Edit Plan';
+  }
+}
+
+function findLibItem(cat,name){ return (LIBRARY_CACHE[cat]||[]).find(i=>i.name===name)||null; }
+function scaleMacros(base,mult){ const m=mult||1; return base?{calories:Math.round(base.calories*m),protein_g:Math.round(base.protein_g*m),carbs_g:Math.round(base.carbs_g*m),fat_g:Math.round(base.fat_g*m)}:{calories:0,protein_g:0,carbs_g:0,fat_g:0}; }
+
+function renderPlanEditor(clientId){
+  const el=document.getElementById('editor-'+clientId);
+  const mp=PLAN_CACHE[clientId];
+  let plan; try{ plan=JSON.parse(mp.plan_json||'null'); }catch(e){}
+  if(!plan||!plan.days||!plan.days.length){ el.innerHTML='<div class="meta">This plan predates the editable format — Build Plan again to make it editable.</div>'; return; }
+  const slots=['breakfast','lunch','dinner','snack'];
+  el.innerHTML=plan.days.map((day,dayIdx)=>{
+    const rows=slots.map(slot=>{
+      const m=day.meals&&day.meals[slot]; if(!m) return '';
+      const base=findLibItem(slot,m.item); const macros=scaleMacros(base,m.portion_mult||1);
+      return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">'+
+        '<div style="width:60px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">'+slot+'</div>'+
+        '<div style="flex:1;font-size:13px">'+esc(m.item)+' <span style="color:var(--muted);font-size:11px">('+macros.calories+' kcal, '+macros.protein_g+'g pro)</span></div>'+
+        '<button class="btn" style="padding:5px 10px;font-size:11px" onclick="adminSwap('+clientId+','+dayIdx+',\''+slot+'\')">Swap</button></div>';
+    }).join('');
+    return '<div style="margin-bottom:10px"><div style="font-family:\'Oswald\';text-transform:uppercase;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px">'+esc(day.label||'Day '+(dayIdx+1))+'</div>'+rows+'</div>';
+  }).join('')+'<div id="swap-picker-'+clientId+'"></div>';
+}
+
+function adminSwap(clientId,dayIdx,slot){
+  const mp=PLAN_CACHE[clientId];
+  let plan; try{ plan=JSON.parse(mp.plan_json||'null'); }catch(e){ return; }
+  const current=plan.days[dayIdx].meals[slot];
+  const base=findLibItem(slot,current.item); const curMacros=scaleMacros(base,current.portion_mult||1);
+  const options=(LIBRARY_CACHE[slot]||[]).filter(i=>i.name!==current.item);
+  options.sort((a,b)=>Math.abs(a.calories-curMacros.calories)-Math.abs(b.calories-curMacros.calories));
+  const top=options.slice(0,6);
+  const picker=document.getElementById('swap-picker-'+clientId);
+  picker.innerHTML='<div style="background:var(--soft);border-radius:10px;padding:10px;margin-top:8px">'+
+    '<div class="meta" style="margin-bottom:6px">Swap '+slot+' — currently '+esc(current.item)+'</div>'+
+    top.map(opt=>'<div style="padding:6px 4px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)" onclick="adminApplySwap('+clientId+','+dayIdx+',\''+slot+'\',\''+esc(opt.name).replace(/'/g,"\\\'")+'\')">'+esc(opt.name)+' <span style="color:var(--muted);font-size:11px">('+opt.calories+' kcal)</span></div>').join('')+
+    '</div>';
+}
+
+async function adminApplySwap(clientId,dayIdx,slot,newItem){
+  const mp=PLAN_CACHE[clientId];
+  let plan; try{ plan=JSON.parse(mp.plan_json||'null'); }catch(e){ return; }
+  plan.days[dayIdx].meals[slot]={item:newItem,portion_mult:1};
+  mp.plan_json=JSON.stringify(plan);
+  document.getElementById('swap-picker-'+clientId).innerHTML='';
+  renderPlanEditor(clientId);
+  await db({op:'update',table:'meal_plans',values:{plan_json:mp.plan_json},where:{id:mp.id}});
 }
 
 async function buildPlan(clientId){
@@ -95,7 +281,7 @@ async function buildPlan(clientId){
     const r=await fetch(WORKER+'/mealplan/generate',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({client:clientId})});
     const d=await r.json();
     if(!d.ok || !d.results || !d.results.length){ st.textContent='Error: '+(d.error||(d.errors&&d.errors[0])||'no plan'); btn.disabled=false; return; }
-    st.textContent='Posted to app \u2014 awaiting client signature';
+    st.textContent='Posted to app — awaiting client signature';
     btn.disabled=false; btn.textContent='Rebuild Plan';
   }catch(e){ st.textContent='Error: '+e.message; btn.disabled=false; }
 }
