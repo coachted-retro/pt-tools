@@ -189,6 +189,9 @@
     <div class="toolcard" onclick="location.href='backfill-data.html'" style="border-color:#D98A0B20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
       <span class="ic">🩹</span><div class="eb" style="color:#D98A0B">One-Time Fix</div><div class="tt">Backfill Client Data</div>
       <div class="td">Writes real InBody scans and consultation notes for the 10 batch-imported clients.</div><span class="arrow" style="color:#D98A0B">→</span></div>
+    <div class="toolcard" onclick="openGuestPassStats()" style="border-color:#2563EB20;background:linear-gradient(135deg,#fff 80%,#EFF6FF)">
+      <span class="ic">🎟️</span><div class="eb" style="color:#2563EB">Last 30 Days</div><div class="tt">Guest Pass Activity</div>
+      <div class="td">Which classes are driving guest pass claims — a quick read on what's pulling prospects in.</div><span class="arrow" style="color:#2563EB">→</span></div>
     <div class="toolcard" onclick="location.href='client-management.html'" style="border-color:#1E9E5A20;background:linear-gradient(135deg,#fff 80%,#ECFDF3)">
       <span class="ic">👥</span><div class="eb" style="color:#1E9E5A">Roster · Dedupe</div><div class="tt">Client Management</div>
       <div class="td">Full clients, leads &amp; prospects list. Auto-flags duplicates and merges them safely.</div><span class="arrow" style="color:#1E9E5A">→</span></div>
@@ -350,6 +353,15 @@
   </div>
 </div>
 
+<div id="guestpass-modal" style="display:none;position:fixed;inset:0;background:rgba(20,23,26,.45);z-index:105;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;width:380px;max-width:92vw;max-height:80vh;overflow-y:auto">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;color:var(--ink)">Guest Pass Activity</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Claims by class, last 30 days</div>
+    <div id="guestpass-list"></div>
+    <button onclick="closeGuestPassStats()" style="width:100%;margin-top:14px;padding:10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Close</button>
+  </div>
+</div>
+
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 
@@ -371,6 +383,42 @@ async function db(body){
 }
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
 function openTool(file){ location.href = file; }
+
+async function openGuestPassStats(){
+  const modal = document.getElementById('guestpass-modal');
+  const list = document.getElementById('guestpass-list');
+  modal.style.display = 'flex';
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Loading...</div>';
+  try {
+    const r = await fetch(WORKER + '/guest-pass/stats');
+    const d = await r.json();
+    const rows = d.by_class || [];
+    if (!rows.length) {
+      list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No guest pass activity in the last 30 days.</div>';
+      return;
+    }
+    const total = rows.reduce((a,r)=>a+r.n, 0);
+    const max = Math.max(...rows.map(r=>r.n));
+    list.innerHTML = `
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;font-weight:800;color:var(--red)">${total}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Total Guest Passes Claimed</div>
+      </div>
+      ${rows.map(r => `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="font-weight:600">${esc(r.class_name)}</span><span style="color:var(--muted)">${r.n}</span>
+          </div>
+          <div style="height:6px;background:var(--soft);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.round((r.n/max)*100)}%;background:var(--blue,#2563EB)"></div>
+          </div>
+        </div>`).join('')}
+    `;
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);font-size:12px">Could not load guest pass stats.</div>';
+  }
+}
+function closeGuestPassStats(){ document.getElementById('guestpass-modal').style.display = 'none'; }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function daysFromNow(d){ if(!d) return null; const ms=new Date(d+'T00:00:00')-new Date(); return Math.ceil(ms/86400000); }
 
