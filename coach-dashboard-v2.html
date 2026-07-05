@@ -371,7 +371,12 @@
     <div class="kpi-card">
       <div class="kpi-label">Active Clients</div>
       <div class="kpi-val green" id="c-kpi-active">—</div>
-      <div class="kpi-sub">total check-ins</div>
+      <div class="kpi-sub">on your roster</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Check-Ins (Period)</div>
+      <div class="kpi-val" id="c-kpi-checkins">—</div>
+      <div class="kpi-sub">monthly check-ins submitted</div>
     </div>
     <div class="kpi-card">
       <div class="kpi-label">Avg Session Score</div>
@@ -1207,7 +1212,8 @@ function renderCoachKPIs(cis) {
     const vals = arr.map(r => parseFloat(gv(r,field)||0)).filter(v => v > 0);
     return vals.length ? avg(vals).toFixed(1) : '—';
   };
-  document.getElementById('c-kpi-active').textContent = cis.length || '—';
+  document.getElementById('c-kpi-active').textContent = allActiveClients.length || '—';
+  document.getElementById('c-kpi-checkins').textContent = cis.length || '—';
   document.getElementById('c-kpi-session').textContent = numVal(cis, 'Session Score');
   document.getElementById('c-kpi-diet').textContent = numVal(cis, 'Diet Score');
   document.getElementById('c-kpi-sleep').textContent = numVal(cis, 'Sleep Score');

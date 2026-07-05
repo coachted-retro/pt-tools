@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coaches — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--soft:#F5F6F8;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:18px;color:#fff;text-transform:uppercase}
+.topbar .logo span{color:var(--red)}
+.topbar a{margin-left:auto;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
+.wrap{max-width:700px;margin:0 auto;padding:24px 20px 60px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;text-decoration:none;color:inherit}
+.card:hover{border-color:var(--red)}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:800;font-size:16px;color:var(--muted);flex-shrink:0}
+.name{font-weight:700;font-size:15px}
+.role{font-size:12px;color:var(--muted)}
+.count{margin-left:auto;text-align:right}
+.count .n{font-family:'Oswald';font-size:22px;font-weight:800;color:var(--red)}
+.count .l{font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700}
+.empty{color:var(--muted);padding:30px;text-align:center}
+.install-tip{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--red);border-radius:12px;padding:14px 16px;margin-top:20px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">Coach <span>Directory</span></div>
+  <a href="command-center.html">&larr; Command Center</a>
+</div>
+<div class="wrap">
+  <div class="sub">Tap a coach to open their personal portal — the exact page they should bookmark and add to their phone's home screen.</div>
+  <div id="coach-list"><div class="empty">Loading...</div></div>
+  <div class="install-tip">
+    <b>Getting a coach set up on their phone:</b> open their portal link below on their phone's browser, then use "Add to Home Screen" (Safari: Share button &rarr; Add to Home Screen. Chrome/Android: menu &rarr; Add to Home Screen). It'll sit on their phone like a real app, opens straight to their schedule and clients.
+  </div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function load(){
+  const box = document.getElementById('coach-list');
+  try {
+    const r = await fetch(WORKER + '/coaches/roster');
+    const d = await r.json();
+    const coaches = d.coaches || [];
+    if (!coaches.length) { box.innerHTML = '<div class="empty">No coaches on the roster yet. Add them in Staff Roster.</div>'; return; }
+    box.innerHTML = coaches.map(c => {
+      const initials = c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const portalUrl = 'coach-crm.html?coach=' + encodeURIComponent(c.name) + '&locked=1';
+      return `<a class="card" href="${portalUrl}">
+        <div class="avatar">${esc(initials)}</div>
+        <div style="flex:1">
+          <div class="name">${esc(c.name)}</div>
+          <div class="role">${esc(c.role||'Coach')}</div>
+        </div>
+        <div class="count"><div class="n">${c.client_count}</div><div class="l">Client${c.client_count===1?'':'s'}</div></div>
+      </a>`;
+    }).join('');
+  } catch(e) { box.innerHTML = '<div class="empty">Could not load the coach roster.</div>'; }
+}
+load();
+</script>
+</body>
+</html>

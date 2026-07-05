@@ -179,11 +179,12 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 <div class="screen" id="scr-setup">
   <div class="topbar">
     <div>
-      <div class="title" id="setupName">Client</div>
-      <div class="sub">Start a session</div>
+      <div class="title" id="setupName" onclick="goToClientProfile()" style="cursor:pointer;text-decoration:underline dotted">Client</div>
+      <div class="sub">Tap name for profile &middot; Start a session below</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <span class="pill" id="syncPill2">…</span>
+      <button class="btn sm" onclick="goToClientProfile()" style="white-space:nowrap">&larr; Profile</button>
       <button class="btn sm" onclick="backToClients()">✕</button>
     </div>
   </div>
@@ -258,6 +259,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <div style="flex:1;min-width:0">
         <div class="ex-title" id="exTitle">Exercise</div>
         <div class="last-perf" id="lastPerf"></div>
+        <div class="last-perf" id="loadSuggest" style="margin-top:4px"></div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
         <button class="btn sm" onclick="openTimer()">⏱</button>
@@ -354,7 +356,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <div class="title">AI Program Builder</div>
       <div class="sub" id="bName"></div>
     </div>
-    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn sm" onclick="goToClientProfile()">&larr; Profile</button>
+      <button class="btn sm" onclick="show('scr-setup')">✕</button>
+    </div>
   </div>
   <div class="scroll" id="builderBody">
     <div class="card">
@@ -387,7 +392,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <div class="title">Upload Workout</div>
       <div class="sub" id="upName"></div>
     </div>
-    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn sm" onclick="goToClientProfile()">&larr; Profile</button>
+      <button class="btn sm" onclick="show('scr-setup')">✕</button>
+    </div>
   </div>
   <div class="scroll" id="uploadBody">
     <div class="card">
@@ -410,7 +418,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <div class="title">Routine Library</div>
       <div class="sub">12 coach-built programs</div>
     </div>
-    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn sm" onclick="goToClientProfile()">&larr; Profile</button>
+      <button class="btn sm" onclick="show('scr-setup')">✕</button>
+    </div>
   </div>
   <div class="scroll" id="routineLibBody"></div>
 </div>
@@ -422,7 +433,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <div class="title">HERO WOD</div>
       <div class="sub" id="hName"></div>
     </div>
-    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn sm" onclick="goToClientProfile()">&larr; Profile</button>
+      <button class="btn sm" onclick="show('scr-setup')">✕</button>
+    </div>
   </div>
   <div class="scroll">
     <div id="heroList"></div>
@@ -616,6 +630,11 @@ function startScheduledProgram(){
   if (TODAYS_SCHEDULED.focus_notes) { SESSION.workoutNote = TODAYS_SCHEDULED.focus_notes; }
   persistActive();
 }
+function goToClientProfile(){
+  if(!CLIENT)return;
+  const coachQ=window.COACH_PARAM?('&coach='+encodeURIComponent(window.COACH_PARAM)):'';
+  window.location.href='coach-client-profile.html?client='+CLIENT.id+coachQ;
+}
 function backToClients(){CLIENT=null;show('scr-client');}
 
 /* exercise name library from history */
@@ -663,10 +682,13 @@ function renderRoutineLibrary(){
         <span>${OPEN_BUNDLE===b.id?'\\u2212':'+'}</span>
       </div>
       ${OPEN_BUNDLE===b.id ? b.routines.map(r => `
-        <button class="opt-tile" style="margin-top:8px" onclick='startRoutineDay(${JSON.stringify(r.exercises)}, "${esc(r.label)}")'>
-          <span class="ic">\\u25B6</span>
-          <span><span class="t">${esc(r.label)}</span><br><span class="d">${r.exercises.length} exercises</span></span>
-        </button>`).join('') : ''}
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:stretch">
+          <button class="opt-tile" style="flex:1;margin-top:0" onclick='startRoutineDay(${JSON.stringify(r.exercises)}, "${esc(r.label)}")'>
+            <span class="ic">\\u25B6</span>
+            <span><span class="t">${esc(r.label)}</span><br><span class="d">${r.exercises.length} exercises</span></span>
+          </button>
+          <button class="btn sm" style="flex-shrink:0" onclick='saveExercisesAsTemplate(${JSON.stringify(r.exercises)}, "${esc(b.name + " - " + r.label)}")'>Save</button>
+        </div>`).join('') : ''}
     </div>`).join('');
 }
 
@@ -929,9 +951,38 @@ function openLogging(){
   $('progFill').style.width=Math.round((SESSION.exercises.filter(e=>e.sets.length).length/Math.max(1,SESSION.exercises.length))*100)+'%';
   const lp=lastPerf(ex.name);
   $('lastPerf').innerHTML=lp?('Last: <b>'+esc(lp)+'</b>'):'No history for this exercise';
+  const sug=suggestedLoad(ex);
+  const sugEl=$('loadSuggest');
+  if(sugEl) sugEl.innerHTML = sug ? `<span style="color:var(--green);font-weight:700">&#9650; Suggested: ${esc(sug)}</span>` : '';
   const seed=seedNumbers(ex);curW=seed.w;curR=seed.r;paintSteppers();
   $('exNote').value=ex.note||'';
   renderSets();show('scr-log');
+}
+function suggestedLoad(ex){
+  const lastSet = lastSetDetail(ex.name);
+  if (!lastSet || !lastSet.length) return null;
+  const reps = lastSet.map(s => parseInt(s.reps)||0);
+  const weights = lastSet.map(s => parseFloat(s.weight)||0);
+  const minReps = Math.min(...reps);
+  const topWt = Math.max(...weights);
+  if (!topWt) return null;
+  // Double progression: hit 8+ reps across the board -> bump weight, reset toward bottom of range.
+  // Grinding under 8 -> hold weight, chase one more rep.
+  if (minReps >= 8) {
+    const bump = topWt >= 60 ? Math.round(topWt * 1.05 / 5) * 5 : topWt + 5;
+    return bump + ' lb x ' + Math.max(6, minReps - 2) + ' reps';
+  }
+  return topWt + ' lb x ' + (minReps + 1) + '+ reps';
+}
+function lastSetDetail(name){
+  for (const w of HISTORY) {
+    try {
+      const exs = JSON.parse(w.exercises_json||'[]') || [];
+      const m = exs.find(x => (x.name||'').toLowerCase() === name.toLowerCase());
+      if (m && Array.isArray(m.set_detail) && m.set_detail.length) return m.set_detail;
+    } catch(e) {}
+  }
+  return null;
 }
 function lastPerf(name){
   for(const w of HISTORY){
@@ -1237,6 +1288,24 @@ function deleteTemplate(i){
   else if(t.id){qpush({op:'delete',table:'programs',where:{id:t.id}});TPL_REMOTE=TPL_REMOTE.filter(x=>x.id!==t.id);}
   renderTemplates();
 }
+async function saveExercisesAsTemplate(exerciseNames, defaultName){
+  const name = prompt('Template name:', defaultName || '');
+  if (!name) return;
+  const scope = confirm('Make this template available for ALL clients?\nOK = all clients, Cancel = just ' + ((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim());
+  const exs = exerciseNames.map(n => ({name: n, group: null}));
+  const row = {name: name.trim(), exercises_json: JSON.stringify(exs), source: 'floor_template', created_at: new Date().toISOString()};
+  if (!scope) row.client_id = CLIENT.id;
+  try {
+    const ins = await db({op:'insert', table:'programs', values:row});
+    if (ins && ins.error) throw new Error(ins.error);
+    toast('Template saved');
+  } catch(e) {
+    const loc = tplLocal(); loc.push({name:row.name, exercises_json:row.exercises_json, client_id:row.client_id||null});
+    tplLocalSave(loc);
+    toast('Saved to this device (programs table not writable yet)');
+  }
+}
+
 async function saveAsTemplate(){
   if(!SESSION)return;
   const name=prompt('Template name:',SESSION.title==='Training Session'?'':SESSION.title);
@@ -1403,9 +1472,16 @@ function renderProgram(p){
     +(p.cautions?'<div style="font-size:12px;color:var(--amber);margin-bottom:10px">⚠ '+esc(p.cautions)+'</div>':'')
     +(p.progression?'<div style="font-size:12px;color:var(--ink2);margin-bottom:10px">Progression: '+esc(p.progression)+'</div>':'')
     +p.days.map((day,i)=>'<div class="ex-row" style="flex-direction:column;align-items:stretch"><div style="display:flex;align-items:center;gap:8px"><div class="nm" style="flex:1">'+esc(day.name||('Day '+(i+1)))+'</div>'
+      +'<button class="btn sm" onclick="saveDayTemplate('+i+')">Save</button>'
       +'<button class="btn sm red" onclick="launchDay('+i+')">Start</button></div>'
       +'<div class="meta" style="margin-top:6px">'+(day.exercises||[]).map(x=>esc(x.name)+' '+(x.sets||'')+'x'+(x.reps||'')).join(' · ')+'</div></div>').join('')
     +'<button class="btn" style="width:100%;margin-top:8px" onclick="saveProgramTemplates()">💾 Save All Days as Templates</button></div>';
+}
+function saveDayTemplate(i){
+  const p=window._PROG;if(!p)return;
+  const day=p.days[i];if(!day)return;
+  const names=(day.exercises||[]).map(x=>x.name).filter(Boolean);
+  saveExercisesAsTemplate(names, (p.program_name||'Program')+' — '+(day.name||('Day '+(i+1))));
 }
 function launchDay(i){
   const p=window._PROG;if(!p)return;
@@ -1467,8 +1543,13 @@ async function scaleHero(i){
       +(j.cautions?'<div style="font-size:12px;color:var(--amber);margin-bottom:8px">⚠ '+esc(j.cautions)+'</div>':'')
       +j.plan.map(x=>'<div class="set-chip"><div class="v">'+esc(x.name)+'</div><div style="color:var(--ink2);font-size:12px">'+esc(x.target||'')+(x.sub?' · '+esc(x.sub):'')+'</div></div>').join('')
       +(j.strategy?'<div style="font-size:12px;color:var(--ink2);margin-top:8px">'+esc(j.strategy)+'</div>':'')
-      +'<button class="btn red" style="width:100%;margin-top:10px" onclick="startHero()">Start WOD ▶</button></div>';
+      +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm" style="flex:1" onclick="saveHeroTemplate()">Save</button><button class="btn red" style="flex:2" onclick="startHero()">Start WOD ▶</button></div></div>';
   }catch(e){$('heroResult').innerHTML='<div class="empty" style="color:var(--red)">Failed: '+esc(e.message)+'</div>';}
+}
+function saveHeroTemplate(){
+  const j=window._HERO;if(!j||!j.plan)return;
+  const names=j.plan.map(x=>x.name).filter(Boolean);
+  saveExercisesAsTemplate(names, j.title||'HERO WOD');
 }
 function startHero(){
   const j=window._HERO;if(!j)return;
@@ -1488,6 +1569,8 @@ function startHero(){
   keepAwake();paintSync();trySync();
   const q=new URLSearchParams(location.search);
   const cid=q.get('client');
+  const COACH_PARAM=q.get('coach')||'';
+  window.COACH_PARAM=COACH_PARAM;
   await loadClients();
   if(tryResume())return;
   if(cid&&/^\d+$/.test(cid)){

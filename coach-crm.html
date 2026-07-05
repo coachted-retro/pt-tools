@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="manifest" href="site.webmanifest">
+<link rel="manifest" href="coach-crm-manifest.json">
 <title>My Clients — Coach CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -54,17 +54,24 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <a href="command-center.html" style="margin-left:12px">&larr; Command Center</a>
 </div>
 <div class="wrap">
-  <div class="picker">
+  <div id="locked-header" style="display:none;background:var(--ink);color:#fff;border-radius:12px;padding:18px;margin-bottom:16px">
+    <div style="font-family:'Oswald';font-size:20px;font-weight:800;text-transform:uppercase" id="locked-name"></div>
+    <div style="font-size:12px;color:#9CA3AF;margin-top:2px">Your personal coach portal</div>
+  </div>
+  <div class="picker" id="picker-box">
     <label style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted)">Coach</label>
     <select id="coach-select" onchange="loadClients()">
       <option value="">Select your name</option>
       <option value="Ted Scholl">Ted Scholl</option>
       <option value="Danielle Pellegrini">Danielle Pellegrini</option>
       <option value="Roman Benedetti">Roman Benedetti</option>
-      <option value="Marin Tyler">Marin Tyler</option>
+      <option value="Marin">Marin</option>
+      <option value="Tyler">Tyler</option>
+      <option value="James">James</option>
     </select>
   </div>
   <div id="today-schedule"></div>
+  <div id="coach-inbox"></div>
   <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">My Clients</div>
   <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
 </div>
@@ -74,7 +81,19 @@ const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 const saved = localStorage.getItem('coach_crm_name');
-if (saved) document.getElementById('coach-select').value = saved;
+const urlParams = new URLSearchParams(location.search);
+const URL_COACH = urlParams.get('coach');
+const IS_LOCKED = urlParams.get('locked') === '1' && !!URL_COACH;
+
+if (IS_LOCKED) {
+  document.getElementById('locked-header').style.display = 'block';
+  document.getElementById('locked-name').textContent = URL_COACH;
+  document.getElementById('picker-box').style.display = 'none';
+  document.getElementById('coach-select').value = URL_COACH;
+  localStorage.setItem('coach_crm_name', URL_COACH);
+} else if (saved) {
+  document.getElementById('coach-select').value = saved;
+}
 
 
 async function loadBell(){
@@ -142,6 +161,28 @@ async function loadTodaySchedule(){
   } catch(e) { box.innerHTML = ''; }
 }
 
+async function loadInbox(){
+  const coach = document.getElementById('coach-select').value;
+  const box = document.getElementById('coach-inbox');
+  if (!coach) { box.innerHTML = ''; return; }
+  try {
+    const r = await fetch(WORKER + '/coach/inbox?coach=' + encodeURIComponent(coach));
+    const d = await r.json();
+    const threads = d.threads || [];
+    const withUnread = threads.filter(t => t.unread_count > 0);
+    box.innerHTML = `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Inbox${withUnread.length ? ' — ' + withUnread.length + ' unread' : ''}</div>` +
+      (threads.length ? threads.slice(0,8).map(t => `
+        <a class="card" href="coach-client-profile.html?client=${t.client_id}&coach=${encodeURIComponent(coach)}&tab=chat" style="border-left:${t.unread_count>0?'4px solid var(--red)':'1px solid var(--line)'}">
+          <div class="avatar">${escH(t.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase())}</div>
+          <div style="flex:1;min-width:0">
+            <div class="name">${escH(t.name)}</div>
+            <div class="sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.last_sender==='coach'?'You: ':''}${escH(t.last_body)}</div>
+          </div>
+          <div class="badges">${t.unread_count>0?`<span class="badge badge-red">${t.unread_count} new</span>`:''}</div>
+        </a>`).join('') : '<div class="empty">No messages yet.</div>');
+  } catch(e) { box.innerHTML = ''; }
+}
+
 async function loadClients(){
   const coach = document.getElementById('coach-select').value;
   const list = document.getElementById('client-list');
@@ -172,8 +213,9 @@ async function loadClients(){
   } catch(e) { list.innerHTML = '<div class="empty">Could not load clients.</div>'; }
   loadBell();
   loadTodaySchedule();
+  loadInbox();
 }
-if (saved) loadClients();
+if (saved || IS_LOCKED) loadClients();
 setInterval(loadBell, 60000);
 </script>
 </body>

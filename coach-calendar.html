@@ -64,6 +64,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <option value="James">James</option>
     </select>
   </div>
+  <button onclick="openBulkModal()" style="width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;cursor:pointer;margin-bottom:14px">&#128683; Coach Is Out — Reassign a Full Day</button>
+
   <div class="month-nav">
     <button onclick="shiftMonth(-1)">&lsaquo;</button>
     <div class="label" id="month-label"></div>
@@ -72,6 +74,38 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="grid" id="dow-row"></div>
   <div class="grid" id="cal-grid"></div>
   <div class="day-panel" id="day-panel"><div class="empty-state">Tap a day to see what's scheduled.</div></div>
+</div>
+
+<div class="modal" id="bulk-modal">
+  <div class="modal-box">
+    <div style="font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;margin-bottom:4px">Coach Is Out</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Move every one of their scheduled sessions for the day to whoever's covering. Nothing else changes — they're back on their own schedule tomorrow.</div>
+    <label style="font-size:11px;color:var(--muted)">Date</label>
+    <input type="date" id="bulk-date">
+    <label style="font-size:11px;color:var(--muted)">Coach who's out</label>
+    <select id="bulk-from">
+      <option value="Ted Scholl">Ted Scholl</option>
+      <option value="Danielle Pellegrini">Danielle Pellegrini</option>
+      <option value="Roman Benedetti">Roman Benedetti</option>
+      <option value="Marin">Marin</option>
+      <option value="Tyler">Tyler</option>
+      <option value="James">James</option>
+    </select>
+    <label style="font-size:11px;color:var(--muted)">Covering coach</label>
+    <select id="bulk-to">
+      <option value="Ted Scholl">Ted Scholl</option>
+      <option value="Danielle Pellegrini">Danielle Pellegrini</option>
+      <option value="Roman Benedetti">Roman Benedetti</option>
+      <option value="Marin">Marin</option>
+      <option value="Tyler">Tyler</option>
+      <option value="James">James</option>
+    </select>
+    <div class="row" style="margin-top:10px">
+      <button onclick="closeBulkModal()" style="border:1px solid var(--line);background:#fff">Cancel</button>
+      <button onclick="confirmBulkReassign()" style="background:var(--red);color:#fff;border:none">Reassign Day</button>
+    </div>
+    <div id="bulk-msg" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>
 </div>
 
 <div class="modal" id="edit-modal">
@@ -108,6 +142,35 @@ let EDIT_ID = null;
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtDate(s){ return s ? new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : ''; }
+
+function openBulkModal(){
+  document.getElementById('bulk-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('bulk-msg').textContent = '';
+  document.getElementById('bulk-modal').style.display = 'flex';
+}
+function closeBulkModal(){ document.getElementById('bulk-modal').style.display = 'none'; }
+
+async function confirmBulkReassign(){
+  const date = document.getElementById('bulk-date').value;
+  const from = document.getElementById('bulk-from').value;
+  const to = document.getElementById('bulk-to').value;
+  const msg = document.getElementById('bulk-msg');
+  if (from === to) { msg.textContent = "Pick two different coaches — who's out and who's covering."; return; }
+  msg.textContent = 'Reassigning...';
+  const r = await fetch(WORKER + '/schedule/bulk-reassign', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({date, from_coach: from, to_coach: to})});
+  const d = await r.json();
+  if (d.reassigned_count != null) {
+    closeBulkModal();
+    renderCalendar();
+    if (VIEW_MONTH.toISOString().slice(0,7) === date.slice(0,7)) openDay(date);
+    alert(d.reassigned_count > 0
+      ? `Moved ${d.reassigned_count} session${d.reassigned_count===1?'':'s'} from ${from} to ${to} on ${fmtDate(date)}.`
+      : `${from} had nothing scheduled on ${fmtDate(date)} — nothing to move.`);
+  } else {
+    msg.textContent = d.error || 'Something went wrong.';
+  }
+}
 
 function init(){
   document.getElementById('dow-row').innerHTML = ['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');

@@ -94,6 +94,7 @@ tr:last-child td{border-bottom:none}
     <button class="tab" data-p="workouts" onclick="switchPane('workouts')">Workout History</button>
     <button class="tab" data-p="photos" onclick="switchPane('photos')">Photos</button>
     <button class="tab" data-p="touch" onclick="switchPane('touch')">Touchpoints</button>
+    <button class="tab" data-p="notes" onclick="switchPane('notes')">Coach Notes</button>
     <button class="tab" data-p="chat" onclick="switchPane('chat')">Chat</button>
   </div>
 
@@ -121,9 +122,29 @@ tr:last-child td{border-bottom:none}
     </div>
   </div>
 
+  <div class="pane" id="pane-notes">
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">A running training journal — form breakdowns, progress observations, injury flags, anything worth remembering about this client's training. Private to coaches, never shown to the client.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <select id="note-tag" style="border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px">
+          <option value="General">General</option>
+          <option value="Form/Technique">Form / Technique</option>
+          <option value="Progress">Progress</option>
+          <option value="Injury/Pain">Injury / Pain Flag</option>
+          <option value="Goal Update">Goal Update</option>
+          <option value="Program Adjustment">Program Adjustment</option>
+        </select>
+      </div>
+      <textarea id="note-body" rows="4" placeholder="What did you observe? What should the next coach know?" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px;margin-bottom:8px"></textarea>
+      <button class="btn" onclick="logCoachNote()" style="width:100%">Add to Journal</button>
+      <div id="note-list" style="margin-top:14px"></div>
+    </div>
+  </div>
+
   <div class="pane" id="pane-chat">
     <div class="card">
       <div class="chat-box" id="chat-box"></div>
+      <div id="draft-suggestion"></div>
       <div class="field-row" style="margin-top:10px">
         <input id="chat-input" placeholder="Message your client...">
         <button class="btn" onclick="sendChat()">Send</button>
@@ -202,6 +223,12 @@ async function load(){
   if (startBtn) startBtn.href = 'gym-floor.html?client=' + CLIENT_ID;
   const r = await fetch(WORKER + `/coach/client-detail?client_id=${CLIENT_ID}`);
   DATA = await r.json();
+  if (!r.ok || !DATA.client) {
+    document.getElementById('c-name').textContent = 'Could not load this client';
+    document.getElementById('c-sub').textContent = DATA.error || 'Unknown error — check the client ID in the URL, or that the Worker is deployed.';
+    document.getElementById('c-sub').style.color = 'var(--red)';
+    return;
+  }
   const c = DATA.client || {};
   document.getElementById('c-name').textContent = (c.first_name||'') + ' ' + (c.last_name||'');
   document.getElementById('c-sub').textContent = [c.goal_primary, c.package].filter(Boolean).join(' \\u00B7 ');
@@ -240,6 +267,7 @@ async function load(){
   ).join('') : '<div class="empty">No progress photos yet.</div>';
 
   renderTouchpoints();
+  renderCoachNotes();
   renderChat();
   loadSchedule();
 }
@@ -256,7 +284,7 @@ async function loadSchedule() {
       </div>
       <div id="schedule-list">${rows.length ? rows.map(s => `
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)">
-          <div><b>${fmtDate(s.scheduled_date)}</b> &middot; ${escH(s.program_name)}${s.focus_notes ? ' <span style="color:var(--muted)">— ' + escH(s.focus_notes) + '</span>' : ''}</div>
+          <div><b>${fmtDate(s.scheduled_date)}</b> &middot; ${escH(s.program_name)}${s.assigned_coach ? ` <span style="color:var(--red);font-size:12px">(${escH(s.assigned_coach)})</span>` : ''}${s.focus_notes ? ' <span style="color:var(--muted)">— ' + escH(s.focus_notes) + '</span>' : ''}</div>
           <div style="display:flex;gap:10px">
             <button onclick='editScheduleItem(${JSON.stringify(s).replace(/'/g,"&apos;")})' style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;font-weight:700">Edit</button>
             <button onclick="cancelSchedule(${s.id})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px">Cancel</button>
@@ -486,6 +514,28 @@ async function cancelSchedule(id){
   load();
 }
 
+function renderCoachNotes(){
+  const notes = DATA.notes || [];
+  const TAG_COLORS = {'Injury/Pain':'var(--red)','Progress':'var(--green)','Program Adjustment':'var(--amber)'};
+  document.getElementById('note-list').innerHTML = notes.length ? notes.map(n => `
+    <div class="tp-item">
+      <span class="tp-type" style="${TAG_COLORS[n.tag]?'background:'+TAG_COLORS[n.tag]+';color:#fff':''}">${escH(n.tag||'General')}</span>${escH(n.body)}
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${escH(n.coach_name)} &middot; ${fmtDate(n.created_at)}</div>
+    </div>`).join('') : '<div class="empty">No journal entries yet.</div>';
+}
+
+async function logCoachNote(){
+  const tag = document.getElementById('note-tag').value;
+  const body = document.getElementById('note-body').value.trim();
+  if (!body) return;
+  await fetch(WORKER + '/coach/note', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({client_id: CLIENT_ID, coach_name: COACH_NAME, tag, body})});
+  document.getElementById('note-body').value = '';
+  const r = await fetch(WORKER + `/coach/client-detail?client_id=${CLIENT_ID}`);
+  DATA = await r.json();
+  renderCoachNotes();
+}
+
 function renderTouchpoints(){
   const tps = DATA.touchpoints || [];
   document.getElementById('tp-list').innerHTML = tps.length ? tps.map(t => `
@@ -513,6 +563,45 @@ function renderChat(){
     <div class="msg ${m.sender==='coach'?'coach':'client'}">${escH(m.body)}<div class="t">${fmtDate(m.created_at)}</div></div>
   `).join('') : '<div class="empty">No messages yet. Say hi!</div>';
   box.scrollTop = box.scrollHeight;
+
+  const suggestBox = document.getElementById('draft-suggestion');
+  const last = msgs[msgs.length-1];
+  if (last && last.sender === 'client') {
+    suggestBox.innerHTML = `<button class="btn" style="width:100%;margin-top:8px;background:var(--soft);color:var(--ink);border:1px solid var(--line)" onclick="suggestReply(${JSON.stringify(last.body)})">&#10024; Suggest a Reply</button>`;
+  } else {
+    suggestBox.innerHTML = '';
+  }
+}
+
+async function suggestReply(clientMessage){
+  const suggestBox = document.getElementById('draft-suggestion');
+  suggestBox.innerHTML = '<div style="padding:10px;color:var(--muted);font-size:13px">Drafting...</div>';
+  const c = DATA.client || {};
+  const recentNote = (DATA.notes||[])[0];
+  const context = recentNote ? (recentNote.tag + ': ' + recentNote.body) : '';
+  try {
+    const r = await fetch(WORKER + '/coach/draft-reply', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({client_message: clientMessage, recent_context: context})});
+    const d = await r.json();
+    if (!d.draft) { suggestBox.innerHTML = ''; return; }
+    suggestBox.innerHTML = `
+      <div style="background:var(--soft);border-radius:10px;padding:10px;margin-top:8px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">AI Draft — edit before sending</div>
+        <textarea id="draft-text" rows="3" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px">${escH(d.draft)}</textarea>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="btn" style="flex:1;font-size:12px;padding:8px" onclick="suggestReply(${JSON.stringify(clientMessage)})">Regenerate</button>
+          <button class="btn" style="flex:1;font-size:12px;padding:8px;background:var(--red);color:#fff" onclick="useDraft()">Use This</button>
+        </div>
+      </div>`;
+  } catch(e) { suggestBox.innerHTML = ''; }
+}
+
+function useDraft(){
+  const draft = document.getElementById('draft-text');
+  if (!draft) return;
+  document.getElementById('chat-input').value = draft.value;
+  document.getElementById('draft-suggestion').innerHTML = '';
+  document.getElementById('chat-input').focus();
 }
 
 async function sendChat(){
@@ -534,6 +623,8 @@ async function markMessagesRead(){
 }
 
 load();
+const REQUESTED_TAB = params.get('tab');
+if (REQUESTED_TAB) { setTimeout(() => switchPane(REQUESTED_TAB), 300); }
 </script>
 </body>
 </html>
