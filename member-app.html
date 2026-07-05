@@ -184,6 +184,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 /* ── BIG ACTION BTN ─────────────────────────────────────────── */
 .action-btn{width:100%;background:var(--red);color:#fff;font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:15px;border-radius:var(--radius-sm);border:none;cursor:pointer;box-shadow:0 4px 14px rgba(224,25,43,.3);margin-top:12px}
+.cta-compact{flex:1;text-align:center;text-decoration:none;font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:10px 8px;border-radius:var(--radius-xs);border:none;cursor:pointer;display:block}
+.cta-compact.primary{background:var(--red);color:#fff}
+.cta-compact.ghost{background:var(--soft);color:var(--ink2);border:1px solid var(--line)}
 .action-btn:active{opacity:.9;transform:scale(.99)}
 .action-btn.secondary{background:var(--soft);color:var(--ink);box-shadow:none;border:1px solid var(--line)}
 
@@ -208,6 +211,28 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .login-btn{width:100%;background:var(--red);color:#fff;font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:14px;border-radius:var(--radius-xs);border:none;cursor:pointer;box-shadow:0 4px 14px rgba(224,25,43,.3)}
 .login-err{color:var(--red);font-size:12px;margin-top:8px;text-align:center}
 .login-hint{font-size:11px;color:var(--ink3);text-align:center;margin-top:14px}
+
+/* LANDING HERO — pre-auth entry point, built around the brand's own diagonal swoosh */
+.landing-wrap{width:100%;max-width:400px}
+.landing-hero{position:relative;overflow:hidden;background:var(--ink);border-radius:20px;padding:36px 24px 30px;margin:-24px -24px 20px;width:calc(100% + 48px);text-align:center}
+.landing-swoosh{position:absolute;top:-40%;right:-30%;width:180%;height:220%;background:linear-gradient(115deg,transparent 42%,var(--red) 44%,var(--red) 50%,transparent 52%);opacity:.9;transform:rotate(-8deg);pointer-events:none}
+.landing-logos{position:relative;z-index:1;margin-bottom:22px}
+.landing-logo-primary{max-width:210px;width:100%;height:auto;display:block;margin:0 auto 10px;border-radius:8px}
+.landing-subbadge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:4px 12px}
+.landing-subbadge span{font-family:'Oswald';font-size:10px;font-weight:700;letter-spacing:1.2px;color:#fff}
+.landing-headline{position:relative;z-index:1;font-family:'Oswald';font-size:34px;font-weight:800;line-height:1.02;letter-spacing:.2px;color:#fff;text-transform:uppercase;margin-bottom:10px}
+.landing-sub{position:relative;z-index:1;font-size:13px;color:#C7CBD1;max-width:280px;margin:0 auto}
+.landing-choices{display:flex;flex-direction:column;gap:10px}
+.landing-choice{width:100%;text-align:left;border:none;border-radius:var(--radius-sm);padding:16px 18px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.landing-choice .lc-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;opacity:.7}
+.landing-choice .lc-label{font-family:'Oswald';font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;display:flex;align-items:center;justify-content:space-between}
+.lc-arrow{font-size:15px}
+.lc-member{background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+.lc-pt{background:var(--red);color:#fff;box-shadow:0 4px 14px rgba(224,25,43,.3)}
+.lc-staff{background:transparent;color:var(--ink3);border:1.5px solid var(--line2)!important;padding:12px 18px}
+.lc-staff .lc-label{font-size:13px}
+.landing-guest{display:block;text-align:center;margin-top:16px;font-size:12px;color:var(--ink3);text-decoration:none;font-weight:600}
+.login-back{display:inline-block;font-size:12px;color:var(--ink3);text-decoration:none;margin-bottom:14px;font-weight:600}
 
 /* ── EMPTY STATE ────────────────────────────────────────────── */
 .empty{text-align:center;padding:32px 16px;color:var(--ink3);font-size:13px}
@@ -361,23 +386,53 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-box" id="member-login-box">
-    <div class="login-logo" style="text-align:center">
-      <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" style="max-width:240px;width:100%;height:auto;display:block;margin:0 auto;border-radius:10px" onerror="this.style.display='none'">
+
+  <!-- LANDING HERO — pre-auth entry point -->
+  <div class="landing-wrap" id="landing-wrap">
+    <div class="landing-hero">
+      <div class="landing-swoosh"></div>
+      <div class="landing-logos">
+        <img src="Retro_FH_Logo.jpg" class="landing-logo-primary" alt="Retro Fitness of Fairless Hills" onerror="this.style.display='none'">
+        <div class="landing-subbadge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2C9 7 6 9 6 13a6 6 0 0 0 12 0c0-2-1-3.5-2-5 .3 2-.5 3-1.5 3.5C15 10 14 7 12 2Z" fill="#E0192B"/></svg>
+          <span>RETRO STRONG</span>
+        </div>
+      </div>
+      <div class="landing-headline">FAIRLESS HILLS<br>STRONG</div>
+      <div class="landing-sub">Your workouts, your coach, your community — all in one place.</div>
     </div>
-    <h2>Welcome Back</h2>
-    <p>Sign in to your member account</p>
+
+    <div class="landing-choices">
+      <button class="landing-choice lc-member" onclick="showLoginPath('member')">
+        <span class="lc-eyebrow">Gym Member</span>
+        <span class="lc-label">Member Login <span class="lc-arrow">→</span></span>
+      </button>
+      <button class="landing-choice lc-pt" onclick="showLoginPath('ptclient')">
+        <span class="lc-eyebrow">Training With a Coach</span>
+        <span class="lc-label">PT Client Login <span class="lc-arrow">→</span></span>
+      </button>
+      <button class="landing-choice lc-staff" onclick="showLoginPath('staff')">
+        <span class="lc-label">Staff Login <span class="lc-arrow">→</span></span>
+      </button>
+    </div>
+    <a href="#" class="landing-guest" onclick="startGuestMode();return false">Continue as guest →</a>
+  </div>
+
+  <div class="login-box" id="member-login-box" style="display:none">
+    <a href="#" class="login-back" onclick="hideLoginPath(event)">&larr; Back</a>
+    <h2 id="member-login-title">Welcome Back</h2>
+    <p id="member-login-sub">Sign in to your member account</p>
     <div class="fld"><label>Email</label><input id="l-email" type="email" placeholder="you@email.com" autocomplete="email"></div>
     <div class="fld"><label>Password</label><input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
     <div class="login-err" id="l-err" style="display:none"></div>
     <div class="login-hint" style="margin-top:12px"><a href="#" onclick="showReset(event)" style="color:var(--red);font-weight:700;text-decoration:none">Forgot password? / First time? Set one up</a></div>
     <div class="login-hint">Don't have an account? Ask your coach to set you up.</div>
-    <div class="login-hint" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px"><a href="#" onclick="showStaffLogin(event)" style="color:var(--ink3);font-weight:700">Staff Login →</a></div>
   </div>
-  <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--ink3)">Powered by <b style="color:var(--red)">Retro Strong</b></div>
+  <div style="text-align:center;margin-top:16px;font-size:11px;color:var(--ink3)" id="powered-by-footer">Powered by <b style="color:var(--red)">Retro Strong</b></div>
 
   <div class="login-box" id="staff-login-box" style="display:none">
+    <a href="#" class="login-back" onclick="hideLoginPath(event)">&larr; Back</a>
     <h2 style="font-size:18px">Staff Login</h2>
     <p>Coaches, MEAs, floor techs, and management</p>
     <div class="fld"><label>Email</label><input id="s-email" type="email" placeholder="you@retrofh.com" autocomplete="email"></div>
@@ -385,7 +440,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <button class="login-btn" onclick="doStaffLogin()">Sign In</button>
     <div class="login-err" id="s-err" style="display:none"></div>
     <div class="login-hint" style="margin-top:12px"><a href="#" onclick="showStaffReset(event)" style="color:var(--red);font-weight:700;text-decoration:none">Forgot PIN?</a></div>
-    <div class="login-hint"><a href="#" onclick="hideStaffLogin(event)" style="color:var(--ink3)">← Back to member login</a></div>
+    <div class="login-hint"><a href="#" onclick="hideLoginPath(event)" style="color:var(--ink3)">← Back</a></div>
   </div>
 
   <div class="login-box" id="staff-reset-box" style="display:none">
@@ -449,25 +504,25 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-notif" style="display:none"></div>
         <div id="home-greeting"></div>
         <div id="today-workout-card"></div>
+        <div class="sec-label">Community</div>
+        <div id="community-feed"></div>
         <div class="kpi-strip" id="home-kpis" style="display:none"></div>
         <div id="home-nutrition-demo"></div>
         <div id="home-habits"></div>
         <div id="home-here-now"></div>
-        <div id="home-community-feed"></div>
         <div id="home-challenge"></div>
+        <div id="home-circle"></div>
+        <div id="home-community-feed"></div>
         <div id="home-buddy"></div>
         <div id="home-coaches"></div>
         <div id="home-happening"></div>
         <div id="home-coachs-edge"></div>
-        <div id="home-circle"></div>
         <div id="home-booking"></div>
         <div id="home-referral"></div>
         <div id="home-referral-leaderboard"></div>
         <div id="home-supplement"></div>
         <div id="home-partners"></div>
         <div id="home-fb-feed"></div>
-        <div class="sec-label">Community</div>
-        <div id="community-feed"></div>
         <div style="text-align:center;padding:20px 0 8px;font-size:11px;color:var(--ink3)">Powered by <b style="color:var(--red)">Retro Strong</b></div>
       </div>
     </div>
@@ -1474,8 +1529,35 @@ async function doLogin() {
 // ── STAFF LOGIN (separate tier — coaches, MEAs, floor techs, management) ──
 let STAFF_SESSION = null;
 
-function showStaffLogin(e) { if (e) e.preventDefault(); document.getElementById('member-login-box').style.display = 'none'; document.getElementById('staff-login-box').style.display = 'block'; }
-function hideStaffLogin(e) { if (e) e.preventDefault(); document.getElementById('member-login-box').style.display = 'block'; document.getElementById('staff-login-box').style.display = 'none'; document.getElementById('s-err').style.display = 'none'; }
+function showLoginPath(type) {
+  document.getElementById('landing-wrap').style.display = 'none';
+  document.getElementById('landing-guest') && (document.getElementById('landing-guest').style.display = 'none');
+  if (type === 'staff') {
+    document.getElementById('staff-login-box').style.display = 'block';
+    document.getElementById('powered-by-footer').style.display = 'none';
+  } else {
+    document.getElementById('member-login-box').style.display = 'block';
+    document.getElementById('powered-by-footer').style.display = 'block';
+    const title = document.getElementById('member-login-title');
+    const sub = document.getElementById('member-login-sub');
+    if (type === 'ptclient') {
+      title.textContent = 'PT Client Login';
+      sub.textContent = 'Sign in to see your training, nutrition plan, and progress';
+    } else {
+      title.textContent = 'Welcome Back';
+      sub.textContent = 'Sign in to your member account';
+    }
+  }
+}
+function hideLoginPath(e) {
+  if (e) e.preventDefault();
+  document.getElementById('member-login-box').style.display = 'none';
+  document.getElementById('staff-login-box').style.display = 'none';
+  document.getElementById('powered-by-footer').style.display = 'none';
+  document.getElementById('landing-wrap').style.display = 'block';
+}
+function showStaffLogin(e) { if (e) e.preventDefault(); showLoginPath('staff'); }
+function hideStaffLogin(e) { if (e) e.preventDefault(); hideLoginPath(); document.getElementById('s-err').style.display = 'none'; }
 function showStaffReset(e) { if (e) e.preventDefault(); document.getElementById('staff-login-box').style.display = 'none'; document.getElementById('staff-reset-box').style.display = 'block'; const se = document.getElementById('s-email').value.trim(); if (se) document.getElementById('sr-email').value = se; }
 function hideStaffReset(e) { if (e) e.preventDefault(); document.getElementById('staff-reset-box').style.display = 'none'; document.getElementById('staff-login-box').style.display = 'block'; document.getElementById('staff-reset-step2').style.display = 'none'; document.getElementById('staff-reset-step1').style.display = 'block'; document.getElementById('sr-err').style.display = 'none'; }
 
@@ -2124,8 +2206,14 @@ async function loadCommunityFeed() {
   try {
     const r = await fetch(WORKER + '/feed/list?limit=15');
     const d = await r.json();
-    const posts = d.posts || [];
-    if (!posts.length) { el.innerHTML = ''; return; }
+    let posts = d.posts || [];
+    if (!posts.length) {
+      if (!IS_DEMO) { el.innerHTML = ''; return; }
+      posts = [
+        {category:'recognition', title:'Coach Ted hit 50 clients trained this year', body:'Ask him how he does it.', event_date:null},
+        {category:'industry_news', title:'New squat rack arriving this week', body:'Two additional stations, same great floor.', event_date:null}
+      ];
+    }
     const catIcon = { birthday: '🎂', anniversary: '🎉', industry_news: '📰', personal: '💬', recognition: '🏆', event: '📅' };
     const catLabel = { birthday: 'Birthday', anniversary: 'Anniversary', industry_news: 'Industry News', personal: 'Community', recognition: 'Recognition', event: 'Coming Up' };
     el.innerHTML = `<div class="sec-label">Community &amp; Industry News</div>` + posts.map(p => `
@@ -2150,7 +2238,26 @@ async function loadChallenge() {
     const r = await fetch(WORKER + '/challenge/current' + clientParam);
     const d = await r.json();
     CHALLENGE = d;
-    if (!d || !d.challenge) { el.innerHTML = ''; return; }
+    if (!d || !d.challenge) {
+      if (IS_DEMO) {
+        CHALLENGE = { challenge: { id: 0, title: "July Push-Up Challenge", tagline: "Log any push-up set, every day this month — team totals count." },
+          leaderboard: [{client_id:'demo1',first_name:'Marin',total:412},{client_id:'demo2',first_name:'Roman',total:365},{client_id:'demo3',first_name:'James',total:298}],
+          team_leaderboard: [{name:'Iron Squad',member_count:6,total:1840},{name:'Rise & Grind',member_count:5,total:1510}] };
+        el.innerHTML = `<div class="sec-label">This Month's Challenge</div>
+          <div class="card" style="border-top:3px solid var(--red)"><div class="card-body">
+            <div style="font-family:'Oswald';text-transform:uppercase;font-weight:700;font-size:16px">July Push-Up Challenge</div>
+            <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Log any push-up set, every day this month — team totals count.</div>
+            <div style="font-size:12px;color:var(--ink3);margin-bottom:8px">Leader: <b>Marin</b> — 412 pts</div>
+            <button class="action-btn" onclick="openChallengeModal()">View Challenge &amp; Log Activity</button>
+          </div></div>`;
+      } else {
+        el.innerHTML = `<div class="sec-label">This Month's Challenge</div>
+          <div class="card"><div class="card-body">
+            <div class="empty-state">No challenge running right now — ask your coach to start one.</div>
+          </div></div>`;
+      }
+      return;
+    }
     const ch = d.challenge;
     const lb = d.leaderboard || [];
     const teamLb = d.team_leaderboard || [];
@@ -2302,7 +2409,8 @@ async function loadHereNow() {
   try {
     const r = await fetch(WORKER + '/presence/now');
     const d = await r.json();
-    const here = d.here_now || [];
+    let here = d.here_now || [];
+    if (!here.length && IS_DEMO) here = [{first_name:'Marin',client_id:'demo1'},{first_name:'James',client_id:'demo2'},{first_name:'Roman',client_id:'demo3'}];
     const canCheckIn = !!(SESSION && SESSION.client_id) && !GUEST_MODE;
     const alreadyIn = here.some(h => SESSION && String(h.client_id) === String(SESSION.client_id));
     let html = `<div class="sec-label">Who's Here Now</div><div class="card"><div class="card-body">`;
@@ -2334,8 +2442,11 @@ async function loadReferralLeaderboard() {
   try {
     const r = await fetch(WORKER + '/referral/leaderboard');
     const d = await r.json();
-    const board = d.leaderboard || [];
-    if (!board.length) { el.innerHTML = ''; return; }
+    let board = d.leaderboard || [];
+    if (!board.length) {
+      if (!IS_DEMO) { el.innerHTML = ''; return; }
+      board = [{first_name:'Marin',last_name:'',n:3},{first_name:'James',last_name:'',n:2},{first_name:'Roman',last_name:'',n:1}];
+    }
     el.innerHTML = `<div class="sec-label">Top Referrers This Month</div><div class="card"><div class="card-body">` +
       board.slice(0,5).map((r,i) => `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">
         <div style="font-family:'Oswald';font-weight:800;color:var(--red);width:20px">${i+1}</div>
@@ -2351,8 +2462,11 @@ async function loadHappening() {
   try {
     const r = await fetch(WORKER + '/events/list');
     const d = await r.json();
-    const events = d.events || [];
-    if (!events.length) { el.innerHTML = ''; return; }
+    let events = d.events || [];
+    if (!events.length) {
+      if (!IS_DEMO) { el.innerHTML = ''; return; }
+      events = [{title:'Saturday Barbell Club', blurb:'Open floor session, all levels welcome.', event_date:null, image_url:null}];
+    }
     el.innerHTML = `<div class="sec-label">Happening at Retro</div>` + events.map(ev => `
       <div class="card"><div class="card-body" style="display:flex;gap:12px;align-items:center">
         ${ev.image_url ? `<img src="${esc(ev.image_url)}" alt="" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0">` : ''}
@@ -2371,8 +2485,11 @@ async function loadCoachsEdge() {
   try {
     const r = await fetch(WORKER + '/daily/content');
     const d = await r.json();
-    const c = d.content;
-    if (!c) { el.innerHTML = ''; return; }
+    let c = d.content;
+    if (!c) {
+      if (!IS_DEMO) { el.innerHTML = ''; return; }
+      c = { health_tip: 'Protein timing matters less than protein total — hit your daily number and don\'t stress the clock.', quote: 'Discipline is choosing between what you want now and what you want most.', quote_author: 'Coach Ted', news_headline: null, news_blurb: null };
+    }
     el.innerHTML = `
       <div class="sec-label">Coach's Edge</div>
       <div class="card"><div class="card-body">
@@ -2399,14 +2516,25 @@ async function loadCircle() {
     const clientId = (SESSION && SESSION.client_id) ? '&client_id=' + SESSION.client_id : '';
     const r = await fetch(WORKER + '/wins/feed?limit=10' + clientId);
     const d = await r.json();
-    const wins = d.wins || [];
-    if (!wins.length) { el.innerHTML = ''; return; }
+    let wins = d.wins || [];
+    if (!wins.length) {
+      if (IS_DEMO) {
+        wins = [
+          {id:-1, headline:'Sanjay hit a new deadlift PR — 315 lbs', detail:'Up 40 lbs since starting in March.', tier:{label:'PR'}, reactions:{'🔥':4,'💪':2}, my_reactions:[]},
+          {id:-2, headline:'Wayne finished his 90-day check-in — down 3.2% body fat', detail:null, tier:{label:'Milestone'}, reactions:{'💪':3,'👏':2}, my_reactions:[]},
+          {id:-3, headline:'Marin logged her 50th session with Coach Ted', detail:'Consistency is paying off.', tier:null, reactions:{'👏':5}, my_reactions:[]}
+        ];
+      } else {
+        el.innerHTML = `<div class="sec-label">The Circle</div><div class="card"><div class="card-body"><div class="empty-state">No wins posted yet — be the first to celebrate one.</div></div></div>`;
+        return;
+      }
+    }
     el.innerHTML = `<div class="sec-label">The Circle</div>` + wins.map(w => {
       const name = ((w.first_name||'')+' '+(w.last_name||'')).trim();
       const tierLabel = w.tier ? w.tier.label : '';
       const reactions = w.reactions || {};
       const mine = w.my_reactions || [];
-      const canReact = !!(SESSION && SESSION.client_id);
+      const canReact = !!(SESSION && SESSION.client_id) && w.id > 0;
       const reactionRow = REACTION_EMOJIS.map(e => {
         const count = reactions[e] || 0;
         const active = mine.includes(e);
@@ -2527,21 +2655,19 @@ function renderHomeExtras() {
     }
   }
 
-  // Booking row
+  // Book / Refer — consolidated into one compact card, not two giant blocks
   document.getElementById('home-booking').innerHTML = `
-    <div class="sec-label">Book With Coach Ted</div>
-    <div class="card"><div class="card-body" style="display:flex;flex-direction:column;gap:10px">
-      <a class="action-btn" style="text-decoration:none;text-align:center;display:block" href="${BOOK_FIRST_WORKOUT_URL}" target="_blank" rel="noopener">Book Your Free First Workout</a>
-      <a class="action-btn secondary" style="text-decoration:none;text-align:center;display:block" href="${BOOK_CONSULT_URL}" target="_blank" rel="noopener">Free Consultation + InBody Scan</a>
+    <div class="card"><div class="card-body">
+      <div style="display:flex;gap:10px">
+        <a class="cta-compact primary" href="${BOOK_FIRST_WORKOUT_URL}" target="_blank" rel="noopener">Book Free Workout</a>
+        <a class="cta-compact ghost" href="${BOOK_CONSULT_URL}" target="_blank" rel="noopener">Free InBody Scan</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+        <div style="flex:1;font-size:12px;color:var(--ink3)">Bring a friend — share a free guest pass, no waiver paperwork.</div>
+        <button class="cta-compact ghost" style="flex-shrink:0;width:auto" onclick="shareGuestPass()">Share Pass</button>
+      </div>
     </div></div>`;
-
-  // Bring a Friend referral card
-  document.getElementById('home-referral').innerHTML = `
-    <div class="card" style="border-top:3px solid var(--red)"><div class="card-body">
-      <div style="font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Bring a Friend</div>
-      <div style="font-size:13px;color:var(--ink3);margin:6px 0 12px">Share a free guest pass. They sign the waiver on their phone and walk right in with you.</div>
-      <button class="action-btn" style="width:100%" onclick="shareGuestPass()">Share Guest Pass</button>
-    </div></div>`;
+  document.getElementById('home-referral').innerHTML = '';
 
   // Nutritional Supplement Resource
   document.getElementById('home-supplement').innerHTML = `
