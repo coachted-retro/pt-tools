@@ -978,6 +978,7 @@
   .settings-btn:hover { background: var(--surface2); color: var(--text); }
 #config-overlay { display: none !important; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.0.3/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -1762,12 +1763,18 @@
               <div id="closing-benefits-list" style="margin-bottom:20px;"></div>
 
               <!-- Show Them Their App (demo mode launcher) -->
-              <div style="background:linear-gradient(135deg,#15171A,#2a2d33);border-radius:var(--radius);padding:16px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
-                <div style="flex:1;">
-                  <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;">Show them their app</div>
-                  <div style="font-size:12px;color:#9CA3AF;margin-top:3px;">Launches the member app personalized with their name, goal, and today's scan. Hand them the phone.</div>
+              <div style="background:linear-gradient(135deg,#15171A,#2a2d33);border-radius:var(--radius);padding:16px;margin-bottom:20px;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <div style="flex:1;">
+                    <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;">Show them their app</div>
+                    <div style="font-size:12px;color:#9CA3AF;margin-top:3px;">Launches the member app personalized with their name, goal, and today's scan. Hand them the phone.</div>
+                  </div>
+                  <button onclick="launchAppDemo()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:12px 18px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;">&#128241; Launch Demo</button>
                 </div>
-                <button onclick="launchAppDemo()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:12px 18px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;">&#128241; Launch Demo</button>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);">
+                  <div id="demo-qr-box" style="background:#fff;border-radius:8px;padding:6px;flex-shrink:0;line-height:0;"></div>
+                  <div style="font-size:12px;color:#9CA3AF;">On your laptop? Scan this with <b style="color:#fff">your phone's camera</b> to open their personalized demo directly on your phone — no typing, no login.</div>
+                </div>
               </div>
 
               <!-- Investment block -->
@@ -3692,6 +3699,7 @@ async function generateClosingValue() {
 
   document.getElementById('closing-loading').style.display = 'none';
   document.getElementById('closing-value-content').style.display = 'block';
+  renderDemoQR();
 }
 
 
@@ -4039,7 +4047,7 @@ function runConsultReport(type) {
 // Enrollment and decline flows write to D1 directly — no report-wrap patches needed.
 
 
-function launchAppDemo() {
+function buildDemoUrl() {
   var name = gv('name') || 'Future Member';
   var goals = gv('goals') || 'general';
   var weight = gv('weight') || '';
@@ -4047,7 +4055,26 @@ function launchAppDemo() {
   var params = new URLSearchParams({ demo: '1', name: name, goal: goals });
   if (weight) params.set('weight', weight);
   if (pbf) params.set('bf', pbf);
-  window.open('member-app.html?' + params.toString(), '_blank', 'noopener');
+  // Absolute URL so a phone camera scanning the QR opens the live site directly,
+  // regardless of what device/host is currently running this consultation page.
+  return 'https://coachted-retro.github.io/pt-tools/member-app.html?' + params.toString();
+}
+
+function launchAppDemo() {
+  window.open(buildDemoUrl(), '_blank', 'noopener');
+}
+
+function renderDemoQR() {
+  var box = document.getElementById('demo-qr-box');
+  if (!box || typeof qrcode !== 'function') return;
+  try {
+    var qr = qrcode(0, 'M');
+    qr.addData(buildDemoUrl());
+    qr.make();
+    box.innerHTML = qr.createImgTag(4, 4);
+  } catch (e) {
+    box.innerHTML = '';
+  }
 }
 
 </script>
