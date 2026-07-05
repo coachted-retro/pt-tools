@@ -52,4 +52,13 @@ CREATE TABLE IF NOT EXISTS class_rsvps (
 CREATE INDEX IF NOT EXISTS idx_class_rsvps_date ON class_rsvps(class_date);
 CREATE INDEX IF NOT EXISTS idx_class_rsvps_client ON class_rsvps(client_id);
 
+CREATE TABLE IF NOT EXISTS guest_pass_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  class_name TEXT,
+  class_date TEXT,
+  source TEXT,
+  clicked_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_guest_pass_class ON guest_pass_log(class_name);
+
 

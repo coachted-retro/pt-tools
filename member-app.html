@@ -2537,6 +2537,12 @@ function renderFbFeed() {
   tryParse();
 }
 
+async function claimClassGuestPass(className, classDate) {
+  fetch(WORKER + '/guest-pass/click', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ class_name: className, class_date: classDate, source: 'class_promo' }) }).catch(()=>{});
+  window.open(GUEST_PASS_URL, '_blank', 'noopener');
+}
+
 async function shareGuestPass() {
   const payload = { title: 'Free Guest Pass — Retro Fitness Fairless Hills',
     text: 'Come work out with me at Retro Fitness Fairless Hills. Sign the guest waiver here and you\'re in:',
@@ -2884,6 +2890,7 @@ async function renderClassList() {
         <div class="class-instr">with ${esc(cls.instructor)}</div>
         <div class="class-loc">📍 ${esc(cls.location)}</div>
         <div class="class-social" id="social-${esc(cls.name).replace(/\s+/g,'-')}" style="font-size:11px;color:var(--ink3);margin-top:3px"></div>
+        <a href="#" onclick="claimClassGuestPass('${esc(cls.name).replace(/'/g,"\\'")}','${classDate}');return false;" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--red);text-decoration:none;background:var(--red-lt);padding:4px 10px;border-radius:10px">🎟️ New here? Free guest pass</a>
       </div>
       <button class="going-btn not-going" id="btn-${esc(cls.name).replace(/\s+/g,'-')}" onclick="toggleGoing('${esc(cls.name).replace(/'/g,"\\'")}','${classDate}','${cls.time}', this)">I'm Going</button>
     </div>`).join('');

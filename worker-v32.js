@@ -1172,6 +1172,23 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok({ count: going.length, names: going.slice(0,5).map(g=>g.first_name), my_going: myGoing }, cors);
       }
 
+      // ── GUEST PASS TRACKING (which class actually drives a walk-in) ──
+      if (url.pathname === '/guest-pass/click' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        await env.DB.prepare('INSERT INTO guest_pass_log (class_name,class_date,source,clicked_at) VALUES (?,?,?,?)')
+          .bind(b.class_name||null, b.class_date||null, b.source||'class_promo', new Date().toISOString()).run();
+        return ok({ logged: true }, cors);
+      }
+
+      if (url.pathname === '/guest-pass/stats' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const rows = await env.DB.prepare(
+          `SELECT class_name, COUNT(*) n FROM guest_pass_log WHERE class_name IS NOT NULL AND clicked_at >= datetime('now','-30 day') GROUP BY class_name ORDER BY n DESC LIMIT 20`
+        ).all();
+        return ok({ by_class: rows.results || [] }, cors);
+      }
+
       if (url.pathname === '/feed/generate-news-draft' && request.method === 'POST') {
         if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
