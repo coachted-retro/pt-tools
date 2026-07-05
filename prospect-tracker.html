@@ -316,8 +316,6 @@
     </div>
   </div>
   <div class="header-right">
-    <button class="btn-outline" onclick="runDiagnostic()" style="border-color:#ffb830;color:#ffb830">🔧 Test Writes</button>
-    <button class="btn-outline" onclick="openSheet()">View Sheet</button>
   </div>
 </div>
 
@@ -325,9 +323,6 @@
 <div class="tab-bar">
   <button class="tab-btn active" onclick="switchTab('prospects')">
     Prospects <span class="tab-count" id="tc-prospects">0</span>
-  </button>
-  <button class="tab-btn tab-bc" onclick="switchTab('bc')">
-    📅 Booked Consultations <span class="tab-count" id="tc-bc">0</span>
   </button>
 </div>
 
@@ -932,7 +927,6 @@ async function syncFromSheet() {
     }
     
     // Touchpoints loaded from localStorage (D1 migration pending)
-    } // end touchpoints
 
     // Booked consultations from D1 appointment_status (pending)
 
@@ -940,6 +934,7 @@ async function syncFromSheet() {
     console.warn('Sheet sync failed, using local data:', e);
     if (indicator) { indicator.style.display = 'none'; }
   }
+}
 
 // ══════════════════════════════════════════════════
 // LOCAL STORAGE
