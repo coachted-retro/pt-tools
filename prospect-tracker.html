@@ -327,6 +327,9 @@
   <button class="tab-btn" onclick="switchTab('businesses')">
     Businesses <span class="tab-count" id="tc-businesses">0</span>
   </button>
+  <button class="tab-btn" onclick="switchTab('calllist')">
+    Call List
+  </button>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -446,6 +449,7 @@
           <div class="info-item"><label>Timeframe</label><div class="info-value" id="d-timeframe"></div></div>
           <div class="info-item"><label>Referred By</label><div class="info-value" id="d-referred"></div></div>
           <div class="info-item"><label>Added By</label><div class="info-value" id="d-advisor"></div></div>
+          <div class="info-item"><label>Next Follow-Up</label><input type="date" id="d-followup" onchange="saveFollowUp()" style="font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px"></div>
         </div>
         <div class="touchpoint-section">
           <h3>Touchpoint Log</h3>
@@ -505,6 +509,37 @@
     <div class="status-msg" id="biz-harvest-status" style="margin-top:8px"></div>
   </div>
 
+  <div class="panel" style="background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:14px;padding:18px;margin-bottom:16px">
+    <h3 style="font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 10px">Corporate Offers &amp; Talking Points</h3>
+    <p style="font-size:12px;color:var(--muted,#6B7280);margin:0 0 12px">Reference this when calling — the general manager or an MEA can lead with any of these to get a business to sign up their employees. Edit freely as offers change.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:#F5F6F8;border-radius:10px;padding:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Free Lunch &amp; Learn</div>
+        <div style="font-size:12px;color:var(--muted,#6B7280)">Coach Ted comes on-site for a free 20-minute wellness talk to their staff — no obligation, just visibility.</div>
+      </div>
+      <div style="background:#F5F6F8;border-radius:10px;padding:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Free InBody Scan Day</div>
+        <div style="font-size:12px;color:var(--muted,#6B7280)">Bring the InBody scanner on-site for a free company wellness day — great low-pressure foot in the door.</div>
+      </div>
+      <div style="background:#F5F6F8;border-radius:10px;padding:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Group Corporate Rate</div>
+        <div style="font-size:12px;color:var(--muted,#6B7280)">Discounted membership rate when a set number of employees sign up together — ask Bill/Dani for the current threshold and %.</div>
+      </div>
+      <div style="background:#F5F6F8;border-radius:10px;padding:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Free Trial Week — Whole Department</div>
+        <div style="font-size:12px;color:var(--muted,#6B7280)">Every employee in one department gets a free week to try the gym before committing.</div>
+      </div>
+      <div style="background:#F5F6F8;border-radius:10px;padding:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Sponsored Company Challenge</div>
+        <div style="font-size:12px;color:var(--muted,#6B7280)">A branded steps/weight-loss challenge just for their staff, with a small prize — builds ongoing engagement, not a one-time signup.</div>
+      </div>
+      <div style="background:#F5F6F8;border-radius:10px;padding:12px">
+        <div style="font-weight:700;font-size:13px;margin-bottom:4px">Referral Partner Cross-Promo</div>
+        <div style="font-size:12px;color:var(--muted,#6B7280)">For chiropractors/PT clinics: a two-way referral arrangement — they send patients ready for strength training, we send members needing their care.</div>
+      </div>
+    </div>
+  </div>
+
   <div class="main-grid">
     <div class="prospects-list-panel" style="background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:14px;padding:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -532,6 +567,30 @@
 
 </div>
 </div><!-- end tab-businesses -->
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TAB 3: CALL LIST (daily outreach for MEAs / GM) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div id="tab-calllist" class="tab-panel">
+<div class="container">
+  <div class="panel" style="background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:14px;padding:18px;margin-bottom:16px">
+    <h3 style="font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 10px">Today's Call List</h3>
+    <p style="font-size:13px;color:var(--muted,#6B7280);line-height:1.6;margin:0 0 14px">Pulls the People and Businesses most due for a follow-up — overdue first, then longest since last contact — mixed into one working list for the day.</p>
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+      <div class="field" style="min-width:180px"><label>Assigned to</label><input id="cl-assignee" placeholder="MEA or GM name"></div>
+      <div class="field" style="width:140px"><label>Target calls</label><input id="cl-target" type="number" min="25" max="50" value="40"></div>
+      <button class="btn-primary" onclick="buildCallList()">Build Today's List</button>
+    </div>
+  </div>
+  <div class="panel" style="background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:14px;padding:0;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--line,#E4E7EC);display:flex;justify-content:space-between;align-items:center">
+      <h3 style="font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:14px;margin:0">Call Queue (<span id="cl-count">0</span>)</h3>
+      <div style="font-size:12px;color:var(--muted,#6B7280)" id="cl-assigned-label"></div>
+    </div>
+    <div id="cl-list"></div>
+  </div>
+</div>
+</div><!-- end tab-calllist -->
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- TAB 2: BOOKED CONSULTATIONS -->
@@ -898,7 +957,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  const idx = ['prospects','businesses'].indexOf(tab);
+  const idx = ['prospects','businesses','calllist'].indexOf(tab);
   document.querySelectorAll('.tab-btn')[idx].classList.add('active');
   if (tab === 'businesses') loadBizLeads();
 }
@@ -1038,12 +1097,16 @@ function renderList(filter='') {
     const tps = touchpoints.filter(t => t.prospectId === p.id);
     const last = tps[0];
     const badgeClass = 'badge-' + p.interest.toLowerCase();
-    return '<div class="prospect-item' + (p.id===selectedId?' active':'') + '" onclick="selectProspect(\'' + p.id + '\')">' +
+    const today = new Date().toISOString().split('T')[0];
+    const overdue = p.followUpDate && p.followUpDate <= today;
+    const dueToday = p.followUpDate === today;
+    return '<div class="prospect-item' + (p.id===selectedId?' active':'') + '" style="' + (overdue?'border-left:4px solid var(--red,#E0192B)':'') + '" onclick="selectProspect(\'' + p.id + '\')">' +
       '<div>' +
         '<div class="prospect-name">' + p.name + '</div>' +
         '<div class="prospect-meta">' + p.phone + (p.email?' · '+p.email:'') + '</div>' +
         '<div class="prospect-type">' + p.type + ' · ' + p.timeframe + '</div>' +
         (last ? '<div class="last-touch">Last: ' + last.date + ' — ' + last.outcome + '</div>' : '') +
+        (overdue ? '<div style="font-size:11px;font-weight:700;color:var(--red,#E0192B);margin-top:3px">' + (dueToday?'Follow up today':'Follow-up overdue since ' + p.followUpDate) + '</div>' : '') +
       '</div>' +
       '<div><span class="interest-badge ' + badgeClass + '">' + p.interest + '</span></div>' +
     '</div>';
@@ -1068,7 +1131,17 @@ function selectProspect(id) {
   badge.textContent = p.interest;
   badge.className = 'interest-badge badge-' + p.interest.toLowerCase();
   document.getElementById('tp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('d-followup').value = p.followUpDate || '';
   renderTouchpoints(id);
+  renderList(document.getElementById('search-input').value);
+}
+
+function saveFollowUp() {
+  if (!selectedId) return;
+  const p = prospects.find(x => x.id === selectedId);
+  if (!p) return;
+  p.followUpDate = document.getElementById('d-followup').value;
+  saveLocal();
   renderList(document.getElementById('search-input').value);
 }
 
@@ -1078,9 +1151,10 @@ function renderTouchpoints(id) {
   if (!tps.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No touchpoints yet — log your first contact above.</div>'; return; }
   el.innerHTML = tps.map(t => {
     const cls = 'outcome-' + t.outcome.replace(/\s+/g,'').toLowerCase();
+    const timeStr = t.loggedAt ? new Date(t.loggedAt).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}) : '';
     return '<div class="tp-entry">' +
       '<div class="tp-meta">' +
-        '<span class="tp-date">' + t.date + '</span>' +
+        '<span class="tp-date">' + t.date + (timeStr ? ' at ' + timeStr : '') + '</span>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
           '<span class="tp-outcome ' + cls + '">' + t.outcome + '</span>' +
           '<span class="tp-advisor">' + (t.advisor||'') + '</span>' +
@@ -1152,10 +1226,11 @@ function clearForm() {
 
 async function addTouchpoint() {
   if (!selectedId) return;
-  const date = gv('tp-date') || new Date().toLocaleDateString('en-US');
+  const date = gv('tp-date') || new Date().toISOString().split('T')[0];
   const notes = gv('tp-notes'), outcome = gv('tp-outcome'), advisor = gv('tp-advisor');
   if (!notes) { setStatus('tp-status','error','Please add notes.'); return; }
-  const tp = { id: genId(), prospectId: selectedId, date, outcome, notes, advisor };
+  const loggedAt = new Date().toISOString();
+  const tp = { id: genId(), prospectId: selectedId, date, loggedAt, outcome, notes, advisor };
   touchpoints.unshift(tp);
   saveLocal();
   const p = prospects.find(x => x.id === selectedId);
@@ -1852,14 +1927,20 @@ function renderBizList() {
   const q = (document.getElementById('biz-search').value || '').toLowerCase();
   const list = document.getElementById('biz-list');
   document.getElementById('biz-lead-count').textContent = BIZ_LEADS.length;
+  const today = new Date().toISOString().split('T')[0];
   const filtered = BIZ_LEADS.filter(l => !q ||
     (l.business_name||'').toLowerCase().includes(q) ||
     (l.phone||'').includes(q) || (l.email||'').toLowerCase().includes(q));
-  list.innerHTML = filtered.length ? filtered.map(l => `
-    <div class="prospect-card ${BIZ_SELECTED===l.id?'selected':''}" style="cursor:pointer;padding:10px;border-radius:8px;border:1px solid var(--line,#E4E7EC);margin-bottom:8px;${BIZ_SELECTED===l.id?'border-color:var(--red,#E0192B);background:#FDEAEC':''}" onclick="openBizLead(${l.id})">
+  list.innerHTML = filtered.length ? filtered.map(l => {
+    const overdue = l.next_action_date && l.next_action_date <= today;
+    const dueToday = l.next_action_date === today;
+    return `
+    <div class="prospect-card ${BIZ_SELECTED===l.id?'selected':''}" style="cursor:pointer;padding:10px;border-radius:8px;border:1px solid var(--line,#E4E7EC);margin-bottom:8px;${BIZ_SELECTED===l.id?'border-color:var(--red,#E0192B);background:#FDEAEC;':''}${overdue?'border-left:4px solid var(--red,#E0192B)':''}" onclick="openBizLead(${l.id})">
       <div style="font-weight:700;font-size:13px">${escBiz(l.business_name)}</div>
       <div style="font-size:11px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.3px;margin-top:2px">${escBiz((l.lead_type||'').replace(/_/g,' '))} &middot; ${escBiz(l.status||'new')}</div>
-    </div>`).join('') : '<div class="empty-state" style="text-align:center;color:var(--muted,#6B7280);padding:20px">No businesses yet. Run the harvester or add one manually.</div>';
+      ${overdue ? `<div style="font-size:11px;font-weight:700;color:var(--red,#E0192B);margin-top:3px">${dueToday?'Follow up today':'Follow-up overdue since '+escBiz(l.next_action_date)}</div>` : ''}
+    </div>`;
+  }).join('') : '<div class="empty-state" style="text-align:center;color:var(--muted,#6B7280);padding:20px">No businesses yet. Run the harvester or add one manually.</div>';
 }
 
 function showBizAddForm() {
@@ -1935,11 +2016,15 @@ async function openBizLead(id) {
       <div class="field"><label>Channel</label><select id="biz-tch"><option>call</option><option>email</option><option>in_person</option><option>text</option></select></div>
       <div class="field"><label>Note</label><textarea id="biz-tsum" placeholder="What happened?"></textarea></div>
       <button class="btn-outline" onclick="logBizTouch(${id})">Add Note</button>
-      ${tps.length ? '<div style="margin-top:14px">' + tps.map(t => `
+      ${tps.length ? '<div style="margin-top:14px">' + tps.map(t => {
+        const dt = t.contact_date ? new Date(t.contact_date) : null;
+        const dtStr = dt && !isNaN(dt) ? dt.toLocaleDateString('en-US') + ' at ' + dt.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}) : (t.contact_date||'');
+        return `
         <div style="padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC)">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280)">${escBiz(t.channel||'')} &middot; ${escBiz(t.contact_date||'')}</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280)">${escBiz(t.channel||'')} &middot; ${escBiz(dtStr)}</div>
           <div style="font-size:13px;margin-top:2px">${escBiz(t.summary||'')}</div>
-        </div>`).join('') + '</div>' : ''}
+        </div>`;
+      }).join('') + '</div>' : ''}
     </div>`;
 }
 
@@ -1956,8 +2041,76 @@ async function logBizTouch(id) {
   const channel = document.getElementById('biz-tch').value;
   const summary = document.getElementById('biz-tsum').value;
   if (!summary.trim()) return;
-  await bizDb({ op:'insert', table:'touchpoints', values:{ lead_id:id, contact_date:new Date().toISOString().split('T')[0], channel, direction:'outbound', summary } });
+  // Store the full ISO timestamp (not just the date) so notes are
+  // genuinely time-stamped without assuming a column that may not
+  // exist in the live touchpoints table.
+  await bizDb({ op:'insert', table:'touchpoints', values:{ lead_id:id, contact_date:new Date().toISOString(), channel, direction:'outbound', summary } });
   openBizLead(id);
+}
+
+// ══════════════════════════════════════════════════
+// CALL LIST — daily 25-50 call queue for MEAs / GM,
+// mixing People and Businesses most due for outreach.
+// ══════════════════════════════════════════════════
+function daysBetween(a, b) { return Math.floor((a - b) / 86400000); }
+
+async function buildCallList() {
+  if (!BIZ_LEADS.length) await loadBizLeads();
+  const target = Math.min(50, Math.max(25, parseInt(document.getElementById('cl-target').value, 10) || 40));
+  const assignee = document.getElementById('cl-assignee').value.trim();
+  document.getElementById('cl-assigned-label').textContent = assignee ? 'Assigned to ' + assignee : '';
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const peopleRows = prospects.filter(p => p.interest !== 'Cold').map(p => {
+    const tps = touchpoints.filter(t => t.prospectId === p.id);
+    const last = tps[0];
+    const dueDate = p.followUpDate || null;
+    let score;
+    if (dueDate && dueDate <= todayStr) score = -1000000 - daysBetween(today, new Date(dueDate + 'T00:00:00'));
+    else if (dueDate) score = daysBetween(new Date(dueDate + 'T00:00:00'), today);
+    else score = last ? -daysBetween(today, new Date(last.date)) : -99999;
+    return { type:'person', id:p.id, name:p.name, phone:p.phone, sub:p.interest + ' lead', last: last ? last.date+' — '+last.outcome : 'Never contacted', dueDate, score };
+  });
+
+  const bizRows = BIZ_LEADS.filter(l => !['won','dead'].includes(l.status)).map(l => {
+    const dueDate = l.next_action_date || null;
+    let score;
+    if (dueDate && dueDate <= todayStr) score = -1000000 - daysBetween(today, new Date(dueDate + 'T00:00:00'));
+    else if (dueDate) score = daysBetween(new Date(dueDate + 'T00:00:00'), today);
+    else score = -50000; // businesses never given a next-action date, moderate priority
+    return { type:'business', id:l.id, name:l.business_name, phone:l.phone, sub:(l.lead_type||'').replace(/_/g,' '), last: l.status||'new', dueDate, score };
+  });
+
+  const combined = peopleRows.concat(bizRows).sort((a,b) => a.score - b.score).slice(0, target);
+  CALL_LIST = combined;
+  document.getElementById('cl-count').textContent = combined.length;
+  renderCallList();
+}
+
+let CALL_LIST = [];
+function renderCallList() {
+  const el = document.getElementById('cl-list');
+  if (!CALL_LIST.length) { el.innerHTML = '<div class="empty-state" style="text-align:center;color:var(--muted,#6B7280);padding:30px">Click "Build Today\'s List" above to generate the queue.</div>'; return; }
+  el.innerHTML = CALL_LIST.map((r, i) => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line,#E4E7EC);cursor:pointer" onclick="${r.type==='person'?'callGoToProspect':'callGoToBusiness'}('${r.id}')">
+      <div style="font-size:11px;font-weight:800;color:var(--muted,#6B7280);width:24px">${i+1}</div>
+      <span style="font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:12px;background:${r.type==='person'?'#FDEAEC;color:var(--red,#E0192B)':'#EFF6FF;color:#2563EB'}">${r.type==='person'?'Person':'Business'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px">${(r.name||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</div>
+        <div style="font-size:11px;color:var(--muted,#6B7280)">${(r.sub||'')} &middot; ${(r.phone||'no phone')} &middot; Last: ${(r.last||'')}</div>
+      </div>
+      ${r.dueDate && r.dueDate <= new Date().toISOString().split('T')[0] ? '<span style="font-size:10px;font-weight:800;color:var(--red,#E0192B)">DUE</span>' : ''}
+    </div>`).join('');
+}
+
+function callGoToProspect(id) {
+  switchTab('prospects');
+  selectProspect(id);
+}
+function callGoToBusiness(id) {
+  switchTab('businesses');
+  loadBizLeads().then(() => openBizLead(parseInt(id, 10)));
 }
 </script>
 </body>
