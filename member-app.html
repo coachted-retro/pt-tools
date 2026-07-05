@@ -218,8 +218,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .landing-swoosh{position:absolute;top:-40%;right:-30%;width:180%;height:220%;background:linear-gradient(115deg,transparent 42%,var(--red) 44%,var(--red) 50%,transparent 52%);opacity:.9;transform:rotate(-8deg);pointer-events:none}
 .landing-logos{position:relative;z-index:1;margin-bottom:22px}
 .landing-logo-primary{max-width:210px;width:100%;height:auto;display:block;margin:0 auto 10px;border-radius:8px}
-.landing-subbadge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:6px 14px 6px 6px}
-.landing-subbadge span{font-family:'Oswald';font-size:11px;font-weight:700;letter-spacing:1.2px;color:#fff}
+.landing-subbadge{width:64px;height:64px;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.4);display:block;margin:0 auto}
 .landing-headline{position:relative;z-index:1;font-family:'Oswald';font-size:34px;font-weight:800;line-height:1.02;letter-spacing:.2px;color:#fff;text-transform:uppercase;margin-bottom:10px}
 .landing-sub{position:relative;z-index:1;font-size:13px;color:#C7CBD1;max-width:280px;margin:0 auto}
 .landing-choices{display:flex;flex-direction:column;gap:10px}
@@ -393,10 +392,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <div class="landing-swoosh"></div>
       <div class="landing-logos">
         <img src="Retro_FH_Logo.jpg" class="landing-logo-primary" alt="Retro Fitness of Fairless Hills" onerror="this.style.display='none'">
-        <div class="landing-subbadge">
-          <img src="icons-strong/icon-192.png" alt="Retro Strong" style="width:22px;height:22px;border-radius:6px" onerror="this.style.display='none'">
-          <span>RETRO STRONG</span>
-        </div>
+        <img src="icons-strong/icon-192.png" alt="Retro Strong" class="landing-subbadge" onerror="this.style.display='none'">
       </div>
       <div class="landing-headline">FAIRLESS HILLS<br>STRONG</div>
       <div class="landing-sub">Your workouts, your coach, your community — all in one place.</div>
