@@ -350,6 +350,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .wp-swap-btn{flex-shrink:0;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--ink);cursor:pointer}
 .wp-supp-badge{display:inline-block;margin-left:6px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--red-dk);background:var(--red-lt);padding:2px 7px;border-radius:10px;text-decoration:none;vertical-align:middle}
 .wp-supp-tag{display:inline-block;margin-left:6px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--red-dk);background:var(--red-lt);padding:2px 7px;border-radius:10px;vertical-align:middle}
+.circle-react-btn{background:var(--soft);border:1px solid var(--line);border-radius:20px;padding:5px 10px;font-size:13px;cursor:pointer;color:var(--ink3)}
+.circle-react-btn.active{background:var(--red-lt);border-color:var(--red);color:var(--red-dk)}
+.circle-react-btn:disabled{opacity:.5;cursor:default}
 </style>
 </head>
 <body>
@@ -448,11 +451,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div class="kpi-strip" id="home-kpis" style="display:none"></div>
         <div id="home-nutrition-demo"></div>
         <div id="home-habits"></div>
+        <div id="home-here-now"></div>
         <div id="home-happening"></div>
         <div id="home-coachs-edge"></div>
         <div id="home-circle"></div>
         <div id="home-booking"></div>
         <div id="home-referral"></div>
+        <div id="home-referral-leaderboard"></div>
         <div id="home-supplement"></div>
         <div id="home-partners"></div>
         <div id="home-fb-feed"></div>
@@ -2059,6 +2064,57 @@ async function loadPublicHomeContent() {
   loadHappening();
   loadCoachsEdge();
   loadCircle();
+  loadHereNow();
+  loadReferralLeaderboard();
+}
+
+async function loadHereNow() {
+  const el = document.getElementById('home-here-now');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/presence/now');
+    const d = await r.json();
+    const here = d.here_now || [];
+    const canCheckIn = !!(SESSION && SESSION.client_id) && !GUEST_MODE;
+    const alreadyIn = here.some(h => SESSION && String(h.client_id) === String(SESSION.client_id));
+    let html = `<div class="sec-label">Who's Here Now</div><div class="card"><div class="card-body">`;
+    if (!here.length) {
+      html += `<div class="empty-state">Nobody's checked in yet — be the first.</div>`;
+    } else {
+      html += here.slice(0,8).map(h => `<span class="wp-supp-tag" style="background:var(--soft);color:var(--ink);margin:0 4px 4px 0">${esc((h.first_name||'').trim())}</span>`).join('');
+      if (here.length > 8) html += `<span style="font-size:11px;color:var(--ink3)"> +${here.length-8} more</span>`;
+    }
+    if (canCheckIn) {
+      html += `<button class="action-btn secondary" style="margin-top:10px" onclick="checkInHere()" ${alreadyIn?'disabled':''}>${alreadyIn ? "You're checked in" : "I'm Here"}</button>`;
+    }
+    html += `</div></div>`;
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = ''; }
+}
+
+async function checkInHere() {
+  if (!SESSION || !SESSION.client_id) return;
+  try {
+    await fetch(WORKER + '/presence/checkin', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ client_id: SESSION.client_id }) });
+    loadHereNow();
+  } catch(e) {}
+}
+
+async function loadReferralLeaderboard() {
+  const el = document.getElementById('home-referral-leaderboard');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/referral/leaderboard');
+    const d = await r.json();
+    const board = d.leaderboard || [];
+    if (!board.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="sec-label">Top Referrers This Month</div><div class="card"><div class="card-body">` +
+      board.slice(0,5).map((r,i) => `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">
+        <div style="font-family:'Oswald';font-weight:800;color:var(--red);width:20px">${i+1}</div>
+        <div style="flex:1;font-weight:600;font-size:13px">${esc(((r.first_name||'')+' '+(r.last_name||'')).trim())}</div>
+        <div style="font-size:12px;color:var(--ink3)">${r.n} referral${r.n===1?'':'s'}</div>
+      </div>`).join('') + `</div></div>`;
+  } catch(e) { el.innerHTML = ''; }
 }
 
 async function loadHappening() {
@@ -2106,24 +2162,54 @@ async function loadCoachsEdge() {
   } catch(e) { el.innerHTML = ''; }
 }
 
+const REACTION_EMOJIS = ['🔥','💪','👏'];
+
 async function loadCircle() {
   const el = document.getElementById('home-circle');
   if (!el) return;
   try {
-    const r = await fetch(WORKER + '/wins/feed?limit=10');
+    const clientId = (SESSION && SESSION.client_id) ? '&client_id=' + SESSION.client_id : '';
+    const r = await fetch(WORKER + '/wins/feed?limit=10' + clientId);
     const d = await r.json();
     const wins = d.wins || [];
     if (!wins.length) { el.innerHTML = ''; return; }
     el.innerHTML = `<div class="sec-label">The Circle</div>` + wins.map(w => {
       const name = ((w.first_name||'')+' '+(w.last_name||'')).trim();
       const tierLabel = w.tier ? w.tier.label : '';
+      const reactions = w.reactions || {};
+      const mine = w.my_reactions || [];
+      const canReact = !!(SESSION && SESSION.client_id);
+      const reactionRow = REACTION_EMOJIS.map(e => {
+        const count = reactions[e] || 0;
+        const active = mine.includes(e);
+        return `<button class="circle-react-btn${active?' active':''}" ${canReact?`onclick="toggleReaction(${w.id},'${e}')"`:'disabled'}>${e}${count?' '+count:''}</button>`;
+      }).join('');
       return `<div class="card"><div class="card-body">
         <div style="font-weight:700;font-size:13px">${esc(w.headline)}</div>
         ${w.detail ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(w.detail)}</div>` : ''}
         ${tierLabel ? `<div style="font-size:10px;color:var(--red);font-weight:800;text-transform:uppercase;margin-top:6px">${esc(tierLabel)}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+          ${reactionRow}
+          <button class="circle-react-btn" style="margin-left:auto" onclick='shareWin(${JSON.stringify(w.headline)})'>&#8599; Share</button>
+        </div>
       </div></div>`;
     }).join('');
   } catch(e) { el.innerHTML = ''; }
+}
+
+async function toggleReaction(winId, emoji) {
+  if (!SESSION || !SESSION.client_id) return;
+  try {
+    await fetch(WORKER + '/wins/react', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ win_id: winId, client_id: SESSION.client_id, emoji }) });
+    loadCircle();
+  } catch(e) {}
+}
+
+function shareWin(headline) {
+  const shareData = { title: 'Retro Fitness Fairless Hills', text: headline + ' — Retro Fitness of Fairless Hills', url: 'https://coachted-retro.github.io/pt-tools/member-app.html' };
+  if (navigator.share) { navigator.share(shareData).catch(()=>{}); }
+  else { navigator.clipboard?.writeText(shareData.text + ' ' + shareData.url); alert('Copied to clipboard!'); }
 }
 
 // ── GUEST MODE (no login required to browse) ──────────────────

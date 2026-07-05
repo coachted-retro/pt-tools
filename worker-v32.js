@@ -90,7 +90,7 @@ const ALLOWED_TABLES = new Set([
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
-  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items',
+  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins',
   'daily_content','client_wins','gym_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
@@ -861,6 +861,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/wins/feed' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const limit = Math.min(parseInt(url.searchParams.get('limit')||'15',10), 50);
+        const viewerId = url.searchParams.get('client_id');
         const res = await env.DB.prepare(
           'SELECT w.*, c.first_name, c.last_name FROM client_wins w LEFT JOIN clients c ON c.id=w.client_id WHERE w.visible=1 ORDER BY w.created_at DESC LIMIT ?'
         ).bind(limit).all();
@@ -868,11 +869,68 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const wins = res.results || [];
         for (const w of wins) {
           if (w.client_id) w.tier = await getMemberTier(env, w.client_id);
+          const reactionRows = await env.DB.prepare('SELECT emoji, COUNT(*) n FROM win_reactions WHERE win_id=? GROUP BY emoji').bind(w.id).all();
+          w.reactions = {};
+          (reactionRows.results||[]).forEach(r => { w.reactions[r.emoji] = r.n; });
+          if (viewerId) {
+            const mine = await env.DB.prepare('SELECT emoji FROM win_reactions WHERE win_id=? AND client_id=?').bind(w.id, viewerId).all();
+            w.my_reactions = (mine.results||[]).map(r => r.emoji);
+          } else {
+            w.my_reactions = [];
+          }
         }
         const activeCount = await env.DB.prepare(
           "SELECT COUNT(DISTINCT client_id) n FROM (SELECT client_id FROM self_workouts WHERE workout_date>=date('now','-30 day') UNION SELECT client_id FROM checkins WHERE checkin_date>=date('now','-30 day') UNION SELECT client_id FROM training_sessions WHERE session_date>=date('now','-30 day'))"
         ).first();
         return ok({ wins, active_members_30d: activeCount?.n || 0 }, cors);
+      }
+
+      if (url.pathname === '/wins/react' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.win_id || !b.client_id || !b.emoji) return bad('win_id, client_id, emoji required', cors);
+        const existing = await env.DB.prepare('SELECT id FROM win_reactions WHERE win_id=? AND client_id=? AND emoji=?').bind(b.win_id, b.client_id, b.emoji).first();
+        if (existing) {
+          await env.DB.prepare('DELETE FROM win_reactions WHERE id=?').bind(existing.id).run();
+          return ok({ reacted: false }, cors);
+        } else {
+          await env.DB.prepare('INSERT INTO win_reactions (win_id,client_id,emoji,created_at) VALUES (?,?,?,?)')
+            .bind(b.win_id, b.client_id, b.emoji, new Date().toISOString()).run();
+          return ok({ reacted: true }, cors);
+        }
+      }
+
+      // ── WHO'S HERE NOW (opt-in live presence) ─────────────────────
+      if (url.pathname === '/presence/checkin' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id) return bad('client_id required', cors);
+        await env.DB.prepare('INSERT INTO presence_checkins (client_id,gym_id,checked_in_at) VALUES (?,?,?)')
+          .bind(b.client_id, b.gym_id||1, new Date().toISOString()).run();
+        return ok({ checked_in: true }, cors);
+      }
+
+      if (url.pathname === '/presence/now' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const rows = await env.DB.prepare(
+          `SELECT p.client_id, MAX(p.checked_in_at) last_checkin, c.first_name, c.last_name
+           FROM presence_checkins p JOIN clients c ON c.id = p.client_id
+           WHERE p.checked_in_at >= datetime('now','-3 hours')
+           GROUP BY p.client_id ORDER BY last_checkin DESC LIMIT 30`
+        ).all();
+        return ok({ here_now: rows.results || [] }, cors);
+      }
+
+      // ── REFERRAL LEADERBOARD (built on the existing guest_shares log) ──
+      if (url.pathname === '/referral/leaderboard' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const rows = await env.DB.prepare(
+          `SELECT g.client_id, COUNT(*) n, c.first_name, c.last_name
+           FROM guest_shares g JOIN clients c ON c.id = g.client_id
+           WHERE g.client_id IS NOT NULL AND substr(g.shared_at,1,7) = strftime('%Y-%m','now')
+           GROUP BY g.client_id ORDER BY n DESC LIMIT 20`
+        ).all();
+        return ok({ leaderboard: rows.results || [] }, cors);
       }
 
       if (url.pathname === '/wins/post' && request.method === 'POST') {
