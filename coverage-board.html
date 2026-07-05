@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coverage Board — Retro Fitness PT</title>
+<link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--lred:#FEF2F2;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 16px;height:52px;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:16px;color:#fff;text-transform:uppercase}
+.topbar .logo span{color:var(--red)}
+.topbar a{margin-left:auto;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 12px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
+.wrap{max-width:1100px;margin:0 auto;padding:20px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:15px;margin:0 0 10px}
+.main-grid{display:grid;grid-template-columns:1fr 380px;gap:20px}
+@media(max-width:900px){.main-grid{grid-template-columns:1fr}}
+.month-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.month-nav{width:32px;height:32px;border-radius:8px;background:var(--soft);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--muted)}
+.month-label{font-family:'Oswald';text-transform:uppercase;font-weight:700;font-size:16px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);padding:4px 0}
+.day{aspect-ratio:1;border-radius:8px;background:var(--soft);padding:6px;cursor:pointer;position:relative;display:flex;flex-direction:column}
+.day.empty{background:transparent;cursor:default}
+.day.today{border:2px solid var(--red)}
+.day.selected{background:var(--lred);border:2px solid var(--red)}
+.day .n{font-weight:700;font-size:12px}
+.day-badges{display:flex;gap:3px;margin-top:auto;flex-wrap:wrap}
+.day-badge{font-size:9px;font-weight:800;padding:1px 4px;border-radius:6px;color:#fff}
+.badge-shift{background:var(--amber)}
+.badge-session{background:var(--red)}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.field input,.field select{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+.btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.4px;font-weight:700;font-size:12px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:9px 14px;border-radius:8px;cursor:pointer}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red);width:100%}
+.shift-row,.session-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.shift-row:last-child,.session-row:last-child{border-bottom:none}
+.tag{font-size:9px;font-weight:800;text-transform:uppercase;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.tag-scheduled{background:var(--soft);color:var(--muted)}
+.tag-needs{background:#FEF3C7;color:#92400E}
+.tag-covered{background:#E3F5EC;color:var(--green)}
+.empty-state{text-align:center;color:var(--muted);padding:20px;font-size:13px}
+.sec-label{font-family:'Oswald';text-transform:uppercase;letter-spacing:.4px;font-size:12px;color:var(--red);font-weight:700;margin:14px 0 8px}
+.sec-label:first-child{margin-top:0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Coverage <span>Board</span></div>
+  <a href="command-center.html">&larr; Command Center</a>
+</div>
+
+<div class="wrap">
+  <div class="main-grid">
+    <div class="panel">
+      <div class="month-head">
+        <div class="month-nav" onclick="shiftMonth(-1)">&#8592;</div>
+        <div class="month-label" id="month-label"></div>
+        <div class="month-nav" onclick="shiftMonth(1)">&#8594;</div>
+      </div>
+      <div class="cal-grid" id="dow-row"></div>
+      <div class="cal-grid" id="cal-grid" style="margin-top:4px"></div>
+      <div style="display:flex;gap:14px;margin-top:12px;font-size:11px;color:var(--muted)">
+        <div><span class="day-badge badge-shift">&nbsp;</span> Staff shifts</div>
+        <div><span class="day-badge badge-session">&nbsp;</span> PT sessions</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h3 id="day-panel-title">Select a day</h3>
+        <div class="sec-label">Staff Shifts</div>
+        <div id="day-shifts"><div class="empty-state">Pick a day on the calendar.</div></div>
+        <div class="sec-label">PT Sessions</div>
+        <div id="day-sessions"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Schedule a Shift</h3>
+        <div class="field"><label>Staff Member</label><select id="sh-staff"><option value="">Select...</option></select></div>
+        <div class="field"><label>Date</label><input type="date" id="sh-date"></div>
+        <div class="field" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Start</label><input type="time" id="sh-start"></div>
+          <div><label style="display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">End</label><input type="time" id="sh-end"></div>
+        </div>
+        <button class="btn btn-red" onclick="createShift()">Add Shift</button>
+        <div id="sh-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let VIEW_MONTH = new Date();
+let SELECTED_DATE = null;
+let STAFF_ROSTER = [];
+
+function esc(s) { return String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function db(body) {
+  const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+async function loadStaffRoster() {
+  const d = await db({ op:'select', table:'staff_roster', where:{active:1}, orderBy:'name asc', limit:200 });
+  STAFF_ROSTER = d.results || [];
+  document.getElementById('sh-staff').innerHTML = '<option value="">Select...</option>' +
+    STAFF_ROSTER.map(s => `<option value="${s.id}" data-role="${esc(s.role)}" data-name="${esc(s.name)}">${esc(s.name)} — ${esc(s.role)}</option>`).join('');
+}
+
+function monthStr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+
+async function renderMonth() {
+  document.getElementById('dow-row').innerHTML = ['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');
+  const y = VIEW_MONTH.getFullYear(), m = VIEW_MONTH.getMonth();
+  document.getElementById('month-label').textContent = VIEW_MONTH.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const ms = monthStr(VIEW_MONTH);
+  let shiftDays = {}, sessionDays = {};
+  try {
+    const r = await fetch(WORKER + '/shifts/month?month=' + ms);
+    const d = await r.json();
+    (d.shift_days||[]).forEach(row => shiftDays[row.d] = row.n);
+    (d.session_days||[]).forEach(row => sessionDays[row.d] = row.n);
+  } catch(e) {}
+
+  const firstDow = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const todayStr = new Date().toISOString().slice(0,10);
+  let cells = '';
+  for (let i=0; i<firstDow; i++) cells += '<div class="day empty"></div>';
+  for (let day=1; day<=daysInMonth; day++) {
+    const dateStr = ms + '-' + String(day).padStart(2,'0');
+    const nShift = shiftDays[dateStr] || 0;
+    const nSession = sessionDays[dateStr] || 0;
+    cells += `<div class="day ${dateStr===todayStr?'today':''} ${dateStr===SELECTED_DATE?'selected':''}" onclick="selectDay('${dateStr}')">
+      <div class="n">${day}</div>
+      <div class="day-badges">
+        ${nShift ? `<span class="day-badge badge-shift">${nShift}</span>` : ''}
+        ${nSession ? `<span class="day-badge badge-session">${nSession}</span>` : ''}
+      </div>
+    </div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = cells;
+}
+
+function shiftMonth(delta) {
+  VIEW_MONTH.setMonth(VIEW_MONTH.getMonth() + delta);
+  renderMonth();
+}
+
+async function selectDay(dateStr) {
+  SELECTED_DATE = dateStr;
+  document.getElementById('sh-date').value = dateStr;
+  renderMonth();
+  const label = new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('day-panel-title').textContent = label;
+  document.getElementById('day-shifts').innerHTML = '<div class="empty-state">Loading...</div>';
+  try {
+    const r = await fetch(WORKER + '/shifts/day?date=' + dateStr);
+    const d = await r.json();
+    renderDayShifts(d.shifts || []);
+    renderDaySessions(d.pt_sessions || []);
+  } catch(e) {
+    document.getElementById('day-shifts').innerHTML = '<div class="empty-state">Could not load.</div>';
+  }
+}
+
+function renderDayShifts(shifts) {
+  const el = document.getElementById('day-shifts');
+  if (!shifts.length) { el.innerHTML = '<div class="empty-state">No staff shifts scheduled.</div>'; return; }
+  el.innerHTML = shifts.map(s => {
+    const tagClass = s.status === 'needs_coverage' ? 'tag-needs' : s.status === 'covered' ? 'tag-covered' : 'tag-scheduled';
+    const tagLabel = s.status === 'needs_coverage' ? 'Needs Coverage' : s.status === 'covered' ? 'Covered by ' + esc(s.covered_by_name||'') : 'Scheduled';
+    return `<div class="shift-row">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700">${esc(s.staff_name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(s.role)} &middot; ${esc(s.start_time)}-${esc(s.end_time)}</div>
+      </div>
+      <span class="tag ${tagClass}">${tagLabel}</span>
+      <button class="btn" style="padding:5px 8px;font-size:10px" onclick="deleteShift(${s.id})">Remove</button>
+    </div>`;
+  }).join('');
+}
+
+function renderDaySessions(sessions) {
+  const el = document.getElementById('day-sessions');
+  if (!sessions.length) { el.innerHTML = '<div class="empty-state">No PT sessions scheduled.</div>'; return; }
+  el.innerHTML = sessions.map(s => `<div class="session-row">
+    <div style="flex:1">
+      <div style="font-weight:700">${esc(((s.first_name||'')+' '+(s.last_name||'')).trim())}</div>
+      <div style="font-size:11px;color:var(--muted)">Coach: ${esc(s.coach||'—')}${s.program_name?' &middot; '+esc(s.program_name):''}</div>
+    </div>
+  </div>`).join('');
+}
+
+async function createShift() {
+  const sel = document.getElementById('sh-staff');
+  const opt = sel.options[sel.selectedIndex];
+  const staffId = sel.value;
+  const status = document.getElementById('sh-status');
+  const date = document.getElementById('sh-date').value;
+  const start = document.getElementById('sh-start').value;
+  const end = document.getElementById('sh-end').value;
+  if (!staffId || !date || !start || !end) { status.textContent = 'Fill in staff, date, start, and end.'; return; }
+  status.textContent = 'Saving...';
+  try {
+    const r = await fetch(WORKER + '/shifts/create', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ staff_id: parseInt(staffId), staff_name: opt.dataset.name, role: opt.dataset.role, shift_date: date, start_time: start, end_time: end, created_by: 'Command Center' }) });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not save.'; return; }
+    status.textContent = 'Shift added.';
+    renderMonth();
+    if (SELECTED_DATE === date) selectDay(date);
+  } catch(e) { status.textContent = 'Connection error.'; }
+}
+
+async function deleteShift(id) {
+  if (!confirm('Remove this shift?')) return;
+  await fetch(WORKER + '/shifts/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+  if (SELECTED_DATE) selectDay(SELECTED_DATE);
+  renderMonth();
+}
+
+loadStaffRoster();
+renderMonth();
+selectDay(new Date().toISOString().slice(0,10));
+</script>
+</body>
+</html>

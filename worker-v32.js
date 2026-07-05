@@ -90,7 +90,7 @@ const ALLOWED_TABLES = new Set([
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
-  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth',
+  'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts',
   'daily_content','client_wins','gym_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
@@ -546,6 +546,127 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         await env.DB.prepare('UPDATE staff_auth SET pin_hash=?, must_change_pin=0, active=1, reset_code_hash=NULL, reset_expires=NULL WHERE id=?')
           .bind(hash, row.id).run();
         return ok({ ok: true, reset: true }, cors);
+      }
+
+      // ── STAFF SHIFTS + COVERAGE ────────────────────────────────────
+      if (url.pathname === '/shifts/create' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.staff_id || !b.staff_name || !b.role || !b.shift_date || !b.start_time || !b.end_time) return bad('staff_id, staff_name, role, shift_date, start_time, end_time required', cors);
+        const now = new Date().toISOString();
+        const ins = await env.DB.prepare(
+          `INSERT INTO staff_shifts (staff_id,staff_name,role,gym_id,shift_date,start_time,end_time,status,created_by,created_at,updated_at)
+           VALUES (?,?,?,?,?,?,?,'scheduled',?,?,?)`
+        ).bind(b.staff_id, b.staff_name, b.role, b.gym_id||1, b.shift_date, b.start_time, b.end_time, b.created_by||'', now, now).run();
+        return ok({ id: ins.meta?.last_row_id }, cors);
+      }
+
+      if (url.pathname === '/shifts/update' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        const fields = [], binds = [];
+        for (const k of ['shift_date','start_time','end_time','role']) {
+          if (b[k] != null) { fields.push(k+'=?'); binds.push(b[k]); }
+        }
+        if (!fields.length) return bad('nothing to update', cors);
+        fields.push('updated_at=?'); binds.push(new Date().toISOString());
+        binds.push(b.id);
+        await env.DB.prepare(`UPDATE staff_shifts SET ${fields.join(', ')} WHERE id=?`).bind(...binds).run();
+        return ok({ updated: true }, cors);
+      }
+
+      if (url.pathname === '/shifts/delete' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        await env.DB.prepare('DELETE FROM staff_shifts WHERE id=?').bind(b.id).run();
+        return ok({ deleted: true }, cors);
+      }
+
+      if (url.pathname === '/shifts/mine' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const staffId = url.searchParams.get('staff_id');
+        if (!staffId) return bad('staff_id required', cors);
+        const today = new Date().toISOString().slice(0,10);
+        const rows = await env.DB.prepare(
+          "SELECT * FROM staff_shifts WHERE staff_id=? AND shift_date>=? AND status!='cancelled' ORDER BY shift_date ASC, start_time ASC LIMIT 30"
+        ).bind(staffId, today).all();
+        return ok({ shifts: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/shifts/open' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const role = url.searchParams.get('role');
+        const today = new Date().toISOString().slice(0,10);
+        let q = "SELECT * FROM staff_shifts WHERE status='needs_coverage' AND shift_date>=?";
+        const binds = [today];
+        if (role) { q += ' AND role=?'; binds.push(role); }
+        q += ' ORDER BY shift_date ASC, start_time ASC LIMIT 50';
+        const rows = await env.DB.prepare(q).bind(...binds).all();
+        return ok({ shifts: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/shifts/day' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const date = url.searchParams.get('date');
+        if (!date) return bad('date required', cors);
+        const [shiftRows, sessionRows] = await Promise.all([
+          env.DB.prepare("SELECT * FROM staff_shifts WHERE shift_date=? AND status!='cancelled' ORDER BY start_time ASC").bind(date).all(),
+          env.DB.prepare(
+            `SELECT s.id, s.client_id, s.scheduled_date, s.program_name, c.first_name, c.last_name, COALESCE(NULLIF(s.assigned_coach,''), c.coach) AS coach
+             FROM scheduled_sessions s JOIN clients c ON s.client_id = c.id
+             WHERE s.scheduled_date=? AND s.status='scheduled' ORDER BY coach ASC`
+          ).bind(date).all()
+        ]);
+        return ok({ shifts: shiftRows.results || [], pt_sessions: sessionRows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/shifts/month' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const month = url.searchParams.get('month');
+        if (!month) return bad('month (YYYY-MM) required', cors);
+        const [shiftRows, sessionRows] = await Promise.all([
+          env.DB.prepare("SELECT shift_date d, COUNT(*) n FROM staff_shifts WHERE substr(shift_date,1,7)=? AND status!='cancelled' GROUP BY d").bind(month).all(),
+          env.DB.prepare("SELECT scheduled_date d, COUNT(*) n FROM scheduled_sessions WHERE substr(scheduled_date,1,7)=? AND status='scheduled' GROUP BY d").bind(month).all()
+        ]);
+        return ok({ shift_days: shiftRows.results || [], session_days: sessionRows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/shifts/request-coverage' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        await env.DB.prepare("UPDATE staff_shifts SET status='needs_coverage', coverage_note=?, updated_at=? WHERE id=?")
+          .bind(b.note || null, new Date().toISOString(), b.id).run();
+        return ok({ requested: true }, cors);
+      }
+
+      if (url.pathname === '/shifts/cancel-request' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        await env.DB.prepare("UPDATE staff_shifts SET status='scheduled', coverage_note=NULL, updated_at=? WHERE id=? AND status='needs_coverage'")
+          .bind(new Date().toISOString(), b.id).run();
+        return ok({ cancelled: true }, cors);
+      }
+
+      if (url.pathname === '/shifts/claim-coverage' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id || !b.covering_staff_id || !b.covering_name) return bad('id, covering_staff_id, covering_name required', cors);
+        const shift = await env.DB.prepare("SELECT * FROM staff_shifts WHERE id=? AND status='needs_coverage'").bind(b.id).first();
+        if (!shift) return bad('Shift not found or already covered', cors);
+        await env.DB.prepare("UPDATE staff_shifts SET status='covered', covered_by_staff_id=?, covered_by_name=?, updated_at=? WHERE id=?")
+          .bind(b.covering_staff_id, b.covering_name, new Date().toISOString(), b.id).run();
+        const whenText = shift.shift_date === new Date().toISOString().slice(0,10) ? 'today' : ('on ' + new Date(shift.shift_date+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}));
+        await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json) VALUES (?,?,?)')
+          .bind('management', 'shift_covered', JSON.stringify({
+            shift_id: b.id, original_staff: shift.staff_name, covering_staff: b.covering_name,
+            role: shift.role, date: shift.shift_date, start_time: shift.start_time, end_time: shift.end_time,
+            message: b.covering_name + ' is covering ' + shift.staff_name + "'s " + shift.role + ' shift ' + whenText + ' (' + shift.start_time + '-' + shift.end_time + ').'
+          })).run();
+        return ok({ covered: true }, cors);
       }
 
 
