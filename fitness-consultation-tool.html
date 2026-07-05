@@ -1030,7 +1030,7 @@
     <nav class="sidebar-nav">
       <div class="nav-section-label">Intake steps</div>
       <button class="nav-item active" id="nav-0" onclick="goPage(0)">
-        <span class="step-num">1</span> Upload documents
+        <span class="step-num">1</span> Welcome
       </button>
       <button class="nav-item" id="nav-1" onclick="goPage(1)">
         <span class="step-num">2</span> Member info
@@ -1074,7 +1074,7 @@
     <div class="topbar">
       <div class="topbar-left">
         <a href="command-center.html" style="font-size:12px;padding:6px 12px;border:1px solid #DADEE3;border-radius:6px;text-decoration:none;color:#444;white-space:nowrap">← Command Center</a>
-        <span class="page-breadcrumb">Consultation intake &rsaquo; <strong id="breadcrumb-label">Upload documents</strong></span>
+        <span class="page-breadcrumb">Consultation intake &rsaquo; <strong id="breadcrumb-label">Welcome</strong></span>
       </div>
       <div class="topbar-right">
         <div class="advisor-field">
@@ -1092,8 +1092,15 @@
       <!-- ══ PAGE 0: UPLOAD ══ -->
       <div class="page active" id="page-0">
         <div class="page-header">
-          <h2>Upload member documents</h2>
-          <p>Upload an InBody scan PDF, previous intake form, or any health document. AI will extract and auto-fill all matching fields. Skip to enter manually.</p>
+          <h2 id="welcome-heading">Welcome</h2>
+          <p>Enter the member's name, then upload their InBody scan — we'll take it from there.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Member name</div>
+          <div class="field">
+            <input type="text" id="name" placeholder="Full name" oninput="updateWelcome();saveDraftSilent()">
+          </div>
         </div>
 
         <div class="card">
@@ -1136,11 +1143,10 @@
             <div class="field"><label>Date of birth</label><input type="date" id="dob"></div>
           </div>
           <div class="grid2">
-            <div class="field"><label>Full name</label><input type="text" id="name" placeholder="Member full name" oninput="saveDraftSilent()"></div>
             <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="(555) 000-0000"></div>
+            <div class="field"><label>Email</label><input type="email" id="email" placeholder="member@email.com"></div>
           </div>
-          <div class="field"><label>Email</label><input type="email" id="email" placeholder="member@email.com"></div>
-          
+
           <input type="hidden" id="gender" value="">
         </div>
 
@@ -1256,7 +1262,7 @@
       <div class="page" id="page-3">
         <div class="page-header">
           <h2>Diet & nutrition</h2>
-          <p>Daily eating habits, macro tracking, and caloric awareness.</p>
+          <p>Daily eating habits and caloric awareness.</p>
         </div>
 
         <div class="card">
@@ -1265,30 +1271,106 @@
             <div class="field"><label>Meals per day (average)</label><input type="number" id="meals-per-day" min="1" max="10" placeholder="3"></div>
             <div class="field"><label>Known daily calorie target</label><input type="number" id="calorie-target" placeholder="e.g. 2200 — or leave blank"></div>
           </div>
+
           <div class="grid2">
-            <div class="field"><label>Typical breakfast</label><textarea id="breakfast" placeholder="Describe what they usually eat..."></textarea></div>
-            <div class="field"><label>Typical lunch</label><textarea id="lunch" placeholder="Describe what they usually eat..."></textarea></div>
+            <div class="field">
+              <label>Typical breakfast</label>
+              <select id="breakfast-type" onchange="mealTypeChanged('breakfast')">
+                <option value="">Select...</option>
+                <option value="none">Not at all — skips breakfast</option>
+                <option value="eggs_toast">Eggs & toast</option>
+                <option value="cereal_oatmeal">Cereal or oatmeal</option>
+                <option value="grab_and_go">Grabs something out (Wawa, McDonald's, etc.)</option>
+                <option value="other">Other (describe)</option>
+              </select>
+              <select id="breakfast-meat" style="display:none;margin-top:8px" onchange="composeMeal('breakfast')">
+                <option value="">Add a meat? (optional)</option>
+                <option value="none">None</option>
+                <option value="bacon">Bacon</option>
+                <option value="sausage">Sausage</option>
+                <option value="turkey_bacon">Turkey bacon</option>
+                <option value="turkey_sausage">Turkey sausage</option>
+              </select>
+              <input type="text" id="breakfast-other" style="display:none;margin-top:8px" placeholder="Describe..." oninput="composeMeal('breakfast')">
+              <input type="hidden" id="breakfast">
+            </div>
+            <div class="field">
+              <label>Typical lunch</label>
+              <select id="lunch-type" onchange="mealTypeChanged('lunch')">
+                <option value="">Select...</option>
+                <option value="fast_food">Fast food / on the road</option>
+                <option value="pbj">Packed lunch — PB&J</option>
+                <option value="chicken_wrap">Packed lunch — chicken wrap or sandwich</option>
+                <option value="rice_chicken">Rice & chicken</option>
+                <option value="other">Other (describe)</option>
+              </select>
+              <input type="text" id="lunch-other" style="display:none;margin-top:8px" placeholder="Describe..." oninput="composeMeal('lunch')">
+              <input type="hidden" id="lunch">
+            </div>
           </div>
-          <div class="grid2">
-            <div class="field"><label>Typical dinner</label><textarea id="dinner" placeholder="Describe what they usually eat..."></textarea></div>
-            <div class="field"><label>Snacks</label><textarea id="snacks" placeholder="Chips, fruit, protein bars, etc..."></textarea></div>
+
+          <div class="grid3">
+            <div class="field">
+              <label>Dinner — protein</label>
+              <select id="dinner-protein" onchange="composeMeal('dinner')">
+                <option value="">Select...</option>
+                <option value="chicken">Chicken</option>
+                <option value="beef">Beef</option>
+                <option value="fish">Fish / seafood</option>
+                <option value="pork">Pork</option>
+                <option value="turkey">Turkey</option>
+                <option value="plant">Plant-based / vegetarian</option>
+                <option value="varies">Varies day to day</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Dinner — starch</label>
+              <select id="dinner-starch" onchange="composeMeal('dinner')">
+                <option value="">Select...</option>
+                <option value="none">None</option>
+                <option value="white_potato">White potato</option>
+                <option value="sweet_potato">Sweet potato</option>
+                <option value="rice">Rice</option>
+                <option value="pasta">Pasta</option>
+                <option value="bread">Bread</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Dinner — vegetables?</label>
+              <select id="dinner-veg" onchange="composeMeal('dinner')">
+                <option value="">Select...</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+                <option value="sometimes">Sometimes</option>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" id="dinner">
+
+          <div class="field">
+            <label>Snacks</label>
+            <select id="snacks">
+              <option value="">Select...</option>
+              <option value="healthy">Leans healthy — fruit, nuts, yogurt, protein bars</option>
+              <option value="junk">Relies on fast food / junk food</option>
+              <option value="mixed">Mix of both</option>
+              <option value="rarely">Doesn't really snack</option>
+            </select>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title"><span class="dot"></span> Macro tracking</div>
-          <div class="grid3">
-            <div class="field">
-              <label>Tracks MACROs?</label>
-              <select id="tracks-macros">
-                <option value="">Select...</option>
-                <option>Yes — actively tracks</option>
-                <option>No — not tracking</option>
-                <option>Wants to start tracking</option>
-              </select>
-            </div>
-            <div class="field"><label>Protein target %</label><input type="number" id="macro-protein" placeholder="e.g. 30"></div>
-            <div class="field"><label>Carb / fat split</label><input type="text" id="macro-carbfat" placeholder="e.g. 40% / 30%"></div>
+          <div class="card-title"><span class="dot"></span> Macro awareness</div>
+          <div class="field">
+            <label>Do they know what their daily macros should be?</label>
+            <select id="tracks-macros">
+              <option value="">Select...</option>
+              <option>Yes — understands their targets</option>
+              <option>Somewhat — has a general idea</option>
+              <option>No — not familiar with macros</option>
+            </select>
           </div>
         </div>
 
@@ -2109,7 +2191,7 @@ window.addEventListener('load', () => {
 // NAVIGATION
 // ===========================================
 let currentPage = 0;
-const pageLabels = ['Upload documents','Member info','Medical history','Diet & nutrition','InBody scan','Assessment','Packages'];
+const pageLabels = ['Welcome','Member info','Medical history','Diet & nutrition','InBody scan','Assessment','Packages'];
 
 
 // Auto-sync partial intake to sheet so Hub always shows in-progress records
@@ -2158,6 +2240,12 @@ function handleDrop(e) {
   handleFiles(e.dataTransfer.files);
 }
 
+function updateWelcome() {
+  const name = (document.getElementById('name')||{}).value || '';
+  const first = name.trim().split(' ')[0];
+  document.getElementById('welcome-heading').textContent = first ? ('Welcome, ' + first + '!') : 'Welcome';
+}
+
 function handleFiles(files) {
   if (!files || !files.length) return;
   uploadedFiles = Array.from(files);
@@ -2171,18 +2259,9 @@ function handleFiles(files) {
     </div>`).join('');
   document.getElementById('parse-btn').style.display = 'block';
   setStatus('upload-status','','');
-  // Auto-advance: 1+ PDF detected → parse and go to member info page
-  const hasPDF = uploadedFiles.some(f => f.type.includes('pdf') || f.name.toLowerCase().endsWith('.pdf'));
-  if (hasPDF) {
-    setStatus('upload-status','info','✓ InBody PDF detected — reading and auto-filling...');
-    setTimeout(function() {
-      generateAssessment && parseAllFiles().then(function() {
-        goPage(1);
-      }).catch(function() {
-        goPage(1);
-      });
-    }, 400);
-  }
+  // Auto-read as soon as a file lands — advisor shouldn't have to click.
+  setStatus('upload-status','info','✓ Document detected — reading and auto-filling...');
+  setTimeout(function() { parseAllFiles(); }, 400);
 }
 
 function setStatus(id, type, msg) {
@@ -2228,7 +2307,7 @@ async function parseAllFiles() {
     }
 
     contentBlocks.push({ type:'text', text: `Extract ALL information from these documents and return ONLY valid JSON (no markdown, no backticks, no explanation) with these exact keys - empty string "" if not found:
-{"name":"","dob":"","phone":"","email":"","gender":"","age":"","height":"","goals":"","experience":"","timeframe":"","workout_status":"","days_per_week":"","workout_duration":"","medical":"","doctor_rec":"","doctor_notes":"","medications":"","supplements":"","meals_per_day":"","calorie_target":"","breakfast":"","lunch":"","dinner":"","snacks":"","tracks_macros":"","macro_protein":"","macro_carbfat":"","bmi":"","water_weight":"","lean_mass":"","fat_mass":"","pbf":"","seg_la":"","seg_ra":"","seg_trunk":"","seg_ll":"","seg_rl":""}
+{"name":"","dob":"","phone":"","email":"","gender":"","age":"","height":"","goals":"","experience":"","timeframe":"","workout_status":"","days_per_week":"","workout_duration":"","medical":"","doctor_rec":"","doctor_notes":"","medications":"","supplements":"","meals_per_day":"","calorie_target":"","breakfast":"","lunch":"","dinner":"","snacks":"","tracks_macros":"","bmi":"","water_weight":"","lean_mass":"","fat_mass":"","pbf":"","seg_la":"","seg_ra":"","seg_trunk":"","seg_ll":"","seg_rl":""}
 
 CRITICAL INBODY EXTRACTION RULES:
 - seg_la = Left Arm segmental lean mass percentage (look for "Left Arm", "L. Arm", "LA" in segmental analysis section)
@@ -2259,14 +2338,16 @@ CRITICAL INBODY EXTRACTION RULES:
     autoFill(parsed);
 
     const filled = Object.entries(parsed).filter(([k,v]) => v).length;
-    setStatus('upload-status','success',`[OK] ${filled} fields auto-filled from your document. Review and edit as needed, then continue.`);
+    setStatus('upload-status','success',`✓ ${filled} fields auto-filled from your document. Moving to the next step...`);
 
     const preview = document.getElementById('parsed-preview');
     preview.style.display = 'block';
     preview.textContent = 'Extracted:\n' + Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>`  ${k}: ${v}`).join('\n');
 
-    btn.innerHTML = '? Re-upload or add another file';
+    btn.innerHTML = '✓ Re-upload or add another file';
     btn.disabled = false;
+
+    setTimeout(() => goPage(1), 1200);
 
   } catch(e) {
     setStatus('upload-status','error', '? ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
@@ -2283,10 +2364,69 @@ const FIELD_MAP = {
   doctor_notes:'doctor-notes', medications:'medications', supplements:'supplements',
   meals_per_day:'meals-per-day', calorie_target:'calorie-target', breakfast:'breakfast',
   lunch:'lunch', dinner:'dinner', snacks:'snacks', tracks_macros:'tracks-macros',
-  macro_protein:'macro-protein', macro_carbfat:'macro-carbfat', bmi:'bmi',
+  bmi:'bmi',
   water_weight:'water-weight', lean_mass:'lean-mass', fat_mass:'fat-mass', pbf:'pbf',
   seg_la:'seg-la', seg_ra:'seg-ra', seg_trunk:'seg-trunk', seg_ll:'seg-ll', seg_rl:'seg-rl'
 };
+
+const MEAL_LABELS = {
+  breakfast_type: {
+    none: 'Skips breakfast',
+    eggs_toast: 'Eggs & toast',
+    cereal_oatmeal: 'Cereal or oatmeal',
+    grab_and_go: "Grabs something out (Wawa, McDonald's, etc.)"
+  },
+  breakfast_meat: { bacon:'bacon', sausage:'sausage', turkey_bacon:'turkey bacon', turkey_sausage:'turkey sausage' },
+  lunch_type: {
+    fast_food: 'Fast food / on the road',
+    pbj: 'Packed lunch — PB&J',
+    chicken_wrap: 'Packed lunch — chicken wrap or sandwich',
+    rice_chicken: 'Rice & chicken'
+  },
+  dinner_protein: { chicken:'Chicken', beef:'Beef', fish:'Fish / seafood', pork:'Pork', turkey:'Turkey', plant:'Plant-based', varies:'Varies day to day', other:'Other protein' },
+  dinner_starch: { none:'no starch', white_potato:'white potato', sweet_potato:'sweet potato', rice:'rice', pasta:'pasta', bread:'bread', other:'other starch' },
+  dinner_veg: { yes:'with vegetables', no:'no vegetables', sometimes:'vegetables sometimes' }
+};
+
+function mealTypeChanged(which) {
+  if (which === 'breakfast') {
+    const t = document.getElementById('breakfast-type').value;
+    document.getElementById('breakfast-meat').style.display = (t === 'eggs_toast') ? 'block' : 'none';
+    document.getElementById('breakfast-other').style.display = (t === 'other') ? 'block' : 'none';
+  }
+  if (which === 'lunch') {
+    document.getElementById('lunch-other').style.display = (document.getElementById('lunch-type').value === 'other') ? 'block' : 'none';
+  }
+  composeMeal(which);
+}
+
+function composeMeal(which) {
+  if (which === 'breakfast') {
+    const t = document.getElementById('breakfast-type').value;
+    let text = '';
+    if (t === 'other') text = document.getElementById('breakfast-other').value;
+    else if (t) {
+      text = MEAL_LABELS.breakfast_type[t] || '';
+      const meat = document.getElementById('breakfast-meat').value;
+      if (t === 'eggs_toast' && meat && meat !== 'none') text += ' with ' + (MEAL_LABELS.breakfast_meat[meat] || meat);
+    }
+    document.getElementById('breakfast').value = text;
+  }
+  if (which === 'lunch') {
+    const t = document.getElementById('lunch-type').value;
+    document.getElementById('lunch').value = (t === 'other') ? document.getElementById('lunch-other').value : (MEAL_LABELS.lunch_type[t] || '');
+  }
+  if (which === 'dinner') {
+    const p = document.getElementById('dinner-protein').value;
+    const s = document.getElementById('dinner-starch').value;
+    const v = document.getElementById('dinner-veg').value;
+    const parts = [];
+    if (p) parts.push(MEAL_LABELS.dinner_protein[p] || p);
+    if (s) parts.push(MEAL_LABELS.dinner_starch[s] || s);
+    if (v) parts.push(MEAL_LABELS.dinner_veg[v] || v);
+    document.getElementById('dinner').value = parts.join(', ');
+  }
+}
 
 function autoFill(d) {
   for (const [key, fieldId] of Object.entries(FIELD_MAP)) {
@@ -2301,6 +2441,19 @@ function autoFill(d) {
       el.value = d[key];
     }
     el.classList.add('autofilled');
+  }
+  // Meal fields extracted from an uploaded prior intake document: route into
+  // the "Other (describe)" path on each dropdown so the extracted text stays
+  // visible instead of silently sitting only in the hidden composed field.
+  if (d.breakfast) {
+    document.getElementById('breakfast-type').value = 'other';
+    document.getElementById('breakfast-other').style.display = 'block';
+    document.getElementById('breakfast-other').value = d.breakfast;
+  }
+  if (d.lunch) {
+    document.getElementById('lunch-type').value = 'other';
+    document.getElementById('lunch-other').style.display = 'block';
+    document.getElementById('lunch-other').value = d.lunch;
   }
   if (d.gender) selectGender(d.gender);
 }
