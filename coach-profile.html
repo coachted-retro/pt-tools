@@ -76,11 +76,26 @@ function renderView(staff, profile, isMine) {
   const photo = profile.photo_url
     ? `<img src="${esc(profile.photo_url)}" onerror="this.style.display='none'">`
     : `🏋️`;
+  let tenureText = '';
+  if (staff.hire_date) {
+    const days = Math.floor((new Date() - new Date(staff.hire_date)) / 86400000);
+    const years = days / 365;
+    tenureText = years >= 1 ? `${years.toFixed(1)} yrs with Retro` : `${Math.max(1, Math.round(days/30))} mo with Retro`;
+  }
+  const statsRow = (tenureText || staff.sessions_coached != null) ? `
+    <div style="display:flex;gap:10px;justify-content:center;margin:12px 0">
+      ${tenureText ? `<div style="background:var(--soft,#F5F6F8);border:1px solid var(--line,#E5E7EB);border-radius:10px;padding:8px 14px;text-align:center">
+        <div style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:800">${esc(tenureText)}</div></div>` : ''}
+      ${staff.sessions_coached != null ? `<div style="background:var(--soft,#F5F6F8);border:1px solid var(--line,#E5E7EB);border-radius:10px;padding:8px 14px;text-align:center">
+        <div style="font-family:'Oswald',sans-serif;font-size:16px;font-weight:800">${staff.sessions_coached}</div>
+        <div style="font-size:10px;color:var(--ink3,#6B7280);text-transform:uppercase;letter-spacing:.3px">Sessions Coached</div></div>` : ''}
+    </div>` : '';
   document.getElementById('wrap').innerHTML = `
     <div class="card">
       <div class="photo-wrap">${photo}</div>
       <div class="name">${esc(staff.name)}</div>
       <div class="role">${esc(staff.role)}</div>
+      ${statsRow}
       ${profile.tagline ? `<div class="tagline">"${esc(profile.tagline)}"</div>` : ''}
       ${profile.bio ? `<div class="sec-label">About</div><div class="body-text">${esc(profile.bio)}</div>` : ''}
       ${specialties.length ? `<div class="sec-label">Specialties</div>${specialties.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}` : ''}
