@@ -116,6 +116,43 @@ textarea{resize:vertical;min-height:72px}
 .section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:18px 0 10px}
 
 @media(max-width:600px){.field-row{grid-template-columns:1fr}.emp-selector{flex-direction:column}.kpi-row{gap:6px}}
+
+/* VIEW TOGGLE */
+.view-toggle{display:flex;gap:8px;margin-bottom:20px}
+.vt-btn{font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer}
+.vt-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* KANBAN */
+.kanban{display:grid;grid-template-columns:repeat(6,minmax(200px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px}
+@media(max-width:900px){.kanban{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:78%}}
+.kb-col{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px;min-height:120px}
+.kb-col-hdr{font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.kb-count{background:var(--line);color:var(--ink);border-radius:20px;padding:1px 8px;font-size:10px}
+.kb-card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.kb-card:hover{border-color:var(--red)}
+.kb-card .kb-name{font-weight:700;font-size:13px;margin-bottom:2px}
+.kb-card .kb-role{font-size:11px;color:var(--muted);margin-bottom:6px}
+.kb-card .kb-meta{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.kb-score{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.score-hi{background:var(--lgreen);color:#065F46}
+.score-mid{background:var(--lamber);color:#92400E}
+.score-lo{background:var(--lred);color:var(--red)}
+.kb-source{font-size:10px;color:var(--muted)}
+
+/* CANDIDATE MODAL */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+.modal-backdrop.show{display:flex}
+.modal{background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;padding:22px}
+.modal h3{font-family:'Oswald';font-size:19px;font-weight:800;text-transform:uppercase;margin-bottom:2px}
+.modal .m-role{font-size:12px;color:var(--muted);margin-bottom:14px}
+.modal .m-sec{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+.modal .m-body{font-size:13px;line-height:1.6;white-space:pre-wrap}
+.modal .m-tags{display:flex;flex-wrap:wrap;gap:6px}
+.m-tag{font-size:11px;background:var(--soft);border:1px solid var(--line);border-radius:20px;padding:3px 10px}
+.m-tag.strength{background:var(--lgreen);color:#065F46;border-color:#9FE1CB}
+.m-tag.concern{background:var(--lred);color:var(--red);border-color:#FCA5A5}
+.modal-close{position:sticky;top:0;float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+.promote-btn{width:100%;font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--green);color:#fff;border:none;padding:11px;border-radius:9px;cursor:pointer;margin-top:14px}
 </style>
 </head>
 <body>
@@ -132,6 +169,27 @@ textarea{resize:vertical;min-height:72px}
     <h1>HR Portal</h1>
     <p>Employee records, onboarding checklists, document tracking, and performance history. Managed by Dani and Bill.</p>
   </div>
+
+  <!-- VIEW TOGGLE -->
+  <div class="view-toggle">
+    <button class="vt-btn active" id="vtEmployees" onclick="switchView('employees')">👥 Employee Records</button>
+    <button class="vt-btn" id="vtCandidates" onclick="switchView('candidates')">🧑‍💼 Candidate Pipeline</button>
+  </div>
+
+  <!-- CANDIDATES VIEW -->
+  <div id="candidates-view" style="display:none">
+    <div class="card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="card-title" style="margin-bottom:2px">Candidate Pipeline</div>
+        <div style="font-size:12px;color:var(--muted)">New applications come in from the public apply page and land in New.</div>
+      </div>
+      <a href="apply.html" target="_blank" class="nav-btn" style="background:var(--red);color:#fff;border-color:var(--red);text-transform:uppercase;font-family:'Oswald';font-weight:700;font-size:11px;padding:8px 14px;border-radius:8px;text-decoration:none">View Apply Page ↗</a>
+    </div>
+    <div class="kanban" id="kanbanBoard"></div>
+  </div>
+
+  <!-- EMPLOYEES VIEW -->
+  <div id="employees-view">
 
   <!-- EMPLOYEE SELECTOR -->
   <div class="emp-selector">
@@ -222,6 +280,13 @@ textarea{resize:vertical;min-height:72px}
     <div style="font-family:'Oswald';font-size:18px;font-weight:700;text-transform:uppercase;margin-bottom:6px">Select an Employee</div>
     <div style="font-size:13px">Choose an employee above to view their HR record</div>
   </div>
+
+  </div><!-- /employees-view -->
+</div>
+
+<!-- CANDIDATE DETAIL MODAL -->
+<div class="modal-backdrop" id="candModalBackdrop" onclick="if(event.target===this) closeCandModal()">
+  <div class="modal" id="candModal"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -279,6 +344,15 @@ const ONBOARD_TASKS_BY_ROLE = {
     'EOD reporting procedure reviewed',
     '30-day check-in completed',
     'Full client roster reviewed with director',
+  ],
+  'Floor Tech': [
+    'Orientation completed',
+    'Gym tour and safety walkthrough',
+    'Chemical handling and safety training',
+    'Cleaning and maintenance punch list procedure reviewed',
+    'Equipment care and reporting procedure reviewed',
+    '30-day check-in completed',
+    '90-day review scheduled',
   ],
   'General Manager': [
     'Orientation completed',
@@ -519,6 +593,152 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── CANDIDATE PIPELINE ──────────────────────────────────────
+const PIPELINE_STAGES = ['New','Screening','Interview','Offer','Hired','Rejected'];
+let candidates = [];
+let activeCandidateId = null;
+
+function switchView(view) {
+  document.getElementById('vtEmployees').classList.toggle('active', view === 'employees');
+  document.getElementById('vtCandidates').classList.toggle('active', view === 'candidates');
+  document.getElementById('employees-view').style.display = view === 'employees' ? 'block' : 'none';
+  document.getElementById('candidates-view').style.display = view === 'candidates' ? 'block' : 'none';
+  if (view === 'candidates') loadCandidates();
+}
+
+function scoreClass(score) {
+  if (score == null) return '';
+  if (score >= 7) return 'score-hi';
+  if (score >= 4) return 'score-mid';
+  return 'score-lo';
+}
+
+async function loadCandidates() {
+  document.getElementById('kanbanBoard').innerHTML = PIPELINE_STAGES.map(s =>
+    `<div class="kb-col"><div class="kb-col-hdr">${s}</div><div class="empty-state">Loading...</div></div>`).join('');
+  try {
+    const r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'candidates', orderBy:'applied_at desc', limit:300})});
+    const d = await r.json();
+    candidates = d.results || [];
+    renderKanban();
+  } catch(e) { showToast('Could not load candidates'); }
+}
+
+function renderKanban() {
+  const byStage = {};
+  PIPELINE_STAGES.forEach(s => byStage[s] = []);
+  candidates.forEach(c => { (byStage[c.status] || byStage.New).push(c); });
+
+  document.getElementById('kanbanBoard').innerHTML = PIPELINE_STAGES.map(stage => {
+    const rows = byStage[stage];
+    const cards = rows.length ? rows.map(c => `
+      <div class="kb-card" onclick="openCandidateModal(${c.id})">
+        <div class="kb-name">${esc(c.name)}</div>
+        <div class="kb-role">${esc(c.role_applied)}</div>
+        <div class="kb-meta">
+          ${c.ai_score != null ? `<span class="kb-score ${scoreClass(c.ai_score)}">AI ${c.ai_score}/10</span>` : '<span></span>'}
+          <span class="kb-source">${esc(c.source||'')}</span>
+        </div>
+      </div>`).join('') : '<div class="empty-state">Empty</div>';
+    return `<div class="kb-col"><div class="kb-col-hdr">${stage} <span class="kb-count">${rows.length}</span></div>${cards}</div>`;
+  }).join('');
+}
+
+function openCandidateModal(id) {
+  const c = candidates.find(x => x.id === id);
+  if (!c) return;
+  activeCandidateId = id;
+  let strengths = [], concerns = [];
+  try { strengths = JSON.parse(c.ai_strengths || '[]'); } catch(e) {}
+  try { concerns = JSON.parse(c.ai_concerns || '[]'); } catch(e) {}
+
+  document.getElementById('candModal').innerHTML = `
+    <button class="modal-close" onclick="closeCandModal()">&times;</button>
+    <h3>${esc(c.name)}</h3>
+    <div class="m-role">${esc(c.role_applied)} · Applied ${esc((c.applied_at||'').slice(0,10))} · ${esc(c.source||'')}${c.referred_by ? ' (ref: '+esc(c.referred_by)+')' : ''}</div>
+
+    <div class="field">
+      <label>Status</label>
+      <select id="candStatusSel" onchange="updateCandidateStatus(${c.id}, this.value)">
+        ${PIPELINE_STAGES.map(s => `<option value="${s}" ${c.status===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="m-sec">Contact</div>
+    <div class="m-body">${esc(c.phone||'—')} · ${esc(c.email||'—')}${c.availability ? '\nAvailability: '+esc(c.availability) : ''}</div>
+
+    ${c.ai_score != null ? `
+    <div class="m-sec">AI Screening — <span class="kb-score ${scoreClass(c.ai_score)}">${c.ai_score}/10</span></div>
+    <div class="m-body">${esc(c.ai_summary||'')}</div>
+    ${strengths.length ? `<div class="m-tags" style="margin-top:8px">${strengths.map(s=>`<span class="m-tag strength">✓ ${esc(s)}</span>`).join('')}</div>` : ''}
+    ${concerns.length ? `<div class="m-tags" style="margin-top:6px">${concerns.map(s=>`<span class="m-tag concern">⚠ ${esc(s)}</span>`).join('')}</div>` : ''}
+    ` : ''}
+
+    ${c.resume_text ? `<div class="m-sec">Background / Resume</div><div class="m-body">${esc(c.resume_text)}</div>` : ''}
+    ${c.cover_note ? `<div class="m-sec">Why This Role</div><div class="m-body">${esc(c.cover_note)}</div>` : ''}
+
+    <div class="m-sec">Interview Notes</div>
+    <div class="field"><textarea id="candNotes" placeholder="Notes from screening call or interview...">${esc(c.interview_notes||'')}</textarea></div>
+    <button class="save-btn" style="width:100%" onclick="saveInterviewNotes(${c.id})">Save Notes</button>
+
+    ${c.status !== 'Hired' && c.status !== 'Rejected' ? `<button class="promote-btn" onclick="promoteToStaff(${c.id})">Promote to Staff — Mark Hired</button>` : ''}
+    ${c.hired_staff_id ? `<div class="hint" style="margin-top:10px">Added to staff roster.</div>` : ''}
+  `;
+  document.getElementById('candModalBackdrop').classList.add('show');
+}
+
+function closeCandModal() {
+  document.getElementById('candModalBackdrop').classList.remove('show');
+  activeCandidateId = null;
+}
+
+async function updateCandidateStatus(id, status) {
+  try {
+    await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'update', table:'candidates', values:{status, updated_at:new Date().toISOString()}, where:{id}})});
+    const c = candidates.find(x => x.id === id);
+    if (c) c.status = status;
+    renderKanban();
+    showToast('Status updated to ' + status);
+  } catch(e) { showToast('Could not update status'); }
+}
+
+async function saveInterviewNotes(id) {
+  const notes = document.getElementById('candNotes').value;
+  try {
+    await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'update', table:'candidates', values:{interview_notes: notes, updated_at:new Date().toISOString()}, where:{id}})});
+    const c = candidates.find(x => x.id === id);
+    if (c) c.interview_notes = notes;
+    showToast('Notes saved');
+  } catch(e) { showToast('Save failed'); }
+}
+
+async function promoteToStaff(id) {
+  const c = candidates.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`Add ${c.name} to the staff roster as ${c.role_applied} and mark this application Hired?`)) return;
+  try {
+    const today = new Date().toISOString().slice(0,10);
+    const ins = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'insert', table:'staff_roster', values:{
+        name: c.name, role: c.role_applied, email: c.email, phone: c.phone,
+        hire_date: today, notes: 'Promoted from candidate pipeline', eod_required: 0, active: 1, gym_id: 1
+      }})});
+    const insD = await ins.json();
+    await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'update', table:'candidates', values:{
+        status:'Hired', hired_staff_id: insD.id || null, updated_at:new Date().toISOString()
+      }, where:{id}})});
+    c.status = 'Hired'; c.hired_staff_id = insD.id;
+    showToast(c.name + ' added to staff roster');
+    closeCandModal();
+    renderKanban();
+    loadRoster();
+  } catch(e) { showToast('Promotion failed, try again'); }
 }
 
 loadRoster();
