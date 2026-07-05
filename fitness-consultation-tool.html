@@ -1773,7 +1773,7 @@
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);">
                   <div id="demo-qr-box" style="background:#fff;border-radius:8px;padding:6px;flex-shrink:0;line-height:0;"></div>
-                  <div style="font-size:12px;color:#9CA3AF;">On your laptop? Scan this with <b style="color:#fff">your phone's camera</b> to open their personalized demo directly on your phone — no typing, no login.</div>
+                  <div style="font-size:12px;color:#9CA3AF;">Have <b style="color:#fff">them</b> scan this with their own phone camera — it opens the app personalized with their name, goal, and nutrition targets right on their phone. No typing, no login.</div>
                 </div>
               </div>
 
@@ -4047,14 +4047,32 @@ function runConsultReport(type) {
 // Enrollment and decline flows write to D1 directly — no report-wrap patches needed.
 
 
+function parseHeightToInches(str) {
+  if (!str) return '';
+  const m = String(str).match(/(\d+)\s*'?\s*(\d+)?/);
+  if (!m) return '';
+  const feet = parseInt(m[1], 10) || 0;
+  const inches = parseInt(m[2], 10) || 0;
+  // If it's just one number with no feet mark and it's already in the
+  // 48-84 range, treat it as already-inches rather than feet.
+  if (!m[2] && feet >= 48 && feet <= 84) return feet;
+  return feet * 12 + inches;
+}
+
 function buildDemoUrl() {
   var name = gv('name') || 'Future Member';
   var goals = gv('goals') || 'general';
   var weight = gv('weight') || '';
   var pbf = gv('pbf') || '';
+  var age = gv('age') || '';
+  var gender = gv('gender') || '';
+  var heightIn = parseHeightToInches(gv('height'));
   var params = new URLSearchParams({ demo: '1', name: name, goal: goals });
   if (weight) params.set('weight', weight);
   if (pbf) params.set('bf', pbf);
+  if (age) params.set('age', age);
+  if (gender) params.set('gender', gender);
+  if (heightIn) params.set('height', heightIn);
   // Absolute URL so a phone camera scanning the QR opens the live site directly,
   // regardless of what device/host is currently running this consultation page.
   return 'https://coachted-retro.github.io/pt-tools/member-app.html?' + params.toString();

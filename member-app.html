@@ -295,6 +295,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-greeting"></div>
         <div id="today-workout-card"></div>
         <div class="kpi-strip" id="home-kpis" style="display:none"></div>
+        <div id="home-nutrition-demo"></div>
         <div id="home-booking"></div>
         <div id="home-referral"></div>
         <div id="home-supplement"></div>
@@ -416,6 +417,42 @@ let SESSION = null;
 const DEMO_PARAMS = new URLSearchParams(location.search);
 const IS_DEMO = DEMO_PARAMS.get('demo') === '1';
 
+function estimateNutrition(weightLb, heightIn, age, gender, goal) {
+  if (!weightLb || !heightIn || !age) return null;
+  const kg = weightLb * 0.453592;
+  const cm = heightIn * 2.54;
+  // Mifflin-St Jeor BMR, then a moderate activity multiplier for a
+  // ballpark maintenance figure — this is a sales-demo estimate, not
+  // a coach-set target. The real number gets dialed in after enrollment.
+  const bmr = gender === 'female' ? (10*kg + 6.25*cm - 5*age - 161) : (10*kg + 6.25*cm - 5*age + 5);
+  const maintenance = Math.round(bmr * 1.45);
+  let calories = maintenance, proteinPerLb = 0.8, carbPct = 0.40, fatPct = 0.30;
+  if (goal === 'cut') { calories = Math.round(maintenance * 0.8); proteinPerLb = 1.0; carbPct = 0.35; fatPct = 0.30; }
+  else if (goal === 'build') { calories = Math.round(maintenance * 1.1); proteinPerLb = 0.9; carbPct = 0.45; fatPct = 0.25; }
+  const protein_g = Math.round(weightLb * proteinPerLb);
+  const proteinCal = protein_g * 4;
+  const remaining = Math.max(calories - proteinCal, 0);
+  const carbs_g = Math.round((remaining * (carbPct/(carbPct+fatPct))) / 4);
+  const fat_g = Math.round((remaining * (fatPct/(carbPct+fatPct))) / 9);
+  return { maintenance_calories: maintenance, calories, protein_g, carbs_g, fat_g };
+}
+
+function demoSampleMeals(targets) {
+  if (!targets) return [];
+  const split = [ ['Breakfast', 0.25], ['Lunch', 0.30], ['Dinner', 0.30], ['Snack', 0.15] ];
+  const examples = {
+    Breakfast: 'Protein oats with berries + eggs',
+    Lunch: 'Grilled chicken bowl, rice, veggies',
+    Dinner: 'Lean beef or salmon, potato, greens',
+    Snack: '1st Phorm shake + fruit'
+  };
+  return split.map(([label, pct]) => ({
+    label, example: examples[label],
+    calories: Math.round(targets.calories * pct),
+    protein_g: Math.round(targets.protein_g * pct)
+  }));
+}
+
 function demoData() {
   const name = DEMO_PARAMS.get('name') || 'Future Member';
   const goal = (DEMO_PARAMS.get('goal') || 'general').toLowerCase();
@@ -423,12 +460,19 @@ function demoData() {
   const weight = parseFloat(DEMO_PARAMS.get('weight')) || null;
   const bf = parseFloat(DEMO_PARAMS.get('bf')) || null;
   const smm = parseFloat(DEMO_PARAMS.get('smm')) || null;
+  const age = parseFloat(DEMO_PARAMS.get('age')) || null;
+  const gender = (DEMO_PARAMS.get('gender') || '').toLowerCase();
+  const height = parseFloat(DEMO_PARAMS.get('height')) || null;
+  const nutritionGoal = demoGoal();
+  const nutrition = estimateNutrition(weight, height, age, gender, nutritionGoal);
   return {
     client: { id: 0, first_name: name.split(' ')[0], last_name: name.split(' ').slice(1).join(' '),
       goal: goal, my_why: 'This is where your reason lives. We write it together on day one.',
       sessions_per_week: 2, sessions_total: 8, sessions_used: 0, sessions_remaining: 8,
       package_start_date: today, billing_type: 'monthly' },
-    checkins: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null,
+    checkins: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null,
+    mealProfile: nutrition ? { calories: nutrition.calories, protein_g: nutrition.protein_g, carbs_g: nutrition.carbs_g, fat_g: nutrition.fat_g, goal_type: nutritionGoal } : null,
+    demoNutrition: nutrition, demoMeals: demoSampleMeals(nutrition),
     scans: weight ? [{ scan_date: today, weight: weight, body_fat_pct: bf, smm: smm }] : []
   };
 }
@@ -443,7 +487,7 @@ function demoGoal() {
 }
 
 
-let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null };
+let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null, demoNutrition: null, demoMeals: [] };
 let goingClasses = new Set(JSON.parse(localStorage.getItem('going_classes')||'[]'));
 let slExCount = 0;
 
@@ -1368,6 +1412,7 @@ async function loadPortalData() {
     DATA.client = d.client; DATA.checkins = d.checkins; DATA.scans = d.scans;
     DATA.sessions = d.sessions; DATA.selfWorkouts = d.selfWorkouts;
     DATA.mealPlan = d.mealPlan; DATA.tier = d.tier; DATA.mealProfile = d.mealProfile;
+    DATA.demoNutrition = d.demoNutrition; DATA.demoMeals = d.demoMeals;
     const name = DATA.client.first_name || 'Friend';
     const hr = new Date().getHours();
     const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
@@ -1407,6 +1452,49 @@ function switchTab(tab) {
 
 // ── HOME ─────────────────────────────────────────────────────
 function renderHomeExtras() {
+  // Nutrition preview — demo mode only, shown during the consultation close
+  const nutEl = document.getElementById('home-nutrition-demo');
+  if (nutEl) {
+    if (IS_DEMO && DATA.demoNutrition) {
+      const n = DATA.demoNutrition;
+      const meals = DATA.demoMeals || [];
+      nutEl.innerHTML = `
+        <div class="sec-label">Your Nutrition</div>
+        <div class="card" style="border-top:3px solid var(--red)"><div class="card-body">
+          <div style="font-size:11px;color:var(--ink3);text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:8px">Estimated from today's scan — your coach dials this in exactly after enrollment</div>
+          <div style="display:flex;gap:10px;margin-bottom:14px">
+            <div style="flex:1;background:#F5F6F8;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:800">${n.calories}</div>
+              <div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Cal / day</div>
+            </div>
+            <div style="flex:1;background:#F5F6F8;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:800">${n.protein_g}g</div>
+              <div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Protein</div>
+            </div>
+            <div style="flex:1;background:#F5F6F8;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:800">${n.carbs_g}g</div>
+              <div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Carbs</div>
+            </div>
+            <div style="flex:1;background:#F5F6F8;border-radius:10px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:800">${n.fat_g}g</div>
+              <div style="font-size:10px;color:var(--ink3);text-transform:uppercase">Fat</div>
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:6px">A sample day on your plan</div>
+          ${meals.map(m => `
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
+              <div>
+                <div style="font-weight:700;font-size:13px">${esc(m.label)}</div>
+                <div style="font-size:12px;color:var(--ink3)">${esc(m.example)}</div>
+              </div>
+              <div style="font-size:12px;color:var(--ink3);text-align:right;flex-shrink:0">${m.calories} cal<br>${m.protein_g}g protein</div>
+            </div>`).join('')}
+        </div></div>`;
+    } else {
+      nutEl.innerHTML = '';
+    }
+  }
+
   // Booking row
   document.getElementById('home-booking').innerHTML = `
     <div class="sec-label">Book With Coach Ted</div>
@@ -1971,9 +2059,13 @@ async function resetConfirm() {
 function doLogout() { localStorage.removeItem('member_session'); SESSION=null; document.getElementById('app-shell').style.display='none'; document.getElementById('login-screen').style.display='flex'; }
 
 // ── STARTUP ──────────────────────────────────────────────────
-if (IS_DEMO) { SESSION = { client_id: 0, token: 'demo', email: 'demo@retro.fit' }; startApp(); return; }
+if (IS_DEMO) {
+  SESSION = { client_id: 0, token: 'demo', email: 'demo@retro.fit' };
+  startApp();
+} else {
   const saved = localStorage.getItem('member_session');
-if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); } }
+  if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); } }
+}
 </script>
 
   <!-- COACH CHAT FAB -->
