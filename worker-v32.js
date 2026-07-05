@@ -2142,10 +2142,10 @@ async function generateMealPlans(env, opt){
       }
       const inbody = await latestInbody(env, r.client_id);
       const built = await buildMealPlan(env, r, inbody);
-      await env.DB.prepare(`INSERT INTO meal_plans (client_id,week_of,plan_html,shopping_items_json,shopping_checked_json,generated_at) VALUES (?,?,?,?,?,?)`)
-        .bind(r.client_id, week, built.plan_html, JSON.stringify(built.shopping_items||[]), JSON.stringify({}), new Date().toISOString()).run();
+      await env.DB.prepare(`INSERT INTO meal_plans (client_id,week_of,plan_json,shopping_items_json,shopping_checked_json,generated_at) VALUES (?,?,?,?,?,?)`)
+        .bind(r.client_id, week, JSON.stringify(built.plan_json), JSON.stringify(built.shopping_items||[]), JSON.stringify({}), new Date().toISOString()).run();
       const name = ((r.first_name||'')+' '+(r.last_name||'')).trim() || 'Client';
-      results.push({ client_id: r.client_id, name, email: r.email||'', week, html: built.plan_html });
+      results.push({ client_id: r.client_id, name, email: r.email||'', week, plan: built.plan_json });
     } catch(e){ errors.push(r.client_id+': '+e.message); }
   }
   return { clients: rows.length, generated: results.length, skipped, results, errors };
@@ -2168,18 +2168,18 @@ async function buildMealPlan(env, r, inbody){
     cat.toUpperCase() + ' OPTIONS:\n' + MEAL_LIBRARY[cat].map(m =>
       `- ${m.name} (${m.calories} kcal, ${m.protein_g}g protein, ${m.carbs_g}g carbs, ${m.fat_g}g fat)`).join('\n')
   ).join('\n\n');
-  const sys = `You are a nutrition planning assistant for Retro Fitness personal training. Build a practical 7-day meal plan for one client from their body composition and goal. Compute sensible daily calories and macros and state them up top.
+  const sys = `You are a nutrition planning assistant for Retro Fitness personal training. Build a practical 7-day meal plan for one client from their body composition and goal.
 
-APPROVED MEAL LIBRARY — build the week primarily FROM these options, scaling portions up or down to hit the day's targets and mixing them across the week for variety. Only introduce a meal outside this list if needed to respect an allergy or exclusion, and keep any substitution in the same health-conscious style (lean protein, vegetables, whole grains, healthy fats):
+APPROVED MEAL LIBRARY — every meal slot in the plan must reference one of these items by its EXACT name, character-for-character, so the app can look up its macros and let the client swap it later. Never invent a meal name that isn't in this list. A portion_mult field (default 1, e.g. 1.5 for a larger portion) lets you scale a library item's macros up or down to fit the day's targets instead of inventing a new food:
 
 ${libraryText}
 
 Strictly avoid every excluded food and allergen listed. If a medical condition is listed, do NOT design around it; instead add a clear note advising the client to consult their physician or a registered dietitian, and keep the plan general and conservative.
 
 Return ONLY valid JSON, no markdown, no prose outside the JSON, with this exact shape:
-{"plan_html":"<clean simple HTML: headings, paragraphs, lists; no html or body wrapper; a short macro summary and a 7-day plan with breakfast, lunch, dinner and one snack per day with approximate portions drawn from the library above, plus one short 1st Phorm supplement suggestion using this link: ${FPLINK}, ending with exactly one italic paragraph stating this plan is a general nutrition recommendation only, not medical or dietetic advice, and the client should consult their physician or a registered dietitian before starting it or making any significant change to their diet>","shopping_items":[{"item":"chicken breast","qty":"2 lb","aisle":"meat & seafood"}]}
+{"summary_html":"<1-2 short sentences of plain HTML stating the computed daily calorie and macro targets for this client, no headings needed>","days":[{"label":"Monday","meals":{"breakfast":{"item":"<exact library item name>","portion_mult":1},"lunch":{"item":"...","portion_mult":1},"dinner":{"item":"...","portion_mult":1},"snack":{"item":"...","portion_mult":1}}}, ... 7 days total, Monday through Sunday],"supplement_note":"one short sentence suggesting a 1st Phorm product using this link: ${FPLINK}","disclaimer_html":"<one italic paragraph stating this plan is a general nutrition recommendation only, not medical or dietetic advice, and the client should consult their physician or a registered dietitian before starting it or making any significant change to their diet>","shopping_items":[{"item":"chicken breast","qty":"2 lb","aisle":"meat & seafood"}]}
 
-The shopping_items array is the FULL consolidated grocery list for the week, one entry per distinct ingredient with a realistic total quantity across all 7 days, grouped conceptually by aisle (meat & seafood, produce, dairy & eggs, grains & bakery, pantry, frozen, other) — put the aisle name in the "aisle" field for each item, don't build a separate nested structure. Include no workout, training, sets, reps or exercise content in plan_html. Plain accessible language, no emojis, no em dashes anywhere.`;
+Vary the selections across the week for variety rather than repeating the same items every day. The shopping_items array is the FULL consolidated grocery list for the week reflecting the actual meals chosen, one entry per distinct ingredient with a realistic total quantity, grouped by aisle (meat & seafood, produce, dairy & eggs, grains & bakery, pantry, frozen, other). No workout, training, sets, reps or exercise content anywhere. Plain accessible language, no emojis, no em dashes anywhere.`;
   const user = `Client: ${name}, age ${r.age||'n/a'}, ${r.gender||'n/a'}. Goal: ${goal}.
 InBody: weight ${inbody.w||'n/a'}, lean mass ${inbody.ln||'n/a'}, body fat percent ${inbody.bf||'n/a'}.
 ${macroLine}
@@ -2195,11 +2195,17 @@ Allergies: ${r.allergies||'none'}. Medical conditions: ${r.conditions||'none'}. 
   const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
   try {
     const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
-    return { plan_html: parsed.plan_html || '', shopping_items: parsed.shopping_items || [] };
+    const plan = {
+      summary_html: parsed.summary_html || '',
+      days: parsed.days || [],
+      supplement_note: parsed.supplement_note || '',
+      disclaimer_html: parsed.disclaimer_html || ''
+    };
+    return { plan_json: plan, shopping_items: parsed.shopping_items || [] };
   } catch(e) {
-    // Fallback: if the model didn't return clean JSON, treat the whole
-    // response as the narrative plan rather than losing it entirely.
-    return { plan_html: text, shopping_items: [] };
+    // Fallback: if the model didn't return clean JSON, at least preserve
+    // something readable rather than losing the response entirely.
+    return { plan_json: { summary_html:'', days:[], supplement_note:'', disclaimer_html:'', raw_fallback_text: text }, shopping_items: [] };
   }
 }
 

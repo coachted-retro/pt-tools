@@ -5,6 +5,7 @@
 
 ALTER TABLE meal_plans ADD COLUMN shopping_items_json TEXT;
 ALTER TABLE meal_plans ADD COLUMN shopping_checked_json TEXT;
+ALTER TABLE meal_plans ADD COLUMN plan_json TEXT;
 
 CREATE TABLE IF NOT EXISTS pantry_items (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

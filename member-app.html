@@ -337,6 +337,15 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .shop-item-row.checked .shop-item-name{color:var(--ink3);text-decoration:line-through}
 .shop-item-qty{font-size:11px;color:var(--ink3);font-weight:600}
 .shop-item-pantry-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--green);background:var(--green-lt);padding:2px 7px;border-radius:10px;flex-shrink:0}
+.wp-day-card{border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.wp-day-label{font-family:'Oswald';text-transform:uppercase;letter-spacing:.4px;font-size:13px;font-weight:700;color:var(--red);margin-bottom:8px}
+.wp-meal-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+.wp-meal-row:last-child{border-bottom:none}
+.wp-meal-slot{width:64px;flex-shrink:0;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--ink3)}
+.wp-meal-main{flex:1;min-width:0}
+.wp-meal-name{font-weight:600;font-size:13px;color:var(--ink)}
+.wp-meal-macros{font-size:10px;color:var(--ink3);margin-top:1px}
+.wp-swap-btn{flex-shrink:0;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--ink);cursor:pointer}
 </style>
 </head>
 <body>
@@ -2547,7 +2556,8 @@ async function confirmSaveMeal() {
 // ── MEAL PLAN (ported from client-portal.html) ────────────────
 window._pendingMealPlan = null;
 function renderMealPlan(mp) {
-  if (!mp || !mp.plan_html) {
+  const hasPlan = mp && (mp.plan_json || mp.plan_html);
+  if (!hasPlan) {
     document.getElementById('meal-plan-body').innerHTML = '<div class="empty-state">Your meal plan will appear here once it\'s ready.</div>';
     document.getElementById('shopping-body').innerHTML = '';
     return;
@@ -2566,8 +2576,115 @@ function renderMealPlan(mp) {
     document.getElementById('shopping-body').innerHTML = '<div class="empty-state">Available once you sign the disclaimer above.</div>';
     return;
   }
-  document.getElementById('meal-plan-body').innerHTML = '<div class="mp-ack-note">Signed by '+esc(mp.ack_signature||'')+' on '+esc((mp.ack_at||'').slice(0,10))+'</div><div class="week-plan">'+mp.plan_html+'</div>';
+  loadMealLibrary().then(() => renderWeekPlan(mp));
   renderShoppingList(mp);
+}
+
+// ── SWAPPABLE WEEK PLAN (structured, references the meal library) ──
+let MEAL_LIBRARY_CACHE = null;
+async function loadMealLibrary() {
+  if (MEAL_LIBRARY_CACHE) return MEAL_LIBRARY_CACHE;
+  try {
+    const r = await fetch(WORKER + '/mealplan/library');
+    const d = await r.json();
+    MEAL_LIBRARY_CACHE = d.library || {};
+  } catch(e) { MEAL_LIBRARY_CACHE = {}; }
+  return MEAL_LIBRARY_CACHE;
+}
+
+function findLibraryItem(category, name) {
+  const list = (MEAL_LIBRARY_CACHE && MEAL_LIBRARY_CACHE[category]) || [];
+  return list.find(i => i.name === name) || null;
+}
+
+function scaledMacros(baseItem, mult) {
+  const m = mult || 1;
+  if (!baseItem) return { calories:0, protein_g:0, carbs_g:0, fat_g:0 };
+  return {
+    calories: Math.round(baseItem.calories * m),
+    protein_g: Math.round(baseItem.protein_g * m),
+    carbs_g: Math.round(baseItem.carbs_g * m),
+    fat_g: Math.round(baseItem.fat_g * m)
+  };
+}
+
+function renderWeekPlan(mp) {
+  const el = document.getElementById('meal-plan-body');
+  const ackNote = '<div class="mp-ack-note">Signed by '+esc(mp.ack_signature||'')+' on '+esc((mp.ack_at||'').slice(0,10))+'</div>';
+
+  let plan = null;
+  try { plan = JSON.parse(mp.plan_json || 'null'); } catch(e) {}
+
+  if (!plan || !plan.days || !plan.days.length) {
+    // Legacy plan generated before the swap feature existed — show the old prose version.
+    el.innerHTML = ackNote + '<div class="week-plan">'+(mp.plan_html||plan?.raw_fallback_text||'')+'</div>';
+    return;
+  }
+
+  const slots = ['breakfast','lunch','dinner','snack'];
+  const daysHtml = plan.days.map((day, dayIdx) => {
+    const rows = slots.map(slot => {
+      const m = day.meals && day.meals[slot];
+      if (!m) return '';
+      const base = findLibraryItem(slot, m.item);
+      const macros = scaledMacros(base, m.portion_mult || 1);
+      return `<div class="wp-meal-row">
+        <div class="wp-meal-slot">${slot}</div>
+        <div class="wp-meal-main">
+          <div class="wp-meal-name">${esc(m.item)}</div>
+          <div class="wp-meal-macros">${macros.calories} kcal &middot; ${macros.protein_g}g protein &middot; ${macros.carbs_g}g carbs &middot; ${macros.fat_g}g fat</div>
+        </div>
+        <button class="wp-swap-btn" onclick="openSwapPicker(${dayIdx},'${slot}')">Swap</button>
+      </div>`;
+    }).join('');
+    return `<div class="wp-day-card"><div class="wp-day-label">${esc(day.label||'Day '+(dayIdx+1))}</div>${rows}</div>`;
+  }).join('');
+
+  el.innerHTML = ackNote +
+    (plan.summary_html ? '<div class="week-plan" style="margin-bottom:14px">'+plan.summary_html+'</div>' : '') +
+    daysHtml +
+    (plan.supplement_note ? '<div class="supp-note">'+esc(plan.supplement_note)+' <a href="'+FPLINK_URL+'" target="_blank">Shop 1st Phorm</a></div>' : '') +
+    (plan.disclaimer_html ? '<div class="week-plan" style="margin-top:14px">'+plan.disclaimer_html+'</div>' : '');
+}
+
+function openSwapPicker(dayIdx, slot) {
+  const mp = window._pendingMealPlan;
+  let plan; try { plan = JSON.parse(mp.plan_json || 'null'); } catch(e) { return; }
+  if (!plan) return;
+  const current = plan.days[dayIdx].meals[slot];
+  const currentBase = findLibraryItem(slot, current.item);
+  const currentMacros = scaledMacros(currentBase, current.portion_mult || 1);
+  const options = (MEAL_LIBRARY_CACHE[slot] || []).filter(i => i.name !== current.item);
+  // Sort by closeness to the current meal's calories and protein — "equal in calories and macros".
+  options.sort((a,b) => {
+    const distA = Math.abs(a.calories - currentMacros.calories) + Math.abs(a.protein_g - currentMacros.protein_g) * 2;
+    const distB = Math.abs(b.calories - currentMacros.calories) + Math.abs(b.protein_g - currentMacros.protein_g) * 2;
+    return distA - distB;
+  });
+  const top = options.slice(0, 8);
+
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('mm-title').textContent = 'Swap your ' + slot;
+  document.getElementById('mm-body').innerHTML =
+    '<div class="mm-status" style="margin-bottom:10px;text-align:left">Currently: <b>'+esc(current.item)+'</b> ('+currentMacros.calories+' kcal, '+currentMacros.protein_g+'g protein). Closest matches shown first.</div>' +
+    top.map(opt => `<div class="mm-item-row" style="cursor:pointer" onclick="applySwap(${dayIdx},'${slot}','${esc(opt.name).replace(/'/g,"\\'")}')">
+      <div class="mm-item-name">${esc(opt.name)}</div>
+      <div class="mm-item-macro">${opt.calories} kcal &middot; ${opt.protein_g}g pro</div>
+    </div>`).join('');
+}
+
+async function applySwap(dayIdx, slot, newItemName) {
+  const mp = window._pendingMealPlan;
+  let plan; try { plan = JSON.parse(mp.plan_json || 'null'); } catch(e) { return; }
+  if (!plan) return;
+  plan.days[dayIdx].meals[slot] = { item: newItemName, portion_mult: 1 };
+  mp.plan_json = JSON.stringify(plan);
+  closeMealModal();
+  renderWeekPlan(mp);
+  try {
+    await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'meal_plans', values:{ plan_json: mp.plan_json }, where:{ id: mp.id } }) });
+  } catch(e) {}
 }
 
 // ── INTERACTIVE SHOPPING LIST + PANTRY (checkable, pantry-aware) ──
