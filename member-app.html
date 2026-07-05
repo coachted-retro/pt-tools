@@ -297,6 +297,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="today-workout-card"></div>
         <div class="kpi-strip" id="home-kpis" style="display:none"></div>
         <div id="home-nutrition-demo"></div>
+        <div id="home-happening"></div>
+        <div id="home-coachs-edge"></div>
+        <div id="home-circle"></div>
         <div id="home-booking"></div>
         <div id="home-referral"></div>
         <div id="home-supplement"></div>
@@ -1401,6 +1404,7 @@ async function startApp() {
   shell.style.display = 'flex';
   await loadPortalData();
   renderHome(); renderHomeExtras();
+  loadPublicHomeContent();
   checkChatUnread();
   renderTraining();
   renderClasses();
@@ -1446,13 +1450,126 @@ async function loadPortalData() {
 
 // ── TAB SWITCHER ─────────────────────────────────────────────
 function switchTab(tab) {
+  if (GUEST_MODE && GATED_TABS.includes(tab)) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('scr-' + tab).classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    renderGatedTabPrompt(tab);
+    return;
+  }
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('scr-' + tab).classList.add('active');
   document.getElementById('tab-' + tab).classList.add('active');
 }
 
-// ── HOME ─────────────────────────────────────────────────────
+// ── PUBLIC HOME CONTENT (visible with or without login) ──────
+async function loadPublicHomeContent() {
+  loadHappening();
+  loadCoachsEdge();
+  loadCircle();
+}
+
+async function loadHappening() {
+  const el = document.getElementById('home-happening');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/events/list');
+    const d = await r.json();
+    const events = d.events || [];
+    if (!events.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="sec-label">Happening at Retro</div>` + events.map(ev => `
+      <div class="card"><div class="card-body" style="display:flex;gap:12px;align-items:center">
+        ${ev.image_url ? `<img src="${esc(ev.image_url)}" alt="" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0">` : ''}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:14px">${esc(ev.title)}</div>
+          ${ev.blurb ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(ev.blurb)}</div>` : ''}
+          ${ev.event_date ? `<div style="font-size:11px;color:var(--red);font-weight:700;margin-top:4px;text-transform:uppercase">${new Date(ev.event_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>` : ''}
+        </div>
+      </div></div>`).join('');
+  } catch(e) { el.innerHTML = ''; }
+}
+
+async function loadCoachsEdge() {
+  const el = document.getElementById('home-coachs-edge');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/daily/content');
+    const d = await r.json();
+    const c = d.content;
+    if (!c) { el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <div class="sec-label">Coach's Edge</div>
+      <div class="card"><div class="card-body">
+        <div style="font-size:13px;line-height:1.5">${esc(c.health_tip||'')}</div>
+      </div></div>
+      ${c.quote ? `<div class="card" style="border-top:3px solid var(--red)"><div class="card-body">
+        <div style="font-size:14px;font-style:italic;line-height:1.5">"${esc(c.quote)}"</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:6px;text-transform:uppercase;font-weight:700">— ${esc(c.quote_author||'Unknown')}</div>
+      </div></div>` : ''}
+      ${c.news_headline ? `<div class="card"><div class="card-body">
+        <div class="sec-label" style="margin:0 0 4px">Inside Retro</div>
+        <div style="font-weight:700;font-size:13px">${esc(c.news_headline)}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:4px;line-height:1.5">${esc(c.news_blurb||'')}</div>
+      </div></div>` : ''}`;
+  } catch(e) { el.innerHTML = ''; }
+}
+
+async function loadCircle() {
+  const el = document.getElementById('home-circle');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/wins/feed?limit=10');
+    const d = await r.json();
+    const wins = d.wins || [];
+    if (!wins.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="sec-label">The Circle</div>` + wins.map(w => {
+      const name = ((w.first_name||'')+' '+(w.last_name||'')).trim();
+      const tierLabel = w.tier ? w.tier.label : '';
+      return `<div class="card"><div class="card-body">
+        <div style="font-weight:700;font-size:13px">${esc(w.headline)}</div>
+        ${w.detail ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(w.detail)}</div>` : ''}
+        ${tierLabel ? `<div style="font-size:10px;color:var(--red);font-weight:800;text-transform:uppercase;margin-top:6px">${esc(tierLabel)}</div>` : ''}
+      </div></div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = ''; }
+}
+
+// ── GUEST MODE (no login required to browse) ──────────────────
+let GUEST_MODE = false;
+const GATED_TABS = ['training','progress','profile'];
+
+function startGuestMode() {
+  GUEST_MODE = true;
+  document.getElementById('login-screen').style.display = 'none';
+  const shell = document.getElementById('app-shell');
+  shell.style.display = 'flex';
+  document.getElementById('g-name').textContent = 'Retro Fitness';
+  document.getElementById('g-sub').textContent = 'Fairless Hills';
+  const avatar = document.getElementById('g-avatar');
+  avatar.textContent = '→';
+  avatar.title = 'Log In';
+  avatar.onclick = showLoginFromGuest;
+  renderHomeExtras();
+  loadPublicHomeContent();
+}
+
+function showLoginFromGuest() {
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function renderGatedTabPrompt(tab) {
+  const el = document.getElementById('scr-' + tab);
+  if (!el) return;
+  el.innerHTML = `<div class="scroll-pad" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:40px 24px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:8px">Log in to view this</div>
+    <div style="font-size:13px;color:var(--ink3);margin-bottom:18px">Your training, nutrition, and progress are just for enrolled members.</div>
+    <button class="action-btn" onclick="showLoginFromGuest()">Log In</button>
+  </div>`;
+}
+
 function renderHomeExtras() {
   // Nutrition preview — demo mode only, shown during the consultation close
   const nutEl = document.getElementById('home-nutrition-demo');
@@ -2087,7 +2204,7 @@ async function resetConfirm() {
     errEl.textContent = 'Could not reach the server. Try again.'; errEl.style.display = 'block';
   }
 }
-function doLogout() { localStorage.removeItem('member_session'); SESSION=null; document.getElementById('app-shell').style.display='none'; document.getElementById('login-screen').style.display='flex'; }
+function doLogout() { localStorage.removeItem('member_session'); SESSION=null; document.getElementById('login-screen').style.display='none'; switchTab('home'); startGuestMode(); }
 
 // ── STARTUP ──────────────────────────────────────────────────
 if (IS_DEMO) {
@@ -2095,7 +2212,8 @@ if (IS_DEMO) {
   startApp();
 } else {
   const saved = localStorage.getItem('member_session');
-  if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); } }
+  if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); startGuestMode(); } }
+  else { startGuestMode(); }
 }
 </script>
 
