@@ -327,6 +327,16 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .pc-handle-dot{position:absolute;top:50%;left:50%;width:34px;height:34px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none}
 .pc-slider-range{width:100%;margin-top:10px;accent-color:var(--red)}
 .pc-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);font-weight:700;margin-top:4px}
+.shop-aisle-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--red);margin:14px 0 6px}
+.shop-aisle-label:first-child{margin-top:0}
+.shop-item-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.shop-item-row:last-child{border-bottom:none}
+.shop-item-check{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff}
+.shop-item-row.checked .shop-item-check{background:var(--green);border-color:var(--green)}
+.shop-item-name{flex:1;font-size:13px;color:var(--ink)}
+.shop-item-row.checked .shop-item-name{color:var(--ink3);text-decoration:line-through}
+.shop-item-qty{font-size:11px;color:var(--ink3);font-weight:600}
+.shop-item-pantry-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--green);background:var(--green-lt);padding:2px 7px;border-radius:10px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -2303,7 +2313,7 @@ function initNutrition() {
   if (!dateEl) return;
   dateEl.value = new Date().toISOString().slice(0,10);
   loadNutritionDay();
-  renderMealPlan(DATA.mealPlan);
+  loadPantry().then(() => renderMealPlan(DATA.mealPlan));
   loadRecipes();
 }
 
@@ -2557,7 +2567,126 @@ function renderMealPlan(mp) {
     return;
   }
   document.getElementById('meal-plan-body').innerHTML = '<div class="mp-ack-note">Signed by '+esc(mp.ack_signature||'')+' on '+esc((mp.ack_at||'').slice(0,10))+'</div><div class="week-plan">'+mp.plan_html+'</div>';
-  document.getElementById('shopping-body').innerHTML = mp.shopping_list ? '<div class="shop-list">'+esc(mp.shopping_list).replace(/\n/g,'<br>')+'</div>' : '<div class="empty-state">Shopping list will appear here.</div>';
+  renderShoppingList(mp);
+}
+
+// ── INTERACTIVE SHOPPING LIST + PANTRY (checkable, pantry-aware) ──
+let PANTRY_ITEMS = [];
+
+async function loadPantry() {
+  if (!SESSION || !SESSION.client_id) return;
+  try {
+    const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'pantry_items', where:{ client_id: SESSION.client_id }, orderBy:'item_name' }) });
+    const d = await r.json();
+    PANTRY_ITEMS = (d.results||[]).filter(p => String(p.client_id) === String(SESSION.client_id));
+  } catch(e) { PANTRY_ITEMS = []; }
+}
+
+function pantryHasItem(itemName) {
+  const norm = (s) => String(s||'').toLowerCase().trim();
+  const target = norm(itemName);
+  return PANTRY_ITEMS.some(p => p.have_it && (norm(p.item_name) === target || target.includes(norm(p.item_name)) || norm(p.item_name).includes(target)));
+}
+
+function renderShoppingList(mp) {
+  const el = document.getElementById('shopping-body');
+  if (!el) return;
+  let items = [];
+  try { items = JSON.parse(mp.shopping_items_json || '[]'); } catch(e) {}
+  let checked = {};
+  try { checked = JSON.parse(mp.shopping_checked_json || '{}'); } catch(e) {}
+  if (!items.length) { el.innerHTML = '<div class="empty-state">Shopping list will appear here.</div>'; return; }
+
+  const byAisle = {};
+  items.forEach(it => { const a = it.aisle || 'Other'; (byAisle[a] = byAisle[a] || []).push(it); });
+
+  const aisleHtml = Object.keys(byAisle).sort().map(aisle => {
+    const rows = byAisle[aisle].map(it => {
+      const isChecked = checked[it.item] === true || pantryHasItem(it.item);
+      const fromPantry = pantryHasItem(it.item) && checked[it.item] !== false;
+      return `<div class="shop-item-row${isChecked?' checked':''}" onclick="toggleShoppingItem('${esc(it.item).replace(/'/g,"\\'")}')">
+        <div class="shop-item-check">${isChecked ? '&#10003;' : ''}</div>
+        <div class="shop-item-name">${esc(it.item)}${it.qty ? ' <span class="shop-item-qty">'+esc(it.qty)+'</span>' : ''}</div>
+        ${fromPantry ? '<div class="shop-item-pantry-tag">have it</div>' : ''}
+      </div>`;
+    }).join('');
+    return `<div class="shop-aisle-label">${esc(aisle)}</div>${rows}`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="action-btn secondary" style="width:auto;padding:8px 14px;font-size:12px;margin-top:0" onclick="openPantryManager()">Manage Pantry</button>
+    </div>
+    ${aisleHtml}`;
+}
+
+async function toggleShoppingItem(itemName) {
+  const mp = window._pendingMealPlan;
+  if (!mp || !mp.id) return;
+  let checked = {};
+  try { checked = JSON.parse(mp.shopping_checked_json || '{}'); } catch(e) {}
+  const currentlyChecked = checked[itemName] === true || (pantryHasItem(itemName) && checked[itemName] !== false);
+  checked[itemName] = !currentlyChecked;
+  mp.shopping_checked_json = JSON.stringify(checked);
+  renderShoppingList(mp);
+  try {
+    await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'meal_plans', values:{ shopping_checked_json: mp.shopping_checked_json }, where:{ id: mp.id } }) });
+  } catch(e) {}
+}
+
+function openPantryManager() {
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('mm-title').textContent = 'Your Pantry';
+  renderPantryManagerBody();
+}
+
+function renderPantryManagerBody() {
+  const body = document.getElementById('mm-body');
+  body.innerHTML = `
+    <div class="mm-status" style="margin-bottom:10px;text-align:left">Mark what you already have at home — the shopping list will skip these automatically.</div>
+    <div class="fld"><label>Add a pantry item</label><input id="pantry-add-input" placeholder="e.g. olive oil, rice, salt"></div>
+    <button class="action-btn" onclick="addPantryItem()">Add to Pantry</button>
+    <div id="pantry-list" style="margin-top:16px"></div>`;
+  renderPantryList();
+}
+
+function renderPantryList() {
+  const el = document.getElementById('pantry-list');
+  if (!el) return;
+  if (!PANTRY_ITEMS.length) { el.innerHTML = '<div class="mm-status">No pantry items yet — add the staples you always have on hand.</div>'; return; }
+  el.innerHTML = PANTRY_ITEMS.map(p => `
+    <div class="shop-item-row${p.have_it ? ' checked' : ''}" onclick="togglePantryItem(${p.id})">
+      <div class="shop-item-check">${p.have_it ? '&#10003;' : ''}</div>
+      <div class="shop-item-name">${esc(p.item_name)}</div>
+    </div>`).join('');
+}
+
+async function addPantryItem() {
+  const input = document.getElementById('pantry-add-input');
+  const name = (input.value||'').trim();
+  if (!name) return;
+  input.value = '';
+  try {
+    await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'pantry_items', values:{ client_id: SESSION.client_id, item_name: name, have_it: 1, updated_at: new Date().toISOString() } }) });
+    await loadPantry();
+    renderPantryList();
+    if (window._pendingMealPlan) renderShoppingList(window._pendingMealPlan);
+  } catch(e) {}
+}
+
+async function togglePantryItem(id) {
+  const p = PANTRY_ITEMS.find(x => x.id === id);
+  if (!p) return;
+  p.have_it = p.have_it ? 0 : 1;
+  renderPantryList();
+  try {
+    await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'pantry_items', values:{ have_it: p.have_it, updated_at: new Date().toISOString() }, where:{ id } }) });
+    if (window._pendingMealPlan) renderShoppingList(window._pendingMealPlan);
+  } catch(e) {}
 }
 
 async function acknowledgeMealPlan() {

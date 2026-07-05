@@ -88,7 +88,7 @@ const ALLOWED_TABLES = new Set([
   'clients','consultations','followups','checkins','programs','training_sessions',
   'lead_sources','leads','touchpoints','outreach_log',
   'progress_photos','measurements','eod_reports','appointment_status',
-  'meal_profiles','meal_plans','meals','recipes',
+  'meal_profiles','meal_plans','meals','recipes','pantry_items',
   'inbody_scans','workouts',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts',
   'daily_content','client_wins','gym_events',
@@ -2141,11 +2141,11 @@ async function generateMealPlans(env, opt){
         if (existing) { skipped++; continue; }
       }
       const inbody = await latestInbody(env, r.client_id);
-      const html = await buildMealPlan(env, r, inbody);
-      await env.DB.prepare(`INSERT INTO meal_plans (client_id,week_of,plan_html,generated_at) VALUES (?,?,?,?)`)
-        .bind(r.client_id, week, html, new Date().toISOString()).run();
+      const built = await buildMealPlan(env, r, inbody);
+      await env.DB.prepare(`INSERT INTO meal_plans (client_id,week_of,plan_html,shopping_items_json,shopping_checked_json,generated_at) VALUES (?,?,?,?,?,?)`)
+        .bind(r.client_id, week, built.plan_html, JSON.stringify(built.shopping_items||[]), JSON.stringify({}), new Date().toISOString()).run();
       const name = ((r.first_name||'')+' '+(r.last_name||'')).trim() || 'Client';
-      results.push({ client_id: r.client_id, name, email: r.email||'', week, html });
+      results.push({ client_id: r.client_id, name, email: r.email||'', week, html: built.plan_html });
     } catch(e){ errors.push(r.client_id+': '+e.message); }
   }
   return { clients: rows.length, generated: results.length, skipped, results, errors };
@@ -2174,7 +2174,12 @@ APPROVED MEAL LIBRARY — build the week primarily FROM these options, scaling p
 
 ${libraryText}
 
-Strictly avoid every excluded food and allergen listed. If a medical condition is listed, do NOT design around it; instead add a clear note advising the client to consult their physician or a registered dietitian, and keep the plan general and conservative. Output clean simple HTML only (headings, paragraphs, lists; no html or body wrapper): a short macro summary, a 7-day plan with breakfast, lunch, dinner and one snack per day with approximate portions drawn from the library above, a few simple recipes, and a consolidated shopping list grouped by aisle. Add one short 1st Phorm supplement suggestion using this link: ${FPLINK}. End with exactly one italic paragraph, for every client regardless of medical history, stating plainly: this plan is a general nutrition recommendation only, not medical or dietetic advice, and the client should consult their physician or a registered dietitian before starting it or making any significant change to their diet. Include no workout, training, sets, reps or exercise content. Plain accessible language, no emojis, no em dashes.`;
+Strictly avoid every excluded food and allergen listed. If a medical condition is listed, do NOT design around it; instead add a clear note advising the client to consult their physician or a registered dietitian, and keep the plan general and conservative.
+
+Return ONLY valid JSON, no markdown, no prose outside the JSON, with this exact shape:
+{"plan_html":"<clean simple HTML: headings, paragraphs, lists; no html or body wrapper; a short macro summary and a 7-day plan with breakfast, lunch, dinner and one snack per day with approximate portions drawn from the library above, plus one short 1st Phorm supplement suggestion using this link: ${FPLINK}, ending with exactly one italic paragraph stating this plan is a general nutrition recommendation only, not medical or dietetic advice, and the client should consult their physician or a registered dietitian before starting it or making any significant change to their diet>","shopping_items":[{"item":"chicken breast","qty":"2 lb","aisle":"meat & seafood"}]}
+
+The shopping_items array is the FULL consolidated grocery list for the week, one entry per distinct ingredient with a realistic total quantity across all 7 days, grouped conceptually by aisle (meat & seafood, produce, dairy & eggs, grains & bakery, pantry, frozen, other) — put the aisle name in the "aisle" field for each item, don't build a separate nested structure. Include no workout, training, sets, reps or exercise content in plan_html. Plain accessible language, no emojis, no em dashes anywhere.`;
   const user = `Client: ${name}, age ${r.age||'n/a'}, ${r.gender||'n/a'}. Goal: ${goal}.
 InBody: weight ${inbody.w||'n/a'}, lean mass ${inbody.ln||'n/a'}, body fat percent ${inbody.bf||'n/a'}.
 ${macroLine}
@@ -2187,7 +2192,15 @@ Allergies: ${r.allergies||'none'}. Medical conditions: ${r.conditions||'none'}. 
   });
   const data = await resp.json();
   if (data.error) throw new Error(data.error.message || 'AI error');
-  return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  try {
+    const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+    return { plan_html: parsed.plan_html || '', shopping_items: parsed.shopping_items || [] };
+  } catch(e) {
+    // Fallback: if the model didn't return clean JSON, treat the whole
+    // response as the narrative plan rather than losing it entirely.
+    return { plan_html: text, shopping_items: [] };
+  }
 }
 
 // ---------------- Coach's Edge / Word of the Day / Inside Retro ----------------
