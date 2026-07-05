@@ -1486,9 +1486,9 @@
 
         <div class="card">
           <div class="card-title"><span class="dot"></span> Generate assessment</div>
-          <p style="font-size:13px; color:var(--text2); margin-bottom:16px;">All data entered across the previous steps will be analyzed. Review the output with the member before accepting or declining.</p>
-          <button class="btn btn-primary btn-lg btn-full" id="gen-btn" onclick="generateAssessment()">
-            ✨ Generate Personalized Assessment
+          <p style="font-size:13px; color:var(--text2); margin-bottom:16px;">Building the assessment now from everything entered so far. Review the output with the member before accepting or declining.</p>
+          <button class="btn btn-primary btn-full" id="gen-btn" onclick="generateAssessment()">
+            🔄 Regenerate Assessment
           </button>
           <div id="assess-status" class="status-bar" style="margin-top:12px;"></div>
           <div id="assessment-box" class="assessment-box"></div>
@@ -1511,121 +1511,72 @@
             <div class="package-section-title">Choose a Training Program</div>
             <div id="pkg-rec-loading" style="font-size:12px;color:var(--text2);margin-bottom:12px;display:none">Analyzing goals and body composition...</div>
 
-            <!-- Frequency packages -->
-            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Session Frequency</div>
-            <div class="package-grid" id="pkg-grid-freq" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px">
-              <div class="package-card" id="pkg-f1" onclick="selectPkg('f1')">
-                <div class="pkg-rec-badge" id="pkg-f1-rec" style="display:none;">★ Recommended</div>
-                <div class="pkg-check"><input type="checkbox" id="pkg-f1-chk" disabled></div>
-                <div class="pkg-name">Every 2 Weeks</div>
-                <div class="pkg-freq">2 sessions / month</div>
-                <ul class="pkg-features">
-                  <li>Structured check-in sessions</li>
-                  <li>Program adjustments monthly</li>
-                  <li>Trainerize app access</li>
-                  <li>Progress tracking</li>
-                </ul>
-                <div class="pkg-benefit" id="pkg-f1-benefit"></div>
-              </div>
-              <div class="package-card" id="pkg-f2" onclick="selectPkg('f2')">
-                <div class="pkg-rec-badge" id="pkg-f2-rec" style="display:none;">★ Recommended</div>
-                <div class="pkg-check"><input type="checkbox" id="pkg-f2-chk" disabled></div>
+            <!-- Training Frequency -->
+            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Training Frequency</div>
+            <div class="package-grid" id="pkg-grid-main" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px">
+              <div class="package-card" id="pkg-1" onclick="selectPkg(1)">
+                <div class="pkg-rec-badge" id="pkg-1-rec" style="display:none;">★ Recommended</div>
+                <div class="pkg-check"><input type="checkbox" id="pkg-1-chk" disabled></div>
                 <div class="pkg-name">1x Per Week</div>
                 <div class="pkg-freq">4 sessions / month</div>
                 <ul class="pkg-features">
-                  <li>Weekly accountability session</li>
-                  <li>Personalized program</li>
-                  <li>Monthly InBody review</li>
+                  <li>Weekly one-on-one training</li>
+                  <li>Personalized workout program</li>
+                  <li>Monthly InBody scan review</li>
                   <li>Trainerize app access</li>
-                  <li>Session notes &amp; tracking</li>
                 </ul>
-                <div class="pkg-benefit" id="pkg-f2-benefit"></div>
+                <div class="pkg-benefit" id="pkg-1-benefit"></div>
               </div>
-              <div class="package-card" id="pkg-f3" onclick="selectPkg('f3')">
-                <div class="pkg-rec-badge" id="pkg-f3-rec" style="display:none;">★ Recommended</div>
-                <div class="pkg-check"><input type="checkbox" id="pkg-f3-chk" disabled></div>
+              <div class="package-card" id="pkg-2" onclick="selectPkg(2)">
+                <div class="pkg-rec-badge" id="pkg-2-rec" style="display:none;">★ Recommended</div>
+                <div class="pkg-check"><input type="checkbox" id="pkg-2-chk" disabled></div>
                 <div class="pkg-name">2x Per Week</div>
                 <div class="pkg-freq">8 sessions / month</div>
                 <ul class="pkg-features">
                   <li>Twice-weekly training momentum</li>
                   <li>Faster adaptation and results</li>
-                  <li>Full program periodization</li>
-                  <li>Monthly InBody review</li>
+                  <li>Monthly InBody scan review</li>
                   <li>Trainerize app access</li>
                 </ul>
-                <div class="pkg-benefit" id="pkg-f3-benefit"></div>
+                <div class="pkg-benefit" id="pkg-2-benefit"></div>
               </div>
-              <div class="package-card" id="pkg-f4" onclick="selectPkg('f4')">
-                <div class="pkg-rec-badge" id="pkg-f4-rec" style="display:none;">★ Recommended</div>
-                <div class="pkg-check"><input type="checkbox" id="pkg-f4-chk" disabled></div>
+              <div class="package-card" id="pkg-3" onclick="selectPkg(3)">
+                <div class="pkg-rec-badge" id="pkg-3-rec" style="display:none;">★ Recommended</div>
+                <div class="pkg-check"><input type="checkbox" id="pkg-3-chk" disabled></div>
                 <div class="pkg-name">3x Per Week</div>
                 <div class="pkg-freq">12 sessions / month</div>
                 <ul class="pkg-features">
                   <li>High-frequency coaching</li>
                   <li>Full periodized program</li>
-                  <li>Maximum accountability</li>
-                  <li>Bi-weekly InBody check</li>
+                  <li>Monthly InBody scan review</li>
                   <li>Trainerize app access</li>
                 </ul>
-                <div class="pkg-benefit" id="pkg-f4-benefit"></div>
+                <div class="pkg-benefit" id="pkg-3-benefit"></div>
               </div>
-              <div class="package-card" id="pkg-f5" onclick="selectPkg('f5')">
-                <div class="pkg-rec-badge" id="pkg-f5-rec" style="display:none;">★ Recommended</div>
-                <div class="pkg-check"><input type="checkbox" id="pkg-f5-chk" disabled></div>
+              <div class="package-card" id="pkg-4" onclick="selectPkg(4)">
+                <div class="pkg-rec-badge" id="pkg-4-rec" style="display:none;">★ Recommended</div>
+                <div class="pkg-check"><input type="checkbox" id="pkg-4-chk" disabled></div>
                 <div class="pkg-name">4x Per Week</div>
                 <div class="pkg-freq">16 sessions / month</div>
                 <ul class="pkg-features">
                   <li>Elite daily coaching structure</li>
-                  <li>Full periodized split programming</li>
-                  <li>Weekly InBody monitoring</li>
-                  <li>Maximum results track</li>
+                  <li>Maximum accountability</li>
+                  <li>Monthly InBody scan review</li>
                   <li>Trainerize app access</li>
                 </ul>
-                <div class="pkg-benefit" id="pkg-f5-benefit"></div>
+                <div class="pkg-benefit" id="pkg-4-benefit"></div>
               </div>
             </div>
 
-            <!-- Complete packages -->
-            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Complete Packages <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:11px">— includes weekly chef-crafted meal plan, recipes &amp; shopping list emailed every Saturday</span></div>
-            <div class="package-grid" id="pkg-grid-complete">
-              <div class="package-card" id="pkg-c1" onclick="selectPkg('c1')">
-                <div class="pkg-rec-badge" id="pkg-c1-rec" style="display:none;">★ Recommended</div>
-                <div class="pkg-check"><input type="checkbox" id="pkg-c1-chk" disabled></div>
-                <div class="pkg-name">Complete</div>
-                <div class="pkg-freq">4 sessions / month</div>
-                <ul class="pkg-features">
-                  <li>4 one-on-one training sessions</li>
-                  <li>Personalized workout program</li>
-                  <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
-                  <li class="chef">Weekly AI + chef meal plan</li>
-                  <li class="chef">Recipes + grocery list</li>
-                  <li class="chef">Macro targets from InBody</li>
-                  <li class="chef">Emailed every Saturday</li>
-                </ul>
-                <div class="pkg-benefit" id="pkg-c1-benefit"></div>
-              </div>
-              <div class="package-card" id="pkg-c2" onclick="selectPkg('c2')">
-                <div class="pkg-badge">Best Value</div>
-                <div class="pkg-rec-badge" id="pkg-c2-rec" style="display:none;">★ Recommended</div>
-                <div class="pkg-check"><input type="checkbox" id="pkg-c2-chk" disabled></div>
-                <div class="pkg-name">Complete+</div>
-                <div class="pkg-freq">8 sessions / month</div>
-                <ul class="pkg-features">
-                  <li>8 one-on-one training sessions</li>
-                  <li>Personalized workout program</li>
-                  <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
-                  <li class="chef">Weekly AI + chef meal plan</li>
-                  <li class="chef">Recipes + grocery list</li>
-                  <li class="chef">Macro targets from InBody</li>
-                  <li class="chef">Emailed every Saturday</li>
-                  <li>Faster results track</li>
-                </ul>
-                <div class="pkg-benefit" id="pkg-c2-benefit"></div>
+            <!-- Nutrition Add-On -->
+            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Nutrition Add-On</div>
+            <div class="package-card" id="nutrition-addon-card" onclick="toggleNutritionAddon()" style="cursor:pointer;border:1.5px solid var(--border2);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px;">
+              <input type="checkbox" id="nutrition-addon-chk" disabled style="width:20px;height:20px;flex-shrink:0;">
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:14px">Weekly Chef-Crafted Meal Plan</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:2px">AI + chef-built recipes, grocery list, and macro targets from InBody — emailed every Saturday.</div>
               </div>
             </div>
-            <div style="font-size:11px;color:var(--text3);text-align:center;margin-bottom:14px;"></div>
           </div>
 
           <div id="decision-row" class="decision-row" style="display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px;">
@@ -1849,13 +1800,13 @@
                 <div style="display:flex;align-items:center;gap:14px;">
                   <div style="flex:1;">
                     <div style="font-family:var(--font-display);font-size:14px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;">Show them their app</div>
-                    <div style="font-size:12px;color:#9CA3AF;margin-top:3px;">Launches the member app personalized with their name, goal, and today's scan. Hand them the phone.</div>
+                    <div style="font-size:12px;color:#9CA3AF;margin-top:3px;">Have them scan the QR code below with their own phone. Use this button only to preview it on your own screen first.</div>
                   </div>
-                  <button onclick="launchAppDemo()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:12px 18px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;">&#128241; Launch Demo</button>
+                  <button onclick="launchAppDemo()" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:12px 18px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;">&#128241; Preview</button>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);">
-                  <div id="demo-qr-box" style="background:#fff;border-radius:8px;padding:6px;flex-shrink:0;line-height:0;"></div>
-                  <div style="font-size:12px;color:#9CA3AF;">Have <b style="color:#fff">them</b> scan this with their own phone camera — it opens the app personalized with their name, goal, and nutrition targets right on their phone. No typing, no login.</div>
+                  <div id="demo-qr-box" style="background:#fff;border-radius:8px;padding:6px;flex-shrink:0;line-height:0;min-width:60px;min-height:60px;"></div>
+                  <div style="font-size:12px;color:#9CA3AF;"><b style="color:#fff">Hand them their own phone</b> and have them scan this with their camera — it opens the app personalized with their name, goal, and nutrition targets right on their phone. No typing, no login.</div>
                 </div>
               </div>
 
@@ -1868,44 +1819,17 @@
 
               <label style="font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:6px;">Program length</label>
               <div class="pill-group" id="length-group">
-                <div class="pill" onclick="pickLengthEnroll(this,'12')">12 months — $45/session (best rate)</div>
-                <div class="pill" onclick="pickLengthEnroll(this,'6')">6 months — $50/session</div>
+                <div class="pill" onclick="pickLengthEnroll(this,'12')">12-Month Commitment — Best Rate</div>
+                <div class="pill" onclick="pickLengthEnroll(this,'6')">6-Month Commitment</div>
               </div>
 
-              <div id="pricing-breakdown-enroll" style="display:none;margin-bottom:16px;">
-                <div class="pricing-compare">
-                  <div class="pricing-card best" id="enroll-price-12-card">
-                    <div class="pricing-card-label" style="color:var(--accent);">12 months</div>
-                    <div class="pricing-card-price" id="enroll-price-12">—</div>
-                    <div class="pricing-card-sub">per month</div>
-                    <div class="pricing-card-total" id="enroll-total-12">—</div>
-                  </div>
-                  <div class="pricing-card" id="enroll-price-6-card">
-                    <div class="pricing-card-label" style="color:var(--text2);">6 months</div>
-                    <div class="pricing-card-price" style="color:var(--text);" id="enroll-price-6">—</div>
-                    <div class="pricing-card-sub">per month</div>
-                    <div class="pricing-card-total" style="color:var(--text2);" id="enroll-total-6">—</div>
-                  </div>
-                </div>
-                <div style="background:var(--success-light);border:1px solid #a8d0b8;border-radius:8px;padding:9px 12px;font-size:11px;color:var(--success);" id="enroll-savings-note"></div>
-              </div>
-
-              <div id="enroll-commitment-display" style="display:none;background:var(--accent-light);border:1.5px solid var(--accent);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;text-align:center;">
-                <div style="font-size:13px;font-weight:700;color:var(--accent);" id="enroll-commit-label">—</div>
-                <div style="font-size:11px;color:var(--text2);margin-top:2px;" id="enroll-commit-sub">—</div>
-              </div>
-
-              <label style="font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:6px;">Training frequency</label>
-              <div class="pill-group" id="freq-group">
-                <div class="pill" onclick="pickPill(this,'freq')">1x per week</div>
-                <div class="pill" onclick="pickPill(this,'freq')">2x per week</div>
-                <div class="pill" onclick="pickPill(this,'freq')">3x per week</div>
-                <div class="pill" onclick="pickPill(this,'freq')">4x per week</div>
-                <div class="pill" onclick="pickPill(this,'freq')">1x every other week</div>
+              <div id="enroll-commitment-display" style="display:none;background:var(--accent-light);border:1.5px solid var(--accent);border-radius:var(--radius);padding:16px;margin:16px 0;text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:var(--accent);font-family:var(--font-display);" id="enroll-commit-label">—</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:4px;" id="enroll-commit-sub">—</div>
               </div>
 
               <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;">
-                <p style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px;"><strong style="color:var(--text);">Member consent:</strong> By enrolling, the member acknowledges that training packages are billed monthly for the selected commitment period. The $45/session rate applies exclusively to 12-month commitments.</p>
+                <p style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px;"><strong style="color:var(--text);">Member consent:</strong> By enrolling, the member acknowledges that training packages are billed monthly for the selected commitment period.</p>
                 <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--text2);">
                   <input type="checkbox" id="consent-data" style="margin-top:2px;accent-color:var(--accent);flex-shrink:0;">
                   I consent to Coach Ted storing my fitness, nutrition preference, and measurement data securely for the purpose of personalizing my training program.
@@ -2675,7 +2599,7 @@ function showThinkingAboutIt() {
   document.getElementById('followup-details').innerHTML =
     '<strong>' + (gv('name')||'Member') + '</strong> is thinking it over.<br>' +
     'Email: ' + (gv('email')||'—') + ' | Phone: ' + (gv('phone')||'—') + '<br>' +
-    'Package discussed: ' + (PKG_META[selectedPkg]||{}).name + '<br>' +
+    'Package discussed: ' + pkgDisplayName() + '<br>' +
     'Check-in call scheduled: <strong>' + callbackDate.toLocaleDateString('en-US', opts) + '</strong>';
 
   // Pre-select reason
@@ -2691,7 +2615,7 @@ function showThinkingAboutIt() {
   var calUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
     '&text=' + encodeURIComponent('Follow-up call: ' + (gv('name')||'Member')) +
     '&dates=' + calDate + '/' + calDate +
-    '&details=' + encodeURIComponent('Discussed: ' + ((PKG_META[selectedPkg]||{}).name||'—') + ' | Phone: ' + (gv('phone')||'—') + ' | Goals: ' + (gv('goals')||'—'));
+    '&details=' + encodeURIComponent('Discussed: ' + (pkgDisplayName()||'—') + ' | Phone: ' + (gv('phone')||'—') + ' | Goals: ' + (gv('goals')||'—'));
   setTimeout(function(){ window.open(calUrl, '_blank'); }, 400);
 
   // Generate warmer thank-you email
@@ -2708,7 +2632,7 @@ async function generateThinkingEmail() {
   if (toEl) toEl.value = gv('email') || '';
   if (subEl) subEl.value = 'Great meeting you today, ' + (gv('name')||'') + ' — your program summary inside';
 
-  var prompt = 'Write a warm, brief follow-up email from Coach Ted at Retro Fitness to ' + (gv('name')||'a prospective member') + ' who just had a consultation and wants to think it over. Their goals: ' + (gv('goals')||'improve their health') + '. Package discussed: ' + ((PKG_META[selectedPkg]||{}).name||'personal training') + '. Tone: encouraging, zero pressure, remind them what they shared about their goals and why they came in, let them know the door is open. 3 short paragraphs. Sign off as Coach Ted, Retro Fitness Fairless Hills. No subject line in the body.';
+  var prompt = 'Write a warm, brief follow-up email from Coach Ted at Retro Fitness to ' + (gv('name')||'a prospective member') + ' who just had a consultation and wants to think it over. Their goals: ' + (gv('goals')||'improve their health') + '. Package discussed: ' + (pkgDisplayName()||'personal training') + '. Tone: encouraging, zero pressure, remind them what they shared about their goals and why they came in, let them know the door is open. 3 short paragraphs. Sign off as Coach Ted, Retro Fitness Fairless Hills. No subject line in the body.';
 
   try {
     var r = await fetch(getApiUrl(), {
@@ -2907,8 +2831,7 @@ async function loadExistingClientForConsult(id) {
 // (Complete / Complete+). Every other package skips this entirely, no row
 // is created and the client never appears on the meal plan tool.
 async function saveNutritionProfileIfApplicable() {
-  var pkgMeta = PKG_META[selectedPkg] || {};
-  if (!pkgMeta.nutrition) return; // not a Complete/Complete+ package, nothing to save
+  if (!nutritionAddon) return; // nutrition add-on not selected, nothing to save
 
   var email = (gv('email') || '').toLowerCase().trim();
   if (!email) { console.warn('No email on file, skipping meal_profiles save.'); return; }
@@ -2941,7 +2864,7 @@ async function saveNutritionProfileIfApplicable() {
   var existingProfile = await dbCall({ op:'select', table:'meal_profiles', where:{ client_id: clientId }, limit:1 });
   var profileValues = {
     client_id: clientId,
-    package: pkgMeta.value || '',
+    package: pkgDbValue(),
     goal_type: gv('goals') || '',
     excluded_proteins: byCat.proteins.join(', '),
     excluded_vegetables: byCat.vegetables.join(', '),
@@ -2959,14 +2882,13 @@ async function saveNutritionProfileIfApplicable() {
 }
 
 async function finalizeAccept() {
-  var freq  = document.querySelector('#freq-group .pill.selected');
   var length = document.querySelector('#length-group .pill.selected');
-  if (!freq || !length) { alert('Please select training frequency and program length.'); return; }
+  if (!selectedPkg || !length) { alert('Please select a training frequency and program length.'); return; }
+  var freqLabel = FREQ_TIERS[selectedPkg] ? FREQ_TIERS[selectedPkg].name : '';
 
   showLoading('Saving enrollment...');
   try {
     var clientName = gv('name') || '';
-    var pkg = PKG_META[selectedPkg] || pkgPricing[selectedPkg] || {};
 
     // 1. Write to D1 via Worker (primary)
     var clientPayload = {
@@ -2978,10 +2900,10 @@ async function finalizeAccept() {
       age: gv('age') || null,
       goals: gv('goals') || null,
       medical_notes: gv('medical') || null,
-      package: pkg.value || selectedPkg || null,
+      package: pkgDbValue(),
       training_start_date: gv('consult-date') || new Date().toISOString().slice(0,10),
       status: 'active',
-      coach_notes: 'Enrolled via consultation tool. Frequency: ' + (freq ? freq.textContent.trim() : '') + '. Length: ' + (length ? length.textContent.trim() : '') + '. Assessment: ' + (assessmentText||'').substring(0,400)
+      coach_notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Assessment: ' + (assessmentText||'').substring(0,400)
     };
     Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]==null) delete clientPayload[k]; });
 
@@ -3008,7 +2930,7 @@ async function finalizeAccept() {
         diet_notes: gv('typical-diet') || null,
         commitment_score: gv('commitment') || null,
         source: 'consultation_tool',
-        notes: 'Package: ' + (pkg.name || selectedPkg) + '. Frequency: ' + (freq ? freq.textContent.trim() : '') + '. Length: ' + (length ? length.textContent.trim() : '')
+        notes: 'Package: ' + pkgDisplayName() + '. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '')
       };
       Object.keys(consultPayload).forEach(function(k){ if(consultPayload[k]==null) delete consultPayload[k]; });
       dbCall({ op:'insert', table:'consultations', values: consultPayload }).catch(function(){});
@@ -3504,11 +3426,39 @@ function filterClients(query) {
 var selectedPkg = 0;
 var enrollLength = '';
 
-var pkgPricing = {
-  1: { name: 'Coach Ted Training',   sessions: 4,  mo12: 180, mo6: 200, hasNutrition: false },
-  2: { name: 'Coach Ted Complete',   sessions: 4,  mo12: 249, mo6: 269, hasNutrition: true  },
-  3: { name: 'Coach Ted Complete+',  sessions: 8,  mo12: 349, mo6: 389, hasNutrition: true  }
+var FREQ_TIERS = {
+  1: { name: '1x Per Week', sessions: 4 },
+  2: { name: '2x Per Week', sessions: 8 },
+  3: { name: '3x Per Week', sessions: 12 },
+  4: { name: '4x Per Week', sessions: 16 }
 };
+var SESSION_RATE = { '12': 45, '6': 50 };
+var nutritionAddon = false;
+
+function nutritionAddonPrice(freqId) {
+  return (parseInt(freqId) >= 3) ? 49 : 69;
+}
+
+function computeMonthly(freqId, months) {
+  var tier = FREQ_TIERS[freqId];
+  if (!tier) return 0;
+  var base = tier.sessions * SESSION_RATE[months];
+  return base + (nutritionAddon ? nutritionAddonPrice(freqId) : 0);
+}
+
+function pkgDisplayName() {
+  if (!selectedPkg || !FREQ_TIERS[selectedPkg]) return '';
+  return FREQ_TIERS[selectedPkg].name + (nutritionAddon ? ' + Nutrition' : '');
+}
+
+// Preserves compatibility with existing package-tier gating in meal-plans.html,
+// client-portal.html, and member-app.html, which check for exactly 'complete'
+// or 'complete_plus'. Nutrition is now an add-on across any frequency rather
+// than a fixed named tier, so this maps the new model back onto those values.
+function pkgDbValue() {
+  if (!nutritionAddon) return 'training';
+  return (parseInt(selectedPkg) >= 3) ? 'complete_plus' : 'complete';
+}
 
 var selectedPkgConfirmed = null;
 
@@ -3530,6 +3480,11 @@ function goPage(n) {
   saveDraftSilent();
   autoSyncToSheet();
 
+  if (n === 5 && !document.getElementById('gen-btn')._ran) {
+    document.getElementById('gen-btn')._ran = true;
+    generateAssessment();
+  }
+
   if (n === 6 && !document.getElementById('pkg-rec-loading')._ran) {
     document.getElementById('pkg-rec-loading')._ran = true;
     generatePkgRecommendation();
@@ -3540,18 +3495,18 @@ async function generatePkgRecommendation(){
   const loading=document.getElementById('pkg-rec-loading');
   if(!loading) return;
 
-  // Default to f3 (2x per week) immediately while AI loads
+  // Default to 1x/week immediately while AI loads
   (function(){
-    var badge=document.getElementById('pkg-f3-rec');
-    var card=document.getElementById('pkg-f3');
-    var benefit=document.getElementById('pkg-f3-benefit');
+    var badge=document.getElementById('pkg-1-rec');
+    var card=document.getElementById('pkg-1');
+    var benefit=document.getElementById('pkg-1-benefit');
     if(badge) badge.style.display='block';
     if(card) card.classList.add('pkg-recommended');
-    if(benefit) benefit.textContent='Training twice weekly is the proven sweet spot for building consistency and seeing real results.';
+    if(benefit) benefit.textContent='A weekly session builds the consistency and accountability most new members need to start.';
   })();
 
   loading.style.display='block';
-  const prompt='A new PT client just completed a fitness consultation and InBody assessment. Based on their data, decide which training package fits best. Default to 2x-per-week (f3) unless the member\'s schedule, budget, or physical condition clearly points elsewhere. Options: Every-2-weeks (f1), 1x-per-week (f2), 2x-per-week (f3), 3x-per-week (f4), 4x-per-week (f5), Complete-4-sessions-with-meal-plan (c1), Complete-plus-8-sessions-with-meal-plan (c2). Return ONLY valid JSON with keys pkg, reason, where reason is a single sentence under 22 words written directly to the member about why this frequency fits their specific goal and condition. No markdown. Example: {"pkg":"f3","reason":"..."}. Recommend c1 or c2 only if nutrition is a clearly stated barrier. Goals: '+(gv('goals')||'not specified')+'. BMI '+(gv('bmi')||'n/a')+', BF '+(gv('pbf')||'n/a')+'%, Lean '+(gv('lean-mass')||'n/a')+' lb. Medical: '+(gv('medical')||'none')+'.';
+  const prompt='A new PT client just completed a fitness consultation and InBody assessment. Decide how many days per week of training they need, from 1 to 4. People who are complete beginners, sedentary, have a doctor recommendation to start a program, or have body fat clearly in the higher reference range need MORE frequent training (3-4x/week) to build momentum safely. People who already work out regularly, have some experience, and are in a healthy-to-fit body composition range typically only need 1-2x/week to maintain progress. Also decide whether the weekly nutrition/meal-plan add-on would meaningfully help this specific person (true if their goal involves body composition change, weight loss, or they said they don\'t know their macros; false if nutrition isn\'t their stated focus). Return ONLY valid JSON: {"pkg":"1"|"2"|"3"|"4","nutrition":true|false,"reason":"one sentence under 22 words written directly to the member about why this frequency fits their specific goal and condition"}. No markdown. Goals: '+(gv('goals')||'not specified')+'. Experience: '+(gv('experience')||'n/a')+'. Current workout status: '+(gv('workout-status')||'n/a')+'. Doctor recommendation: '+(gv('doctor-rec')||'n/a')+'. BMI '+(gv('bmi')||'n/a')+', BF '+(gv('pbf')||'n/a')+'%, Lean '+(gv('lean-mass')||'n/a')+' lb. Macro awareness: '+(gv('tracks-macros')||'n/a')+'. Medical: '+(gv('medical')||'none')+'.';
   try{
     const r=await fetch(getApiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:400,messages:[{role:'user',content:prompt}]})});
     const d=await r.json();
@@ -3567,27 +3522,16 @@ async function generatePkgRecommendation(){
       if(badge) badge.style.display='block';
       if(card){ card.classList.add('pkg-recommended'); }
       if(benefit) benefit.textContent=j.reason||'';
+      if (j.nutrition && !nutritionAddon) { toggleNutritionAddon(); }
     }
   }catch(e){}
   loading.style.display='none';
 }
 
-var PKG_META={
-  f1:{name:'Every 2 Weeks',sessions:'2/mo',nutrition:false,value:'biweekly'},
-  f2:{name:'1x Per Week',sessions:'4/mo',nutrition:false,value:'weekly_1x'},
-  f3:{name:'2x Per Week',sessions:'8/mo',nutrition:false,value:'weekly_2x'},
-  f4:{name:'3x Per Week',sessions:'12/mo',nutrition:false,value:'weekly_3x'},
-  f5:{name:'4x Per Week',sessions:'16/mo',nutrition:false,value:'weekly_4x'},
-  c1:{name:'Complete',sessions:'4/mo',nutrition:true,value:'complete'},
-  c2:{name:'Complete+',sessions:'8/mo',nutrition:true,value:'complete_plus'},
-  1:{name:'Coach Ted Training',sessions:'4/mo',nutrition:false,value:'training'},
-  2:{name:'Coach Ted Complete',sessions:'4/mo',nutrition:true,value:'complete'},
-  3:{name:'Coach Ted Complete+',sessions:'8/mo',nutrition:true,value:'complete_plus'}
-};
-
 function selectPkg(id) {
   selectedPkg = id;
   document.querySelectorAll('.package-card').forEach(function(c) {
+    if (c.id === 'nutrition-addon-card') return;
     c.classList.remove('pkg-selected');
     var chk = c.querySelector('.pkg-check input');
     if (chk) chk.checked = false;
@@ -3598,13 +3542,22 @@ function selectPkg(id) {
     var chk = el.querySelector('.pkg-check input');
     if (chk) chk.checked = true;
   }
-  var p = PKG_META[id] || pkgPricing[id] || {};
-  var sum = document.getElementById('enroll-pkg-summary');
-  if (sum) sum.textContent = (p.name||'') + ' — ' + (p.sessions||'') + ' sessions/mo';
   var acceptBtn = document.getElementById('pkg-accept-btn');
   if (acceptBtn) acceptBtn.disabled = false;
 
-  // If closing panel already open (editing in progress), refresh pricing live
+  var tp = document.getElementById('terms-panel');
+  if (tp && tp.style.display === 'block') {
+    refreshClosingPricing();
+  }
+}
+
+function toggleNutritionAddon() {
+  nutritionAddon = !nutritionAddon;
+  var card = document.getElementById('nutrition-addon-card');
+  var chk = document.getElementById('nutrition-addon-chk');
+  if (card) card.classList.toggle('pkg-selected', nutritionAddon);
+  if (chk) chk.checked = nutritionAddon;
+
   var tp = document.getElementById('terms-panel');
   if (tp && tp.style.display === 'block') {
     refreshClosingPricing();
@@ -3620,25 +3573,25 @@ function editPackageSelection() {
 }
 
 function refreshClosingPricing() {
-  var p = PKG_META[selectedPkg] || pkgPricing[selectedPkg] || {};
   var sum = document.getElementById('enroll-pkg-summary');
-  if (sum) sum.textContent = (p.name||'') + ' — ' + (p.sessions||'') + ' sessions/mo';
+  if (sum && selectedPkg) {
+    var tier = FREQ_TIERS[selectedPkg];
+    sum.textContent = tier.name + ' — ' + tier.sessions + ' sessions/mo' + (nutritionAddon ? ' + Nutrition' : '');
+  }
   // Reset length selection so they repick for the new package
   document.querySelectorAll('#length-group .pill').forEach(function(pill){ pill.classList.remove('selected'); });
-  document.getElementById('pricing-breakdown-enroll').style.display = 'none';
   document.getElementById('enroll-commitment-display').style.display = 'none';
   selectedLength = '';
 }
 
 function acceptPackage() {
   if (!selectedPkg) return;
-  var p = PKG_META[selectedPkg] || pkgPricing[selectedPkg] || {};
   if (window._editingFromClose) {
     window._editingFromClose = false;
     refreshClosingPricing();
     var tp = document.getElementById('terms-panel');
     if (tp) { tp.style.display = 'block'; tp.scrollIntoView({ behavior:'smooth' }); }
-  } else if (p.nutrition || p.hasNutrition) {
+  } else if (nutritionAddon) {
     showNutritionPanel();
   } else {
     showTerms();
@@ -3728,28 +3681,13 @@ function pickLengthEnroll(el, months) {
 }
 
 function updateEnrollPricing() {
-  if (!selectedPkg) return;
-  var p = pkgPricing[selectedPkg];
-  var bd = document.getElementById('pricing-breakdown-enroll');
-  if (bd) {
-    bd.style.display = 'block';
-    document.getElementById('enroll-price-12').textContent = '$' + p.mo12;
-    document.getElementById('enroll-total-12').textContent = '$' + (p.mo12 * 12).toLocaleString() + ' total';
-    document.getElementById('enroll-price-6').textContent = '$' + p.mo6;
-    document.getElementById('enroll-total-6').textContent = '$' + (p.mo6 * 6).toLocaleString() + ' for 6 months';
-    var diff = (p.mo6 * 12) - (p.mo12 * 12);
-    var note = document.getElementById('enroll-savings-note');
-    if (note) note.textContent = 'Two 6-month terms = $' + (p.mo6*12).toLocaleString() + ' — $' + diff + ' more than the 12-month rate. Annual saves $' + diff + '.';
-  }
-  if (enrollLength) {
-    var mo = enrollLength === '12' ? p.mo12 : p.mo6;
-    var total = mo * parseInt(enrollLength);
-    var cd = document.getElementById('enroll-commitment-display');
-    if (cd) {
-      cd.style.display = 'block';
-      document.getElementById('enroll-commit-label').textContent = p.name + ' — ' + enrollLength + '-month — $' + mo + '/mo';
-      document.getElementById('enroll-commit-sub').textContent = 'Total: $' + total.toLocaleString() + '  ·  $' + (enrollLength==='12'?'45':'50') + '/session';
-    }
+  if (!selectedPkg || !enrollLength) return;
+  var mo = computeMonthly(selectedPkg, enrollLength);
+  var cd = document.getElementById('enroll-commitment-display');
+  if (cd) {
+    cd.style.display = 'block';
+    document.getElementById('enroll-commit-label').textContent = '$' + mo + '/month';
+    document.getElementById('enroll-commit-sub').textContent = pkgDisplayName() + ' — ' + enrollLength + '-month commitment, billed monthly';
   }
 }
 
@@ -3845,9 +3783,8 @@ async function generateClosingValue() {
   var weight = gv('weight') || '';
   var pbf = gv('pbf') || '';
   var lean = gv('lean-mass') || '';
-  var pkg = PKG_META[selectedPkg] || {};
-  var pkgName = pkg.name || 'your selected program';
-  var hasNutrition = pkg.nutrition || false;
+  var pkgName = FREQ_TIERS[selectedPkg] ? FREQ_TIERS[selectedPkg].name : 'your selected program';
+  var hasNutrition = nutritionAddon;
 
   var prompt = 'You are Coach Ted at Retro Fitness writing a value summary for ' + name + ' at the end of their fitness consultation. Their goals: ' + goals + '. Medical notes: ' + medical + '. Current weight: ' + weight + ' lb, ' + pbf + '% body fat, ' + lean + ' lb lean mass. Selected package: ' + pkgName + (hasNutrition ? ' with weekly meal plan' : '') + '.\n\nReturn ONLY a JSON object with exactly these keys:\n- goals_recap: 2 sentences in second person ("you"), reflecting their exact goals and the specific friction or pain points standing between them and success. Warm, direct, no fluff.\n- benefits: array of exactly 4 strings, each one 10-18 words, written to them directly, tying a specific program feature to their specific goal or condition. Not generic. Not "you will get accountability." Make it personal.\n\nNo markdown. No extra keys. Valid JSON only.';
 
@@ -4270,14 +4207,19 @@ function launchAppDemo() {
 
 function renderDemoQR() {
   var box = document.getElementById('demo-qr-box');
-  if (!box || typeof qrcode !== 'function') return;
+  if (!box) return;
+  var url = buildDemoUrl();
+  if (typeof qrcode !== 'function') {
+    box.innerHTML = '<div style="font-size:10px;color:#B0121F;padding:4px;max-width:120px;line-height:1.4;">QR unavailable — <a href="' + url + '" target="_blank" style="color:#B0121F">open link</a></div>';
+    return;
+  }
   try {
     var qr = qrcode(0, 'M');
-    qr.addData(buildDemoUrl());
+    qr.addData(url);
     qr.make();
     box.innerHTML = qr.createImgTag(4, 4);
   } catch (e) {
-    box.innerHTML = '';
+    box.innerHTML = '<div style="font-size:10px;color:#B0121F;padding:4px;max-width:120px;line-height:1.4;">QR failed — <a href="' + url + '" target="_blank" style="color:#B0121F">open link</a></div>';
   }
 }
 
