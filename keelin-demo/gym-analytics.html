@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gym Analytics — Rego Park (Demo)</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/x-icon" href="../icons-strong/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons-strong/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../icons-strong/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../icons-strong/apple-touch-icon.png">
+<style>
+:root {
+  --red:#E0192B; --red-dk:#B0121F; --ink:#15171A; --bg:#E8EBEF;
+  --card:#fff; --border:#E1E4E9; --text2:#4B5563; --text3:#6B7280;
+  --green:#1E9E5A; --amber:#D98A0B; --blue:#2563EB; --gray:#9AA1AC;
+  --green-lt:#E3F5EC; --amber-lt:#FBEFD9; --blue-lt:#E7EEFE; --red-lt:#FDEAEC;
+  --font-display:'Oswald',sans-serif; --radius:14px;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--ink); font-family:'Inter',system-ui,sans-serif; font-size:14px; }
+h1,h2,h3,.sec-title { font-family:var(--font-display); }
+
+.topbar { display:flex; align-items:center; gap:16px; background:var(--ink); padding:16px 28px; }
+.topbar a { color:#9CA3AF; text-decoration:none; font-weight:600; font-size:13px; }
+.topbar .title { color:#fff; font-family:var(--font-display); font-weight:700; font-size:18px; text-transform:uppercase; letter-spacing:.03em; }
+.topbar .title span { color:var(--red); }
+.topbar .spacer { flex:1; }
+.topbar .sub { color:#9CA3AF; font-size:12px; }
+
+.wrap { max-width:1280px; margin:0 auto; padding:28px 28px 60px; }
+.sec-label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); margin:28px 0 12px; }
+.sec-label:first-child { margin-top:0; }
+
+.kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+.kpi-tile { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px 18px 16px; cursor:pointer; transition:box-shadow .15s,border-color .15s; }
+.kpi-tile:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); border-color:#C9CDD4; }
+.kpi-tile.active { border-color:var(--red); box-shadow:0 4px 16px rgba(224,25,43,.12); }
+.kpi-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text3); margin-bottom:8px; }
+.kpi-value { font-size:26px; font-weight:800; line-height:1; }
+.kpi-sub { font-size:11.5px; color:var(--text3); margin-top:6px; }
+.kpi-pill { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; margin-top:8px; }
+.pill-good { background:var(--green-lt); color:var(--green); }
+.pill-warn { background:var(--amber-lt); color:var(--amber); }
+.pill-bad { background:var(--red-lt); color:var(--red); }
+
+.detail-panel { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:22px; margin-top:16px; display:none; }
+.detail-panel.open { display:block; }
+.detail-panel h3 { font-size:16px; margin-bottom:4px; }
+.detail-panel .dp-sub { font-size:12.5px; color:var(--text3); margin-bottom:16px; }
+.dp-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.dp-row:last-child { border-bottom:none; }
+.dp-row .name { font-weight:600; }
+.dp-row .meta { color:var(--text3); font-size:12px; }
+
+.card-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:4px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+.card-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text3); margin-bottom:14px; }
+
+.bar-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.bar-label { width:110px; font-size:12.5px; font-weight:600; flex-shrink:0; }
+.bar-track { flex:1; height:10px; background:#F0F1F3; border-radius:6px; overflow:hidden; }
+.bar-fill { height:100%; border-radius:6px; }
+.bar-val { width:44px; text-align:right; font-size:12px; color:var(--text3); flex-shrink:0; }
+
+.tier-strip { display:flex; gap:10px; }
+.tier-chip { flex:1; text-align:center; padding:14px 8px; border-radius:10px; }
+.tier-chip .tn { font-family:var(--font-display); font-weight:700; font-size:12px; text-transform:uppercase; }
+.tier-chip .tc { font-size:22px; font-weight:800; margin-top:4px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="command-center.html">← Command Center</a>
+  <div class="spacer"></div>
+  <div class="title">GYM <span>ANALYTICS</span></div>
+  <div class="spacer"></div>
+  <div class="sub">Retro Fitness Rego Park · Demo Store</div>
+</div>
+
+<div class="wrap">
+
+  <div class="sec-label">Whole-Gym KPIs — This Month</div>
+  <div class="kpi-grid" id="kpi-grid"></div>
+  <div class="detail-panel" id="detail-panel"></div>
+
+  <div class="sec-label">Membership Mix</div>
+  <div class="card">
+    <div class="tier-strip" id="tier-strip"></div>
+  </div>
+
+  <div class="sec-label">PT Program</div>
+  <div class="kpi-grid" id="pt-kpi-grid"></div>
+
+  <div class="card-row" style="margin-top:16px">
+    <div class="card">
+      <div class="card-title">Client Progress Trend (Body Composition)</div>
+      <div id="progress-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Coach Session Load</div>
+      <div id="coach-bars"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+const KPIS = [
+  { key:'members', label:'Total Active Members', value:'1,847', sub:'+62 this month', pill:{t:'+3.5% MoM',c:'good'},
+    detail:{title:'Active Membership', sub:'1,847 total, up 62 net new this month across all tiers.',
+      rows:[['Ultimate','812 members'],['Flex','693 members'],['Limited','342 members'],['New joins (MTD)','62'],['Cancellations (MTD)','19']]} },
+  { key:'revenue', label:'Gym Revenue (MTD)', value:'$54.2K', sub:'Membership dues only', pill:{t:'On pace',c:'good'},
+    detail:{title:'Membership Revenue', sub:'Dues collected this month, before PT program revenue.',
+      rows:[['Ultimate tier','$31,900'],['Flex tier','$16,700'],['Limited tier','$5,600'],['Avg revenue / member','$29.35']]} },
+  { key:'sets', label:'Sets Booked %', value:'74%', sub:'Corporate min: 70%', pill:{t:'Above min',c:'good'},
+    detail:{title:'Welcome Workout Sets Booked', sub:'New members who had a Welcome Workout scheduled at sign-up.',
+      rows:[['New members this month','62'],['Sets booked','46 (74%)'],['Not yet booked','16'],['Corporate minimum','70%']]} },
+  { key:'show', label:'Welcome Workout Show %', value:'61%', sub:'Of sets booked', pill:{t:'Needs attention',c:'warn'},
+    detail:{title:'Welcome Workout Show Rate', sub:'Of the appointments booked, how many actually showed up.',
+      rows:[['Sets booked','46'],['Showed','28 (61%)'],['No-show','12'],['Rescheduled','6']]} },
+  { key:'close', label:'Close %', value:'38%', sub:'Target: 33-40%', pill:{t:'On target',c:'good'},
+    detail:{title:'PT Close Rate', sub:'Of members who completed a Welcome Workout, how many enrolled in PT.',
+      rows:[['Completed Welcome Workouts','28'],['Enrolled in PT','11 (39%)'],['Declined','12'],['Thinking it over','5']]} },
+  { key:'udf', label:'UDF Completion %', value:'88%', sub:'Assigned + outcome logged', pill:{t:'Good',c:'good'},
+    detail:{title:'UDF Completion', sub:'New members with both "Scheduled By" and outcome fields completed in ABC.',
+      rows:[['New members this month','62'],['Fully completed','55 (88%)'],['Missing outcome','5'],['Missing scheduled-by','2']]} },
+  { key:'attrition', label:'Attrition (MTD)', value:'3.2%', sub:'19 cancellations', pill:{t:'Normal range',c:'good'},
+    detail:{title:'Member Attrition', sub:'Cancellations as a percentage of total active membership.',
+      rows:[['Cancellations','19'],['Freezes','8'],['Top reason','Moving / relocating'],['2nd reason','Price']]} },
+  { key:'pastdue', label:'Past Due Accounts', value:'14', sub:'$2,180 total', pill:{t:'Follow up',c:'warn'},
+    detail:{title:'Past Due Accounts', sub:'Accounts with a failed or missed payment this billing cycle.',
+      rows:[['Accounts past due','14'],['Total past due','$2,180'],['Over 30 days','4'],['Over 60 days','1']]} },
+  { key:'ptrev', label:'PT Revenue (MTD)', value:'$18.4K', sub:'vs $20K goal', pill:{t:'92% to goal',c:'warn'},
+    detail:{title:'PT Program Revenue', sub:'Personal training revenue against this month\'s goal.',
+      rows:[['MTD PT revenue','$18,400'],['Monthly goal','$20,000'],['% to goal','92%'],['Avg revenue / PT client','$192']]} },
+  { key:'checkins', label:'Check-Ins (MTD)', value:'9,412', sub:'Gym traffic', pill:{t:'+4% MoM',c:'good'},
+    detail:{title:'Member Check-Ins', sub:'Total front-desk check-ins this month across all members.',
+      rows:[['Total check-ins','9,412'],['Avg per active member','5.1'],['Peak day','Monday'],['Peak time','5:00-7:00 PM']]} },
+];
+
+function pillClass(c){ return c==='good'?'pill-good':c==='warn'?'pill-warn':'pill-bad'; }
+
+function renderKpiGrid() {
+  const el = document.getElementById('kpi-grid');
+  el.innerHTML = KPIS.map(k => `
+    <div class="kpi-tile" id="tile-${k.key}" onclick="showDetail('${k.key}')">
+      <div class="kpi-label">${esc(k.label)}</div>
+      <div class="kpi-value">${esc(k.value)}</div>
+      <div class="kpi-sub">${esc(k.sub)}</div>
+      <div class="kpi-pill ${pillClass(k.pill.c)}">${esc(k.pill.t)}</div>
+    </div>`).join('');
+}
+
+function showDetail(key) {
+  document.querySelectorAll('.kpi-tile').forEach(t => t.classList.remove('active'));
+  const tile = document.getElementById('tile-' + key);
+  const panel = document.getElementById('detail-panel');
+  const k = KPIS.find(x => x.key === key);
+  if (!k) return;
+  if (tile.classList.contains('active')) { panel.classList.remove('open'); return; }
+  tile.classList.add('active');
+  panel.innerHTML = `
+    <h3>${esc(k.detail.title)}</h3>
+    <div class="dp-sub">${esc(k.detail.sub)}</div>
+    ${k.detail.rows.map(r => `<div class="dp-row"><span class="name">${esc(r[0])}</span><span class="meta">${esc(r[1])}</span></div>`).join('')}
+  `;
+  panel.classList.add('open');
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function renderTierStrip() {
+  const tiers = [
+    { name:'Ultimate', count:812, color:'var(--red)' },
+    { name:'Flex', count:693, color:'var(--blue)' },
+    { name:'Limited', count:342, color:'var(--gray)' },
+  ];
+  document.getElementById('tier-strip').innerHTML = tiers.map(t => `
+    <div class="tier-chip" style="background:${t.color}12">
+      <div class="tn" style="color:${t.color}">${esc(t.name)}</div>
+      <div class="tc">${t.count}</div>
+    </div>`).join('');
+}
+
+const PT_KPIS = [
+  { label:'Active PT Clients', value:'96', sub:'Across all coaches', pill:{t:'+8 this month',c:'good'} },
+  { label:'Total Sessions (MTD)', value:'412', sub:'Avg 1.8 / client / wk', pill:{t:'On pace',c:'good'} },
+  { label:'Renewals Needed', value:'11', sub:'≤2 sessions remaining', pill:{t:'Follow up',c:'warn'} },
+  { label:'Clients Trending Positive', value:'71%', sub:'Body comp improving', pill:{t:'Good',c:'good'} },
+];
+function renderPtKpiGrid() {
+  document.getElementById('pt-kpi-grid').innerHTML = PT_KPIS.map(k => `
+    <div class="kpi-tile" style="cursor:default">
+      <div class="kpi-label">${esc(k.label)}</div>
+      <div class="kpi-value">${esc(k.value)}</div>
+      <div class="kpi-sub">${esc(k.sub)}</div>
+      <div class="kpi-pill ${pillClass(k.pill.c)}">${esc(k.pill.t)}</div>
+    </div>`).join('');
+}
+
+function renderProgressBars() {
+  const rows = [
+    { label:'Losing fat', pct:71, color:'var(--green)' },
+    { label:'Building muscle', pct:58, color:'var(--blue)' },
+    { label:'Plateaued', pct:22, color:'var(--amber)' },
+    { label:'Trending backward', pct:7, color:'var(--red)' },
+  ];
+  document.getElementById('progress-bars').innerHTML = rows.map(r => `
+    <div class="bar-row">
+      <div class="bar-label">${esc(r.label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${r.pct}%;background:${r.color}"></div></div>
+      <div class="bar-val">${r.pct}%</div>
+    </div>`).join('');
+}
+
+function renderCoachBars() {
+  const rows = [
+    { label:'Ted Scholl', pct:92, color:'var(--red)' },
+    { label:'Roman Benedetti', pct:68, color:'var(--blue)' },
+    { label:'Danielle Pellegrini', pct:54, color:'var(--green)' },
+    { label:'Marin', pct:41, color:'var(--amber)' },
+  ];
+  document.getElementById('coach-bars').innerHTML = rows.map(r => `
+    <div class="bar-row">
+      <div class="bar-label">${esc(r.label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${r.pct}%;background:${r.color}"></div></div>
+      <div class="bar-val">${r.pct}%</div>
+    </div>`).join('');
+}
+
+renderKpiGrid();
+renderTierStrip();
+renderPtKpiGrid();
+renderProgressBars();
+renderCoachBars();
+</script>
+</body>
+</html>
