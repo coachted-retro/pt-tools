@@ -1648,35 +1648,65 @@ function renderStaffHome() {
   const el = document.getElementById('staff-home-body');
   const role = (STAFF_SESSION.role || '').toLowerCase();
   const name = encodeURIComponent(STAFF_SESSION.name);
+  const isManager = (role === 'general manager' || role === 'director of fitness' || role === 'regional director');
   let cards = '';
 
   if (role === 'pt coach' || role === "men's training lead") {
     cards += staffCard('My Clients', 'Your full roster and daily dashboard', 'coach-crm.html?coach='+name+'&locked=1', '👥');
     cards += staffCard('My Calendar', "Today's sessions and the week ahead", 'coach-calendar.html?coach='+name+'&locked=1', '📅');
     cards += staffCard('Log a Workout', 'Floor logging, offline-ready', 'gym-floor.html', '💪');
-    cards += staffCard('My Coach Profile', 'Edit your public bio, photo, and specialties', 'coach-profile.html?staff_id='+STAFF_SESSION.staff_id, '🧑‍🏫');
+    cards += staffCard('Coaches Hub', 'The full coach directory', 'coaches-hub.html', '🧑‍🏫');
   } else if (role === 'mea') {
     cards += staffCard('My Call List', 'Today\'s people + business calls, ranked by priority', 'prospect-tracker.html?tab=calllist', '📞');
     cards += staffCard('Prospect Tracker', 'People and Businesses pipeline', 'prospect-tracker.html', '🎯');
+    cards += staffCard('Coverage Board', 'Staff shifts and PT sessions, one calendar', 'coverage-board.html', '🗓');
   } else if (role === 'floor tech') {
     cards += staffCard('Maintenance &amp; Cleaning Punch List', "Today's list — check off what's done", '#punch-list-section', '🔧');
-  } else if (role === 'general manager' || role === 'director of fitness' || role === 'regional director') {
+    cards += staffCard('Coverage Board', 'Staff shifts and PT sessions, one calendar', 'coverage-board.html', '🗓');
+  } else if (isManager) {
     cards += staffCard('Command Center', 'Every tool, one place', 'command-center.html', '🏢');
     cards += staffCard('Coverage Board', 'Staff shifts and PT sessions, one calendar', 'coverage-board.html', '🗓');
     cards += staffCard('Prospect Tracker', 'People, Businesses, and the daily Call List', 'prospect-tracker.html', '🎯');
     cards += staffCard('Maintenance &amp; Cleaning Punch List', 'Oversight on what needs attention', '#punch-list-section', '🔧');
   } else {
     cards += staffCard('Command Center', 'Every tool, one place', 'command-center.html', '🏢');
+    cards += staffCard('Coverage Board', 'Staff shifts and PT sessions, one calendar', 'coverage-board.html', '🗓');
   }
 
   cards += staffCard('My HR & Payroll', 'Personal info, documents, PTO, payroll', 'my-hr.html?staff_id='+STAFF_SESSION.staff_id, '💼');
 
-  const showPunchList = (role === 'floor tech' || role === 'general manager' || role === 'director of fitness' || role === 'regional director');
-  el.innerHTML = `<div class="sec-label">Quick Access</div>${cards}
+  const showPunchList = (role === 'floor tech' || isManager);
+  el.innerHTML = `
+    <div class="card" id="profile-header-card"><div class="card-body"><div class="empty-state">Loading profile...</div></div></div>
+
+    <div class="sec-label">Quick Access</div>${cards}
+
     <div class="sec-label" style="margin-top:16px">My Schedule</div>
-    <div class="card"><div class="card-body"><div id="my-shifts-body"><div class="empty-state">Loading...</div></div></div></div>
+    <div class="card"><div class="card-body"><div id="my-shifts-body"><div class="empty-state">Loading...</div></div>
+      <button class="wp-swap-btn" style="margin-top:10px" onclick="syncCalendarToPhone()">📱 Sync to My Phone Calendar</button>
+    </div></div>
+
     <div class="sec-label" style="margin-top:16px">Open Shifts — Need Coverage</div>
     <div class="card"><div class="card-body"><div id="open-shifts-body"><div class="empty-state">Loading...</div></div></div></div>
+
+    <div class="sec-label" style="margin-top:16px">Upcoming at the Gym</div>
+    <div class="card"><div class="card-body"><div id="gym-events-body"><div class="empty-state">Loading...</div></div>
+      ${isManager ? `<button class="wp-swap-btn" style="margin-top:10px" onclick="openAddGymEvent()">+ Add Event / Holiday</button>` : ''}
+    </div></div>
+    <div id="add-gym-event-form" style="display:none"></div>
+
+    <div class="sec-label" style="margin-top:16px">My Availability</div>
+    <div class="card"><div class="card-body"><div id="availability-body"><div class="empty-state">Loading...</div></div></div></div>
+
+    <div class="sec-label" style="margin-top:16px">Time Off</div>
+    <div class="card"><div class="card-body">
+      <div class="fld"><label>Dates</label><input type="date" id="pto-start-home"> to <input type="date" id="pto-end-home" style="margin-top:8px"></div>
+      <div class="fld"><label>Reason (optional)</label><textarea id="pto-reason-home" rows="2" placeholder="Optional note for management"></textarea></div>
+      <button class="action-btn" onclick="submitTimeOffHome()">Request Time Off</button>
+      <div class="status-msg" id="pto-status-home"></div>
+      <div id="my-timeoff-list" style="margin-top:14px"></div>
+    </div></div>
+
     ${showPunchList ? `
     <div id="punch-list-section">
       <div class="sec-label" style="margin-top:16px">Cleaning Punch List</div>
@@ -1690,9 +1720,162 @@ function renderStaffHome() {
         <button class="wp-swap-btn" style="margin-top:10px" onclick="openAddPunchItem('maintenance')">+ Add Item</button>
       </div></div>
     </div>` : ''}`;
+  loadProfileHeader();
   loadMyShifts();
   loadOpenShifts();
+  loadGymEvents();
+  loadAvailability();
+  loadMyTimeOff();
   if (showPunchList) { loadPunchList('cleaning'); loadPunchList('maintenance'); }
+}
+
+async function loadProfileHeader() {
+  const el = document.getElementById('profile-header-card');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/coaches/profile?staff_id=' + STAFF_SESSION.staff_id);
+    const d = await r.json();
+    const profile = (d.ok && d.profile) ? d.profile : {};
+    const photo = profile.photo_url ? `<img src="${esc(profile.photo_url)}" style="width:56px;height:56px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">` : `<div style="width:56px;height:56px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:24px">🙂</div>`;
+    el.querySelector('.card-body').innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px">
+        ${photo}
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:800;font-size:16px">${esc(STAFF_SESSION.name)}</div>
+          <div style="font-size:12px;color:var(--ink3)">${esc((STAFF_SESSION.role||'').replace(/_/g,' '))}</div>
+          ${profile.tagline ? `<div style="font-size:12px;font-style:italic;color:var(--ink3);margin-top:2px">"${esc(profile.tagline)}"</div>` : ''}
+        </div>
+        <a href="coach-profile.html?staff_id=${STAFF_SESSION.staff_id}" style="font-size:11px;color:var(--red);text-decoration:none;font-weight:700;white-space:nowrap">Edit Profile</a>
+      </div>`;
+  } catch(e) { el.querySelector('.card-body').innerHTML = ''; }
+}
+
+function syncCalendarToPhone() {
+  const url = WORKER + '/calendar/ics?staff_id=' + STAFF_SESSION.staff_id;
+  const webcalUrl = url.replace(/^https?:\/\//, 'webcal://');
+  window.location.href = webcalUrl;
+  setTimeout(() => { alert('If nothing opened, copy this link into your calendar app\'s "Subscribe by URL" option:\n\n' + url); }, 800);
+}
+
+async function loadGymEvents() {
+  const el = document.getElementById('gym-events-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/events/upcoming?gym_id=1&days=90');
+    const d = await r.json();
+    const events = d.events || [];
+    if (!events.length) { el.innerHTML = '<div class="empty-state">Nothing on the calendar right now.</div>'; return; }
+    el.innerHTML = events.map(e => {
+      const dateLabel = new Date(e.event_date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <div style="font-weight:700;font-size:13px">${e.type==='holiday'?'🎉 ':''}${esc(e.title)}</div>
+        <div style="font-size:12px;color:var(--ink3)">${esc(dateLabel)}${e.notes ? ' · '+esc(e.notes) : ''}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load the gym calendar.</div>'; }
+}
+
+function openAddGymEvent() {
+  const el = document.getElementById('add-gym-event-form');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="card" style="margin-top:10px"><div class="card-body">
+    <div class="fld"><label>Title</label><input type="text" id="ge-title" placeholder="e.g. Independence Day — Closed"></div>
+    <div class="fld"><label>Type</label><select id="ge-type"><option value="event">Special Event</option><option value="holiday">Holiday</option></select></div>
+    <div class="fld"><label>Date</label><input type="date" id="ge-date"></div>
+    <div class="fld"><label>End date (optional, for multi-day)</label><input type="date" id="ge-end-date"></div>
+    <div class="fld"><label>Notes (optional)</label><textarea id="ge-notes" rows="2"></textarea></div>
+    <button class="action-btn" onclick="saveGymEvent()">Add to Calendar</button>
+    <div class="status-msg" id="ge-status"></div>
+  </div></div>`;
+}
+
+async function saveGymEvent() {
+  const status = document.getElementById('ge-status');
+  const title = document.getElementById('ge-title').value.trim();
+  const date = document.getElementById('ge-date').value;
+  if (!title || !date) { status.textContent = 'Title and date are required.'; return; }
+  status.textContent = 'Saving...';
+  try {
+    await fetch(WORKER + '/events/add', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      gym_id: 1, title, event_date: date, end_date: document.getElementById('ge-end-date').value || null,
+      type: document.getElementById('ge-type').value, notes: document.getElementById('ge-notes').value.trim() || null,
+      created_by: STAFF_SESSION.name
+    })});
+    status.textContent = 'Added!';
+    document.getElementById('add-gym-event-form').style.display = 'none';
+    loadGymEvents();
+  } catch(e) { status.textContent = 'Could not save, try again.'; }
+}
+
+const AVAIL_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+async function loadAvailability() {
+  const el = document.getElementById('availability-body');
+  if (!el) return;
+  let existing = [];
+  try {
+    const r = await fetch(WORKER + '/availability/get?staff_id=' + STAFF_SESSION.staff_id);
+    const d = await r.json();
+    existing = d.availability || [];
+  } catch(e) {}
+  el.innerHTML = AVAIL_DAYS.map((label, i) => {
+    const match = existing.find(a => a.day_of_week === i);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">
+      <label style="width:40px;font-size:12px;font-weight:700"><input type="checkbox" id="av-on-${i}" ${match?'checked':''} style="margin-right:4px">${label}</label>
+      <input type="time" id="av-start-${i}" value="${match&&match.start_time?match.start_time:'09:00'}" style="flex:1;font-size:12px;padding:4px">
+      <span style="font-size:11px;color:var(--ink3)">to</span>
+      <input type="time" id="av-end-${i}" value="${match&&match.end_time?match.end_time:'17:00'}" style="flex:1;font-size:12px;padding:4px">
+    </div>`;
+  }).join('') + `<button class="wp-swap-btn" style="margin-top:10px" onclick="saveAvailability()">Save Availability</button>
+  <div class="status-msg" id="avail-status"></div>`;
+}
+
+async function saveAvailability() {
+  const status = document.getElementById('avail-status');
+  const slots = [];
+  AVAIL_DAYS.forEach((label, i) => {
+    if (document.getElementById('av-on-'+i).checked) {
+      slots.push({ day_of_week: i, start_time: document.getElementById('av-start-'+i).value, end_time: document.getElementById('av-end-'+i).value });
+    }
+  });
+  status.textContent = 'Saving...';
+  try {
+    await fetch(WORKER + '/availability/set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ staff_id: STAFF_SESSION.staff_id, slots }) });
+    status.textContent = 'Saved!';
+  } catch(e) { status.textContent = 'Could not save, try again.'; }
+}
+
+async function submitTimeOffHome() {
+  const status = document.getElementById('pto-status-home');
+  const start = document.getElementById('pto-start-home').value;
+  const end = document.getElementById('pto-end-home').value;
+  const reason = document.getElementById('pto-reason-home').value.trim();
+  if (!start || !end) { status.textContent = 'Pick a start and end date.'; return; }
+  status.textContent = 'Submitting...';
+  try {
+    await fetch(WORKER + '/timeoff/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ staff_id: STAFF_SESSION.staff_id, start_date: start, end_date: end, reason }) });
+    status.textContent = 'Request sent to management.';
+    document.getElementById('pto-reason-home').value = '';
+    loadMyTimeOff();
+  } catch(e) { status.textContent = 'Could not submit, try again.'; }
+}
+
+async function loadMyTimeOff() {
+  const el = document.getElementById('my-timeoff-list');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/timeoff/mine?staff_id=' + STAFF_SESSION.staff_id);
+    const d = await r.json();
+    const reqs = d.requests || [];
+    if (!reqs.length) { el.innerHTML = ''; return; }
+    const badge = s => s==='approved' ? '<span class="wp-supp-tag" style="background:var(--green-lt);color:var(--green)">Approved</span>'
+      : s==='denied' ? '<span class="wp-supp-tag" style="background:#FEE2E2;color:#991B1B">Denied</span>'
+      : '<span class="wp-supp-tag" style="background:#FEF3C7;color:#92400E">Pending</span>';
+    el.innerHTML = '<div class="sec-label" style="margin-top:0">Your Requests</div>' + reqs.slice(0,10).map(r =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
+        <span style="font-size:12px">${esc(r.start_date)} – ${esc(r.end_date)}</span>${badge(r.status)}
+      </div>`).join('');
+  } catch(e) { el.innerHTML = ''; }
 }
 
 async function loadPunchList(category) {

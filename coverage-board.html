@@ -95,6 +95,11 @@ h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:1
         <button class="btn btn-red" onclick="createShift()">Add Shift</button>
         <div id="sh-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
       </div>
+
+      <div class="panel">
+        <h3>Pending Time Off Requests</h3>
+        <div id="pending-timeoff-body"><div class="empty-state">Loading...</div></div>
+      </div>
     </div>
   </div>
 </div>
@@ -232,9 +237,36 @@ async function deleteShift(id) {
   renderMonth();
 }
 
+async function loadPendingTimeOff() {
+  const el = document.getElementById('pending-timeoff-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/timeoff/pending');
+    const d = await r.json();
+    const reqs = d.requests || [];
+    if (!reqs.length) { el.innerHTML = '<div class="empty-state">Nothing pending.</div>'; return; }
+    el.innerHTML = reqs.map(rq => `
+      <div style="padding:10px 0;border-bottom:1px solid var(--line,#E5E7EB)">
+        <div style="font-weight:700;font-size:13px">${esc(rq.staff_name)}</div>
+        <div style="font-size:12px;color:var(--muted)">${esc(rq.start_date)} – ${esc(rq.end_date)}${rq.reason ? ' · '+esc(rq.reason) : ''}</div>
+        <div style="margin-top:6px;display:flex;gap:8px">
+          <button class="btn btn-red" style="padding:6px 12px;font-size:12px" onclick="reviewTimeOff(${rq.id},'approved')">Approve</button>
+          <button class="btn" style="padding:6px 12px;font-size:12px;background:var(--soft,#F5F6F8)" onclick="reviewTimeOff(${rq.id},'denied')">Deny</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load requests.</div>'; }
+}
+
+async function reviewTimeOff(id, status) {
+  await fetch(WORKER + '/timeoff/review', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id, status, reviewed_by: 'Command Center' }) });
+  loadPendingTimeOff();
+}
+
 loadStaffRoster();
 renderMonth();
 selectDay(new Date().toISOString().slice(0,10));
+loadPendingTimeOff();
 </script>
 </body>
 </html>

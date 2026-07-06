@@ -120,13 +120,8 @@ async function submitTimeOff() {
   if (!start || !end) { status.textContent = 'Pick a start and end date.'; return; }
   status.textContent = 'Submitting...';
   try {
-    const r = await db({ op:'select', table:'staff_roster', where:{ id: parseInt(staffId) }, limit:1 });
-    const emp = (r.results||[])[0];
-    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ op:'insert', table:'notifications', values:{
-        recipient:'management', type:'time_off_request',
-        payload_json: JSON.stringify({ staff_id: staffId, name: emp?emp.name:'', start, end, reason, message: (emp?emp.name:'Someone') + ' requested time off ' + start + ' to ' + end + (reason?(': '+reason):'') })
-      }})});
+    await fetch(WORKER + '/timeoff/request', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ staff_id: parseInt(staffId), start_date: start, end_date: end, reason }) });
     status.textContent = 'Request sent to management.';
     document.getElementById('pto-reason').value = '';
   } catch(e) { status.textContent = 'Could not submit, try again.'; }
