@@ -2994,15 +2994,19 @@ async function finalizeAccept() {
     if (window._enrolledClientId) {
       var consultPayload = {
         client_id: window._enrolledClientId,
-        date: gv('consult-date') || new Date().toISOString().slice(0,10),
+        consult_date: gv('consult-date') || new Date().toISOString().slice(0,10),
         advisor: gv('advisor-name') || 'Ted Scholl',
-        bp: gv('bp') || null,
-        hr: gv('hr') || null,
-        prior_trainer: null,
-        diet_notes: gv('typical-diet') || null,
-        commitment_score: gv('commitment') || null,
-        source: 'consultation_tool',
-        notes: 'Package: ' + pkgDisplayName() + '. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '')
+        weight: gv('weight') || null,
+        lean_mass: gv('lean-mass') || null,
+        body_fat_pct: gv('pbf') || null,
+        fat_mass: gv('fat-mass') || null,
+        bmi: gv('bmi') || null,
+        goals: gv('goals') || null,
+        medical_notes: gv('medical') || null,
+        diet_habits: gv('typical-diet') || null,
+        assessment_summary: assessmentText || null,
+        advisor_notes: 'Package: ' + pkgDisplayName() + '. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : ''),
+        outcome: 'accepted'
       };
       Object.keys(consultPayload).forEach(function(k){ if(consultPayload[k]==null) delete consultPayload[k]; });
       dbCall({ op:'insert', table:'consultations', values: consultPayload }).catch(function(){});
@@ -3067,6 +3071,22 @@ async function finalizeDecline() {
       var clientId = d.id;
       if (clientId) {
         saveInBodyScan(clientId, 'consultation_decline');
+        dbCall({ op:'insert', table:'consultations', values: {
+          client_id: clientId,
+          consult_date: gv('consult-date') || new Date().toISOString().slice(0,10),
+          advisor: gv('advisor-name') || 'Ted Scholl',
+          weight: gv('weight') || null,
+          lean_mass: gv('lean-mass') || null,
+          body_fat_pct: gv('pbf') || null,
+          fat_mass: gv('fat-mass') || null,
+          bmi: gv('bmi') || null,
+          goals: gv('goals') || null,
+          medical_notes: gv('medical') || null,
+          diet_habits: gv('typical-diet') || null,
+          assessment_summary: assessmentText || null,
+          advisor_notes: 'Declined. Reason: ' + reason,
+          outcome: 'declined'
+        }}).catch(function(){});
         dbCall({ op:'insert', table:'followups', values: { client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' } }).catch(function(){});
         // Actually put it on the coach's calendar, not just the followups log
         var dow = followDate.getDay();
