@@ -132,6 +132,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
   <!-- TAB: OVERVIEW -->
   <div class="tab-pane active" id="tab-overview">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <button class="refresh-btn" onclick="changeOverviewMonth(-1)" style="padding:6px 12px">← Prev</button>
+      <div style="font-family:'Oswald';font-weight:800;font-size:16px;min-width:160px;text-align:center" id="overview-month-label">—</div>
+      <button class="refresh-btn" onclick="changeOverviewMonth(1)" style="padding:6px 12px">Next →</button>
+      <button class="refresh-btn" onclick="changeOverviewMonth(-12)" style="padding:6px 12px;margin-left:8px">← Same Month Last Year</button>
+      <button class="refresh-btn" onclick="resetOverviewMonth()" style="padding:6px 12px;margin-left:auto">Jump to Current</button>
+    </div>
     <div class="kpi-row">
       <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">Region Revenue MTD</div><div class="kpi-val" id="k-region-actual">—</div><div class="kpi-sub" id="k-region-pct">vs goal</div></div>
       <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">Clubs at 90%+</div><div class="kpi-val" id="k-safe-zone">—</div><div class="kpi-sub">of 15 clubs on pace</div></div>
@@ -144,7 +151,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <div class="grid-2">
       <div class="card">
         <div class="card-title">Revenue vs Goal by Club</div>
-        <div class="card-sub">June 2026 · sorted by % to goal</div>
+        <div class="card-sub" id="revenue-chart-month">June 2026 · sorted by % to goal</div>
         <div style="height:340px"><canvas id="revenueChart"></canvas></div>
       </div>
       <div class="card">
@@ -162,7 +169,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       </div>
       <div class="card">
         <div class="card-title">Sale Type Mix — Region</div>
-        <div class="card-sub">New / Renewal / Upgrade, June 2026</div>
+        <div class="card-sub" id="saletype-month">New / Renewal / Upgrade, June 2026</div>
         <div style="height:260px;display:flex;align-items:center;justify-content:center"><canvas id="saleTypeChart"></canvas></div>
       </div>
     </div>
@@ -175,7 +182,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       </div>
       <div class="card">
         <div class="card-title">Top Sellers — Region-Wide</div>
-        <div class="card-sub">Individual PT rep performance, June 2026</div>
+        <div class="card-sub" id="rep-month">Individual PT rep performance, June 2026</div>
         <div id="rep-leaderboard"><div class="empty-state">Loading...</div></div>
       </div>
     </div>
@@ -285,7 +292,22 @@ async function db(payload) {
   return (await r.json()).results||[];
 }
 
-const CURRENT_MONTH = new Date().toISOString().slice(0,7);
+const CURRENT_MONTH = DEMO_VIEW ? '2026-06' : new Date().toISOString().slice(0,7);
+let OVERVIEW_MONTH = CURRENT_MONTH;
+
+function shiftMonth(monthStr, delta) {
+  const [y,m] = monthStr.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function changeOverviewMonth(delta) {
+  OVERVIEW_MONTH = shiftMonth(OVERVIEW_MONTH, delta);
+  renderOverview();
+}
+function resetOverviewMonth() {
+  OVERVIEW_MONTH = CURRENT_MONTH;
+  renderOverview();
+}
 const EMOJIS = ['\uD83D\uDD25','\uD83D\uDCAA','\uD83D\uDC4F','\uD83C\uDF89','\uD83D\uDE4C','\u2764\uFE0F'];
 let boardData = null, activeThread = null;
 
@@ -443,7 +465,12 @@ let _charts = {};
 function destroyChart(key){ if (_charts[key]) { _charts[key].destroy(); delete _charts[key]; } }
 
 async function renderOverview() {
-  const summary = await (await fetch(WORKER+'/region/summary?month='+CURRENT_MONTH+DEMO_Q)).json();
+  const monthLabel = new Date(OVERVIEW_MONTH+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  document.getElementById('overview-month-label').textContent = monthLabel;
+  document.getElementById('revenue-chart-month').textContent = monthLabel + ' · sorted by % to goal';
+  document.getElementById('saletype-month').textContent = 'New / Renewal / Upgrade, ' + monthLabel;
+  document.getElementById('rep-month').textContent = 'Individual PT rep performance, ' + monthLabel;
+  const summary = await (await fetch(WORKER+'/region/summary?month='+OVERVIEW_MONTH+DEMO_Q)).json();
   const gyms = (summary.gyms || []).slice().sort((a,b) => (b.pct||0) - (a.pct||0));
 
   // ── KPI strip ──
@@ -525,7 +552,7 @@ async function renderOverview() {
   });
 
   // ── Aggregate per-gym detail (funnel, sale types, reps) region-wide ──
-  const details = await Promise.all(gyms.map(g => fetch(WORKER+'/region/gym?gym_id='+g.gym_id+'&month='+CURRENT_MONTH+DEMO_Q).then(r=>r.json())));
+  const details = await Promise.all(gyms.map(g => fetch(WORKER+'/region/gym?gym_id='+g.gym_id+'&month='+OVERVIEW_MONTH+DEMO_Q).then(r=>r.json())));
 
   let fTotal=0, fBooked=0, fShowed=0, fClosed=0;
   const saleTypeAgg = {};
