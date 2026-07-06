@@ -117,7 +117,7 @@ textarea{resize:vertical;min-height:72px}
   <div class="role-tag">Coach Ted</div>
   <div class="spacer"></div>
   <div class="date-badge" id="dateBadge"></div>
-  <button class="submit-btn" onclick="confirmSubmit()">Submit to Dani</button>
+  <button class="submit-btn" onclick="confirmSubmit()">Submit</button>
 </div>
 
 <div class="wrap">
@@ -302,13 +302,13 @@ textarea{resize:vertical;min-height:72px}
     <div class="section-body">
       <div class="note-composer">
         <label style="margin-bottom:6px;display:block">Add a Note or Flag</label>
-        <textarea id="noteText" placeholder="Flag anything for Dani..." rows="3"></textarea>
+        <textarea id="noteText" placeholder="Flag anything for review..." rows="3"></textarea>
         <div class="priority-row">
           <label>Priority:</label>
           <label class="prio-opt"><input type="radio" name="notePriority" value="fyi" checked><span style="font-size:12px;font-weight:600;color:var(--blue)">FYI</span></label>
           <label class="prio-opt"><input type="radio" name="notePriority" value="follow_up"><span style="font-size:12px;font-weight:600;color:#C2410C">Follow-up</span></label>
           <label class="prio-opt"><input type="radio" name="notePriority" value="urgent"><span style="font-size:12px;font-weight:600;color:var(--red)">Urgent</span></label>
-          <label class="prio-opt"><input type="radio" name="notePriority" value="escalate"><span style="font-size:12px;font-weight:600;background:var(--ink);color:#fff;padding:2px 8px;border-radius:10px">Escalate to Dani</span></label>
+          <label class="prio-opt"><input type="radio" name="notePriority" value="escalate"><span style="font-size:12px;font-weight:600;background:var(--ink);color:#fff;padding:2px 8px;border-radius:10px">Escalate</span></label>
           <button class="add-row-btn" style="width:auto;padding:6px 14px;margin:0" onclick="addNote()">Add</button>
         </div>
       </div>
@@ -319,8 +319,8 @@ textarea{resize:vertical;min-height:72px}
   <!-- SUBMIT -->
   <div class="submit-panel">
     <h3>Ready to Submit?</h3>
-    <p id="submitHint">Submit your EOD to Dani. It appears on her dashboard instantly.</p>
-    <button class="big-btn" id="bigSubmitBtn" onclick="confirmSubmit()">Submit EOD to Dani</button>
+    <p id="submitHint">Submit your EOD. It's available immediately.</p>
+    <button class="big-btn" id="bigSubmitBtn" onclick="confirmSubmit()">Submit EOD</button>
   </div>
 
 </div>
@@ -334,6 +334,7 @@ let allClients = [];
 let allScans = [];
 let allLeads = [];
 let sessionNotes = {};
+let todayDismissals = [];
 
 document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
@@ -370,16 +371,17 @@ function updateProgress() {
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function name(c) { return ((c.first_name||'')+' '+(c.last_name||'')).trim() || 'Unknown'; }
 
-function autoRow(icon, flagClass, clientName, note, id) {
+function autoRow(icon, flagClass, clientName, note, id, dismissArgs) {
   return `<div class="auto-row ${flagClass}" id="ar-${id}">
     <span class="ar-icon">${icon}</span>
     <div class="ar-info">
       <div class="ar-name">${esc(clientName)}</div>
       <div class="ar-note">${esc(note)}</div>
       <div class="inline-note" id="note-${id}">
-        <textarea placeholder="Add a note for Dani..." oninput="sessionNotes['${id}']=this.value"></textarea>
+        <textarea placeholder="Add a note..." oninput="sessionNotes['${id}']=this.value"></textarea>
       </div>
     </div>
+    ${dismissArgs ? `<button class="note-btn" style="background:transparent;color:#8a8f98" onclick="dismissFlag('${dismissArgs.flagType}',${dismissArgs.clientId})" title="Dismiss for today">✓</button>` : ''}
     <button class="note-btn" onclick="toggleInlineNote('${id}')">+ Note</button>
   </div>`;
 }
@@ -391,19 +393,50 @@ function toggleInlineNote(id) {
 
 async function loadData() {
   try {
-    const [clientsRes, scansRes, leadsRes] = await Promise.all([
+    const today = new Date().toISOString().slice(0,10);
+    const [clientsRes, scansRes, leadsRes, dismissalsRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:200})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'inbody_scans', orderBy:'scan_date desc', limit:500})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:100})})
+        body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:100})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'eod_flag_dismissals', where:{dismissed_at: today}, limit:500})}).catch(function(){return null;})
     ]);
     allClients = (await clientsRes.json()).results || [];
     allScans = (await scansRes.json()).results || [];
     allLeads = (await leadsRes.json()).results || [];
+    todayDismissals = dismissalsRes ? ((await dismissalsRes.json()).results || []) : [];
     renderAll();
   } catch(e) { showToast('Error loading data: ' + e.message); }
+}
+
+function isDismissedToday(flagType, clientId) {
+  return todayDismissals.some(function(d) { return d.flag_type === flagType && d.client_id === clientId; });
+}
+
+async function dismissFlag(flagType, clientId) {
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'insert', table:'eod_flag_dismissals', values:{flag_type: flagType, client_id: clientId, dismissed_at: today, dismissed_by: 'Ted Scholl'}})});
+    todayDismissals.push({flag_type: flagType, client_id: clientId});
+    renderAll();
+  } catch(e) { showToast('Could not dismiss: ' + e.message); }
+}
+
+async function dismissAllFlags(flagType, clientIds) {
+  const today = new Date().toISOString().slice(0,10);
+  try {
+    await Promise.all(clientIds.map(function(id) {
+      return fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'insert', table:'eod_flag_dismissals', values:{flag_type: flagType, client_id: id, dismissed_at: today, dismissed_by: 'Ted Scholl'}})});
+    }));
+    clientIds.forEach(function(id) { todayDismissals.push({flag_type: flagType, client_id: id}); });
+    renderAll();
+    showToast('Cleared for today — will resurface tomorrow if still unresolved.');
+  } catch(e) { showToast('Could not dismiss: ' + e.message); }
 }
 
 function renderAll() {
@@ -455,19 +488,21 @@ function renderMonitoring() {
     if (diff >= 60) return {c, days: diff, flag: 'red'};
     if (diff >= 45) return {c, days: diff, flag: 'amber'};
     return null;
-  }).filter(Boolean).sort((a,b) => b.days - a.days);
+  }).filter(Boolean).filter(f => !isDismissedToday('monitoring', f.c.id)).sort((a,b) => b.days - a.days);
 
   if (!flags.length) {
     el.innerHTML = '<div class="empty-auto">✓ All clients current on progress monitoring</div>';
     updateStatus('monitoring', 'All current', 'status-done');
     return;
   }
-  el.innerHTML = flags.map(f => autoRow(
+  el.innerHTML = `<button class="note-btn" style="margin-bottom:8px" onclick='dismissAllFlags("monitoring",${JSON.stringify(flags.map(f=>f.c.id))})'>✓ Dismiss all for today</button>` +
+    flags.map(f => autoRow(
     f.flag === 'red' ? '🔴' : '🟡',
     'flag-' + f.flag,
     name(f.c),
     f.days === 999 ? 'No InBody scan on file' : `Last scan: ${latestScans[f.c.id]} (${f.days} days ago)`,
-    'mon-' + f.c.id
+    'mon-' + f.c.id,
+    {flagType: 'monitoring', clientId: f.c.id}
   )).join('');
   updateStatus('monitoring', flags.length + ' flagged', flags.some(f=>f.flag==='red') ? 'status-partial' : 'status-auto');
 }
@@ -492,18 +527,20 @@ function renderFrozen() {
 
 function renderRenewals() {
   const el = document.getElementById('renewals-list');
-  const renewals = allClients.filter(c => c.status === 'active_pt' && (c.sessions_remaining||0) <= 2);
+  const renewals = allClients.filter(c => c.status === 'active_pt' && (c.sessions_remaining||0) <= 2).filter(c => !isDismissedToday('renewals', c.id));
   if (!renewals.length) {
     el.innerHTML = '<div class="empty-auto">✓ No renewals needed right now</div>';
     updateStatus('renewals', 'None', 'status-done');
     return;
   }
-  el.innerHTML = renewals.map(c => autoRow(
+  el.innerHTML = `<button class="note-btn" style="margin-bottom:8px" onclick='dismissAllFlags("renewals",${JSON.stringify(renewals.map(c=>c.id))})'>✓ Dismiss all for today</button>` +
+    renewals.map(c => autoRow(
     (c.sessions_remaining||0) === 0 ? '🔴' : '🟡',
     (c.sessions_remaining||0) === 0 ? 'flag-red' : 'flag-amber',
     name(c),
     `${c.sessions_remaining||0} session${c.sessions_remaining===1?'':'s'} remaining · ${c.package||'—'}`,
-    'ren-' + c.id
+    'ren-' + c.id,
+    {flagType: 'renewals', clientId: c.id}
   )).join('');
   updateStatus('renewals', renewals.length + ' needed', 'status-partial');
 }
@@ -551,7 +588,7 @@ function showToast(msg, dur) {
 }
 
 async function confirmSubmit() {
-  if (!confirm('Submit your EOD to Dani? It will appear on her dashboard immediately.')) return;
+  if (!confirm('Submit your EOD? It will be available immediately.')) return;
   const btn = document.getElementById('bigSubmitBtn');
   btn.disabled = true; btn.textContent = 'Submitting...';
   const data = {
@@ -595,14 +632,14 @@ async function confirmSubmit() {
     const r = await fetch(WORKER + '/eod/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
     const resp = await r.json();
     if (resp.ok || resp.id) {
-      showToast('EOD submitted to Dani!', 4000);
+      showToast('EOD submitted!', 4000);
       btn.textContent = '✓ Submitted';
       btn.style.background = 'var(--green)';
       document.getElementById('submitHint').textContent = 'Submitted at ' + new Date().toLocaleTimeString();
     } else throw new Error(resp.error||'Failed');
   } catch(e) {
     showToast('Submit failed: ' + e.message, 4000);
-    btn.disabled = false; btn.textContent = 'Submit EOD to Dani';
+    btn.disabled = false; btn.textContent = 'Submit EOD';
   }
 }
 
