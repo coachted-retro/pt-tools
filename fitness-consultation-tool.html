@@ -253,6 +253,21 @@
   .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
 
+  .cat-group { margin-bottom: 16px; }
+  .cat-group-title { font-size: 13px; font-weight: 700; color: var(--accent2); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .cat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cat-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 12px; border: 1.5px solid #ddd; border-radius: 20px;
+    font-size: 13px; cursor: pointer; user-select: none;
+    background: #fff; transition: all .15s ease;
+  }
+  .cat-chip:hover { border-color: var(--accent); }
+  .cat-chip.checked { border-color: var(--accent); background: var(--accent-light); font-weight: 600; }
+  .cat-chip input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; cursor: pointer; }
+  .cat-chip.flag-glp1 { border-color: #d4a843; }
+  .cat-chip.flag-glp1.checked { background: #fbf3e0; border-color: #d4a843; }
+
   .field label {
     font-size: 12px;
     font-weight: 500;
@@ -1199,11 +1214,14 @@
 
         <div class="card">
           <div class="card-title"><span class="dot"></span> Health conditions</div>
-          <div class="field">
-            <label>Medical conditions, surgeries, ailments, aches & pains</label>
-            <textarea id="medical" style="min-height:90px" placeholder="List any relevant conditions, past surgeries, chronic pain, injuries, limitations..."></textarea>
+          <p style="margin:0 0 12px;font-size:13px;color:var(--muted,#777)">Select all that apply. This drives the exercise and nutrition guidance in the assessment.</p>
+          <div id="cat-medical"></div>
+          <div class="field" style="margin-top:10px">
+            <label>Other condition (type below)</label>
+            <input type="text" id="medical-other" placeholder="Anything not listed above..." oninput="syncCatField('medical')">
           </div>
-          <div class="grid2">
+          <textarea id="medical" style="display:none"></textarea>
+          <div class="grid2" style="margin-top:14px">
             <div class="field">
               <label>Has a doctor recommended starting a workout program?</label>
               <select id="doctor-rec">
@@ -1222,11 +1240,14 @@
 
         <div class="card">
           <div class="card-title"><span class="dot"></span> Medications & supplements</div>
-          <div class="field">
-            <label>Medications that may prohibit or interfere with sustained exercise</label>
-            <textarea id="medications" placeholder="List medications with any known exercise contraindications, or write N/A..."></textarea>
+          <p style="margin:0 0 12px;font-size:13px;color:var(--muted,#777)">Select all that apply. GLP-1 medications especially change how we program training and nutrition.</p>
+          <div id="cat-medications"></div>
+          <div class="field" style="margin-top:10px">
+            <label>Other medication (type below)</label>
+            <input type="text" id="medications-other" placeholder="Anything not listed above, or N/A..." oninput="syncCatField('medications')">
           </div>
-          <div class="field">
+          <textarea id="medications" style="display:none"></textarea>
+          <div class="field" style="margin-top:14px">
             <label>Supplements currently taken</label>
             <textarea id="supplements" placeholder="Protein powder, creatine, pre-workout, multivitamin, omega-3, etc. or N/A..."></textarea>
           </div>
@@ -2427,6 +2448,69 @@ let assessmentText = '';
 
 function gv(id) { return (document.getElementById(id)||{}).value || ''; }
 
+// ── CATEGORIZED MULTI-SELECT: medical conditions & medications ──────────
+function escCat(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+const MEDICAL_CATEGORIES = [
+  { emoji: '⚡', label: 'Metabolic & Energy Processing', items: ['Type 1 Diabetes', 'Type 2 Diabetes / Prediabetes', 'Metabolic Syndrome / Insulin Resistance'] },
+  { emoji: '❤️', label: 'Cardiorespiratory & Blood Flow', items: ['Hypertension (High Blood Pressure)', 'Hyperlipidemia (High Cholesterol)', 'Asthma / Exercise-Induced Bronchospasm', 'POTS (Postural Orthostatic Tachycardia Syndrome)', 'COPD / Chronic Bronchitis'] },
+  { emoji: '🦴', label: 'Structural, Joint & Bone', items: ['Herniated / Bulging Disc (Lumbar or Cervical)', 'Osteoarthritis / Rheumatoid Arthritis', 'Osteopenia / Osteoporosis (Low Bone Density)', 'Joint Replacement (Knee, Hip, Shoulder)', 'Chronic Lower Back Pain (Undiagnosed)'] },
+  { emoji: '🧠', label: 'Neurological & Recovery Pacing', items: ['Fibromyalgia / Chronic Fatigue (ME/CFS)', 'Multiple Sclerosis (MS)', 'Vertigo / Chronic Dizziness / Vestibular Issues', 'Epilepsy / Seizure Disorders'] },
+];
+
+const MEDICATION_CATEGORIES = [
+  { emoji: '⚖️', label: 'Weight Management & Metabolic (GLP-1s & Similar)', flag: 'glp1', items: ['Semaglutide (Wegovy / Ozempic)', 'Tirzepatide (Zepbound / Mounjaro)', 'Liraglutide (Saxenda / Victoza)', 'Metformin', 'Insulin'] },
+  { emoji: '❤️', label: 'Cardiovascular & Blood Pressure', items: ['Beta-Blockers (e.g., Metoprolol, Atenolol)', 'ACE Inhibitors / ARBs (e.g., Lisinopril, Losartan)', 'Diuretics (Water pills)', 'Statins (Cholesterol medication)'] },
+  { emoji: '🦴', label: 'Pain, Inflammation & Bones', items: ['NSAIDs / Chronic Pain Meds (Daily Ibuprofen, Naproxen)', 'Corticosteroids (Prednisone)', 'Osteoporosis Medications'] },
+  { emoji: '🧠', label: 'Mental Health & Neurological', items: ['SSRIs / SNRIs (Antidepressants)', 'Anxiolytics (Anti-anxiety meds)', 'Sleep Aids'] },
+];
+
+function renderCatPicker(containerId, categories) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = categories.map((cat, ci) => `
+    <div class="cat-group">
+      <div class="cat-group-title">${cat.emoji} ${escCat(cat.label)}</div>
+      <div class="cat-chips">
+        ${cat.items.map((item, ii) => `
+          <label class="cat-chip${cat.flag === 'glp1' ? ' flag-glp1' : ''}" data-container="${containerId}">
+            <input type="checkbox" value="${escCat(item)}" onchange="catChipToggle(this,'${containerId}')">
+            ${escCat(item)}
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function catChipToggle(input, containerId) {
+  input.closest('.cat-chip').classList.toggle('checked', input.checked);
+  const fieldId = containerId === 'cat-medical' ? 'medical' : 'medications';
+  syncCatField(fieldId);
+}
+
+function syncCatField(fieldId) {
+  const containerId = fieldId === 'medical' ? 'cat-medical' : 'cat-medications';
+  const otherId = fieldId + '-other';
+  const container = document.getElementById(containerId);
+  const checked = container ? Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value) : [];
+  const otherVal = (document.getElementById(otherId) || {}).value || '';
+  if (otherVal.trim()) checked.push(otherVal.trim());
+  const hidden = document.getElementById(fieldId);
+  if (hidden) hidden.value = checked.length ? checked.join('; ') : '';
+}
+
+function hasGLP1Selected() {
+  const container = document.getElementById('cat-medications');
+  if (!container) return false;
+  return Array.from(container.querySelectorAll('.flag-glp1 input[type="checkbox"]:checked')).length > 0;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  renderCatPicker('cat-medical', MEDICAL_CATEGORIES);
+  renderCatPicker('cat-medications', MEDICATION_CATEGORIES);
+});
+
 function buildPrompt() {
   const name      = gv('name') || gv('fu-name') || 'the member';
   const gender    = gv('gender') || '';
@@ -2474,6 +2558,7 @@ Segmental Lean (lb): L.Arm ${segLA} | R.Arm ${segRA} | Trunk ${segTrunk} | L.Leg
 MEDICAL: ${medical}
 MEDICATIONS: ${medications}
 SUPPLEMENTS: ${supplements}
+${hasGLP1Selected() ? 'NOTE: This member is on a GLP-1 medication. The Training and Nutrition bullets below MUST reflect this: emphasize resistance training to preserve lean muscle mass during weight loss, and note a higher protein target to offset appetite suppression.' : ''}
 
 NUTRITION:
 Meals/day: ${mealsPerDay} | Calorie target: ${calories} | Protein target: ${protein}g
@@ -2493,8 +2578,8 @@ SECTION: YOUR 12-MONTH OPPORTUNITY
 1-2 sentences. Specific projected outcome using actual numbers.
 
 SECTION: YOUR GAME PLAN
-- Training: one specific action based on their schedule and goal
-- Nutrition: one specific change based on their current eating
+- Training: one specific action based on their schedule and goal. If any medical conditions or medications are listed above, this must reflect safe, appropriate programming for those conditions (e.g. low-impact for joint/bone conditions, cardiovascular pacing for heart/lung conditions, lean-mass preservation for GLP-1 use).
+- Nutrition: one specific change based on their current eating. If conditions/medications are listed, factor in general best-practice dietary patterns for that condition (this is not medical advice — keep it general and practical).
 - Accountability: what we track monthly together
 
 SECTION: THE BOTTOM LINE
