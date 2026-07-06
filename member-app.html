@@ -2816,7 +2816,7 @@ async function toggleReaction(winId, emoji) {
 }
 
 function shareWin(headline) {
-  const shareData = { title: 'Retro Fitness Fairless Hills', text: headline + ' — Retro Fitness of Fairless Hills', url: 'https://coachted-retro.github.io/pt-tools/member-app.html' };
+  const shareData = { title: 'Retro Fitness Fairless Hills', text: headline + ' — Retro Fitness of Fairless Hills', url: 'https://myretrostrong.com/member-app.html' };
   if (navigator.share) { navigator.share(shareData).catch(()=>{}); }
   else { navigator.clipboard?.writeText(shareData.text + ' ' + shareData.url); alert('Copied to clipboard!'); }
 }

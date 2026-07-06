@@ -1556,7 +1556,7 @@
                   <li>Biweekly check-in training</li>
                   <li>Personalized workout program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-0-benefit"></div>
               </div>
@@ -1569,7 +1569,7 @@
                   <li>Weekly one-on-one training</li>
                   <li>Personalized workout program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-1-benefit"></div>
               </div>
@@ -1582,7 +1582,7 @@
                   <li>Twice-weekly training momentum</li>
                   <li>Faster adaptation and results</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-2-benefit"></div>
               </div>
@@ -1595,7 +1595,7 @@
                   <li>High-frequency coaching</li>
                   <li>Full periodized program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-3-benefit"></div>
               </div>
@@ -1608,7 +1608,7 @@
                   <li>Elite daily coaching structure</li>
                   <li>Maximum accountability</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-4-benefit"></div>
               </div>
@@ -2914,7 +2914,7 @@ function buildIntakeRow(decision, freq, length, followUpDays) {
     outcome + (document.getElementById('decline-reason') && document.getElementById('decline-reason').value ? ' - ' + document.getElementById('decline-reason').value : ''),
     '',
     (assessmentText || '').replace(/#{1,6}\s*/g,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/[\u{1F000}-\u{1FFFF}]/gu,'').replace(/[\u{2600}-\u{27BF}]/gu,'').replace(/SECTION:\s*/gi,'').trim().substring(0, 800),
-    '=HYPERLINK("https://coachted-retro.github.io/pt-tools/fitness-consultation-tool.html","View Tool")'
+    '=HYPERLINK("https://myretrostrong.com/fitness-consultation-tool.html","View Tool")'
   ];
 }
 function getSheetHeaders() {
@@ -3056,12 +3056,11 @@ async function finalizeAccept() {
       phone: gv('phone') || null,
       gender: gv('gender') || null,
       age: gv('age') || null,
-      goals: gv('goals') || null,
-      medical_notes: gv('medical') || null,
+      goal_primary: gv('goals') || null,
       package: pkgDbValue(),
       training_start_date: gv('consult-date') || new Date().toISOString().slice(0,10),
       status: 'active',
-      coach_notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Assessment: ' + (assessmentText||'').substring(0,400)
+      notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Medical: ' + (gv('medical')||'none') + '. Assessment: ' + (assessmentText||'').substring(0,400)
     };
     Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]==null) delete clientPayload[k]; });
 
@@ -3143,11 +3142,10 @@ async function finalizeDecline() {
       phone: gv('phone') || null,
       gender: gv('gender') || null,
       age: gv('age') || null,
-      goals: gv('goals') || null,
-      medical_notes: gv('medical') || null,
+      goal_primary: gv('goals') || null,
       status: 'prospect',
       coach: advisorName || null,
-      coach_notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
+      notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. Medical: ' + (gv('medical')||'none') + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
     };
     Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
     var _declineSave = window.EXISTING_CLIENT_ID
@@ -4400,7 +4398,7 @@ function buildDemoUrl() {
   if (heightIn) params.set('height', heightIn);
   // Absolute URL so a phone camera scanning the QR opens the live site directly,
   // regardless of what device/host is currently running this consultation page.
-  return 'https://coachted-retro.github.io/pt-tools/keelin-demo/member-app.html?' + params.toString();
+  return 'https://myretrostrong.com/keelin-demo/member-app.html?' + params.toString();
 }
 
 function launchAppDemo() {

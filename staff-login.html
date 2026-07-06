@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Staff Login — Retro Strong</title>
+<link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
+<link rel="manifest" href="retro-strong.webmanifest">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.box{background:var(--card);border-radius:16px;padding:32px 28px;max-width:380px;width:100%}
+.logo-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.logo-row img{height:36px;border-radius:8px}
+h1{font-family:'Oswald';font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.02em;color:var(--ink)}
+.sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-bottom:6px}
+.fld input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;font-size:15px;font-family:'Inter'}
+.fld input:focus{outline:none;border-color:var(--red)}
+.login-btn{width:100%;background:var(--red);color:#fff;font-family:'Oswald';font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;padding:14px;border-radius:10px;border:none;cursor:pointer;margin-top:4px}
+.login-btn:disabled{opacity:.6}
+.err{color:var(--red);font-size:13px;margin-top:10px;display:none}
+.hint{text-align:center;margin-top:16px;font-size:13px}
+.hint a{color:var(--red);font-weight:700;text-decoration:none}
+.footer{text-align:center;margin-top:20px;font-size:11px;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:5px}
+.footer img{width:14px;height:14px;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo-row">
+    <img src="icons-strong/icon-192.png" alt="" onerror="this.style.display='none'">
+    <h1>Staff Login</h1>
+  </div>
+  <p class="sub">Coaches, MEAs, floor techs, and management. This link is for Retro Fitness staff only — don't share it outside the team.</p>
+
+  <div class="fld"><label>Email</label><input id="s-email" type="email" placeholder="you@retrofh.com" autocomplete="email"></div>
+  <div class="fld"><label>PIN</label><input id="s-pin" type="password" inputmode="numeric" maxlength="6" placeholder="4-6 digit PIN" autocomplete="current-password"></div>
+  <button class="login-btn" id="login-btn" onclick="doLogin()">Sign In</button>
+  <div class="err" id="err"></div>
+
+  <div class="hint"><a href="#" onclick="showReset(event)">Forgot PIN?</a></div>
+  <div class="hint" id="reset-hint" style="display:none">
+    <div id="reset-step1">
+      <div class="fld" style="margin-top:14px;text-align:left"><label>Email</label><input id="r-email" type="email" placeholder="you@retrofh.com"></div>
+      <button class="login-btn" onclick="doReset()">Send Reset Code</button>
+    </div>
+    <div id="reset-step2" style="display:none;text-align:left">
+      <p style="margin-top:14px;font-size:13px">Check your email for the code, then choose a new PIN.</p>
+      <div class="fld"><label>6-Digit Code</label><input id="r-code" type="text" inputmode="numeric" maxlength="6" placeholder="000000"></div>
+      <div class="fld"><label>New PIN</label><input id="r-pin1" type="password" inputmode="numeric" maxlength="6" placeholder="4-6 digits" autocomplete="new-password"></div>
+      <div class="fld"><label>Confirm PIN</label><input id="r-pin2" type="password" inputmode="numeric" maxlength="6" placeholder="Repeat it" autocomplete="new-password"></div>
+      <button class="login-btn" onclick="doResetConfirm()">Set PIN</button>
+      <a href="#" onclick="doReset(event)" style="display:block;margin-top:8px;color:var(--muted);font-size:12px">Resend code</a>
+    </div>
+    <div class="err" id="r-err"></div>
+    <a href="#" onclick="hideReset(event)" style="display:block;margin-top:10px;color:var(--muted)">← Back to sign in</a>
+  </div>
+
+  <div class="footer"><img src="icons-strong/icon-192.png" alt="" onerror="this.style.display='none'"> Powered by <b style="color:var(--red)">Retro Strong</b></div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+// Already logged in? Skip straight through.
+(function() {
+  const saved = localStorage.getItem('staff_session');
+  if (saved) {
+    try { JSON.parse(saved); location.href = 'member-app.html'; } catch(e) { localStorage.removeItem('staff_session'); }
+  }
+})();
+
+async function doLogin() {
+  const email = document.getElementById('s-email').value.trim();
+  const pin = document.getElementById('s-pin').value;
+  const errEl = document.getElementById('err');
+  const btn = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+  if (!email || !pin) { errEl.textContent = 'Please enter email and PIN.'; errEl.style.display = 'block'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  try {
+    const r = await fetch(WORKER + '/staff/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, pin}) });
+    const d = await r.json();
+    if (!d.ok) {
+      errEl.textContent = d.error || 'Invalid email or PIN.'; errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Sign In';
+      return;
+    }
+    const session = { staff_id: d.staff_id, token: d.token, email, name: d.name, role: d.role };
+    localStorage.setItem('staff_session', JSON.stringify(session));
+    location.href = 'member-app.html';
+  } catch(e) {
+    errEl.textContent = 'Could not connect. Try again.'; errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function showReset(e) { e.preventDefault(); document.getElementById('reset-hint').style.display = 'block'; }
+function hideReset(e) { if (e) e.preventDefault(); document.getElementById('reset-hint').style.display = 'none'; document.getElementById('reset-step1').style.display = 'block'; document.getElementById('reset-step2').style.display = 'none'; }
+
+async function doReset(e) {
+  if (e) e.preventDefault();
+  const email = document.getElementById('r-email').value.trim();
+  const errEl = document.getElementById('r-err');
+  errEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return; }
+  try {
+    const r = await fetch(WORKER + '/staff/reset-request', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+    const d = await r.json();
+    if (d.sent === false) {
+      errEl.style.color = 'var(--red)';
+      errEl.textContent = d.reason || 'Could not send reset code.';
+      errEl.style.display = 'block';
+    } else {
+      document.getElementById('reset-step1').style.display = 'none';
+      document.getElementById('reset-step2').style.display = 'block';
+      errEl.style.color = 'var(--muted)';
+      errEl.textContent = 'Code sent — check your email.';
+      errEl.style.display = 'block';
+    }
+  } catch(e) { errEl.textContent = 'Could not connect. Try again.'; errEl.style.display = 'block'; }
+}
+
+async function doResetConfirm() {
+  const email = document.getElementById('r-email').value.trim();
+  const code = document.getElementById('r-code').value.trim();
+  const pin1 = document.getElementById('r-pin1').value;
+  const pin2 = document.getElementById('r-pin2').value;
+  const errEl = document.getElementById('r-err');
+  errEl.style.color = 'var(--red)';
+  errEl.style.display = 'none';
+  if (!code || !pin1) { errEl.textContent = 'Enter the code and a new PIN.'; errEl.style.display = 'block'; return; }
+  if (pin1 !== pin2) { errEl.textContent = 'PINs do not match.'; errEl.style.display = 'block'; return; }
+  if (!/^\d{4,6}$/.test(pin1)) { errEl.textContent = 'PIN must be 4-6 digits.'; errEl.style.display = 'block'; return; }
+  try {
+    const r = await fetch(WORKER + '/staff/reset-confirm', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, code, new_pin: pin1}) });
+    const d = await r.json();
+    if (!d.ok) { errEl.textContent = d.error || 'Could not reset PIN.'; errEl.style.display = 'block'; return; }
+    hideReset();
+    document.getElementById('s-email').value = email;
+    errEl.style.color = 'var(--muted)';
+    document.getElementById('err').style.color = 'var(--muted)';
+    document.getElementById('err').textContent = 'PIN reset — sign in with your new PIN.';
+    document.getElementById('err').style.display = 'block';
+  } catch(e) { errEl.textContent = 'Could not connect. Try again.'; errEl.style.display = 'block'; }
+}
+</script>
+</body>
+</html>

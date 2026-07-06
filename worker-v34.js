@@ -604,7 +604,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.RESEND_KEY) {
           return ok({ sent: false, mail_configured: false, reason: 'RESEND_KEY is not set on this Worker — no email provider configured, so no email was sent.' }, cors);
         }
-        const surveyUrl = (env.SURVEY_BASE_URL || 'https://coachted-retro.github.io/pt-tools/churn-survey.html') + '?survey=' + surveyId;
+        const surveyUrl = (env.SURVEY_BASE_URL || 'https://myretrostrong.com/churn-survey.html') + '?survey=' + surveyId;
         try {
           const mailResp = await fetch('https://api.resend.com/emails', {
             method: 'POST',
