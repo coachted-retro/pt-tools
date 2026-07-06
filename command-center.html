@@ -124,6 +124,11 @@
 
   /* tool launcher */
   .tools-label{font-family:'Oswald';text-transform:uppercase;letter-spacing:.8px;font-size:12px;color:var(--muted);font-weight:600;margin:0 0 10px}
+  .cc-3col{display:grid;grid-template-columns:1fr 1.5fr 1fr;gap:22px;align-items:start}
+  .cc-stack{display:flex;flex-direction:column;gap:12px}
+  .cc-center-frame{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff;height:1600px}
+  .cc-center-frame iframe{width:100%;height:100%;border:none}
+  @media(max-width:1200px){.cc-3col{grid-template-columns:1fr}.cc-center-frame{height:1400px}}
   .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
   @media(max-width:1100px){.tools{grid-template-columns:repeat(2,1fr)}}
   .toolcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px 30px;cursor:pointer;transition:.15s;position:relative}
@@ -157,69 +162,75 @@
     </div>
   </div>
 
-  <div class="tools-label">Assessment Tools</div>
-  <div class="tools">
-    <div class="toolcard" onclick="openTool('member-onboarding.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
-      <span class="ic">🚪</span><div class="eb" style="color:var(--red)">Step 0 · Guest Walks In</div><div class="tt">New Member Onboarding</div>
-      <div class="td">Guest → tour → membership tier → close → schedule, one continuous record.</div><span class="arrow" style="color:var(--red)">→</span></div>
-    <div class="toolcard" onclick="openTool('fitness-consultation-tool.html')">
-      <span class="ic">📋</span><div class="eb">Step 1 · New Member</div><div class="tt">Initial Consultation</div>
-      <div class="td">Full intake, InBody, AI assessment. Welcome Packet on sign-up.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="openTool('fitness-followup-tool.html')">
-      <span class="ic">🔄</span><div class="eb">Step 2 · Declined</div><div class="tt">6-Week Follow-Up</div>
-      <div class="td">Re-engagement interview and a fresh InBody comparison.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="openTool('fitness-monthly-checkin.html')">
-      <span class="ic">📅</span><div class="eb">Step 3 · Active</div><div class="tt">Monthly Check-In</div>
-      <div class="td">Monthly progress review and report for enrolled clients.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="openTool('prospect-tracker.html')">
-      <span class="ic">🎯</span><div class="eb">Prospect Pipeline</div><div class="tt">Prospect Tracker</div>
-      <div class="td">People, Businesses, and a daily Call List in one place — touchpoints, follow-up dates, and corporate offer talking points.</div><span class="arrow">→</span></div>
-  </div>
+  <div class="cc-3col">
 
-  <div class="tools-label">Management</div>
-  <div class="tools">
-    <div class="toolcard" onclick="location.href='coaches-hub.html'" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
-      <span class="ic">🧑‍🏫</span><div class="eb" style="color:var(--red)">Coach Directory</div><div class="tt">Coaches</div>
-      <div class="td">Every coach, how many clients they carry, and a direct link to their own portal.</div><span class="arrow" style="color:var(--red)">→</span></div>
-    <div class="toolcard" onclick="location.href='eod-picker.html'" style="border-color:#2563EB20;background:linear-gradient(135deg,#fff 80%,#EFF6FF)">
-      <span class="ic">📝</span><div class="eb" style="color:#2563EB">Daily · Submit</div><div class="tt">Submit EOD</div>
-      <div class="td">Pick your name, fill out your own End of Day report for today.</div><span class="arrow" style="color:#2563EB">→</span></div>
-    <div class="toolcard" onclick="openTool('staff-setup.html')" style="border-color:#7C3AED20;background:linear-gradient(135deg,#fff 80%,#F5F3FF)">
-      <span class="ic">👥</span><div class="eb" style="color:#7C3AED">Roster · Scheduling</div><div class="tt">Staff Roster</div>
-      <div class="td">Add and manage employees, set who submits EODs, and schedule shifts — Coverage Board now lives inside as a tab.</div><span class="arrow" style="color:#7C3AED">→</span></div>
-    <div class="toolcard" onclick="openTool('hr-portal.html')" style="border-color:#1E9E5A20;background:linear-gradient(135deg,#fff 80%,#ECFDF3)">
-      <span class="ic">🗂</span><div class="eb" style="color:#1E9E5A">Dani · Bill</div><div class="tt">HR Portal</div>
-      <div class="td">Employee records, hiring documents, onboarding checklists, and performance history.</div><span class="arrow" style="color:#1E9E5A">→</span></div>
-    <div class="toolcard" onclick="openTool('gym-analytics.html')">
-      <span class="ic">📊</span><div class="eb">Office · Gym + PT</div><div class="tt">Gym Analytics</div>
-      <div class="td">Whole-gym KPIs and membership mix, with PT Analytics as a tab inside — one place for all the numbers.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="openTool('meal-plans.html')">
-      <span class="ic">🥗</span><div class="eb">Complete · Complete+</div><div class="tt">Meal Plans</div>
-      <div class="td">Build weekly plans and shopping lists, then send by Gmail.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="location.href='backfill-data.html'" style="border-color:#D98A0B20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
-      <span class="ic">🩹</span><div class="eb" style="color:#D98A0B">One-Time Fix</div><div class="tt">Backfill Client Data</div>
-      <div class="td">Writes real InBody scans and consultation notes for the 10 batch-imported clients.</div><span class="arrow" style="color:#D98A0B">→</span></div>
-    <div class="toolcard" onclick="openGuestPassStats()" style="border-color:#2563EB20;background:linear-gradient(135deg,#fff 80%,#EFF6FF)">
-      <span class="ic">🎟️</span><div class="eb" style="color:#2563EB">Last 30 Days</div><div class="tt">Guest Pass Activity</div>
-      <div class="td">Which classes are driving guest pass claims — a quick read on what's pulling prospects in.</div><span class="arrow" style="color:#2563EB">→</span></div>
-    <div class="toolcard" onclick="location.href='client-management.html'" style="border-color:#1E9E5A20;background:linear-gradient(135deg,#fff 80%,#ECFDF3)">
-      <span class="ic">👥</span><div class="eb" style="color:#1E9E5A">Roster · Dedupe · Add Client</div><div class="tt">Client Management</div>
-      <div class="td">Full clients, leads &amp; prospects list, auto-flags duplicates, and Add Client — all in one place now.</div><span class="arrow" style="color:#1E9E5A">→</span></div>
-    <div class="toolcard" onclick="location.href='batch-import.html'">
-      <span class="ic">⬇️</span><div class="eb">Bulk Add</div><div class="tt">Batch Import Clients</div>
-      <div class="td">Import multiple clients at once from consultation PDFs, InBody scans, and assessment forms.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="location.href='member-roster-import.html'" style="border-color:#D98A0B20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
-      <span class="ic">📋</span><div class="eb" style="color:#D98A0B">ABC Import</div><div class="tt">Member Roster Import</div>
-      <div class="td">Real ABC membership roster with live dedup against your clients table — new members, existing matches, and non-active accounts all sorted out.</div><span class="arrow" style="color:#D98A0B">→</span></div>
-    <div class="toolcard" onclick="openTool('portal-admin.html')">
-      <span class="ic">🔑</span><div class="eb">Client Access</div><div class="tt">Member Portal</div>
-      <div class="td">Grant client login, generate monthly challenge, manage portal access.</div><span class="arrow">→</span></div>
-    <div class="toolcard" onclick="openTool('member-app.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
-      <span class="ic">📱</span><div class="eb" style="color:var(--red)">Live App</div><div class="tt">Retro Strong — Member App</div>
-      <div class="td">Open the live client-facing app to preview, test, or demo it directly.</div><span class="arrow" style="color:var(--red)">→</span></div>
-    <div class="toolcard" onclick="openTool('staff-login.html')" style="border-color:#7C3AED20;background:linear-gradient(135deg,#fff 80%,#F5F3FF)">
-      <span class="ic">🔐</span><div class="eb" style="color:#7C3AED">Staff Only</div><div class="tt">Staff Login</div>
-      <div class="td">The dedicated staff sign-in link — copy this URL to share with coaches and employees. Not for members or the public.</div><span class="arrow" style="color:#7C3AED">→</span></div>
+    <div class="cc-stack">
+      <div class="tools-label">Assessment Tools</div>
+      <div class="toolcard" onclick="openTool('member-onboarding.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+        <span class="ic">🚪</span><div class="eb" style="color:var(--red)">Step 0 · Guest Walks In</div><div class="tt">New Member Onboarding</div>
+        <div class="td">Guest → tour → membership tier → close → schedule, one continuous record.</div><span class="arrow" style="color:var(--red)">→</span></div>
+      <div class="toolcard" onclick="openTool('fitness-consultation-tool.html')">
+        <span class="ic">📋</span><div class="eb">Step 1 · New Member</div><div class="tt">Initial Consultation</div>
+        <div class="td">Full intake, InBody, AI assessment. Welcome Packet on sign-up.</div><span class="arrow">→</span></div>
+      <div class="toolcard" onclick="openTool('fitness-followup-tool.html')">
+        <span class="ic">🔄</span><div class="eb">Step 2 · Declined</div><div class="tt">6-Week Follow-Up</div>
+        <div class="td">Re-engagement interview and a fresh InBody comparison.</div><span class="arrow">→</span></div>
+      <div class="toolcard" onclick="openTool('fitness-monthly-checkin.html')">
+        <span class="ic">📅</span><div class="eb">Step 3 · Active</div><div class="tt">Monthly Check-In</div>
+        <div class="td">Monthly progress review and report for enrolled clients.</div><span class="arrow">→</span></div>
+      <div class="toolcard" onclick="openTool('prospect-tracker.html')">
+        <span class="ic">🎯</span><div class="eb">Prospect Pipeline</div><div class="tt">Prospect Tracker</div>
+        <div class="td">People, Businesses, and a daily Call List in one place — touchpoints, follow-up dates, and corporate offer talking points.</div><span class="arrow">→</span></div>
+    </div>
+
+    <div>
+      <div class="tools-label">Gym Analytics</div>
+      <div class="cc-center-frame"><iframe src="gym-analytics.html" title="Gym Analytics"></iframe></div>
+    </div>
+
+    <div class="cc-stack">
+      <div class="tools-label">Management</div>
+      <div class="toolcard" onclick="location.href='coaches-hub.html'" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+        <span class="ic">🧑‍🏫</span><div class="eb" style="color:var(--red)">Coach Directory</div><div class="tt">Coaches</div>
+        <div class="td">Every coach, how many clients they carry, and a direct link to their own portal.</div><span class="arrow" style="color:var(--red)">→</span></div>
+      <div class="toolcard" onclick="location.href='eod-picker.html'" style="border-color:#2563EB20;background:linear-gradient(135deg,#fff 80%,#EFF6FF)">
+        <span class="ic">📝</span><div class="eb" style="color:#2563EB">Daily · Submit</div><div class="tt">Submit EOD</div>
+        <div class="td">Pick your name, fill out your own End of Day report for today.</div><span class="arrow" style="color:#2563EB">→</span></div>
+      <div class="toolcard" onclick="openTool('staff-setup.html')" style="border-color:#7C3AED20;background:linear-gradient(135deg,#fff 80%,#F5F3FF)">
+        <span class="ic">👥</span><div class="eb" style="color:#7C3AED">Roster · Scheduling</div><div class="tt">Staff Roster</div>
+        <div class="td">Add and manage employees, set who submits EODs, and schedule shifts — Coverage Board now lives inside as a tab.</div><span class="arrow" style="color:#7C3AED">→</span></div>
+      <div class="toolcard" onclick="openTool('hr-portal.html')" style="border-color:#1E9E5A20;background:linear-gradient(135deg,#fff 80%,#ECFDF3)">
+        <span class="ic">🗂</span><div class="eb" style="color:#1E9E5A">Dani · Bill</div><div class="tt">HR Portal</div>
+        <div class="td">Employee records, hiring documents, onboarding checklists, and performance history.</div><span class="arrow" style="color:#1E9E5A">→</span></div>
+      <div class="toolcard" onclick="openTool('meal-plans.html')">
+        <span class="ic">🥗</span><div class="eb">Complete · Complete+</div><div class="tt">Meal Plans</div>
+        <div class="td">Build weekly plans and shopping lists, then send by Gmail.</div><span class="arrow">→</span></div>
+      <div class="toolcard" onclick="location.href='backfill-data.html'" style="border-color:#D98A0B20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
+        <span class="ic">🩹</span><div class="eb" style="color:#D98A0B">One-Time Fix</div><div class="tt">Backfill Client Data</div>
+        <div class="td">Writes real InBody scans and consultation notes for the 10 batch-imported clients.</div><span class="arrow" style="color:#D98A0B">→</span></div>
+      <div class="toolcard" onclick="openGuestPassStats()" style="border-color:#2563EB20;background:linear-gradient(135deg,#fff 80%,#EFF6FF)">
+        <span class="ic">🎟️</span><div class="eb" style="color:#2563EB">Last 30 Days</div><div class="tt">Guest Pass Activity</div>
+        <div class="td">Which classes are driving guest pass claims — a quick read on what's pulling prospects in.</div><span class="arrow" style="color:#2563EB">→</span></div>
+      <div class="toolcard" onclick="location.href='client-management.html'" style="border-color:#1E9E5A20;background:linear-gradient(135deg,#fff 80%,#ECFDF3)">
+        <span class="ic">👥</span><div class="eb" style="color:#1E9E5A">Roster · Dedupe · Add Client</div><div class="tt">Client Management</div>
+        <div class="td">Full clients, leads &amp; prospects list, auto-flags duplicates, and Add Client — all in one place now.</div><span class="arrow" style="color:#1E9E5A">→</span></div>
+      <div class="toolcard" onclick="location.href='batch-import.html'">
+        <span class="ic">⬇️</span><div class="eb">Bulk Add</div><div class="tt">Batch Import Clients</div>
+        <div class="td">Import multiple clients at once from consultation PDFs, InBody scans, and assessment forms.</div><span class="arrow">→</span></div>
+      <div class="toolcard" onclick="location.href='member-roster-import.html'" style="border-color:#D98A0B20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
+        <span class="ic">📋</span><div class="eb" style="color:#D98A0B">ABC Import</div><div class="tt">Member Roster Import</div>
+        <div class="td">Real ABC membership roster with live dedup against your clients table — new members, existing matches, and non-active accounts all sorted out.</div><span class="arrow" style="color:#D98A0B">→</span></div>
+      <div class="toolcard" onclick="openTool('portal-admin.html')">
+        <span class="ic">🔑</span><div class="eb">Client Access</div><div class="tt">Member Portal</div>
+        <div class="td">Grant client login, generate monthly challenge, manage portal access.</div><span class="arrow">→</span></div>
+      <div class="toolcard" onclick="openTool('member-app.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+        <span class="ic">📱</span><div class="eb" style="color:var(--red)">Live App</div><div class="tt">Retro Strong — Member App</div>
+        <div class="td">Open the live client-facing app to preview, test, or demo it directly.</div><span class="arrow" style="color:var(--red)">→</span></div>
+      <div class="toolcard" onclick="openTool('demo-data-audit.html')" style="border-color:#DC262620;background:linear-gradient(135deg,#fff 80%,#FEF2F2)">
+        <span class="ic">🧹</span><div class="eb" style="color:#DC2626">Region · Cleanup</div><div class="tt">Demo Data Audit</div>
+        <div class="td">See exactly what seeded demo data exists before removing it — nothing deletes without review.</div><span class="arrow" style="color:#DC2626">→</span></div>
+    </div>
+
   </div>
 
 <div style="display:none">
