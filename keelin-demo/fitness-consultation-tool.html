@@ -1093,7 +1093,7 @@
       <div class="page active" id="page-0">
         <div class="page-header">
           <h2 id="welcome-heading">Welcome</h2>
-          <p>Enter the member's name, then upload their InBody scan — we'll take it from there.</p>
+          <p>Enter the member's name to get started.</p>
         </div>
 
         <div class="card">
@@ -1103,29 +1103,9 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title"><span class="dot"></span> Document upload</div>
-          <div class="upload-zone" id="upload-zone"
-            ondragover="handleDrag(event,true)"
-            ondragleave="handleDrag(event,false)"
-            ondrop="handleDrop(event)"
-            onclick="document.getElementById('pdf-input').click()">
-            <input type="file" id="pdf-input" accept=".pdf,image/*" style="display:none" onchange="handleFiles(this.files)">
-            <div class="upload-icon">📄</div>
-            <div class="upload-label">Drop files here or click to browse</div>
-            <div class="upload-hint">PDF, JPG, PNG — InBody scans, intake forms, health records</div>
-          </div>
-          <div id="file-list" class="file-list"></div>
-          <div id="upload-status" class="status-bar"></div>
-          <div id="parsed-preview" class="preview-box"></div>
-          <button class="btn btn-primary btn-full" id="parse-btn" style="display:none; margin-top:14px;" onclick="parseAllFiles()">
-            🧠 Read documents & auto-fill form
-          </button>
-        </div>
-
         <div class="nav-row">
           <div></div>
-          <button class="btn btn-outline" onclick="goPage(1)">Skip or Next →</button>
+          <button class="btn btn-primary" onclick="goPage(1)">Next →</button>
         </div>
       </div>
 
@@ -1384,7 +1364,27 @@
       <div class="page" id="page-4">
         <div class="page-header">
           <h2>InBody scan data</h2>
-          <p>Body composition metrics and segmental lean analysis from the InBody device.</p>
+          <p>Upload the InBody scan — it reads automatically and fills the fields below.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Document upload</div>
+          <div class="upload-zone" id="upload-zone"
+            ondragover="handleDrag(event,true)"
+            ondragleave="handleDrag(event,false)"
+            ondrop="handleDrop(event)"
+            onclick="document.getElementById('pdf-input').click()">
+            <input type="file" id="pdf-input" accept=".pdf,image/*" style="display:none" onchange="handleFiles(this.files)">
+            <div class="upload-icon">📄</div>
+            <div class="upload-label">Drop the InBody scan here or click to browse</div>
+            <div class="upload-hint">PDF, JPG, PNG — reads automatically, no separate button to click</div>
+          </div>
+          <div id="file-list" class="file-list"></div>
+          <div id="upload-status" class="status-bar"></div>
+          <div id="parsed-preview" class="preview-box"></div>
+          <button class="btn btn-primary btn-full" id="parse-btn" style="display:none; margin-top:14px;" onclick="parseAllFiles()">
+            🧠 Read documents & auto-fill form
+          </button>
         </div>
 
         <div class="card">
@@ -1471,6 +1471,12 @@
           </div>
         </div>
 
+        <div class="card" id="pdf-preview-card" style="display:none">
+          <div class="card-title"><span class="dot"></span> Scanned document</div>
+          <p style="font-size:12px; color:var(--text3); margin-bottom:14px;">Review the physical scan with the member right here — no need to open another screen.</p>
+          <div id="pdf-preview-box"></div>
+        </div>
+
         <div class="nav-row">
           <button class="btn btn-ghost" onclick="goPage(3)">← Back</button>
           <button class="btn btn-primary" onclick="goPage(5)">Next: Generate assessment →</button>
@@ -1486,7 +1492,7 @@
 
         <div class="card">
           <div class="card-title"><span class="dot"></span> Generate assessment</div>
-          <p style="font-size:13px; color:var(--text2); margin-bottom:16px;">Building the assessment now from everything entered so far. Review the output with the member before accepting or declining.</p>
+          <p style="font-size:13px; color:var(--text2); margin-bottom:16px;">Kicked off automatically as soon as the InBody scan was uploaded — review the output with the member before accepting or declining.</p>
           <button class="btn btn-primary btn-full" id="gen-btn" onclick="generateAssessment()">
             🔄 Regenerate Assessment
           </button>
@@ -2254,7 +2260,7 @@ CRITICAL INBODY EXTRACTION RULES:
 - seg_rl = Right Leg segmental lean mass percentage (look for "Right Leg", "R. Leg", "RL")
 - These are PERCENTAGE values shown in the segmental lean analysis bar chart section of the InBody report
 - pbf = Percent Body Fat (PBF) percentage number only
-- lean_mass = Skeletal Muscle Mass or Lean Body Mass in lbs
+- lean_mass = Dry Lean Mass in lbs specifically (labeled "Dry Lean Mass" in the Body Composition Analysis section) — this is NOT the same number as Skeletal Muscle Mass (shown separately in Muscle-Fat Analysis) or total Lean Body Mass (shown under Research Parameters). All three appear on a real InBody report and are different values — use Dry Lean Mass only.
 - fat_mass = Body Fat Mass in lbs
 - water_weight = Total Body Water in lbs
 - bmi = BMI number only
@@ -2275,7 +2281,7 @@ CRITICAL INBODY EXTRACTION RULES:
     autoFill(parsed);
 
     const filled = Object.entries(parsed).filter(([k,v]) => v).length;
-    setStatus('upload-status','success',`✓ ${filled} fields auto-filled from your document. Moving to the next step...`);
+    setStatus('upload-status','success',`✓ ${filled} fields auto-filled. Generating the assessment in the background — go do the welcome workout, it'll be ready when you get back.`);
 
     const preview = document.getElementById('parsed-preview');
     preview.style.display = 'block';
@@ -2284,13 +2290,25 @@ CRITICAL INBODY EXTRACTION RULES:
     btn.innerHTML = '✓ Re-upload or add another file';
     btn.disabled = false;
 
-    setTimeout(() => goPage(1), 1200);
+    renderPdfPreview();
+    generateAssessment();
 
   } catch(e) {
     setStatus('upload-status','error', '? ' + e.message + ' | Key: ' + apiKey.substring(0,14) + '...' + apiKey.slice(-4));
     btn.innerHTML = '? Read documents & auto-fill form';
     btn.disabled = false;
   }
+}
+
+function renderPdfPreview() {
+  const card = document.getElementById('pdf-preview-card');
+  const box = document.getElementById('pdf-preview-box');
+  if (!card || !box || !uploadedFiles.length) return;
+  const pdfFile = uploadedFiles.find(f => f.type === 'application/pdf');
+  if (!pdfFile) { card.style.display = 'none'; return; }
+  const url = URL.createObjectURL(pdfFile);
+  box.innerHTML = `<iframe src="${url}" style="width:100%; height:700px; border:1px solid var(--border); border-radius:var(--radius);" title="InBody scan document"></iframe>`;
+  card.style.display = 'block';
 }
 
 const FIELD_MAP = {
@@ -2538,6 +2556,9 @@ function formatAssessmentSections(text) {
 async function generateAssessment() {
   saveDraftSilent();
   const btn = document.getElementById('gen-btn');
+  if (btn._ran && btn._inFlight) return; // already generating from an earlier trigger — don't double-fire
+  btn._ran = true;
+  btn._inFlight = true;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> &nbsp; Generating assessment...';
   setStatus('assess-status','info','<span class="spinner dark"></span>&nbsp; Analyzing all member data and generating personalized assessment...');
@@ -2579,6 +2600,7 @@ async function generateAssessment() {
   } catch(e) {
     setStatus('assess-status','error','Error: ' + e.message);
   }
+  btn._inFlight = false;
   btn.disabled = false;
   btn.innerHTML = '&#10024; Generate Personalized Assessment';
 }
@@ -4311,6 +4333,7 @@ function autoFillDemoClient() {
 // Fill everything, then jump straight past Welcome to Member Info —
 // this copy exists purely for a live walkthrough, not real client intake.
 autoFillDemoClient();
+generateAssessment(); // demo has no real file upload to trigger this — start it directly, same "ready when you get there" experience
 goPage(1);
 
 </script>
