@@ -49,7 +49,7 @@ tr:last-child td{border-bottom:none}
 <body>
 <div class="topbar">
   <img src="assets/retro-fitness-logo.png" alt="Retro Fitness" style="height:28px;width:auto">
-  <a href="keelin-dashboard.html">&larr; Command Center</a>
+  <a href="keelin-dashboard.html" id="back-link">&larr; Command Center</a>
 </div>
 <div class="wrap">
   <div class="hero">
@@ -83,12 +83,15 @@ const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 const params = new URLSearchParams(location.search);
 const GYM_ID = params.get('gym_id') || '1';
 const MONTH = params.get('month') || new Date().toISOString().slice(0,7);
+const DEMO_VIEW = params.get('demo') === '1';
+const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
+if (DEMO_VIEW) { const bl = document.getElementById('back-link'); if (bl) bl.href = 'keelin-dashboard.html?demo=1'; }
 
 function fmtMoney(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 async function load(){
-  const r = await fetch(WORKER + `/region/gym?gym_id=${GYM_ID}&month=${MONTH}`);
+  const r = await fetch(WORKER + `/region/gym?gym_id=${GYM_ID}&month=${MONTH}`+DEMO_Q);
   const d = await r.json();
   const g = d.gym || {};
   document.getElementById('g-name').textContent = g.name || 'Club';
