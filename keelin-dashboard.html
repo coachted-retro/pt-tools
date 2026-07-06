@@ -241,7 +241,7 @@ function changeDate(d) {
 }
 
 async function db(payload) {
-  const r = await fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  const r = await fetch(WORKER+'/db'+DEMO_Q, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   return (await r.json()).results||[];
 }
 
@@ -254,7 +254,7 @@ function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 
 async function loadHelpQueue(){
   try {
-    const r = await fetch(WORKER+'/help-requests?status=open');
+    const r = await fetch(WORKER+'/help-requests?status=open'+DEMO_Q);
     const d = await r.json();
     const list = d.requests || [];
     const badge = document.getElementById('help-count-badge');
@@ -277,7 +277,7 @@ async function loadHelpQueue(){
 
 async function resolveHelp(id){
   const note = prompt('Any note on how you helped? (optional)','');
-  await fetch(WORKER+'/help-requests/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, note})});
+  await fetch(WORKER+'/help-requests/resolve'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, note})});
   loadHelpQueue();
 }
 
@@ -307,7 +307,7 @@ async function editGoal(gymId, current){
   if (v==null) return;
   const goal = parseFloat(String(v).replace(/[^0-9.]/g,''));
   if (isNaN(goal)) return alert('Enter a number.');
-  await fetch(WORKER+'/board/set-goal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,tcv_goal:goal})});
+  await fetch(WORKER+'/board/set-goal'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,tcv_goal:goal})});
   loadBoard();
 }
 
@@ -317,7 +317,7 @@ async function editNote(gymId){
   if (note==null) return;
   const pick = prompt('Emoji (type a number): 1 \uD83D\uDD25  2 \uD83D\uDCAA  3 \uD83D\uDC4F  4 \uD83C\uDF89  5 \uD83D\uDE4C  6 \u2764\uFE0F  (blank = none)','1');
   const emoji = pick && EMOJIS[parseInt(pick)-1] ? EMOJIS[parseInt(pick)-1] : '';
-  await fetch(WORKER+'/board/set-note',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,note:note,emoji:emoji,author:'Keelin'})});
+  await fetch(WORKER+'/board/set-note'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,note:note,emoji:emoji,author:'Keelin'})});
   loadBoard();
 }
 
@@ -338,7 +338,7 @@ async function openThread(ref, title){
   if (!ref) return;
   activeThread = ref;
   document.getElementById('thread-title').textContent = title || 'Sale Thread';
-  const r = await fetch(WORKER+'/huddle/feed?thread_ref='+encodeURIComponent(ref));
+  const r = await fetch(WORKER+'/huddle/feed?thread_ref='+encodeURIComponent(ref)+DEMO_Q);
   const d = await r.json();
   const box = document.getElementById('thread-box');
   box.innerHTML = (d.messages||[]).map(m=>`
@@ -356,7 +356,7 @@ async function postShout(ref, channel, fromThread){
   const input = document.getElementById(fromThread?'thread-input':'win-input');
   const body = (input?.value||'').trim();
   if (!body) return;
-  await fetch(WORKER+'/huddle/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:channel||'wins',author:'Keelin',body:body,thread_ref:ref||''})});
+  await fetch(WORKER+'/huddle/post'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:channel||'wins',author:'Keelin',body:body,thread_ref:ref||''})});
   if (input) input.value='';
   if (fromThread && ref) openThread(ref, document.getElementById('thread-title').textContent);
   else loadWins();
@@ -364,7 +364,7 @@ async function postShout(ref, channel, fromThread){
 
 async function loadBell(){
   try {
-    const r = await fetch(WORKER+'/notifications?recipient=keelin');
+    const r = await fetch(WORKER+'/notifications?recipient=keelin'+DEMO_Q);
     const d = await r.json();
     const badge = document.getElementById('bell-badge');
     if (d.unread>0){ badge.style.display='inline-block'; badge.textContent=d.unread; } else badge.style.display='none';
@@ -386,7 +386,7 @@ function toggleBell(){
 }
 
 async function bellTap(id, threadRef){
-  await fetch(WORKER+'/notifications/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})});
+  await fetch(WORKER+'/notifications/read'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})});
   document.getElementById('bell-drop').style.display='none';
   loadBell();
   if (threadRef){ switchTab('board'); setTimeout(()=>openThread(threadRef,'Celebrate this sale'),400); }
@@ -437,7 +437,7 @@ function renderOverview() {
     </tr>`;
 
   // Check today's EOD
-  fetch(WORKER+`/eod/feed?date=${new Date().toISOString().slice(0,10)}`).then(r=>r.json()).then(d=>{
+  fetch(WORKER+`/eod/feed?date=${new Date().toISOString().slice(0,10)}`+DEMO_Q).then(r=>r.json()).then(d=>{
     const el = document.getElementById('gym-eod-status');
     const count = (d.submissions||[]).length;
     el.innerHTML = count ? `<span style="color:var(--green);font-weight:700">✓ ${count} submitted</span>` : '<span style="color:var(--muted)">Pending</span>';
@@ -450,7 +450,7 @@ async function loadEOD() {
   disp.textContent = new Date(eodDateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   el.innerHTML = '<div class="empty-state">Loading...</div>';
   try {
-    const r = await fetch(WORKER+`/eod/feed?date=${eodDateStr}`);
+    const r = await fetch(WORKER+`/eod/feed?date=${eodDateStr}`+DEMO_Q);
     const d = await r.json();
     const subs = d.submissions||[];
     if (!subs.length) { el.innerHTML = '<div class="empty-state">No submissions for this date.</div>'; return; }
