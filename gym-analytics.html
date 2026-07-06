@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gym Analytics — Retro Fitness Fairless Hills</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
+<style>
+:root {
+  --red:#E0192B; --red-dk:#B0121F; --ink:#15171A; --bg:#E8EBEF;
+  --card:#fff; --border:#E1E4E9; --text2:#4B5563; --text3:#6B7280;
+  --green:#1E9E5A; --amber:#D98A0B; --blue:#2563EB; --gray:#9AA1AC;
+  --green-lt:#E3F5EC; --amber-lt:#FBEFD9; --blue-lt:#E7EEFE; --red-lt:#FDEAEC;
+  --font-display:'Oswald',sans-serif; --radius:14px;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { background:var(--bg); color:var(--ink); font-family:'Inter',system-ui,sans-serif; font-size:14px; }
+h1,h2,h3,.sec-title { font-family:var(--font-display); }
+
+.topbar { display:flex; align-items:center; gap:16px; background:var(--ink); padding:16px 28px; }
+.topbar a { color:#9CA3AF; text-decoration:none; font-weight:600; font-size:13px; }
+.topbar .title { color:#fff; font-family:var(--font-display); font-weight:700; font-size:18px; text-transform:uppercase; letter-spacing:.03em; }
+.topbar .title span { color:var(--red); }
+.topbar .spacer { flex:1; }
+.topbar .sub { color:#9CA3AF; font-size:12px; }
+
+.wrap { max-width:1280px; margin:0 auto; padding:28px 28px 60px; }
+.sec-label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); margin:28px 0 12px; }
+.sec-label:first-child { margin-top:0; }
+.data-note { font-size:11.5px; color:var(--text3); font-style:italic; margin:-6px 0 14px; }
+
+.kpi-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+.kpi-tile { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px 18px 16px; cursor:pointer; transition:box-shadow .15s,border-color .15s; }
+.kpi-tile:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); border-color:#C9CDD4; }
+.kpi-tile.active { border-color:var(--red); box-shadow:0 4px 16px rgba(224,25,43,.12); }
+.kpi-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text3); margin-bottom:8px; }
+.kpi-value { font-size:26px; font-weight:800; line-height:1; }
+.kpi-sub { font-size:11.5px; color:var(--text3); margin-top:6px; }
+.kpi-pill { display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; margin-top:8px; }
+.pill-good { background:var(--green-lt); color:var(--green); }
+.pill-warn { background:var(--amber-lt); color:var(--amber); }
+.pill-bad { background:var(--red-lt); color:var(--red); }
+.pill-none { background:#F0F1F3; color:var(--text3); }
+
+.detail-panel { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:22px; margin-top:16px; display:none; }
+.detail-panel.open { display:block; }
+.detail-panel h3 { font-size:16px; margin-bottom:4px; }
+.detail-panel .dp-sub { font-size:12.5px; color:var(--text3); margin-bottom:16px; }
+.dp-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.dp-row:last-child { border-bottom:none; }
+.dp-row .name { font-weight:600; }
+.dp-row .meta { color:var(--text3); font-size:12px; }
+
+.card-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:4px; }
+.card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+.card-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text3); margin-bottom:14px; }
+
+.tier-strip { display:flex; gap:10px; }
+.tier-chip { flex:1; text-align:center; padding:14px 8px; border-radius:10px; }
+.tier-chip .tn { font-family:var(--font-display); font-weight:700; font-size:12px; text-transform:uppercase; }
+.tier-chip .tc { font-size:22px; font-weight:800; margin-top:4px; }
+
+.loading { text-align:center; padding:60px 20px; color:var(--text3); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="command-center.html">← Command Center</a>
+  <div class="spacer"></div>
+  <div class="title">GYM <span>ANALYTICS</span></div>
+  <div class="spacer"></div>
+  <div class="sub">Retro Fitness Fairless Hills</div>
+</div>
+
+<div class="wrap">
+  <div id="loading" class="loading">Loading real data...</div>
+  <div id="content" style="display:none">
+
+    <div class="sec-label">Whole-Gym KPIs — This Month</div>
+    <div class="data-note">Pulled live from your real client records. Some figures will be low or zero until new members flow through onboarding going forward.</div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="detail-panel" id="detail-panel"></div>
+
+    <div class="sec-label">Membership Mix</div>
+    <div class="data-note" id="tier-note"></div>
+    <div class="card"><div class="tier-strip" id="tier-strip"></div></div>
+
+    <div class="sec-label">PT Program</div>
+    <div class="kpi-grid" id="pt-kpi-grid"></div>
+
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function pillClass(c){ return c==='good'?'pill-good':c==='warn'?'pill-warn':c==='none'?'pill-none':'pill-bad'; }
+
+let allClients = [];
+let allScans = [];
+let allConsultations = [];
+let KPIS = [];
+
+async function loadData() {
+  try {
+    const [clientsRes, scansRes, consultRes] = await Promise.all([
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'clients', limit:2000})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'inbody_scans', limit:2000})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'consultations', limit:2000})}),
+    ]);
+    allClients = (await clientsRes.json()).results || [];
+    allScans = (await scansRes.json()).results || [];
+    allConsultations = (await consultRes.json()).results || [];
+    computeAndRender();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+  } catch(e) {
+    document.getElementById('loading').textContent = 'Error loading data: ' + e.message;
+  }
+}
+
+function computeAndRender() {
+  const now = new Date();
+  const monthStr = now.toISOString().slice(0,7);
+  const thisMonth = c => (c.created_at || '').slice(0,7) === monthStr;
+  const consultThisMonth = allConsultations.filter(c => (c.consult_date || c.created_at || '').slice(0,7) === monthStr);
+  const accepted = consultThisMonth.filter(c => c.outcome === 'accepted').length;
+  const declined = consultThisMonth.filter(c => c.outcome === 'declined').length;
+  const closeRate = (accepted + declined) > 0 ? Math.round((accepted / (accepted + declined)) * 100) : null;
+
+  const active = allClients.filter(c => c.status === 'active' || c.status === 'active_pt');
+  const newThisMonth = allClients.filter(thisMonth);
+  const declinedThisMonth = allClients.filter(c => (c.status === 'declined' || c.status === 'cancelled') && thisMonth(c));
+  const pastDue = allClients.filter(c => c.status === 'frozen' || c.status === 'past_due');
+  const withTier = active.filter(c => c.membership_tier);
+  const revenueTotal = withTier.reduce((s,c) => s + (parseFloat(c.membership_price)||0), 0);
+
+  const latestScans = {};
+  allScans.forEach(s => { if (!latestScans[s.client_id] || s.scan_date > latestScans[s.client_id]) latestScans[s.client_id] = s.scan_date; });
+  const activePtCount = allClients.filter(c => c.status === 'active_pt').length;
+  const sessionsTotal = allClients.reduce((s,c) => s + (parseInt(c.sessions_used)||0), 0);
+  const renewalsNeeded = allClients.filter(c => c.status === 'active_pt' && (c.sessions_remaining||0) <= 2).length;
+
+  KPIS = [
+    { key:'members', label:'Total Active Members', value:String(active.length), sub:newThisMonth.length + ' new this month',
+      pill: active.length ? {t:'Live data',c:'good'} : {t:'No active members yet',c:'none'},
+      detail:{title:'Active Membership', sub:'Counts any client with status active or active_pt.',
+        rows:[['Total active', active.length],['New this month', newThisMonth.length],['With tier assigned', withTier.length],['Without tier assigned (pre-dates onboarding tool)', active.length - withTier.length]]} },
+    { key:'revenue', label:'Gym Revenue (Tracked)', value: withTier.length ? ('$' + revenueTotal.toFixed(0)) : '$0',
+      sub: withTier.length + ' members with tier set', pill: withTier.length ? {t:'Partial — growing',c:'warn'} : {t:'No tier data yet',c:'none'},
+      detail:{title:'Membership Revenue (Tracked)', sub:'Only reflects members with a membership_tier/price recorded — populates as New Member Onboarding is used going forward.',
+        rows:[['Members with tier + price set', withTier.length],['Total tracked revenue', '$'+revenueTotal.toFixed(2)],['Members without tier data', active.length - withTier.length]]} },
+    { key:'attrition', label:'Cancellations (MTD)', value:String(declinedThisMonth.length), sub:'This month',
+      pill: declinedThisMonth.length === 0 ? {t:'None yet',c:'good'} : {t:'Review reasons',c:'warn'},
+      detail:{title:'Cancellations This Month', sub:'Clients marked declined or cancelled this month.',
+        rows: declinedThisMonth.length ? declinedThisMonth.map(c => [((c.first_name||'')+' '+(c.last_name||'')).trim(), c.notes || '—']) : [['No cancellations this month','—']]} },
+    { key:'pastdue', label:'Past Due / Frozen', value:String(pastDue.length), sub:'Accounts',
+      pill: pastDue.length === 0 ? {t:'None',c:'good'} : {t:'Follow up',c:'warn'},
+      detail:{title:'Past Due / Frozen Accounts', sub:'Clients currently marked frozen or past_due.',
+        rows: pastDue.length ? pastDue.map(c => [((c.first_name||'')+' '+(c.last_name||'')).trim(), c.status]) : [['None currently','—']]} },
+    { key:'close', label:'Consultation Close Rate', value: closeRate!=null ? (closeRate+'%') : '—', sub: (accepted+declined) + ' consultations this month',
+      pill: closeRate==null ? {t:'No data yet',c:'none'} : (closeRate>=33 ? {t:'On target (33-40%)',c:'good'} : {t:'Below target',c:'warn'}),
+      detail:{title:'Consultation Close Rate', sub:'Of consultations with a recorded outcome this month, the share that closed.',
+        rows:[['Accepted', accepted],['Declined / thinking it over', declined],['Corporate target range','33-40%']]} },
+    { key:'setsbooked', label:'Sets Booked / Show %', value:'—', sub:'Needs appointment tracking',
+      pill:{t:'Not yet tracked',c:'none'},
+      detail:{title:'Sets Booked & Show Rate', sub:'These require tracking scheduled appointments (booked vs. showed vs. no-show), which isn\'t built yet — only completed consultations are currently recorded. This is the same appointment-tracking system scoped earlier for Coach Dashboard.',
+        rows:[['Status','Pending — needs pt_appointments system']]} },
+    { key:'prospects', label:'Active Prospects', value:String(allClients.filter(c=>c.status==='prospect').length), sub:'Not yet closed',
+      pill:{t:'In pipeline',c:'warn'},
+      detail:{title:'Active Prospects', sub:'Clients currently at prospect status — being toured, considering, or awaiting a decision.',
+        rows: allClients.filter(c=>c.status==='prospect').slice(0,10).map(c => [((c.first_name||'')+' '+(c.last_name||'')).trim(), c.advisor||'—'])} },
+  ];
+
+  document.getElementById('kpi-grid').innerHTML = KPIS.map(k => `
+    <div class="kpi-tile" id="tile-${k.key}" onclick="showDetail('${k.key}')">
+      <div class="kpi-label">${esc(k.label)}</div>
+      <div class="kpi-value">${esc(k.value)}</div>
+      <div class="kpi-sub">${esc(k.sub)}</div>
+      <div class="kpi-pill ${pillClass(k.pill.c)}">${esc(k.pill.t)}</div>
+    </div>`).join('');
+
+  document.getElementById('tier-note').textContent = withTier.length
+    ? 'Reflects members with membership_tier recorded.'
+    : 'No members have a recorded tier yet — this populates as the New Member Onboarding tool is used.';
+  const tierCounts = { Ultimate:0, Flex:0, Limited:0 };
+  withTier.forEach(c => { if (tierCounts[c.membership_tier] != null) tierCounts[c.membership_tier]++; });
+  document.getElementById('tier-strip').innerHTML = Object.keys(tierCounts).map(name => `
+    <div class="tier-chip" style="background:#F0F1F3">
+      <div class="tn" style="color:var(--text3)">${name}</div>
+      <div class="tc">${tierCounts[name]}</div>
+    </div>`).join('');
+
+  const PT_KPIS = [
+    { label:'Active PT Clients', value:String(activePtCount), sub:'status = active_pt', pill:activePtCount?{t:'Live data',c:'good'}:{t:'None yet',c:'none'} },
+    { label:'Sessions Used (Lifetime)', value:String(sessionsTotal), sub:'Across active PT clients', pill:{t:'Cumulative',c:'good'} },
+    { label:'Renewals Needed', value:String(renewalsNeeded), sub:'≤2 sessions remaining', pill: renewalsNeeded ? {t:'Follow up',c:'warn'} : {t:'None',c:'good'} },
+    { label:'InBody Scans on File', value:String(allScans.length), sub:'Total across all clients', pill:{t:'Live data',c:'good'} },
+  ];
+  document.getElementById('pt-kpi-grid').innerHTML = PT_KPIS.map(k => `
+    <div class="kpi-tile" style="cursor:default">
+      <div class="kpi-label">${esc(k.label)}</div>
+      <div class="kpi-value">${esc(k.value)}</div>
+      <div class="kpi-sub">${esc(k.sub)}</div>
+      <div class="kpi-pill ${pillClass(k.pill.c)}">${esc(k.pill.t)}</div>
+    </div>`).join('');
+}
+
+function showDetail(key) {
+  document.querySelectorAll('.kpi-tile').forEach(t => t.classList.remove('active'));
+  const tile = document.getElementById('tile-' + key);
+  const panel = document.getElementById('detail-panel');
+  const k = KPIS.find(x => x.key === key);
+  if (!k) return;
+  if (tile.classList.contains('active')) { panel.classList.remove('open'); return; }
+  tile.classList.add('active');
+  panel.innerHTML = `
+    <h3>${esc(k.detail.title)}</h3>
+    <div class="dp-sub">${esc(k.detail.sub)}</div>
+    ${k.detail.rows.map(r => `<div class="dp-row"><span class="name">${esc(r[0])}</span><span class="meta">${esc(r[1])}</span></div>`).join('')}
+  `;
+  panel.classList.add('open');
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+loadData();
+</script>
+</body>
+</html>
