@@ -61,7 +61,8 @@ h1,h2,h3,.sec-title { font-family:var(--font-display); }
 .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
 .card-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--text3); margin-bottom:14px; }
 
-.tier-strip { display:flex; gap:10px; }
+.tier-strip { display:flex; gap:10px; flex-wrap:wrap; }
+.tier-chip { min-width:110px; }
 .tier-chip { flex:1; text-align:center; padding:14px 8px; border-radius:10px; }
 .tier-chip .tn { font-family:var(--font-display); font-weight:700; font-size:12px; text-transform:uppercase; }
 .tier-chip .tc { font-size:22px; font-weight:800; margin-top:4px; }
@@ -231,7 +232,7 @@ function computeAndRender() {
   const declined = consultThisMonth.filter(c => c.outcome === 'declined').length;
   const closeRate = (accepted + declined) > 0 ? Math.round((accepted / (accepted + declined)) * 100) : null;
 
-  const active = allClients.filter(c => c.status === 'active' || c.status === 'active_pt');
+  const active = allClients.filter(c => c.status === 'active' || c.status === 'active_pt' || c.status === 'active_member');
   const newThisMonth = allClients.filter(thisMonth);
   const declinedThisMonth = allClients.filter(c => (c.status === 'declined' || c.status === 'cancelled') && thisMonth(c));
   const pastDue = allClients.filter(c => c.status === 'frozen' || c.status === 'past_due');
@@ -286,13 +287,14 @@ function computeAndRender() {
   document.getElementById('tier-note').textContent = withTier.length
     ? 'Reflects members with membership_tier recorded.'
     : 'No members have a recorded tier yet — this populates as the New Member Onboarding tool is used.';
-  const tierCounts = { Ultimate:0, Flex:0, Limited:0 };
-  withTier.forEach(c => { if (tierCounts[c.membership_tier] != null) tierCounts[c.membership_tier]++; });
-  document.getElementById('tier-strip').innerHTML = Object.keys(tierCounts).map(name => `
+  const tierCounts = {};
+  withTier.forEach(c => { const t = c.membership_tier; tierCounts[t] = (tierCounts[t]||0) + 1; });
+  const sortedTiers = Object.keys(tierCounts).sort((a,b) => tierCounts[b]-tierCounts[a]);
+  document.getElementById('tier-strip').innerHTML = sortedTiers.map(name => `
     <div class="tier-chip" style="background:#F0F1F3">
-      <div class="tn" style="color:var(--text3)">${name}</div>
+      <div class="tn" style="color:var(--text3)">${esc(name)}</div>
       <div class="tc">${tierCounts[name]}</div>
-    </div>`).join('');
+    </div>`).join('') || '<div class="tier-chip" style="background:#F0F1F3"><div class="tn" style="color:var(--text3)">No tier data yet</div></div>';
 
   const PT_KPIS = [
     { label:'Active PT Clients', value:String(activePtCount), sub:'status = active_pt', pill:activePtCount?{t:'Live data',c:'good'}:{t:'None yet',c:'none'} },

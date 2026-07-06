@@ -97,7 +97,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -1728,6 +1728,52 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       }
 
       // ── CLIENTS IN JEOPARDY (no session scheduled in 7+ days) ─────
+      // ── ENGAGEMENT: BIRTHDAYS & MEMBERSHIP ANNIVERSARIES ──────────
+      // NOTE: simple MM-DD string comparison; does not handle the Dec->Jan
+      // year-boundary wraparound (a Jan 2 birthday won't show on Dec 30).
+      // Fine for now — worth revisiting if that edge case matters later.
+      if (url.pathname === '/engagement/celebrations' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const days = Math.min(parseInt(url.searchParams.get('days') || '7', 10) || 7, 30);
+        const birthdays = await env.DB.prepare(
+          `SELECT id, first_name, last_name, birthday FROM clients
+           WHERE birthday IS NOT NULL AND status IN ('active_member','active_pt')
+           AND strftime('%m-%d', birthday) BETWEEN strftime('%m-%d','now') AND strftime('%m-%d', date('now','+${days} day'))
+           ORDER BY strftime('%m-%d', birthday) ASC LIMIT 50`
+        ).all().catch(() => ({ results: [] }));
+        const anniversaries = await env.DB.prepare(
+          `SELECT id, first_name, last_name, training_start_date FROM clients
+           WHERE training_start_date IS NOT NULL AND status IN ('active_member','active_pt')
+           AND strftime('%m-%d', training_start_date) BETWEEN strftime('%m-%d','now') AND strftime('%m-%d', date('now','+${days} day'))
+           ORDER BY strftime('%m-%d', training_start_date) ASC LIMIT 50`
+        ).all().catch(() => ({ results: [] }));
+        return ok({ birthdays: birthdays.results || [], anniversaries: anniversaries.results || [] }, cors);
+      }
+
+      // ── RETRO CHEF: daily rotating whole-foods recipe ─────────────
+      if (url.pathname === '/chef/daily-recipe' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const today = new Date().toISOString().slice(0,10);
+        const existing = await env.DB.prepare('SELECT * FROM chef_recipes WHERE recipe_date=?').bind(today).first();
+        if (existing) return ok({ recipe: existing }, cors);
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+        const sys = 'You are Chef Ted, a former professional chef who now coaches fitness. Generate ONE simple, healthy recipe built entirely from whole foods (fresh produce, whole grains, lean proteins, minimal packaged/processed ingredients — no relying on prepared or pre-packaged shortcuts). Easy enough for a beginner cook. Return ONLY valid JSON, no markdown, with this exact shape: {"title":"","description":"one sentence, 15-25 words","prep_time":"e.g. 25 min","ingredients":["item with quantity", "..."],"instructions":["step 1", "step 2", "..."],"shopping_list":["item", "..."]}. The shopping_list should be the same items as ingredients but written as a simple grocery list (no quantities needed beyond what a shopper needs to know, e.g. \'chicken breast\' not \'2 diced chicken breasts\'). No commentary outside the JSON.';
+        const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: sys, messages: [{ role: 'user', content: 'Give me today\'s whole-foods recipe.' }] })
+        });
+        const aiData = await aiResp.json();
+        const text = (aiData.content && aiData.content[0] && aiData.content[0].text) || '{}';
+        let parsed;
+        try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+        catch(e) { return bad('AI response could not be parsed as JSON', cors); }
+        await env.DB.prepare('INSERT INTO chef_recipes (recipe_date,title,description,prep_time,ingredients_json,instructions_json,shopping_list_json,created_at) VALUES (?,?,?,?,?,?,?,?)')
+          .bind(today, parsed.title||'', parsed.description||'', parsed.prep_time||'', JSON.stringify(parsed.ingredients||[]), JSON.stringify(parsed.instructions||[]), JSON.stringify(parsed.shopping_list||[]), new Date().toISOString()).run();
+        const saved = await env.DB.prepare('SELECT * FROM chef_recipes WHERE recipe_date=?').bind(today).first();
+        return ok({ recipe: saved }, cors);
+      }
+
       if (url.pathname === '/jeopardy/clients' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const coach = url.searchParams.get('coach');

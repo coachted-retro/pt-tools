@@ -233,7 +233,7 @@ async function saveClient(){
   const vals={
     first_name:getF('m_first'), last_name:getF('m_last'), email:getF('m_email'), phone:getF('m_phone'),
     gender:getF('m_gender'), status:getF('m_status'), coach:getF('m_coach'), advisor:getF('m_advisor'),
-    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
+    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), birthday:getF('m_birthday')||null, my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
   };
   if (isCancelling) {
     const cancelNote = 'CANCELLED (' + new Date().toISOString().slice(0,10) + ') — Reason: ' + cancelReason + (getF('m_cancel_notes') ? '. ' + getF('m_cancel_notes') : '');
@@ -1070,9 +1070,11 @@ function renderMuscleBalance(scan){
       <div class="fld"><label>Gender</label><select id="m_gender"><option value="">—</option><option>Male</option><option>Female</option></select></div>
       <div class="fld"><label>Status</label><select id="m_status" onchange="checkCancelReason()">
         <option value="active_pt">Active PT</option>
+        <option value="active_member">Active Member (non-PT)</option>
         <option value="paused">Paused</option>
         <option value="completed">Completed</option>
         <option value="cancelled">Cancelled</option>
+        <option value="frozen">Frozen</option>
         <option value="former">No longer training</option>
         <option value="prospect">Prospect</option>
       </select></div>
@@ -1093,6 +1095,7 @@ function renderMuscleBalance(scan){
       </div>
       <div class="fld"><label>Trainer</label><select id="m_coach"><option value="">Unassigned</option></select></div>
       <div class="fld"><label>Advisor</label><input id="m_advisor"></div>
+      <div class="fld"><label>Birthday</label><input type="date" id="m_birthday"></div>
       <div class="fld"><label>Package</label><select id="m_package">
         <option value="">—</option>
         <optgroup label="Session frequency">

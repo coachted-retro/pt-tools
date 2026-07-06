@@ -506,6 +506,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-nutrition-demo"></div>
         <div id="home-habits"></div>
         <div id="home-here-now"></div>
+        <div id="home-celebrations"></div>
+        <div id="home-chef-recipe"></div>
         <div id="home-challenge"></div>
         <div id="home-circle"></div>
         <div id="home-community-feed"></div>
@@ -2339,6 +2341,8 @@ async function loadPublicHomeContent() {
   loadCoachsEdge();
   loadCircle();
   loadHereNow();
+  loadCelebrations();
+  loadChefRecipe();
   loadReferralLeaderboard();
   loadChallenge();
   loadCommunityFeed();
@@ -2408,6 +2412,7 @@ async function loadCommunityFeed() {
           <div style="font-weight:700;font-size:13px;margin-top:2px">${esc(cleanFeedTitle(p.title))}</div>
           ${p.body ? `<div style="font-size:12px;color:var(--ink3);margin-top:2px">${esc(p.body)}</div>` : ''}
           ${p.event_date ? `<div style="font-size:11px;color:var(--red);font-weight:700;margin-top:4px">${new Date(p.event_date+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>` : ''}
+          <button class="wp-swap-btn" style="margin-top:6px;font-size:11px;padding:5px 10px" onclick="shareContent('${esc(cleanFeedTitle(p.title)).replace(/'/g,"")}', '${esc(p.body||'').replace(/'/g,"")}')">Share</button>
         </div>
       </div></div>`).join('');
   } catch(e) { el.innerHTML = ''; }
@@ -2585,6 +2590,70 @@ async function buddyOptOut() {
     await fetch(WORKER + '/buddy/optout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ client_id: SESSION.client_id }) });
     loadBuddyMatching();
   } catch(e) {}
+}
+
+async function loadChefRecipe() {
+  const el = document.getElementById('home-chef-recipe');
+  if (!el) return;
+  el.innerHTML = `<div class="sec-label">Retro Chef — Today's Recipe</div><div class="card"><div class="card-body"><div class="empty-state">Loading today's recipe...</div></div></div>`;
+  try {
+    const r = await fetch(WORKER + '/chef/daily-recipe');
+    const d = await r.json();
+    if (!d.ok || !d.recipe) { el.innerHTML = ''; return; }
+    const rec = d.recipe;
+    const ingredients = JSON.parse(rec.ingredients_json || '[]');
+    const instructions = JSON.parse(rec.instructions_json || '[]');
+    const shopping = JSON.parse(rec.shopping_list_json || '[]');
+    el.innerHTML = `<div class="sec-label">Retro Chef — Today's Recipe</div>
+      <div class="card"><div class="card-body">
+        <div style="font-weight:800;font-size:16px">${esc(rec.title)}</div>
+        <div style="font-size:12px;color:var(--ink3);margin:4px 0 10px">${esc(rec.description)}${rec.prep_time ? ' · ' + esc(rec.prep_time) : ''}</div>
+        <button class="wp-swap-btn" onclick="toggleChefDetail()">View Recipe & Shopping List</button>
+        <button class="wp-swap-btn" onclick="shareContent('Retro Chef: ${esc(rec.title).replace(/'/g,"")}', '${esc(rec.description).replace(/'/g,"")}')" style="margin-left:8px">Share</button>
+        <div id="chef-detail" style="display:none;margin-top:12px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">Ingredients</div>
+          <ul style="padding-left:18px;font-size:13px;margin-bottom:10px">${ingredients.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">Instructions</div>
+          <ol style="padding-left:18px;font-size:13px;margin-bottom:10px">${instructions.map(i=>`<li style="margin-bottom:4px">${esc(i)}</li>`).join('')}</ol>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">Shopping List</div>
+          <ul style="padding-left:18px;font-size:13px">${shopping.map(i=>`<li>${esc(i)}</li>`).join('')}</ul>
+        </div>
+      </div></div>`;
+  } catch(e) { el.innerHTML = ''; }
+}
+
+function toggleChefDetail() {
+  const d = document.getElementById('chef-detail');
+  if (d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
+
+async function shareContent(title, text) {
+  const shareData = { title: title, text: text, url: window.location.href };
+  if (navigator.share) {
+    try { await navigator.share(shareData); } catch(e) {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(title + ' — ' + text + ' ' + window.location.href);
+      alert('Copied to clipboard — paste it into Facebook, Instagram, or wherever you\'d like to share it!');
+    } catch(e) { alert(title + ' — ' + text); }
+  }
+}
+
+async function loadCelebrations() {
+  const el = document.getElementById('home-celebrations');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/engagement/celebrations?days=7');
+    const d = await r.json();
+    const bdays = d.birthdays || [];
+    const annivs = d.anniversaries || [];
+    if (!bdays.length && !annivs.length) { el.innerHTML = ''; return; }
+    let html = `<div class="sec-label">This Week</div><div class="card"><div class="card-body">`;
+    bdays.forEach(b => { html += `<div style="padding:6px 0;font-size:13px">🎂 <b>${esc(b.first_name)} ${esc(b.last_name)}</b> has a birthday coming up!</div>`; });
+    annivs.forEach(a => { html += `<div style="padding:6px 0;font-size:13px">🎉 <b>${esc(a.first_name)} ${esc(a.last_name)}</b> has a member anniversary this week!</div>`; });
+    html += `</div></div>`;
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = ''; }
 }
 
 async function loadHereNow() {
