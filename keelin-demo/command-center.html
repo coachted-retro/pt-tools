@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Center — Retro Fitness Rego Park (Demo)</title>
+
+<link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#E0192B"><link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --red:#E0192B; --red-dk:#B0121F; --ink:#15171A; --bg:#E8EBEF;
+    --card:#FFFFFF; --line:#E4E7EC; --muted:#6B7280; --soft:#F0F2F5;
+    --green:#1E9E5A; --amber:#D98A0B; --blue:#2563EB; --gray:#9AA1AC;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  h1,h2,h3,.disp{font-family:'Oswald',sans-serif;letter-spacing:.5px}
+  .upper{text-transform:uppercase}
+  a{color:var(--red);text-decoration:none}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;gap:16px;background:var(--card);border-bottom:3px solid var(--red);
+    padding:12px 22px;position:sticky;top:0;z-index:20}
+  @media(max-width:640px){
+    .topbar{flex-wrap:wrap;gap:8px;padding:10px 14px}
+    .topbar img{height:28px}
+    .topbar .title{font-size:16px}
+    .search{order:10;flex:1 1 100%;min-width:0}
+    .search input{width:100%}
+  }
+  .topbar img{height:40px;width:auto;border-radius:4px}
+  .topbar .title{font-family:'Oswald';font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .title span{color:var(--red)}
+  .topbar .spacer{flex:1}
+  .search{display:flex;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:7px 12px;min-width:240px}
+  .search input{border:0;background:transparent;outline:0;font-size:14px;width:100%;font-family:'Inter'}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.6px;font-weight:600;font-size:13px;
+    border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 16px;border-radius:8px;cursor:pointer}
+  .btn:hover{background:var(--soft)}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}
+  .btn.red:hover{background:var(--red-dk)}
+
+  .wrap{padding:22px;max-width:1500px;margin:0 auto}
+
+  /* stat cards */
+  .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--red)}
+  .stat .label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600}
+  .stat .num{font-family:'Oswald';font-weight:700;font-size:34px;line-height:1.1;margin-top:4px}
+  .stat .sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+  /* tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+  .tab{font-family:'Oswald';text-transform:uppercase;letter-spacing:.6px;font-weight:600;font-size:14px;
+    padding:10px 18px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+  .tab.active{color:var(--ink);border-bottom-color:var(--red)}
+
+  .layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:1100px){.layout{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .panel .head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .panel .head h3{margin:0;font-size:15px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .panel .head .count{background:var(--soft);color:var(--muted);font-size:12px;font-weight:600;padding:2px 8px;border-radius:20px}
+  .panel .body{padding:6px 0;max-height:560px;overflow:auto}
+
+  /* list rows */
+  .row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--soft);cursor:pointer}
+  .row:hover{background:var(--soft)}
+  .row.static{cursor:default}
+  .row.static:hover{background:var(--card)}
+  .row:last-child{border-bottom:0}
+  .row .main{flex:1;min-width:0}
+  .row .name{font-weight:600}
+  .row .meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;white-space:nowrap}
+  .p-active{background:#E3F5EC;color:var(--green)} .p-new{background:#E7EEFE;color:var(--blue)}
+  .p-prospect{background:#FBEFD9;color:var(--amber)} .p-declined,.p-dead,.p-lapsed{background:#EEF0F3;color:var(--gray)}
+  .p-won,.p-partner_active{background:#E3F5EC;color:var(--green)}
+  .p-contacted,.p-qualified,.p-meeting_set{background:#FBEFD9;color:var(--amber)}
+
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  @media(max-width:1100px){.charts{grid-template-columns:1fr}}
+  .chartbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .chartbox h3{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+
+  .empty{padding:38px 22px;text-align:center;color:var(--muted)}
+  .empty .big{font-family:'Oswald';font-size:18px;color:var(--ink);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+
+  /* drawer */
+  .drawer-bg{position:fixed;inset:0;background:rgba(20,23,26,.35);display:none;z-index:40}
+  .drawer-bg.open{display:block}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,94vw);background:var(--bg);box-shadow:-8px 0 30px rgba(0,0,0,.18);
+    transform:translateX(100%);transition:transform .22s ease;z-index:41;overflow:auto}
+  .drawer.open{transform:translateX(0)}
+  .drawer .dhead{background:var(--card);border-bottom:3px solid var(--red);padding:18px 20px;position:sticky;top:0;z-index:2}
+  .drawer .dhead .dname{font-family:'Oswald';font-weight:700;font-size:24px;text-transform:uppercase;letter-spacing:.5px}
+  .drawer .dhead .dsub{color:var(--muted);font-size:13px;margin-top:2px}
+  .drawer .close{position:absolute;right:16px;top:16px;cursor:pointer;font-size:22px;color:var(--muted);line-height:1}
+  .dsec{margin:16px 20px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .dsec h4{margin:0 0 12px;font-family:'Oswald';text-transform:uppercase;letter-spacing:.6px;font-size:13px;color:var(--red)}
+  .tl{position:relative;padding-left:18px}
+  .tl .ev{position:relative;padding:0 0 14px 14px;border-left:2px solid var(--line)}
+  .tl .ev:last-child{border-left-color:transparent}
+  .tl .ev::before{content:"";position:absolute;left:-7px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--red);border:2px solid var(--card)}
+  .tl .ev .et{font-weight:600}
+  .tl .ev .ed{font-size:12px;color:var(--muted)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:13px}
+  .kv .k{color:var(--muted)}
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600;margin-bottom:4px}
+  .field select,.field input,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:'Inter';font-size:13px;background:#fff}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .note{font-size:12px;color:var(--muted)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+
+  /* tool launcher */
+  .tools-label{font-family:'Oswald';text-transform:uppercase;letter-spacing:.8px;font-size:12px;color:var(--muted);font-weight:600;margin:0 0 10px}
+  .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  @media(max-width:1100px){.tools{grid-template-columns:repeat(2,1fr)}}
+  .toolcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px 30px;cursor:pointer;transition:.15s;position:relative}
+  .toolcard:hover{border-color:var(--red);box-shadow:0 5px 16px rgba(224,25,43,.10);transform:translateY(-1px)}
+  .toolcard .ic{font-size:20px;display:block;margin-bottom:8px}
+  .toolcard .eb{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--red);font-weight:700;margin-bottom:3px}
+  .toolcard .tt{font-family:'Oswald';text-transform:uppercase;letter-spacing:.3px;font-weight:700;font-size:16px;line-height:1.1;margin-bottom:5px}
+  .toolcard .td{font-size:12px;color:var(--muted);line-height:1.4}
+  .toolcard .arrow{position:absolute;right:15px;bottom:12px;color:var(--red);font-weight:700;font-size:15px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;flex-direction:column;line-height:1.15">
+    <div style="font-family:'Oswald';font-weight:800;font-size:16px;color:var(--ink);text-transform:uppercase">Retro Fitness</div>
+    <div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px">Rego Park, NY &middot; Demo Store</div>
+  </div>
+  <div class="title" id="pageTitle">Command <span>Center</span></div>
+  <div class="spacer"></div>
+  <div class="search"><input id="q" placeholder="Search clients and leads..." oninput="render()"></div>
+  <button class="btn" onclick="loadAll()">Refresh</button>
+</div>
+
+<div class="wrap">
+
+  <div style="margin-bottom:16px">
+    <a href="../keelin-dashboard.html?demo=1" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:8px 14px">&larr; Regional Dashboard (The Body Shoppe)</a>
+  </div>
+
+  <div class="tools-label">Assessment Tools</div>
+  <div class="tools">
+    <div class="toolcard" onclick="openTool('fitness-consultation-tool.html')">
+      <span class="ic">📋</span><div class="eb">Step 1 · New Member</div><div class="tt">Initial Consultation</div>
+      <div class="td">Full intake, InBody, AI assessment. Welcome Packet on sign-up.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openTool('fitness-monthly-checkin.html')">
+      <span class="ic">📅</span><div class="eb">Step 3 · Active</div><div class="tt">Monthly Check-In</div>
+      <div class="td">Monthly progress review and report for enrolled clients.</div><span class="arrow">→</span></div>
+  </div>
+
+  <div class="tools-label">Management</div>
+  <div class="tools">
+    <div class="toolcard" onclick="location.href='coaches-hub.html'" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+      <span class="ic">🧑‍🏫</span><div class="eb" style="color:var(--red)">Coach Directory</div><div class="tt">Coaches</div>
+      <div class="td">Every coach, how many clients they carry, and a direct link to their own portal.</div><span class="arrow" style="color:var(--red)">→</span></div>
+    <div class="toolcard" onclick="location.href='eod-picker.html'" style="border-color:#2563EB20;background:linear-gradient(135deg,#fff 80%,#EFF6FF)">
+      <span class="ic">📝</span><div class="eb" style="color:#2563EB">Daily · Submit</div><div class="tt">Submit EOD</div>
+      <div class="td">Pick your name, fill out your own End of Day report for today.</div><span class="arrow" style="color:#2563EB">→</span></div>
+    <div class="toolcard" onclick="openTool('eod-report.html')" style="border-color:#2563EB20;background:linear-gradient(135deg,#fff 80%,#EFF6FF)">
+      <span class="ic">📊</span><div class="eb" style="color:#2563EB">Daily · Regional Rollup</div><div class="tt">End of Day Report</div>
+      <div class="td">Automatic running log of daily recaps — feeds directly into the regional EOD feed.</div><span class="arrow" style="color:#2563EB">→</span></div>
+    <div class="toolcard" onclick="openTool('staff-setup.html')" style="border-color:#7C3AED20;background:linear-gradient(135deg,#fff 80%,#F5F3FF)">
+      <span class="ic">👥</span><div class="eb" style="color:#7C3AED">Roster · EOD Config</div><div class="tt">Staff Roster</div>
+      <div class="td">Add and manage employees, assign roles, set who submits EODs. All forms pull names from here.</div><span class="arrow" style="color:#7C3AED">→</span></div>
+    <div class="toolcard" onclick="openTool('hr-portal.html')" style="border-color:#1E9E5A20;background:linear-gradient(135deg,#fff 80%,#ECFDF3)">
+      <span class="ic">🗂</span><div class="eb" style="color:#1E9E5A">Store HR</div><div class="tt">HR Portal</div>
+      <div class="td">Employee records, hiring documents, onboarding checklists, and performance history.</div><span class="arrow" style="color:#1E9E5A">→</span></div>
+    <div class="toolcard" onclick="openTool('coach-dashboard-v2.html')">
+      <span class="ic">📈</span><div class="eb">Office · Analytics</div><div class="tt">PT Analytics Overview</div>
+      <div class="td">Aggregate scores, trends, and check-in history across all clients — for reviewing on a computer, not for the floor.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openTool('meal-plans.html')">
+      <span class="ic">🥗</span><div class="eb">Complete · Complete+</div><div class="tt">Meal Plans</div>
+      <div class="td">Build weekly plans and shopping lists, then send by email.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="openGuestPassStats()" style="border-color:#2563EB20;background:linear-gradient(135deg,#fff 80%,#EFF6FF)">
+      <span class="ic">🎟️</span><div class="eb" style="color:#2563EB">Last 30 Days</div><div class="tt">Guest Pass Activity</div>
+      <div class="td">Which classes are driving guest pass claims — a quick read on what's pulling prospects in.</div><span class="arrow" style="color:#2563EB">→</span></div>
+    <div class="toolcard" onclick="location.href='client-management.html'" style="border-color:#1E9E5A20;background:linear-gradient(135deg,#fff 80%,#ECFDF3)">
+      <span class="ic">👥</span><div class="eb" style="color:#1E9E5A">Roster · Dedupe</div><div class="tt">Client Management</div>
+      <div class="td">Full clients, leads &amp; prospects list. Auto-flags duplicates and merges them safely.</div><span class="arrow" style="color:#1E9E5A">→</span></div>
+    <div class="toolcard" onclick="openTool('member-app.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+      <span class="ic">📱</span><div class="eb" style="color:var(--red)">Live App</div><div class="tt">Retro Strong — Member App</div>
+      <div class="td">Open the live client-facing app to preview, test, or demo it directly.</div><span class="arrow" style="color:var(--red)">→</span></div>
+    <div class="toolcard" onclick="openTool('coverage-board.html')">
+      <span class="ic">🗓</span><div class="eb">Staff · Scheduling</div><div class="tt">Coverage Board</div>
+      <div class="td">Staff shifts and PT sessions on one calendar. Schedule shifts, see who needs coverage.</div><span class="arrow">→</span></div>
+    <div class="toolcard" onclick="location.href='client-profile.html?add=1'">
+      <span class="ic">➕</span><div class="eb">New Record</div><div class="tt">Add Client</div>
+      <div class="td">Create a client and set status, trainer, goal and start date.</div><span class="arrow">→</span></div>
+  </div>
+
+
+<div style="display:none">
+  <div class="cards" id="cards"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="nba" onclick="setTab('nba')">Today</div>
+    <div class="tab" data-tab="appts" onclick="setTab('appts')">Appointments</div>
+    <div class="tab" data-tab="roster" onclick="setTab('roster')">Clients</div>
+    <div class="tab" data-tab="pipeline" onclick="setTab('pipeline')">Pipeline</div>
+    <div class="tab" data-tab="due" onclick="setTab('due')">Due This Week</div>
+  </div>
+
+  <!-- NEXT BEST ACTION -->
+  <div id="view-nba">
+    <div class="panel">
+      <div class="head"><h3>Next Best Action</h3><span class="count" id="nbaCount">0</span></div>
+      <div class="body" id="nbaList"></div>
+    </div>
+  </div>
+
+  <!-- APPOINTMENTS -->
+  <div id="view-appts">
+    <div class="panel">
+      <div class="head"><h3>Upcoming Appointments</h3><span class="count" id="apptCount">0</span></div>
+      <div class="body" id="apptList"></div>
+    </div>
+  </div>
+
+  <!-- ROSTER -->
+  <div id="view-roster" style="display:none">
+    <div class="layout">
+      <div class="panel">
+        <div class="head"><h3>Client Roster</h3><span class="count" id="rosterCount">0</span><span style="flex:1"></span>
+          <a class="btn" style="padding:5px 11px;font-size:11px" href="data-import.html">Import</a>
+          <a class="btn" style="padding:5px 11px;font-size:11px;background:var(--red);color:#fff;border-color:var(--red)" href="client-profile.html?add=1">+ Add</a></div>
+        <div class="body" id="rosterList"></div>
+      </div>
+      <div class="panel">
+        <div class="head"><h3>Status Breakdown</h3></div>
+        <div class="body" style="padding:18px"><canvas id="clientChart" height="220"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE -->
+  <div id="view-pipeline" style="display:none">
+    <div class="toolbar">
+      <select id="harvestCat" class="field" style="width:auto;padding:9px 11px;border-radius:8px">
+        <option value="">All categories</option>
+        <option value="chiropractor">Chiropractors</option>
+        <option value="physical_therapy">Physical therapists</option>
+        <option value="med_spa">Med spas</option>
+        <option value="nutritionist">Nutritionists</option>
+        <option value="fire_department">Fire departments</option>
+        <option value="police">Police</option>
+        <option value="ems">EMS</option>
+        <option value="employer">Employers</option>
+      </select>
+      <button class="btn red" onclick="runHarvest()">Run Harvest</button>
+      <span class="note" id="harvestNote">Pulls fresh leads within 10 miles into the pipeline.</span>
+    </div>
+    <div class="layout">
+      <div class="panel">
+        <div class="head"><h3>Leads</h3><span class="count" id="leadCount">0</span></div>
+        <div class="body" id="leadList"></div>
+      </div>
+      <div class="panel">
+        <div class="head"><h3>Pipeline Funnel</h3></div>
+        <div class="body" style="padding:18px"><canvas id="statusChart" height="220"></canvas></div>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="chartbox"><h3>Leads by Category</h3><canvas id="catChart" height="200"></canvas></div>
+      <div class="chartbox"><h3>Leads by Type</h3><canvas id="typeChart" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- DUE -->
+  <div id="view-due" style="display:none">
+    <div class="panel">
+      <div class="head"><h3>Due in the Next 7 Days</h3><span class="count" id="dueCount">0</span></div>
+      <div class="body" id="dueList"></div>
+    </div>
+  </div>
+
+  </div>
+
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-bg" id="drawerBg" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="dhead">
+    <div class="close" onclick="closeDrawer()">&times;</div>
+    <div class="dname" id="dName">—</div>
+    <div class="dsub" id="dSub"></div>
+  </div>
+  <div id="dBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="appt-menu-box" style="display:none;position:fixed;inset:0;background:rgba(20,23,26,.45);z-index:100;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;width:320px;max-width:92vw">
+    <div id="appt-menu-title" style="font-weight:700;font-size:15px;margin-bottom:14px;color:var(--ink)">Appointment</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button onclick="markApptStatus('show')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--green);background:#E3F5EC;color:var(--green);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#10003; Show</button>
+      <button onclick="markApptStatus('no_show')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--amber);background:#FDF3E3;color:var(--amber);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#10005; No-Show</button>
+      <button onclick="markApptStatus('rescheduled')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--blue);background:#E8EFFD;color:var(--blue);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#8635; Rescheduled</button>
+      <button onclick="markApptStatus('declined')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--red);background:#FDEAEC;color:var(--red);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&mdash; Declined</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="apptMenuOpenTool()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:12px;cursor:pointer">Open Tool Only</button>
+      <button onclick="closeApptMenu()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="reschedule-modal" style="display:none;position:fixed;inset:0;background:rgba(20,23,26,.45);z-index:105;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;width:340px;max-width:92vw">
+    <div id="resched-title" style="font-weight:700;font-size:15px;margin-bottom:14px;color:var(--ink)">Reschedule</div>
+    <label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12px;color:var(--muted);cursor:pointer">
+      <input type="checkbox" id="resched-tbd" onchange="toggleReschedTbd()" style="width:16px;height:16px">
+      To be determined \u2014 still working it out with the client
+    </label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div>
+        <div style="font-size:10.5px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700">New Date</div>
+        <input type="date" id="resched-date" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:13px">
+      </div>
+      <div>
+        <div style="font-size:10.5px;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700">New Time</div>
+        <input type="time" id="resched-time" style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:13px">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="confirmReschedule()" style="flex:1;padding:10px;border-radius:8px;border:none;background:var(--blue);color:#fff;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer">Save</button>
+      <button onclick="closeRescheduleModal()" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="guestpass-modal" style="display:none;position:fixed;inset:0;background:rgba(20,23,26,.45);z-index:105;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;width:380px;max-width:92vw;max-height:80vh;overflow-y:auto">
+    <div style="font-weight:700;font-size:15px;margin-bottom:4px;color:var(--ink)">Guest Pass Activity</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Claims by class, last 30 days</div>
+    <div id="guestpass-list"></div>
+    <button onclick="closeGuestPassStats()" style="width:100%;margin-top:14px;padding:10px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Close</button>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const DEMO_Q = '&demo=1'; // this file only ever runs in demo mode
+
+let CLIENTS = [], LEADS = [], APPTS = [], MEAL_PROFILES = [], MEAL_PLANS = [], tab = 'nba';
+function findClientByName(name){
+  const key=(name||'').trim().toLowerCase();
+  if(!key) return null;
+  return CLIENTS.find(c=>((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase()===key) || null;
+}
+function openTraining(name){
+  const c=findClientByName(name);
+  openTool('gym-floor.html'+(c?('?client='+c.id):''));
+}
+let charts = {};
+
+async function db(body){
+  const r = await fetch(WORKER + '/db?x=1'+DEMO_Q, {method:'POST', headers:{'Content-Type':'text/plain'}, body: JSON.stringify(body)});
+  return r.json();
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+function openTool(file){ location.href = file; }
+
+async function openGuestPassStats(){
+  const modal = document.getElementById('guestpass-modal');
+  const list = document.getElementById('guestpass-list');
+  modal.style.display = 'flex';
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Loading...</div>';
+  try {
+    const r = await fetch(WORKER + '/guest-pass/stats?x=1'+DEMO_Q);
+    const d = await r.json();
+    const rows = d.by_class || [];
+    if (!rows.length) {
+      list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No guest pass activity in the last 30 days.</div>';
+      return;
+    }
+    const total = rows.reduce((a,r)=>a+r.n, 0);
+    const max = Math.max(...rows.map(r=>r.n));
+    list.innerHTML = `
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="font-family:'Oswald',sans-serif;font-size:28px;font-weight:800;color:var(--red)">${total}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">Total Guest Passes Claimed</div>
+      </div>
+      ${rows.map(r => `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="font-weight:600">${esc(r.class_name)}</span><span style="color:var(--muted)">${r.n}</span>
+          </div>
+          <div style="height:6px;background:var(--soft);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${Math.round((r.n/max)*100)}%;background:var(--blue,#2563EB)"></div>
+          </div>
+        </div>`).join('')}
+    `;
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);font-size:12px">Could not load guest pass stats.</div>';
+  }
+}
+function closeGuestPassStats(){ document.getElementById('guestpass-modal').style.display = 'none'; }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function daysFromNow(d){ if(!d) return null; const ms=new Date(d+'T00:00:00')-new Date(); return Math.ceil(ms/86400000); }
+
+let APPT_ERR='';
+let APPT_STATUS_MAP = {};
+function apptStatusKey(date, name){ return date+'|'+(name||'').trim().toLowerCase(); }
+async function loadAll(){
+  const [c, l, mp, mpl, ast] = await Promise.all([
+    db({op:'select', table:'clients', orderBy:'updated_at DESC', limit:1000}),
+    db({op:'select', table:'leads',   orderBy:'created_at DESC', limit:2000}),
+    db({op:'select', table:'meal_profiles', limit:1000}),
+    db({op:'select', table:'meal_plans', orderBy:'week_of DESC', limit:2000}),
+    db({op:'select', table:'appointment_status', limit:2000})
+  ]);
+  CLIENTS = (c.results)||[]; LEADS = (l.results)||[]; MEAL_PROFILES = (mp.results)||[]; MEAL_PLANS = (mpl.results)||[];
+  APPT_STATUS_MAP = {};
+  ((ast.results)||[]).forEach(row=>{ APPT_STATUS_MAP[apptStatusKey(row.appt_date, row.client_name)] = row; });
+  try{
+    const cr=await fetch(WORKER+'/calendar?x=1'+DEMO_Q);
+    if(!cr.ok){ APPTS=[]; APPT_ERR='Calendar endpoint returned HTTP '+cr.status+(cr.status===404?'. Deploy the latest Worker \u2014 it adds the /calendar route.':'.'); }
+    else { const cd=await cr.json(); if(cd&&cd.ok&&cd.events){ APPTS=cd.events; APPT_ERR=''; } else { APPTS=[]; APPT_ERR=(cd&&cd.error)?cd.error:'The calendar feed returned no upcoming events.'; } }
+  }catch(e){ APPTS=[]; APPT_ERR='Could not reach the calendar endpoint: '+e.message+'. Deploy the Worker and confirm its URL.'; }
+  render();
+}
+
+let apptMenuTarget = null;
+function openApptMenu(file, name, date, time, kind){
+  apptMenuTarget = { file, name, date, time, kind };
+  const title = document.getElementById('appt-menu-title');
+  if (title) title.textContent = (name||'this appointment') + ' \u2014 ' + date;
+  const box = document.getElementById('appt-menu-box');
+  if (box) box.style.display = 'flex';
+}
+function closeApptMenu(){
+  const box = document.getElementById('appt-menu-box');
+  if (box) box.style.display = 'none';
+  apptMenuTarget = null;
+}
+function apptMenuOpenTool(){
+  if (!apptMenuTarget) return;
+  const t = apptMenuTarget;
+  closeApptMenu();
+  if (t.kind === 'training') { openTraining(t.name); return; }
+  const c = findClientByName(t.name);
+  let params = 'name='+encodeURIComponent(t.name||'')+'&appt='+t.kind+'&date='+t.date;
+  if (c && c.id) params += '&client_id='+c.id;
+  openTool(t.file+'?'+params);
+}
+async function markApptStatus(status){
+  if (!apptMenuTarget) return;
+  if (status === 'rescheduled') { closeApptMenu(); openRescheduleModal(); return; }
+  const t = apptMenuTarget;
+  closeApptMenu();
+  try {
+    const key = apptStatusKey(t.date, t.name);
+    const existing = APPT_STATUS_MAP[key];
+    const payload = { appt_date: t.date, client_name: t.name, appt_type: t.kind, status, updated_at: new Date().toISOString() };
+    if (existing && existing.id) await db({op:'update', table:'appointment_status', values:payload, where:{id:existing.id}});
+    else await db({op:'insert', table:'appointment_status', values:payload});
+    APPT_STATUS_MAP[key] = payload;
+  } catch(e) { console.warn('Could not save appointment status', e); }
+
+  if (status === 'show') {
+    apptMenuTarget = t; apptMenuOpenTool();
+  } else if (status === 'no_show') {
+    toast('No-show logged for ' + t.name + '. Flag it in ABC at the front desk.');
+  } else if (status === 'declined') {
+    const c = findClientByName(t.name);
+    if (c && c.id) { try { await db({op:'update', table:'clients', values:{status:'not_interested'}, where:{id:c.id}}); } catch(e){} }
+    toast(t.name + ' marked as not interested.');
+  }
+  render();
+}
+function openRescheduleModal(){
+  const title = document.getElementById('resched-title');
+  if (title) title.textContent = (apptMenuTarget ? apptMenuTarget.name : 'this appointment') + ' \u2014 new time';
+  document.getElementById('resched-date').value = '';
+  document.getElementById('resched-time').value = '';
+  document.getElementById('resched-tbd').checked = false;
+  toggleReschedTbd();
+  document.getElementById('reschedule-modal').style.display = 'flex';
+}
+function closeRescheduleModal(){ document.getElementById('reschedule-modal').style.display = 'none'; }
+function toggleReschedTbd(){
+  const isTbd = document.getElementById('resched-tbd').checked;
+  document.getElementById('resched-date').disabled = isTbd;
+  document.getElementById('resched-time').disabled = isTbd;
+}
+async function confirmReschedule(){
+  if (!apptMenuTarget) { closeRescheduleModal(); return; }
+  const t = apptMenuTarget;
+  const isTbd = document.getElementById('resched-tbd').checked;
+  const dateVal = document.getElementById('resched-date').value;
+  const timeVal = document.getElementById('resched-time').value;
+  if (!isTbd && !dateVal) { alert('Pick a new date, or check "To be determined."'); return; }
+  closeRescheduleModal();
+  try {
+    const key = apptStatusKey(t.date, t.name);
+    const existing = APPT_STATUS_MAP[key];
+    const payload = { appt_date: t.date, client_name: t.name, appt_type: t.kind, status:'rescheduled',
+      reschedule_date: isTbd ? null : dateVal, reschedule_time: isTbd ? null : (timeVal||null),
+      reschedule_tbd: isTbd ? 1 : 0, updated_at: new Date().toISOString() };
+    if (existing && existing.id) await db({op:'update', table:'appointment_status', values:payload, where:{id:existing.id}});
+    else await db({op:'insert', table:'appointment_status', values:payload});
+    APPT_STATUS_MAP[key] = payload;
+  } catch(e) { console.warn('Could not save reschedule', e); }
+  toast('Rescheduled ' + t.name + (isTbd ? ' \u2014 time TBD.' : (' to ' + dateVal + (timeVal?(' '+timeVal):'') + '.')));
+  render();
+}
+
+function setTab(t){
+  tab=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===t));
+  ['nba','appts','roster','pipeline','due'].forEach(v=>document.getElementById('view-'+v).style.display = v===t?'block':'none');
+  render();
+}
+
+function render(){
+  renderCards();
+  if(tab==='nba') renderNBA();
+  if(tab==='appts') renderAppts();
+  if(tab==='roster') renderRoster();
+  if(tab==='pipeline') renderPipeline();
+  if(tab==='due') renderDue();
+}
+
+function renderCards(){
+  const active = CLIENTS.filter(c=>c.status==='active_pt').length;
+  const due = CLIENTS.filter(c=>{ /* placeholder, real due uses checkins */ return false; }).length;
+  const corp = LEADS.filter(l=>l.lead_type==='corporate').length;
+  const ref  = LEADS.filter(l=>l.lead_type==='referral_partner').length;
+  const dueItems = dueThisWeek().length;
+  const cards = [
+    {label:'Active PT Clients', num:active, sub:CLIENTS.length+' total in roster'},
+    {label:'Total Leads', num:LEADS.length, sub:'in the pipeline'},
+    {label:'Corporate', num:corp, sub:'wellness targets'},
+    {label:'Referral Partners', num:ref, sub:'allied health'},
+    {label:'Due This Week', num:dueItems, sub:'check-ins + follow-ups'}
+  ];
+  document.getElementById('cards').innerHTML = cards.map(c=>
+    `<div class="stat"><div class="label">${c.label}</div><div class="num">${c.num}</div><div class="sub">${c.sub}</div></div>`).join('');
+}
+
+function matchQ(s){ const q=document.getElementById('q').value.trim().toLowerCase(); return !q || (s||'').toLowerCase().includes(q); }
+
+function renderRoster(){
+  const list = CLIENTS.filter(c=>matchQ((c.first_name||'')+' '+(c.last_name||'')+' '+(c.email||'')));
+  document.getElementById('rosterCount').textContent = list.length;
+  const el = document.getElementById('rosterList');
+  if(!list.length){
+    el.innerHTML = `<div class="empty"><div class="big">No clients yet</div>Import your saved clients from Google Sheets, or add one by hand. Your check-in tool also writes new clients here automatically.<div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><a class="btn" href="data-import.html">Import from Sheets</a><a class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" href="client-profile.html?add=1">+ Add Client</a></div></div>`;
+  } else {
+    el.innerHTML = list.map(c=>{
+      const nm = esc((c.first_name||'')+' '+(c.last_name||'')).trim()||'(no name)';
+      const st = c.status||'prospect';
+      return `<div class="row" onclick="openClient(${c.id})">
+        <div class="main"><div class="name">${nm}</div><div class="meta">${esc(c.email||'')} ${c.advisor?'· '+esc(c.advisor):''}</div></div>
+        <span class="pill p-${st}">${st.replace('_',' ')}</span></div>`;
+    }).join('');
+  }
+  drawClientChart();
+}
+
+function renderPipeline(){
+  const list = LEADS.filter(l=>matchQ((l.business_name||'')+' '+(l.city||'')+' '+(l.category||'')));
+  document.getElementById('leadCount').textContent = list.length;
+  const el = document.getElementById('leadList');
+  if(!list.length){
+    el.innerHTML = `<div class="empty"><div class="big">No leads yet</div>Pick a category and hit Run Harvest to pull businesses within 10 miles into the pipeline.</div>`;
+  } else {
+    el.innerHTML = list.map(l=>{
+      const st=l.status||'new';
+      const dist=(l.distance_mi!=null)?l.distance_mi+' mi':'';
+      return `<div class="row" onclick="openLead(${l.id})">
+        <div class="main"><div class="name">${esc(l.business_name||'(no name)')}</div>
+        <div class="meta">${esc((l.category||'').replace('_',' '))} · ${esc(l.city||'')} ${dist?'· '+dist:''}</div></div>
+        <span class="pill p-${st}">${st.replace('_',' ')}</span></div>`;
+    }).join('');
+  }
+  drawStatusChart(); drawCatChart(); drawTypeChart();
+}
+
+function dueThisWeek(){
+  const items=[];
+  LEADS.forEach(l=>{ const d=daysFromNow(l.next_action_date); if(d!=null && d<=7) items.push({type:'Lead follow-up', name:l.business_name, when:l.next_action_date, days:d, kind:'lead', id:l.id}); });
+  return items.sort((a,b)=>a.days-b.days);
+}
+function renderDue(){
+  const items=dueThisWeek();
+  document.getElementById('dueCount').textContent=items.length;
+  const el=document.getElementById('dueList');
+  if(!items.length){ el.innerHTML=`<div class="empty"><div class="big">Nothing due</div>Follow-ups with a date in the next 7 days show up here.</div>`; return; }
+  el.innerHTML=items.map(i=>`<div class="row" onclick="${i.kind==='lead'?'openLead('+i.id+')':'openClient('+i.id+')'}">
+    <div class="main"><div class="name">${esc(i.name||'')}</div><div class="meta">${i.type} · ${esc(i.when)}</div></div>
+    <span class="pill ${i.days<0?'p-dead':'p-prospect'}">${i.days<0?'overdue':'in '+i.days+'d'}</span></div>`).join('');
+}
+
+/* ---------- appointments ---------- */
+const APPT_TYPES=[
+  {key:'followup',label:'6-Week Follow-Up',file:'fitness-followup-tool.html',pill:'p-prospect',
+   rx:/6[\s-]*week|six[\s-]*week|follow[\s-]*up|re[\s-]*engage/i},
+  {key:'monthly',label:'Monthly Check-In',file:'fitness-monthly-checkin.html',pill:'p-active',
+   rx:/monthly|check[\s-]*in|progress/i},
+  {key:'consult',label:'Initial Consultation',file:'fitness-consultation-tool.html',pill:'p-new',
+   rx:/new member|inbody|initial|consult|intake|assessment|scan/i}
+];
+function classifyAppt(typePart){ for(const t of APPT_TYPES){ if(t.rx.test(typePart||'')) return t; } return null; }
+function parseAppt(summary){
+  const s=(summary||'').trim();
+  let name='', rest=s;
+  const dash=s.indexOf('-');                 // Club OS format: "Name-Type" (Type may contain hyphens)
+  if(dash>0){
+    const left=s.slice(0,dash).trim();
+    if(!classifyAppt(left)){ name=left; rest=s.slice(dash+1).trim(); }
+  }
+  return { name, typePart: rest, t: classifyAppt(s) };
+}
+function fmtAppt(start){
+  if(!start) return '';
+  const m=start.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/);
+  if(!m) return start;
+  const dt=new Date(+m[1],+m[2]-1,+m[3], m[4]?+m[4]:0, m[5]?+m[5]:0);
+  const opts=m[4]?{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}
+                 :{weekday:'short',month:'short',day:'numeric'};
+  return dt.toLocaleString('en-US',opts);
+}
+function _daysSince(v){ if(!v) return null; const t=new Date(v).getTime(); return isNaN(t)?null:Math.floor((Date.now()-t)/86400000); }
+function _monthlyDue(start, updated){
+  const s=new Date(start+'T00:00:00'); if(isNaN(s)) return null;
+  const now=new Date();
+  let m=(now.getFullYear()-s.getFullYear())*12+(now.getMonth()-s.getMonth());
+  if(now.getDate()<s.getDate()) m--;
+  if(m<1) return null;
+  const ds=_daysSince(updated);
+  return (ds==null || ds>=25) ? ('Month '+(m+1)+' check-in') : null;
+}
+function fmtTimeOnly(iso){
+  const m=(iso||'').match(/T(\d{2}):(\d{2})/);
+  if(!m) return '';
+  let h=+m[1]; const mins=m[2]; const ap=h>=12?'PM':'AM'; h=h%12; if(h===0) h=12;
+  return h+':'+mins+' '+ap;
+}
+function buildNBA(){
+  const today=new Date().toISOString().slice(0,10);
+  const items=[];
+  APPTS.forEach(a=>{
+    if((a.start||'').slice(0,10)!==today) return;
+    const p=parseAppt(a.summary);
+    const timePfx=fmtTimeOnly(a.start); const timeTag=timePfx?(timePfx+' \u00b7 '):'';
+    if(p.t) items.push({prio:1,cat:'Today',pill:'p-new',title:timeTag+(p.name||'Appointment')+' \u00b7 '+p.t.label,reason:'Scheduled today',act:'Start',fn:()=>openApptMenu(p.t.file,p.name||p.t.label,today,(a.start||'').slice(11,16),p.t.key)});
+    else { items.push({prio:2,cat:'Today',pill:'p-declined',title:timeTag+(p.name||p.typePart||a.summary||'Session'),reason:'On your calendar today',act:'Log',fn:()=>openApptMenu('gym-floor.html',p.name||p.typePart||a.summary||'Session',today,(a.start||'').slice(11,16),'training')}); }
+  });
+  CLIENTS.forEach(c=>{
+    if(!c.training_start_date) return;
+    const due=_monthlyDue(c.training_start_date,c.updated_at);
+    if(due){ const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||'Client';
+      items.push({prio:2,cat:'Check-in',pill:'p-active',title:nm+' \u00b7 check-in due',reason:due,act:'Open',fn:()=>openTool('fitness-monthly-checkin.html?client='+c.id)}); }
+  });
+  MEAL_PROFILES.forEach(p=>{
+    if(p.package!=='complete'&&p.package!=='complete_plus') return;
+    const has=MEAL_PLANS.some(mp=>{ if(mp.client_id!==p.client_id) return false; const d=daysFromNow(mp.week_of); return d!=null && d>-7; });
+    if(!has){ const c=CLIENTS.find(x=>x.id===p.client_id)||{}; const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||('Client #'+p.client_id);
+      items.push({prio:3,cat:'Meal plan',pill:'p-prospect',title:nm+' \u00b7 weekly plan due',reason:(p.package==='complete_plus'?'Complete+':'Complete')+', no plan this week',act:'Build',fn:()=>openTool('meal-plans.html')}); }
+  });
+  CLIENTS.forEach(c=>{
+    const d=_daysSince(c.updated_at);
+    if((c.status==='active'||c.status==='active_pt')&&d!=null&&d>=30){ const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||'Client';
+      items.push({prio:2,cat:'At risk',pill:'p-dead',title:nm+' \u00b7 quiet '+d+'d',reason:'May be disengaging',act:'Reach out',fn:()=>openTool('fitness-monthly-checkin.html?client='+c.id)}); }
+  });
+  items.sort((a,b)=>a.prio-b.prio);
+  return items;
+}
+function renderNBA(){
+  const items=buildNBA(); window.__NBA=items;
+  const cnt=document.getElementById('nbaCount'); if(cnt) cnt.textContent=items.length;
+  const el=document.getElementById('nbaList'); if(!el) return;
+  if(!items.length){ el.innerHTML='<div class="empty"><div class="big">All clear</div>No actions surfaced yet. As your calendar, check-ins, and leads fill in, your ranked priorities show here each morning.</div>'; return; }
+  el.innerHTML=items.map((it,idx)=>'<div class="row"><div class="main"><div class="name">'+esc(it.title)+'</div><div class="meta">'+esc(it.cat)+' \u00b7 '+esc(it.reason)+'</div></div><span class="pill '+it.pill+'">'+esc(it.cat)+'</span>'+(it.fn?('<button class="btn red" style="margin-left:10px;padding:6px 12px;font-size:11px" onclick="NBA_ACT('+idx+')">'+esc(it.act)+'</button>'):'')+'</div>').join('');
+}
+function NBA_ACT(i){ const it=window.__NBA&&window.__NBA[i]; if(it&&it.fn) it.fn(); }
+
+function renderAppts(){
+  const el=document.getElementById('apptList');
+  document.getElementById('apptCount').textContent=APPTS.length;
+  if(!APPTS.length){
+    el.innerHTML='<div class="empty"><div class="big">No appointments shown</div>'+(APPT_ERR?esc(APPT_ERR)+'<br><br>':'')+'Once the Worker is deployed with GCAL_ICS set, your Club OS appointments appear here. Hit Refresh after deploying.</div>';
+    return;
+  }
+  el.innerHTML=APPTS.map((a,i)=>{
+    const p=parseAppt(a.summary); const when=fmtAppt(a.start);
+    const date=(a.start||'').slice(0,10);
+    const statusRow=APPT_STATUS_MAP[apptStatusKey(date,p.name||p.typePart||a.summary||'')];
+    const statusTag=statusRow?(' <span style="font-weight:700">['+statusRow.status.replace('_',' ')+(statusRow.status==='rescheduled'?(statusRow.reschedule_tbd?' \u2013 TBD':(statusRow.reschedule_date?(' \u2192 '+statusRow.reschedule_date+(statusRow.reschedule_time?(' '+statusRow.reschedule_time):'')):'')):'')+']</span>'):'';
+    if(p.t){
+      return '<div class="row" onclick="openAppt('+i+')">'+
+        '<div class="main"><div class="name">'+esc(p.name||p.t.label)+'</div>'+
+        '<div class="meta">'+esc(when)+' \u00b7 '+esc(p.t.label)+(a.location?' \u00b7 '+esc(a.location):'')+statusTag+'</div></div>'+
+        '<span class="pill '+p.t.pill+'">'+esc(p.t.key)+'</span></div>';
+    }
+    const title=p.name||p.typePart||a.summary||'(untitled)';
+    const sub=p.name?esc(p.typePart):'Session / class';
+    return '<div class="row" onclick="openSession('+i+')">'+
+      '<div class="main"><div class="name">'+esc(title)+'</div>'+
+      '<div class="meta">'+esc(when)+' \u00b7 '+sub+statusTag+'</div></div>'+
+      '<span class="pill p-declined">session</span></div>';
+  }).join('');
+}
+function openAppt(i){
+  const a=APPTS[i]; if(!a) return;
+  const p=parseAppt(a.summary); if(!p.t) return;
+  openApptMenu(p.t.file, p.name||p.t.label, (a.start||'').slice(0,10), (a.start||'').slice(11,16), p.t.key);
+}
+function openSession(i){
+  const a=APPTS[i]; if(!a) return;
+  const p=parseAppt(a.summary);
+  openApptMenu('gym-floor.html', p.name||p.typePart||a.summary||'Session', (a.start||'').slice(0,10), (a.start||'').slice(11,16), 'training');
+}
+
+/* ---------- charts ---------- */
+function mk(id,cfg){ if(charts[id]) charts[id].destroy(); charts[id]=new Chart(document.getElementById(id),cfg); }
+const RED='#E0192B', INK='#15171A', GRID='#EDEFF2';
+function countBy(arr,key){ const m={}; arr.forEach(x=>{const k=(x[key]||'unknown'); m[k]=(m[k]||0)+1;}); return m; }
+
+function drawClientChart(){
+  const m=countBy(CLIENTS,'status'); const labels=Object.keys(m);
+  mk('clientChart',{type:'doughnut',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),
+    backgroundColor:['#1E9E5A','#2563EB','#D98A0B','#9AA1AC','#E0192B']}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Inter'}}}},cutout:'62%'}});
+}
+function drawStatusChart(){
+  const order=['new','contacted','qualified','meeting_set','partner_active','won','dead'];
+  const m=countBy(LEADS,'status'); const labels=order.filter(s=>m[s]);
+  mk('statusChart',{type:'bar',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),backgroundColor:RED,borderRadius:6}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:GRID},ticks:{precision:0}},y:{grid:{display:false}}}}});
+}
+function drawCatChart(){
+  const m=countBy(LEADS,'category'); const labels=Object.keys(m).sort((a,b)=>m[b]-m[a]);
+  mk('catChart',{type:'bar',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),backgroundColor:INK,borderRadius:6}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{grid:{color:GRID},ticks:{precision:0}},x:{grid:{display:false}}}}});
+}
+function drawTypeChart(){
+  const m=countBy(LEADS,'lead_type'); const labels=Object.keys(m);
+  mk('typeChart',{type:'doughnut',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),
+    backgroundColor:[RED,INK,'#D98A0B']}]},options:{plugins:{legend:{position:'bottom'}},cutout:'62%'}});
+}
+
+/* ---------- client drawer ---------- */
+async function openClient(id){
+  location.href='client-profile.html?client='+id; return;
+  const c = CLIENTS.find(x=>x.id===id); if(!c) return;
+  openDrawer((c.first_name||'')+' '+(c.last_name||''), (c.status||'').replace('_',' ')+(c.email?' · '+c.email:''));
+  const body=document.getElementById('dBody'); body.innerHTML=`<div class="dsec">Loading history...</div>`;
+  const [con,fu,ci,pr,ts]=await Promise.all([
+    db({op:'select',table:'consultations',where:{client_id:id},orderBy:'consult_date DESC'}),
+    db({op:'select',table:'followups',where:{client_id:id},orderBy:'followup_date DESC'}),
+    db({op:'select',table:'checkins',where:{client_id:id},orderBy:'checkin_date DESC'}),
+    db({op:'select',table:'programs',where:{client_id:id},orderBy:'start_date DESC'}),
+    db({op:'select',table:'training_sessions',where:{client_id:id},orderBy:'session_date DESC',limit:60})
+  ]);
+  const cons=con.results||[], fus=fu.results||[], cis=ci.results||[], prs=pr.results||[], sess=ts.results||[];
+
+  // build InBody trend points from all sources
+  const pts=[];
+  cons.forEach(r=>pts.push({d:r.consult_date,w:r.weight,ln:r.lean_mass,bf:r.body_fat_pct}));
+  fus.forEach(r=>pts.push({d:r.followup_date,w:r.now_weight,ln:r.now_lean,bf:r.now_body_fat_pct}));
+  cis.forEach(r=>pts.push({d:r.checkin_date,w:r.now_weight,ln:r.now_lean,bf:r.now_body_fat_pct}));
+  pts.sort((a,b)=>(a.d||'').localeCompare(b.d||''));
+
+  // timeline events
+  const ev=[];
+  cons.forEach(r=>ev.push({d:r.consult_date,t:'Initial consultation',s:r.outcome||''}));
+  fus.forEach(r=>ev.push({d:r.followup_date,t:'6-week follow-up',s:r.outcome||''}));
+  cis.forEach(r=>ev.push({d:r.checkin_date,t:'Monthly check-in',s:r.wins?('wins: '+r.wins):''}));
+  ev.sort((a,b)=>(b.d||'').localeCompare(a.d||''));
+
+  const sessDone=sess.filter(s=>s.completed==1).length;
+  const prog = prs[0];
+
+  body.innerHTML = `
+    <div class="dsec"><h4>InBody Trend</h4>${pts.length?'<canvas id="inbodyChart" height="200"></canvas>':'<div class="note">No InBody data captured yet.</div>'}</div>
+    <div class="dsec"><h4>Training Program</h4>
+      ${prog?`<div class="kv"><div class="k">Program</div><div>${esc(prog.program_name||'—')}</div>
+      <div class="k">Status</div><div>${esc(prog.status||'—')}</div>
+      <div class="k">Sessions logged</div><div>${sess.length} (${sessDone} completed)</div></div>`
+      :`<div class="note">No program linked yet. Once Trainerize is connected, routines and sessions appear here.</div>`}
+    </div>
+    <div class="dsec"><h4>Timeline</h4>
+      ${ev.length?`<div class="tl">${ev.map(e=>`<div class="ev"><div class="et">${esc(e.t)}</div><div class="ed">${esc(e.d||'')} ${e.s?'· '+esc(e.s):''}</div></div>`).join('')}</div>`
+      :'<div class="note">No sessions recorded yet.</div>'}
+    </div>`;
+
+  if(pts.length){
+    mk('inbodyChart',{type:'line',data:{labels:pts.map(p=>p.d),datasets:[
+      {label:'Weight',data:pts.map(p=>p.w),borderColor:INK,backgroundColor:'transparent',tension:.3,yAxisID:'y'},
+      {label:'Lean mass',data:pts.map(p=>p.ln),borderColor:RED,backgroundColor:'transparent',tension:.3,yAxisID:'y'},
+      {label:'Body fat %',data:pts.map(p=>p.bf),borderColor:'#D98A0B',backgroundColor:'transparent',tension:.3,yAxisID:'y1'}
+    ]},options:{plugins:{legend:{position:'bottom'}},scales:{
+      y:{position:'left',grid:{color:GRID},title:{display:true,text:'lbs'}},
+      y1:{position:'right',grid:{display:false},title:{display:true,text:'bf %'}}}}});
+  }
+}
+
+/* ---------- lead drawer ---------- */
+async function openLead(id){
+  const l = LEADS.find(x=>x.id===id); if(!l) return;
+  openDrawer(l.business_name||'(no name)', (l.lead_type||'').replace('_',' ')+' · '+(l.category||'').replace('_',' '));
+  const tp = await db({op:'select',table:'touchpoints',where:{lead_id:id},orderBy:'contact_date DESC'});
+  const tps=tp.results||[];
+  const body=document.getElementById('dBody');
+  const statuses=['new','contacted','qualified','meeting_set','partner_active','won','dead'];
+  body.innerHTML=`
+    <div class="dsec"><h4>Details</h4>
+      <div class="kv">
+        <div class="k">Phone</div><div>${esc(l.phone||'—')}</div>
+        <div class="k">Address</div><div>${esc(l.address||'—')}</div>
+        <div class="k">City</div><div>${esc(l.city||'')} ${esc(l.state||'')} ${esc(l.zip||'')}</div>
+        <div class="k">Distance</div><div>${l.distance_mi!=null?l.distance_mi+' mi':'—'}</div>
+        <div class="k">Email</div><div>${esc(l.email||'—')}</div>
+      </div>
+    </div>
+    <div class="dsec"><h4>Status &amp; Next Step</h4>
+      <div class="field"><label>Status</label><select id="ls">${statuses.map(s=>`<option value="${s}" ${l.status===s?'selected':''}>${s.replace('_',' ')}</option>`).join('')}</select></div>
+      <div class="field"><label>Next action</label><input id="lna" value="${esc(l.next_action||'')}" placeholder="e.g. call to set intro meeting"></div>
+      <div class="field"><label>Next action date</label><input id="lnad" type="date" value="${esc(l.next_action_date||'')}"></div>
+      <button class="btn red" onclick="saveLead(${id})">Save</button>
+    </div>
+    <div class="dsec"><h4>Log a Touchpoint</h4>
+      <div class="field"><label>Channel</label><select id="tch"><option>call</option><option>email</option><option>in_person</option><option>text</option></select></div>
+      <div class="field"><label>Summary</label><textarea id="tsum" placeholder="What happened?"></textarea></div>
+      <button class="btn" onclick="logTouch(${id})">Add touchpoint</button>
+      ${tps.length?`<div class="tl" style="margin-top:14px">${tps.map(t=>`<div class="ev"><div class="et">${esc(t.channel||'')}</div><div class="ed">${esc(t.contact_date||'')} · ${esc(t.summary||'')}</div></div>`).join('')}</div>`:''}
+    </div>`;
+}
+
+async function saveLead(id){
+  const status=document.getElementById('ls').value;
+  const na=document.getElementById('lna').value;
+  const nad=document.getElementById('lnad').value;
+  await db({op:'update',table:'leads',values:{status,next_action:na,next_action_date:nad,updated_at:new Date().toISOString()},where:{id}});
+  toast('Lead updated'); await loadAll(); openLead(id);
+}
+async function logTouch(id){
+  const channel=document.getElementById('tch').value;
+  const summary=document.getElementById('tsum').value;
+  if(!summary.trim()){ toast('Add a summary first'); return; }
+  await db({op:'insert',table:'touchpoints',values:{lead_id:id,contact_date:new Date().toISOString().split('T')[0],channel,direction:'outbound',summary}});
+  toast('Touchpoint logged'); openLead(id);
+}
+
+async function runHarvest(){
+  const cat=document.getElementById('harvestCat').value;
+  const note=document.getElementById('harvestNote');
+  note.textContent='Harvesting... this can take a minute.';
+  try{
+    const r=await fetch(WORKER+'/harvest/run?x=1'+DEMO_Q,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(cat?{category:cat,limit:20}:{limit:20})});
+    const d=await r.json();
+    if(d.ok){ const s=d.summary; note.textContent=`Found ${s.found}, added ${s.inserted}, ${s.skipped_dupe} already had, ${s.skipped_far} too far.`; toast('Harvest complete'); await loadAll(); }
+    else { note.textContent='Error: '+(d.error||'unknown'); }
+  }catch(e){ note.textContent='Error: '+e.message; }
+}
+
+/* ---------- drawer plumbing ---------- */
+function openDrawer(name,sub){
+  document.getElementById('dName').textContent=name||'—';
+  document.getElementById('dSub').textContent=sub||'';
+  document.getElementById('drawerBg').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer(){
+  document.getElementById('drawerBg').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDrawer(); });
+
+loadAll();
+</script>
+</body>
+</html>
