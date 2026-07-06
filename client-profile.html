@@ -195,6 +195,11 @@ let ALL_CLIENTS=[];
 let COACH_ROSTER_READY = loadCoachRoster();
 let CURRENT=null, EDIT_ID=null;
 const PKG_LABELS={biweekly:'Every 2 weeks ($50/half-hr)',monthly:'Once a month ($50/half-hr)',weekly_2x:'2x/week ($45)',weekly_3x:'3x/week ($45)',weekly_4x:'4x/week ($45)',training:'Training $180',complete:'Complete $249',complete_plus:'Complete+ $349'};
+function checkCancelReason(){
+  const fld = document.getElementById('cancelReasonFld');
+  fld.style.display = getF('m_status') === 'cancelled' ? 'block' : 'none';
+}
+
 function setF(id,v){ const e=document.getElementById(id); if(e) e.value=(v==null?'':v); }
 function getF(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 function openAdd(){
@@ -218,11 +223,22 @@ function openEdit(){
 function closeModal(){ document.getElementById('clientModal').classList.remove('open'); }
 async function saveClient(){
   const btn=document.getElementById('m_save'); btn.disabled=true; btn.textContent='Saving...';
+  const isCancelling = getF('m_status') === 'cancelled';
+  const cancelReason = getF('m_cancel_reason');
+  if (isCancelling && !cancelReason) {
+    alert('Please select a reason for cancelling before saving.');
+    btn.disabled=false; btn.textContent='Save';
+    return;
+  }
   const vals={
     first_name:getF('m_first'), last_name:getF('m_last'), email:getF('m_email'), phone:getF('m_phone'),
     gender:getF('m_gender'), status:getF('m_status'), coach:getF('m_coach'), advisor:getF('m_advisor'),
-    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), birthday:getF('m_birthday')||null, my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
+    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
   };
+  if (isCancelling) {
+    const cancelNote = 'CANCELLED (' + new Date().toISOString().slice(0,10) + ') — Reason: ' + cancelReason + (getF('m_cancel_notes') ? '. ' + getF('m_cancel_notes') : '');
+    vals.notes = ((CURRENT && CURRENT.notes) ? CURRENT.notes + ' | ' : '') + cancelNote;
+  }
   if(!vals.first_name && !vals.last_name){ alert('Enter a name'); btn.disabled=false; btn.textContent='Save'; return; }
   async function write(v){ return EDIT_ID ? db({op:'update',table:'clients',values:v,where:{id:EDIT_ID}}) : db({op:'insert',table:'clients',values:v}); }
   try{
@@ -230,6 +246,10 @@ async function saveClient(){
     if(res && res.error && /package/i.test(res.error)){ delete vals.package; res=await write(vals); }  // table has no package column yet
     if(res && res.error) throw new Error(res.error);
     const newId = EDIT_ID || (res && (res.id!=null?res.id:(res.meta&&res.meta.last_row_id)));
+    if (isCancelling && document.getElementById('m_send_survey').checked && newId) {
+      fetch(WORKER + '/churn-survey/send', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ client_id: newId, reason: cancelReason }) }).catch(function(){});
+    }
     closeModal(); await initSearch();
     if(newId) loadProfile(newId);
   }catch(e){ alert('Save failed: '+e.message); }
@@ -1048,13 +1068,29 @@ function renderMuscleBalance(scan){
       <div class="fld"><label>Email</label><input id="m_email"></div>
       <div class="fld"><label>Phone</label><input id="m_phone"></div>
       <div class="fld"><label>Gender</label><select id="m_gender"><option value="">—</option><option>Male</option><option>Female</option></select></div>
-      <div class="fld"><label>Status</label><select id="m_status">
+      <div class="fld"><label>Status</label><select id="m_status" onchange="checkCancelReason()">
         <option value="active_pt">Active PT</option>
         <option value="paused">Paused</option>
         <option value="completed">Completed</option>
+        <option value="cancelled">Cancelled</option>
         <option value="former">No longer training</option>
         <option value="prospect">Prospect</option>
       </select></div>
+      <div class="fld" id="cancelReasonFld" style="display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px">
+        <label style="color:#B91C1C">Reason for cancelling (required)</label>
+        <select id="m_cancel_reason">
+          <option value="">Select a reason...</option>
+          <option value="Price">Price</option>
+          <option value="Moving">Moving</option>
+          <option value="No results">Not seeing results</option>
+          <option value="Injury">Injury / health</option>
+          <option value="Competitor">Switched to a competitor</option>
+          <option value="Schedule">Schedule / time conflict</option>
+          <option value="Other">Other</option>
+        </select>
+        <textarea id="m_cancel_notes" placeholder="Any additional detail..." style="margin-top:6px"></textarea>
+        <label style="margin-top:8px;display:flex;align-items:center;gap:6px;font-weight:400"><input type="checkbox" id="m_send_survey" checked style="width:auto"> Send them a short "why did you cancel" survey by email</label>
+      </div>
       <div class="fld"><label>Trainer</label><select id="m_coach"><option value="">Unassigned</option></select></div>
       <div class="fld"><label>Advisor</label><input id="m_advisor"></div>
       <div class="fld"><label>Package</label><select id="m_package">

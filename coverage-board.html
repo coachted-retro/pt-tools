@@ -100,6 +100,11 @@ h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:1
         <h3>Pending Time Off Requests</h3>
         <div id="pending-timeoff-body"><div class="empty-state">Loading...</div></div>
       </div>
+
+      <div class="panel">
+        <h3>Pending Availability Changes</h3>
+        <div id="pending-availability-body"><div class="empty-state">Loading...</div></div>
+      </div>
     </div>
   </div>
 </div>
@@ -267,6 +272,39 @@ loadStaffRoster();
 renderMonth();
 selectDay(new Date().toISOString().slice(0,10));
 loadPendingTimeOff();
+loadPendingAvailability();
+
+async function loadPendingAvailability() {
+  const el = document.getElementById('pending-availability-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/availability/pending');
+    const d = await r.json();
+    const rows = d.availability || [];
+    if (!rows.length) { el.innerHTML = '<div class="empty-state">Nothing pending.</div>'; return; }
+    const byStaff = {};
+    rows.forEach(a => { (byStaff[a.staff_id] = byStaff[a.staff_id] || { name: a.staff_name, slots: [] }).slots.push(a); });
+    const dayLabels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    el.innerHTML = Object.keys(byStaff).map(staffId => {
+      const s = byStaff[staffId];
+      const summary = s.slots.map(sl => dayLabels[sl.day_of_week] + ' ' + (sl.start_time||'') + '-' + (sl.end_time||'')).join(', ');
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--line,#E5E7EB)">
+        <div style="font-weight:700;font-size:13px">${esc(s.name)}</div>
+        <div style="font-size:12px;color:var(--muted)">${esc(summary)}</div>
+        <div style="margin-top:6px;display:flex;gap:8px">
+          <button class="btn btn-red" style="padding:6px 12px;font-size:12px" onclick="reviewAvailability(${staffId},'approved')">Approve</button>
+          <button class="btn" style="padding:6px 12px;font-size:12px;background:var(--soft,#F5F6F8)" onclick="reviewAvailability(${staffId},'denied')">Deny</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load availability changes.</div>'; }
+}
+
+async function reviewAvailability(staffId, status) {
+  await fetch(WORKER + '/availability/review', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ staff_id: staffId, status, reviewed_by: 'Command Center' }) });
+  loadPendingAvailability();
+}
 </script>
 </body>
 </html>

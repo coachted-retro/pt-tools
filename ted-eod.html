@@ -41,6 +41,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .status-partial{background:var(--lamber);color:#92400E}
 .status-empty{background:var(--soft);color:var(--muted)}
 .status-auto{background:#EFF6FF;color:var(--blue)}
+.status-red{background:var(--lred);color:var(--red)}
 .chevron{color:var(--muted);font-size:14px;transition:transform .2s}
 .section.collapsed .chevron{transform:rotate(-90deg)}
 .section-body{padding:16px}
@@ -142,10 +143,52 @@ textarea{resize:vertical;min-height:72px}
     </div>
   </div>
 
+  <!-- SECTION: CONSULTATIONS TODAY -->
+  <div class="section" id="sec-consultations">
+    <div class="section-header" onclick="toggleSection('sec-consultations')">
+      <span class="section-num">02</span>
+      <span class="section-title">Consultations Today</span>
+      <span class="section-status status-auto" id="status-consultations">Loading from D1...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Auto-pulled from Initial Consultations logged today — outcome for each.</div>
+      <div class="auto-list" id="consultations-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION: CLIENTS IN JEOPARDY -->
+  <div class="section" id="sec-jeopardy">
+    <div class="section-header" onclick="toggleSection('sec-jeopardy')">
+      <span class="section-num">04</span>
+      <span class="section-title">Clients In Jeopardy</span>
+      <span class="section-status status-auto" id="status-jeopardy">Loading from D1...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">No PT session scheduled in 7+ days — reach out before they slip away.</div>
+      <div class="auto-list" id="jeopardy-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- SECTION: MONTHLY CHECK-INS TODAY -->
+  <div class="section" id="sec-checkins">
+    <div class="section-header" onclick="toggleSection('sec-checkins')">
+      <span class="section-num">03</span>
+      <span class="section-title">Monthly Check-Ins Today</span>
+      <span class="section-status status-auto" id="status-checkins">Loading from D1...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Auto-pulled from Monthly Check-Ins completed today.</div>
+      <div class="auto-list" id="checkins-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
   <!-- SECTION 2: WELCOME WORKOUTS -->
   <div class="section collapsed" id="sec-ww">
     <div class="section-header" onclick="toggleSection('sec-ww')">
-      <span class="section-num">02</span>
+      <span class="section-num">05</span>
       <span class="section-title">Welcome Workouts</span>
       <span class="section-status status-empty" id="status-ww">Empty</span>
       <span class="chevron">▾</span>
@@ -180,7 +223,7 @@ textarea{resize:vertical;min-height:72px}
   <!-- SECTION: SALES BREAKDOWN -->
   <div class="section collapsed" id="sec-sales">
     <div class="section-header" onclick="toggleSection('sec-sales')">
-      <span class="section-num">03</span>
+      <span class="section-num">06</span>
       <span class="section-title">Sales Breakdown</span>
       <span class="section-status status-empty" id="status-sales">Empty</span>
       <span class="chevron">▾</span>
@@ -198,7 +241,7 @@ textarea{resize:vertical;min-height:72px}
   <!-- SECTION 3: PT LEADS -->
   <div class="section collapsed" id="sec-leads">
     <div class="section-header" onclick="toggleSection('sec-leads')">
-      <span class="section-num">03</span>
+      <span class="section-num">07</span>
       <span class="section-title">PT Leads</span>
       <span class="section-status status-auto" id="status-leads">Loading...</span>
       <span class="chevron">▾</span>
@@ -214,7 +257,7 @@ textarea{resize:vertical;min-height:72px}
   <!-- SECTION 4: PROGRESS MONITORING -->
   <div class="section collapsed" id="sec-monitoring">
     <div class="section-header" onclick="toggleSection('sec-monitoring')">
-      <span class="section-num">04</span>
+      <span class="section-num">08</span>
       <span class="section-title">Progress Monitoring</span>
       <span class="section-status status-auto" id="status-monitoring">Loading...</span>
       <span class="chevron">▾</span>
@@ -228,7 +271,7 @@ textarea{resize:vertical;min-height:72px}
   <!-- SECTION 5: FROZEN / PAST DUE -->
   <div class="section collapsed" id="sec-frozen">
     <div class="section-header" onclick="toggleSection('sec-frozen')">
-      <span class="section-num">05</span>
+      <span class="section-num">09</span>
       <span class="section-title">Frozen & Past Due</span>
       <span class="section-status status-auto" id="status-frozen">Loading...</span>
       <span class="chevron">▾</span>
@@ -241,7 +284,7 @@ textarea{resize:vertical;min-height:72px}
   <!-- SECTION 6: SESSION RENEWALS -->
   <div class="section collapsed" id="sec-renewals">
     <div class="section-header" onclick="toggleSection('sec-renewals')">
-      <span class="section-num">06</span>
+      <span class="section-num">10</span>
       <span class="section-title">Session Renewals</span>
       <span class="section-status status-auto" id="status-renewals">Loading...</span>
       <span class="chevron">▾</span>
@@ -255,7 +298,7 @@ textarea{resize:vertical;min-height:72px}
   <!-- SECTION 7: NOTABLE WINS -->
   <div class="section collapsed" id="sec-wins">
     <div class="section-header" onclick="toggleSection('sec-wins')">
-      <span class="section-num">07</span>
+      <span class="section-num">11</span>
       <span class="section-title">Notable Wins</span>
       <span class="section-status status-empty" id="status-wins">Empty</span>
       <span class="chevron">▾</span>
@@ -270,7 +313,7 @@ textarea{resize:vertical;min-height:72px}
   <!-- SECTION 8: REFLECTIONS -->
   <div class="section collapsed" id="sec-plan">
     <div class="section-header" onclick="toggleSection('sec-plan')">
-      <span class="section-num">08</span>
+      <span class="section-num">12</span>
       <span class="section-title">Reflections</span>
       <span class="section-status status-empty" id="status-plan">Empty</span>
       <span class="chevron">▾</span>
@@ -294,7 +337,7 @@ textarea{resize:vertical;min-height:72px}
   <!-- SECTION 9: PRIORITY FLAGS -->
   <div class="section collapsed" id="sec-notes">
     <div class="section-header" onclick="toggleSection('sec-notes')">
-      <span class="section-num">09</span>
+      <span class="section-num">13</span>
       <span class="section-title">Additional Notes & Flags</span>
       <span class="section-status status-empty" id="status-notes">Empty</span>
       <span class="chevron">▾</span>
@@ -333,12 +376,15 @@ const notes = [];
 let allClients = [];
 let allScans = [];
 let allLeads = [];
+let allConsultations = [];
+let allCheckins = [];
+let allJeopardy = [];
 let sessionNotes = {};
 let todayDismissals = [];
 
 document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
-const SECTIONS = ['sessions','ww','sales','leads','monitoring','frozen','renewals','wins','plan','notes'];
+const SECTIONS = ['sessions','consultations','jeopardy','checkins','ww','sales','leads','monitoring','frozen','renewals','wins','plan','notes'];
 
 function toggleSection(id) { document.getElementById(id).classList.toggle('collapsed'); }
 
@@ -394,7 +440,7 @@ function toggleInlineNote(id) {
 async function loadData() {
   try {
     const today = new Date().toISOString().slice(0,10);
-    const [clientsRes, scansRes, leadsRes, dismissalsRes] = await Promise.all([
+    const [clientsRes, scansRes, leadsRes, dismissalsRes, consultRes, checkinRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:200})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
@@ -402,12 +448,22 @@ async function loadData() {
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:100})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'eod_flag_dismissals', where:{dismissed_at: today}, limit:500})}).catch(function(){return null;})
+        body: JSON.stringify({op:'select', table:'eod_flag_dismissals', where:{dismissed_at: today}, limit:500})}).catch(function(){return null;}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'consultations', where:{consult_date: today}, limit:100})}).catch(function(){return null;}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'checkins', where:{checkin_date: today}, limit:100})}).catch(function(){return null;})
     ]);
     allClients = (await clientsRes.json()).results || [];
     allScans = (await scansRes.json()).results || [];
     allLeads = (await leadsRes.json()).results || [];
     todayDismissals = dismissalsRes ? ((await dismissalsRes.json()).results || []) : [];
+    allConsultations = consultRes ? ((await consultRes.json()).results || []) : [];
+    allCheckins = checkinRes ? ((await checkinRes.json()).results || []) : [];
+    try {
+      const jr = await fetch(WORKER + '/jeopardy/clients?coach=' + encodeURIComponent('Ted Scholl'));
+      allJeopardy = ((await jr.json()).jeopardy) || [];
+    } catch(e) { allJeopardy = []; }
     renderAll();
   } catch(e) { showToast('Error loading data: ' + e.message); }
 }
@@ -441,10 +497,61 @@ async function dismissAllFlags(flagType, clientIds) {
 
 function renderAll() {
   renderSessions();
+  renderConsultations();
+  renderJeopardy();
+  renderCheckins();
   renderLeads();
   renderMonitoring();
   renderFrozen();
   renderRenewals();
+}
+
+function renderJeopardy() {
+  const el = document.getElementById('jeopardy-list');
+  if (!allJeopardy.length) {
+    el.innerHTML = '<div class="empty-auto">✓ No clients in jeopardy right now</div>';
+    updateStatus('jeopardy', 'None', 'status-auto');
+    return;
+  }
+  el.innerHTML = allJeopardy.map(c => autoRow('⚠️', 'flag-red',
+    name(c), c.last_scheduled ? 'Last scheduled ' + c.last_scheduled : 'Never scheduled a session', 'jeop-' + c.id)).join('');
+  updateStatus('jeopardy', allJeopardy.length + ' at risk', 'status-red');
+}
+
+function clientById(id) { return allClients.find(c => c.id === id) || {}; }
+
+function renderConsultations() {
+  const el = document.getElementById('consultations-list');
+  if (!allConsultations.length) {
+    el.innerHTML = '<div class="empty-auto">No consultations recorded today yet</div>';
+    updateStatus('consultations', 'None yet', 'status-empty');
+    return;
+  }
+  el.innerHTML = allConsultations.map(c => {
+    const client = clientById(c.client_id);
+    const outcome = c.outcome || 'pending';
+    const flagClass = outcome === 'accepted' ? 'flag-green' : outcome === 'declined' ? 'flag-amber' : 'flag-amber';
+    const icon = outcome === 'accepted' ? '✅' : outcome === 'declined' ? '🤔' : '⏳';
+    const label = outcome === 'accepted' ? 'Accepted' : outcome === 'declined' ? 'Declined / thinking it over' : 'Outcome pending';
+    return autoRow(icon, flagClass, name(client) || 'Client #' + c.client_id, label + (c.advisor_notes ? ' — ' + c.advisor_notes.split('.')[0] : ''), 'consult-' + c.id);
+  }).join('');
+  updateStatus('consultations', allConsultations.length + ' today', 'status-auto');
+}
+
+function renderCheckins() {
+  const el = document.getElementById('checkins-list');
+  if (!allCheckins.length) {
+    el.innerHTML = '<div class="empty-auto">No monthly check-ins completed today</div>';
+    updateStatus('checkins', 'None yet', 'status-empty');
+    return;
+  }
+  el.innerHTML = allCheckins.map(ci => {
+    const client = clientById(ci.client_id);
+    const scores = ['session_score','diet_score','energy_score','sleep_score','stress_score']
+      .filter(k => ci[k] != null).map(k => k.replace('_score','') + ': ' + ci[k]).join(' · ');
+    return autoRow('📅', 'flag-green', name(client) || 'Client #' + ci.client_id, scores || 'Completed', 'checkin-' + ci.id);
+  }).join('');
+  updateStatus('checkins', allCheckins.length + ' completed', 'status-auto');
 }
 
 function renderSessions() {

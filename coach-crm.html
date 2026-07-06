@@ -77,6 +77,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     </select>
   </div>
   <div id="today-schedule"></div>
+  <div id="jeopardy-section"></div>
   <div style="margin-bottom:14px"><button class="card" style="cursor:pointer;border:1.5px dashed var(--line);justify-content:center;color:var(--red);font-weight:700" onclick="openAddAppointment()">+ Add Appointment</button></div>
   <div id="add-appt-form" style="display:none"></div>
   <div id="coach-inbox"></div>
@@ -143,6 +144,27 @@ async function bellTap(notifId, clientId, clientName, workoutTitle){
   const coach = document.getElementById('coach-select').value;
   await fetch(WORKER + '/coach/react-workout', {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({client_id: clientId, coach_name: coach, body: msg})});
+}
+
+async function loadJeopardy(){
+  const coach = document.getElementById('coach-select').value;
+  const box = document.getElementById('jeopardy-section');
+  if (!coach) { box.innerHTML = ''; return; }
+  try {
+    const r = await fetch(WORKER + '/jeopardy/clients?coach=' + encodeURIComponent(coach));
+    const d = await r.json();
+    const rows = d.jeopardy || [];
+    if (!rows.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--red);margin-bottom:8px">⚠ Clients In Jeopardy — ${rows.length}</div>` +
+      rows.map(c => `<a class="card" href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(coach)}" style="border-left:4px solid var(--red)">
+        <div class="avatar" style="background:var(--lred);color:var(--red)">${escH(((c.first_name||'?')[0]+(c.last_name||'')[0]).toUpperCase())}</div>
+        <div style="flex:1">
+          <div class="name">${escH(c.first_name)} ${escH(c.last_name)}</div>
+          <div class="sub">${c.last_scheduled ? 'Last scheduled ' + escH(c.last_scheduled) : 'Never scheduled a session'}</div>
+        </div>
+        <div class="badges"><span class="badge badge-red">Reach out</span></div>
+      </a>`).join('');
+  } catch(e) { box.innerHTML = ''; }
 }
 
 async function loadTodaySchedule(){
@@ -261,6 +283,7 @@ async function loadClients(){
   loadBell();
   loadTodaySchedule();
   loadInbox();
+  loadJeopardy();
 }
 if (saved || IS_LOCKED) loadClients();
 setInterval(loadBell, 60000);

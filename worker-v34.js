@@ -97,7 +97,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events'
+  'staff_availability','time_off_requests','gym_events','churn_surveys'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -591,6 +591,48 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok({ sent: true }, cors);
       }
 
+      // ── CHURN SURVEY (sent when a client is marked cancelled) ─────
+      if (url.pathname === '/churn-survey/send' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id) return bad('client_id required', cors);
+        const client = await env.DB.prepare('SELECT first_name, last_name, email FROM clients WHERE id=?').bind(b.client_id).first();
+        if (!client || !client.email) return ok({ sent: false, reason: 'No email on file for this client' }, cors);
+        const now = new Date().toISOString();
+        const ins = await env.DB.prepare('INSERT INTO churn_surveys (client_id,cancel_reason,sent_at) VALUES (?,?,?)').bind(b.client_id, b.reason || null, now).run();
+        const surveyId = ins.meta ? ins.meta.last_row_id : null;
+        if (!env.RESEND_KEY) {
+          return ok({ sent: false, mail_configured: false, reason: 'RESEND_KEY is not set on this Worker — no email provider configured, so no email was sent.' }, cors);
+        }
+        const surveyUrl = (env.SURVEY_BASE_URL || 'https://coachted-retro.github.io/pt-tools/churn-survey.html') + '?survey=' + surveyId;
+        try {
+          const mailResp = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: env.MAIL_FROM || 'onboarding@resend.dev',
+              to: [client.email],
+              subject: 'We\'re sorry to see you go — quick question?',
+              html: '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto"><h2 style="color:#E0192B">RETRO FITNESS</h2><p>Hi ' + (client.first_name||'there') + ', we\'re sorry to see your membership end. Your feedback genuinely helps us do better — could you take 60 seconds to tell us what happened?</p><p style="text-align:center;margin:24px 0"><a href="' + surveyUrl + '" style="background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Share Feedback</a></p><p style="color:#888;font-size:12px">Thank you for having been part of our gym.</p></div>'
+            })
+          });
+          const mailData = await mailResp.json().catch(() => ({}));
+          if (!mailResp.ok) return ok({ sent: false, mail_configured: true, reason: 'Resend rejected the send: ' + (mailData.message || mailResp.status) }, cors);
+        } catch (e) {
+          return ok({ sent: false, mail_configured: true, reason: 'Network error reaching Resend: ' + e.message }, cors);
+        }
+        return ok({ sent: true, survey_id: surveyId }, cors);
+      }
+
+      if (url.pathname === '/churn-survey/submit' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.survey_id) return bad('survey_id required', cors);
+        await env.DB.prepare('UPDATE churn_surveys SET liked_most=?, reason_detail=?, would_return=?, submitted_at=? WHERE id=?')
+          .bind(b.liked_most || null, b.reason_detail || null, b.would_return || null, new Date().toISOString(), b.survey_id).run();
+        return ok({ submitted: true }, cors);
+      }
+
       if (url.pathname === '/staff/reset-confirm' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const { email, code, new_pin } = await request.json();
@@ -1071,7 +1113,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok({ here_now: rows.results || [] }, cors);
       }
 
-      // ── STAFF AVAILABILITY (recurring weekly) ─────────────────────
+      // ── STAFF AVAILABILITY (recurring weekly, requires manager approval) ──
       if (url.pathname === '/availability/set' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
@@ -1079,8 +1121,16 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         await env.DB.prepare('DELETE FROM staff_availability WHERE staff_id=?').bind(b.staff_id).run();
         const now = new Date().toISOString();
         for (const s of b.slots) {
-          await env.DB.prepare('INSERT INTO staff_availability (staff_id,day_of_week,start_time,end_time,note,updated_at) VALUES (?,?,?,?,?,?)')
-            .bind(b.staff_id, s.day_of_week, s.start_time || null, s.end_time || null, s.note || null, now).run();
+          await env.DB.prepare('INSERT INTO staff_availability (staff_id,day_of_week,start_time,end_time,note,status,updated_at) VALUES (?,?,?,?,?,?,?)')
+            .bind(b.staff_id, s.day_of_week, s.start_time || null, s.end_time || null, s.note || null, 'pending', now).run();
+        }
+        if (b.slots.length) {
+          const staffRow = await env.DB.prepare('SELECT name FROM staff_roster WHERE id=?').bind(b.staff_id).first();
+          await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json,created_at) VALUES (?,?,?,?)')
+            .bind('management', 'availability_submitted', JSON.stringify({
+              staff_id: b.staff_id, name: staffRow ? staffRow.name : 'Someone',
+              message: (staffRow ? staffRow.name : 'Someone') + ' submitted new availability for review'
+            }), now).run();
         }
         return ok({ saved: true }, cors);
       }
@@ -1091,6 +1141,26 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!staffId) return bad('staff_id required', cors);
         const rows = await env.DB.prepare('SELECT * FROM staff_availability WHERE staff_id=? ORDER BY day_of_week ASC').bind(staffId).all();
         return ok({ availability: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/availability/pending' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const rows = await env.DB.prepare(
+          `SELECT a.*, s.name staff_name FROM staff_availability a
+           JOIN staff_roster s ON s.id = a.staff_id
+           WHERE a.status='pending' ORDER BY a.staff_id, a.day_of_week ASC LIMIT 200`
+        ).all();
+        return ok({ availability: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/availability/review' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.staff_id || !b.status) return bad('staff_id and status required', cors);
+        const now = new Date().toISOString();
+        await env.DB.prepare("UPDATE staff_availability SET status=?, reviewed_by=?, reviewed_at=? WHERE staff_id=? AND status='pending'")
+          .bind(b.status, b.reviewed_by || null, now, b.staff_id).run();
+        return ok({ reviewed: true }, cors);
       }
 
       // ── TIME OFF REQUESTS (tracked, with approve/deny status) ─────
@@ -1655,6 +1725,24 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
            ORDER BY c.last_name ASC`
         ).bind(coach, today).all();
         return ok({ today: rows.results || [] }, cors);
+      }
+
+      // ── CLIENTS IN JEOPARDY (no session scheduled in 7+ days) ─────
+      if (url.pathname === '/jeopardy/clients' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const coach = url.searchParams.get('coach');
+        const threshold = "date('now','-7 day')";
+        let query = `
+          SELECT c.id, c.first_name, c.last_name, c.coach, c.advisor,
+            (SELECT MAX(s.scheduled_date) FROM scheduled_sessions s WHERE s.client_id = c.id) as last_scheduled
+          FROM clients c
+          WHERE c.status = 'active_pt'
+        `;
+        const binds = [];
+        if (coach) { query += ' AND COALESCE(NULLIF(c.coach,\'\'), c.advisor) = ?'; binds.push(coach); }
+        query += ` HAVING last_scheduled IS NULL OR last_scheduled < ${threshold} ORDER BY (last_scheduled IS NOT NULL), last_scheduled ASC`;
+        const rows = await env.DB.prepare(query).bind(...binds).all();
+        return ok({ jeopardy: rows.results || [] }, cors);
       }
 
 
@@ -2378,10 +2466,11 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const channel = url.searchParams.get('channel') || 'wins';
         const thread = url.searchParams.get('thread_ref');
         const includeDemo = url.searchParams.get('demo') === '1';
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '40', 10) || 40, 500);
         let rows;
         if (thread) rows = await env.DB.prepare('SELECT * FROM huddle_messages WHERE thread_ref=? ORDER BY id ASC').bind(thread).all();
-        else if (includeDemo) rows = await env.DB.prepare('SELECT * FROM huddle_messages WHERE channel=? ORDER BY id DESC LIMIT 40').bind(channel).all();
-        else rows = await env.DB.prepare('SELECT h.* FROM huddle_messages h LEFT JOIN gyms g ON h.gym_id=g.id WHERE h.channel=? AND (h.gym_id IS NULL OR COALESCE(g.is_demo,0)=0) ORDER BY h.id DESC LIMIT 40').bind(channel).all();
+        else if (includeDemo) rows = await env.DB.prepare(`SELECT * FROM huddle_messages WHERE channel=? ORDER BY id DESC LIMIT ${limit}`).bind(channel).all();
+        else rows = await env.DB.prepare(`SELECT h.* FROM huddle_messages h LEFT JOIN gyms g ON h.gym_id=g.id WHERE h.channel=? AND (h.gym_id IS NULL OR COALESCE(g.is_demo,0)=0) ORDER BY h.id DESC LIMIT ${limit}`).bind(channel).all();
         return ok({ messages: rows.results||[] }, cors);
       }
 
@@ -2391,6 +2480,20 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!b.author || !b.body) return bad('author, body required', cors);
         await env.DB.prepare('INSERT INTO huddle_messages (channel,gym_id,author,body,thread_ref) VALUES (?,?,?,?,?)')
           .bind(b.channel||'wins', b.gym_id||null, b.author, b.body, b.thread_ref||'').run();
+        // Parse @mentions and notify the mentioned staff member.
+        const mentionMatches = (b.body.match(/@([A-Za-z]+(?:\s[A-Za-z]+)?)/g) || []).map(m => m.slice(1).trim());
+        if (mentionMatches.length) {
+          const roster = await env.DB.prepare('SELECT id, name FROM staff_roster WHERE active=1').all();
+          const staffList = roster.results || [];
+          const now = new Date().toISOString();
+          for (const mention of mentionMatches) {
+            const matched = staffList.find(s => s.name.toLowerCase() === mention.toLowerCase() || s.name.toLowerCase().startsWith(mention.toLowerCase() + ' ') || s.name.toLowerCase().split(' ')[0] === mention.toLowerCase());
+            if (matched) {
+              await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json,created_at) VALUES (?,?,?,?)')
+                .bind('staff:' + matched.id, 'mention', JSON.stringify({ author: b.author, body: b.body, message: b.author + ' mentioned you: ' + b.body }), now).run();
+            }
+          }
+        }
         return ok({ posted: true }, cors);
       }
 

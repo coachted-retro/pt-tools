@@ -49,6 +49,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const NEEDS_COVERAGE_ROLES = ['MEA', 'Floor Tech'];
 const params = new URLSearchParams(window.location.search);
 const staffId = parseInt(params.get('staff_id'), 10);
 
@@ -114,10 +115,13 @@ function renderView(staff, profile, isMine) {
       <div class="sec-label" style="margin-top:0">Upcoming at the Gym</div>
       <div id="gym-events-body"><div class="empty-state">Loading...</div></div>
     </div>
+    ${NEEDS_COVERAGE_ROLES.includes(staff.role) ? `
     <div class="card">
       <div class="sec-label" style="margin-top:0">My Availability</div>
+      <p style="font-size:12px;color:var(--ink3,#6B7280);margin:-4px 0 10px">This feeds directly into the same calendar Sarah uses for coverage scheduling. Changes need manager approval before they're official.</p>
       <div id="availability-body"><div class="empty-state">Loading...</div></div>
     </div>
+    ` : ''}
     <div class="card">
       <div class="sec-label" style="margin-top:0">Time Off</div>
       <div class="fld"><label>Dates</label><input type="date" id="pto-start-profile"> to <input type="date" id="pto-end-profile" style="margin-top:8px"></div>
@@ -134,7 +138,7 @@ function renderView(staff, profile, isMine) {
   if (isMine) {
     loadMyShiftsProfile(staff.id);
     loadGymEventsProfile();
-    loadAvailabilityProfile(staff.id);
+    if (NEEDS_COVERAGE_ROLES.includes(staff.role)) loadAvailabilityProfile(staff.id);
     loadMyTimeOffProfile(staff.id);
   }
 }
@@ -193,7 +197,11 @@ async function loadAvailabilityProfile(staffId) {
     const d = await r.json();
     existing = d.availability || [];
   } catch(e) {}
-  el.innerHTML = AVAIL_DAYS_P.map((label, i) => {
+  const anyPending = existing.some(a => a.status === 'pending');
+  const statusNote = existing.length
+    ? (anyPending ? '<div class="status-msg" style="color:#D98A0B;text-align:left;margin-bottom:8px">Awaiting manager approval</div>' : '<div class="status-msg" style="color:#1E9E5A;text-align:left;margin-bottom:8px">Approved</div>')
+    : '';
+  el.innerHTML = statusNote + AVAIL_DAYS_P.map((label, i) => {
     const match = existing.find(a => a.day_of_week === i);
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">
       <label style="width:40px;font-size:12px;font-weight:700"><input type="checkbox" id="av-on-${i}" ${match?'checked':''} style="margin-right:4px">${label}</label>
@@ -201,7 +209,7 @@ async function loadAvailabilityProfile(staffId) {
       <span style="font-size:11px;color:var(--ink3)">to</span>
       <input type="time" id="av-end-${i}" value="${match&&match.end_time?match.end_time:'17:00'}" style="flex:1;font-size:12px;padding:4px">
     </div>`;
-  }).join('') + `<button class="action-btn secondary" style="margin-top:10px" onclick="saveAvailabilityProfile(${staffId})">Save Availability</button>
+  }).join('') + `<button class="action-btn secondary" style="margin-top:10px" onclick="saveAvailabilityProfile(${staffId})">Submit for Approval</button>
   <div class="status-msg" id="avail-status-profile"></div>`;
 }
 
@@ -216,7 +224,8 @@ async function saveAvailabilityProfile(staffId) {
   status.textContent = 'Saving...';
   try {
     await fetch(WORKER + '/availability/set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ staff_id: staffId, slots }) });
-    status.textContent = 'Saved!';
+    status.textContent = 'Submitted — awaiting manager approval.';
+    loadAvailabilityProfile(staffId);
   } catch(e) { status.textContent = 'Could not save, try again.'; }
 }
 

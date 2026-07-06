@@ -83,6 +83,7 @@ h1,h2,h3,.sec-title { font-family:var(--font-display); }
   <div style="display:flex;gap:8px;margin-bottom:20px">
     <button id="tab-gym" class="ga-tab active" onclick="showGaTab('gym')">Gym Overview</button>
     <button id="tab-pt" class="ga-tab" onclick="showGaTab('pt')">PT Analytics</button>
+    <button id="tab-notes" class="ga-tab" onclick="showGaTab('notes')">Team Notes</button>
   </div>
   <div id="gym-tab-wrap">
   <div id="loading" class="loading">Loading real data...</div>
@@ -108,6 +109,18 @@ h1,h2,h3,.sec-title { font-family:var(--font-display); }
     <div class="data-note">Aggregate scores, trends, and check-in history across all clients — the detailed coach-side view.</div>
     <iframe src="coach-dashboard-v2.html" style="width:100%;height:80vh;border:1px solid var(--border);border-radius:var(--radius);background:#fff"></iframe>
   </div>
+
+  <div id="notes-tab-content" style="display:none">
+    <div class="sec-label">Team Notes — Day by Day</div>
+    <div class="data-note">A running, shared log — leave a note anytime, organized by day. Type @Name to notify someone directly.</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
+      <textarea id="team-note-input" rows="2" placeholder="What's happening right now? Use @Name to alert someone..." style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:13px;resize:vertical"></textarea>
+      <div style="display:flex;justify-content:flex-end;margin-top:8px">
+        <button onclick="postTeamNote()" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer">Post Note</button>
+      </div>
+    </div>
+    <div id="team-notes-feed"><div class="loading">Loading...</div></div>
+  </div>
 </div>
 
 <script>
@@ -115,11 +128,72 @@ const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function pillClass(c){ return c==='good'?'pill-good':c==='warn'?'pill-warn':c==='none'?'pill-none':'pill-bad'; }
 
+function getTeamNoteAuthor() {
+  try {
+    const s = JSON.parse(localStorage.getItem('staff_session') || 'null');
+    if (s && s.name) return s.name;
+  } catch(e) {}
+  let cached = localStorage.getItem('team_note_author');
+  if (!cached) {
+    cached = prompt('Your name (so your notes are attributed correctly):') || 'Staff';
+    localStorage.setItem('team_note_author', cached);
+  }
+  return cached;
+}
+
+async function loadTeamNotes() {
+  const el = document.getElementById('team-notes-feed');
+  try {
+    const r = await fetch(WORKER + '/huddle/feed?channel=team-notes&limit=300');
+    const d = await r.json();
+    const msgs = (d.messages || []).slice().reverse(); // oldest first for chronological day grouping
+    if (!msgs.length) { el.innerHTML = '<div class="empty" style="text-align:center;color:var(--text3);padding:30px">No notes yet — be the first to log something.</div>'; return; }
+    const byDay = {};
+    const order = [];
+    msgs.forEach(m => {
+      const day = (m.created_at || '').slice(0,10);
+      if (!byDay[day]) { byDay[day] = []; order.push(day); }
+      byDay[day].push(m);
+    });
+    order.reverse(); // most recent day first
+    el.innerHTML = order.map(day => {
+      const dateLabel = new Date(day + 'T00:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+      const entries = byDay[day].slice().reverse().map(m => {
+        const time = new Date(m.created_at + 'Z').toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:13px">${esc(m.body)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${esc(m.author)} · ${time}</div>
+        </div>`;
+      }).join('');
+      return `<div style="margin-bottom:18px">
+        <div style="font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink);margin-bottom:8px">${esc(dateLabel)}</div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">${entries}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="empty">Could not load team notes.</div>'; }
+}
+
+async function postTeamNote() {
+  const input = document.getElementById('team-note-input');
+  const body = input.value.trim();
+  if (!body) return;
+  const author = getTeamNoteAuthor();
+  try {
+    await fetch(WORKER + '/huddle/post', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ channel: 'team-notes', gym_id: 1, author, body }) });
+    input.value = '';
+    loadTeamNotes();
+  } catch(e) { alert('Could not post note, try again.'); }
+}
+
 function showGaTab(tab) {
   document.getElementById('tab-gym').classList.toggle('active', tab==='gym');
   document.getElementById('tab-pt').classList.toggle('active', tab==='pt');
+  document.getElementById('tab-notes').classList.toggle('active', tab==='notes');
   document.getElementById('gym-tab-wrap').style.display = tab==='gym' ? '' : 'none';
   document.getElementById('pt-tab-content').style.display = tab==='pt' ? 'block' : 'none';
+  document.getElementById('notes-tab-content').style.display = tab==='notes' ? 'block' : 'none';
+  if (tab==='notes') loadTeamNotes();
 }
 
 let allClients = [];

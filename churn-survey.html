@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Feedback — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px}
+.topbar{background:var(--ink);padding:20px;text-align:center}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:20px;color:#fff;text-transform:uppercase}
+.topbar .logo span{color:var(--red)}
+.wrap{max-width:480px;margin:0 auto;padding:24px 20px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:16px}
+h1{font-family:'Oswald';font-size:20px;font-weight:800;text-transform:uppercase;margin-bottom:8px}
+.sub{color:var(--muted);font-size:14px;margin-bottom:20px}
+.fld{margin-bottom:18px}
+.fld label{display:block;font-size:13px;font-weight:700;margin-bottom:8px}
+.fld textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:'Inter';font-size:14px;min-height:70px}
+.pill-row{display:flex;gap:8px;flex-wrap:wrap}
+.pill{border:1.5px solid var(--line);border-radius:20px;padding:8px 16px;font-size:13px;cursor:pointer;background:#fff}
+.pill.selected{border-color:var(--red);background:#FEF2F2;color:var(--red);font-weight:700}
+.submit-btn{width:100%;background:var(--red);color:#fff;font-family:'Oswald';font-size:15px;font-weight:800;text-transform:uppercase;padding:14px;border-radius:10px;border:none;cursor:pointer}
+.thanks{text-align:center;padding:40px 20px}
+.thanks .big{font-size:40px;margin-bottom:12px}
+.status-msg{text-align:center;font-size:13px;color:var(--muted);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="logo">Retro <span>Fitness</span></div></div>
+<div class="wrap" id="wrap">
+  <div class="card">
+    <h1>Before you go...</h1>
+    <p class="sub">This takes less than a minute and genuinely helps us improve.</p>
+
+    <div class="fld">
+      <label>What did you like most about your time with us?</label>
+      <textarea id="liked" placeholder="Optional, but we'd love to know"></textarea>
+    </div>
+
+    <div class="fld">
+      <label>Would you consider coming back in the future?</label>
+      <div class="pill-row" id="return-pills">
+        <div class="pill" data-val="yes" onclick="selectReturn(this,'yes')">Yes</div>
+        <div class="pill" data-val="maybe" onclick="selectReturn(this,'maybe')">Maybe</div>
+        <div class="pill" data-val="no" onclick="selectReturn(this,'no')">No</div>
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Anything else you'd like us to know?</label>
+      <textarea id="detail" placeholder="Optional"></textarea>
+    </div>
+
+    <button class="submit-btn" onclick="submitSurvey()">Submit Feedback</button>
+    <div class="status-msg" id="status"></div>
+  </div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const params = new URLSearchParams(window.location.search);
+const surveyId = params.get('survey');
+let returnVal = '';
+
+function selectReturn(el, val) {
+  document.querySelectorAll('#return-pills .pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  returnVal = val;
+}
+
+async function submitSurvey() {
+  if (!surveyId) { document.getElementById('status').textContent = 'Missing survey link — please use the link from your email.'; return; }
+  const status = document.getElementById('status');
+  status.textContent = 'Submitting...';
+  try {
+    await fetch(WORKER + '/churn-survey/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      survey_id: surveyId,
+      liked_most: document.getElementById('liked').value.trim(),
+      reason_detail: document.getElementById('detail').value.trim(),
+      would_return: returnVal
+    })});
+    document.getElementById('wrap').innerHTML = `<div class="card thanks"><div class="big">🙏</div><h1>Thank you</h1><p class="sub">We really appreciate you taking the time. We hope to see you again someday.</p></div>`;
+  } catch(e) { status.textContent = 'Could not submit, please try again.'; }
+}
+</script>
+</body>
+</html>
