@@ -8,10 +8,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PT Consultation — Rego Park (Demo)</title>
 
-<link rel="icon" type="image/x-icon" href="icons/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/x-icon" href="../icons-strong/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons-strong/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../icons-strong/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../icons-strong/apple-touch-icon.png">
 <meta name="theme-color" content="#E0192B"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1091,15 +1091,16 @@
 
       <!-- ══ PAGE 0: UPLOAD ══ -->
       <div class="page active" id="page-0">
-        <div class="page-header">
-          <h2 id="welcome-heading">Welcome</h2>
-          <p>Enter the member's name to get started.</p>
+        <div style="background:linear-gradient(135deg,var(--accent2) 0%,#2a2d33 100%);border-radius:16px;padding:48px 32px;text-align:center;margin-bottom:20px;position:relative;overflow:hidden;">
+          <div style="font-size:48px;margin-bottom:6px;">🎉</div>
+          <h1 id="welcome-heading" style="font-family:var(--font-display);font-size:36px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.02em;margin-bottom:10px;">Welcome!</h1>
+          <p style="color:#C7CBD1;font-size:15px;max-width:420px;margin:0 auto;">We're excited you're here — let's get to know you and build a plan that fits your goals.</p>
         </div>
 
         <div class="card">
           <div class="card-title"><span class="dot"></span> Member name</div>
           <div class="field">
-            <input type="text" id="name" placeholder="Full name" oninput="updateWelcome();saveDraftSilent()">
+            <input type="text" id="name" placeholder="Full name" oninput="updateWelcome();saveDraftSilent()" style="font-size:18px;padding:14px 16px;">
           </div>
         </div>
 
