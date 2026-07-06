@@ -1169,14 +1169,22 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok({ events: rows.results || [] }, cors);
       }
 
-      // ── PERSONAL CALENDAR SYNC (ICS feed: shifts + gym events) ────
+      // ── PERSONAL CALENDAR SYNC (ICS feed: shifts + appointments + gym events) ──
       if (url.pathname === '/calendar/ics' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const staffId = url.searchParams.get('staff_id');
         if (!staffId) return bad('staff_id required', cors);
+        const staffRow = await env.DB.prepare('SELECT name FROM staff_roster WHERE id=?').bind(staffId).first();
+        const coachName = staffRow ? staffRow.name : '';
         const shifts = await env.DB.prepare(
           "SELECT * FROM staff_shifts WHERE staff_id=? AND shift_date >= date('now','-7 day') AND status!='cancelled' ORDER BY shift_date ASC LIMIT 100"
         ).bind(staffId).all();
+        const appts = coachName ? await env.DB.prepare(
+          `SELECT s.id, s.scheduled_date, s.program_name, s.focus_notes, c.first_name, c.last_name
+           FROM scheduled_sessions s JOIN clients c ON s.client_id = c.id
+           WHERE COALESCE(NULLIF(s.assigned_coach,''), c.coach) = ? AND s.status = 'scheduled'
+           AND s.scheduled_date >= date('now','-7 day') ORDER BY s.scheduled_date ASC LIMIT 100`
+        ).bind(coachName).all() : { results: [] };
         const events = await env.DB.prepare(
           "SELECT * FROM gym_events WHERE event_date >= date('now','-7 day') ORDER BY event_date ASC LIMIT 100"
         ).all();
@@ -1189,6 +1197,15 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           lines.push('DTSTART:' + icsDate(s.shift_date, s.start_time));
           lines.push('DTEND:' + icsDate(s.shift_date, s.end_time || s.start_time));
           lines.push('SUMMARY:' + esc('Shift — ' + (s.role || 'Work')));
+          lines.push('END:VEVENT');
+        }
+        for (const a of (appts.results || [])) {
+          lines.push('BEGIN:VEVENT');
+          lines.push('UID:appt-' + a.id + '@retrostrong');
+          lines.push('DTSTART:' + icsDate(a.scheduled_date, '09:00'));
+          lines.push('DTEND:' + icsDate(a.scheduled_date, '10:00'));
+          lines.push('SUMMARY:' + esc('Session — ' + a.first_name + ' ' + a.last_name + (a.program_name ? ' (' + a.program_name + ')' : '')));
+          if (a.focus_notes) lines.push('DESCRIPTION:' + esc(a.focus_notes));
           lines.push('END:VEVENT');
         }
         for (const e of (events.results || [])) {

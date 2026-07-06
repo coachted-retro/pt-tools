@@ -103,10 +103,154 @@ function renderView(staff, profile, isMine) {
       ${(profile.public_email || profile.public_phone) ? `<div class="sec-label">Contact</div><div class="body-text">${profile.public_email?esc(profile.public_email)+'<br>':''}${profile.public_phone?esc(profile.public_phone):''}</div>` : ''}
     </div>
     ${isMine ? `<button class="action-btn secondary" onclick="showEdit()">Edit My Profile</button>` : ''}
+    ${isMine ? `
+    <a href="coach-crm.html?coach=${encodeURIComponent(staff.name)}&locked=1" class="action-btn" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Open Coach CRM — My Clients</a>
+    <div class="card" style="margin-top:14px">
+      <div class="sec-label" style="margin-top:0">My Schedule</div>
+      <div id="my-shifts-body"><div class="empty-state">Loading...</div></div>
+      <button class="action-btn secondary" style="margin-top:10px" onclick="syncCalendarToPhone(${staff.id})">Sync to My Phone Calendar</button>
+    </div>
+    <div class="card">
+      <div class="sec-label" style="margin-top:0">Upcoming at the Gym</div>
+      <div id="gym-events-body"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="sec-label" style="margin-top:0">My Availability</div>
+      <div id="availability-body"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="sec-label" style="margin-top:0">Time Off</div>
+      <div class="fld"><label>Dates</label><input type="date" id="pto-start-profile"> to <input type="date" id="pto-end-profile" style="margin-top:8px"></div>
+      <div class="fld"><label>Reason (optional)</label><textarea id="pto-reason-profile" rows="2"></textarea></div>
+      <button class="action-btn" onclick="submitTimeOffProfile(${staff.id})">Request Time Off</button>
+      <div class="status-msg" id="pto-status-profile"></div>
+      <div id="my-timeoff-list-profile" style="margin-top:14px"></div>
+    </div>
+    ` : ''}
     <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--ink3,#6B7280);display:flex;align-items:center;justify-content:center;gap:5px"><img src="icons-strong/icon-192.png" alt="" style="width:14px;height:14px;border-radius:3px" onerror="this.style.display='none'"> Powered by <b style="color:var(--red,#E0192B)">Retro Strong</b></div>
   `;
   window._currentStaff = staff;
   window._currentProfile = profile;
+  if (isMine) {
+    loadMyShiftsProfile(staff.id);
+    loadGymEventsProfile();
+    loadAvailabilityProfile(staff.id);
+    loadMyTimeOffProfile(staff.id);
+  }
+}
+
+async function loadMyShiftsProfile(staffId) {
+  const el = document.getElementById('my-shifts-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/shifts/mine?staff_id=' + staffId);
+    const d = await r.json();
+    const shifts = d.shifts || [];
+    if (!shifts.length) { el.innerHTML = '<div class="empty-state">No upcoming shifts scheduled.</div>'; return; }
+    el.innerHTML = shifts.map(s => {
+      const dateLabel = new Date(s.shift_date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <div style="font-weight:700;font-size:13px">${esc(dateLabel)} · ${esc(s.start_time)}–${esc(s.end_time)}</div>
+        <div style="font-size:12px;color:var(--ink3)">${esc(s.role||'')}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load your schedule.</div>'; }
+}
+
+function syncCalendarToPhone(staffId) {
+  const url = WORKER + '/calendar/ics?staff_id=' + staffId;
+  const webcalUrl = url.replace(/^https?:\/\//, 'webcal://');
+  window.location.href = webcalUrl;
+  setTimeout(() => { alert('If nothing opened, copy this link into your calendar app\'s "Subscribe by URL" option:\n\n' + url); }, 800);
+}
+
+async function loadGymEventsProfile() {
+  const el = document.getElementById('gym-events-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/events/upcoming?gym_id=1&days=90');
+    const d = await r.json();
+    const events = d.events || [];
+    if (!events.length) { el.innerHTML = '<div class="empty-state">Nothing on the calendar right now.</div>'; return; }
+    el.innerHTML = events.map(e => {
+      const dateLabel = new Date(e.event_date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <div style="font-weight:700;font-size:13px">${e.type==='holiday'?'🎉 ':''}${esc(e.title)}</div>
+        <div style="font-size:12px;color:var(--ink3)">${esc(dateLabel)}${e.notes ? ' · '+esc(e.notes) : ''}</div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load the gym calendar.</div>'; }
+}
+
+const AVAIL_DAYS_P = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+async function loadAvailabilityProfile(staffId) {
+  const el = document.getElementById('availability-body');
+  if (!el) return;
+  let existing = [];
+  try {
+    const r = await fetch(WORKER + '/availability/get?staff_id=' + staffId);
+    const d = await r.json();
+    existing = d.availability || [];
+  } catch(e) {}
+  el.innerHTML = AVAIL_DAYS_P.map((label, i) => {
+    const match = existing.find(a => a.day_of_week === i);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)">
+      <label style="width:40px;font-size:12px;font-weight:700"><input type="checkbox" id="av-on-${i}" ${match?'checked':''} style="margin-right:4px">${label}</label>
+      <input type="time" id="av-start-${i}" value="${match&&match.start_time?match.start_time:'09:00'}" style="flex:1;font-size:12px;padding:4px">
+      <span style="font-size:11px;color:var(--ink3)">to</span>
+      <input type="time" id="av-end-${i}" value="${match&&match.end_time?match.end_time:'17:00'}" style="flex:1;font-size:12px;padding:4px">
+    </div>`;
+  }).join('') + `<button class="action-btn secondary" style="margin-top:10px" onclick="saveAvailabilityProfile(${staffId})">Save Availability</button>
+  <div class="status-msg" id="avail-status-profile"></div>`;
+}
+
+async function saveAvailabilityProfile(staffId) {
+  const status = document.getElementById('avail-status-profile');
+  const slots = [];
+  AVAIL_DAYS_P.forEach((label, i) => {
+    if (document.getElementById('av-on-'+i).checked) {
+      slots.push({ day_of_week: i, start_time: document.getElementById('av-start-'+i).value, end_time: document.getElementById('av-end-'+i).value });
+    }
+  });
+  status.textContent = 'Saving...';
+  try {
+    await fetch(WORKER + '/availability/set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ staff_id: staffId, slots }) });
+    status.textContent = 'Saved!';
+  } catch(e) { status.textContent = 'Could not save, try again.'; }
+}
+
+async function submitTimeOffProfile(staffId) {
+  const status = document.getElementById('pto-status-profile');
+  const start = document.getElementById('pto-start-profile').value;
+  const end = document.getElementById('pto-end-profile').value;
+  const reason = document.getElementById('pto-reason-profile').value.trim();
+  if (!start || !end) { status.textContent = 'Pick a start and end date.'; return; }
+  status.textContent = 'Submitting...';
+  try {
+    await fetch(WORKER + '/timeoff/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ staff_id: staffId, start_date: start, end_date: end, reason }) });
+    status.textContent = 'Request sent to management.';
+    document.getElementById('pto-reason-profile').value = '';
+    loadMyTimeOffProfile(staffId);
+  } catch(e) { status.textContent = 'Could not submit, try again.'; }
+}
+
+async function loadMyTimeOffProfile(staffId) {
+  const el = document.getElementById('my-timeoff-list-profile');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/timeoff/mine?staff_id=' + staffId);
+    const d = await r.json();
+    const reqs = d.requests || [];
+    if (!reqs.length) { el.innerHTML = ''; return; }
+    const badge = s => s==='approved' ? '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:#ECFDF3;color:#1E9E5A">Approved</span>'
+      : s==='denied' ? '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:#FEF2F2;color:#E0192B">Denied</span>'
+      : '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:#FFFBEB;color:#D98A0B">Pending</span>';
+    el.innerHTML = '<div class="sec-label" style="margin-top:0">Your Requests</div>' + reqs.slice(0,10).map(r =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
+        <span style="font-size:12px">${esc(r.start_date)} – ${esc(r.end_date)}</span>${badge(r.status)}
+      </div>`).join('');
+  } catch(e) { el.innerHTML = ''; }
 }
 
 function showEdit() {

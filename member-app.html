@@ -1622,6 +1622,11 @@ function doStaffLogout() {
 }
 
 function startStaffApp() {
+  const role = (STAFF_SESSION.role || '').toLowerCase();
+  if ((role === 'pt coach' || role === "men's training lead") && !window._skipProfileRedirect) {
+    location.href = 'coach-profile.html?staff_id=' + STAFF_SESSION.staff_id;
+    return;
+  }
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('staff-shell').style.display = 'flex';
   document.getElementById('staff-greeting-name').textContent = STAFF_SESSION.name;

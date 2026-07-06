@@ -163,6 +163,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <label>Role *</label>
       <select id="fRole" onchange="updateEODTemplate()">
         <option value="">-- Select Role --</option>
+        <option value="Franchise Owner">Franchise Owner</option>
         <option value="Regional Director">Regional Director</option>
         <option value="Director of Fitness">Director of Fitness</option>
         <option value="General Manager">General Manager</option>
@@ -239,7 +240,7 @@ const ADMIN_KEY = 'retro-admin-2024';
 let roster = [];
 
 const ROLE_GROUPS = {
-  mgmt: ['Regional Director','Director of Fitness','General Manager'],
+  mgmt: ['Franchise Owner','Regional Director','Director of Fitness','General Manager'],
   coaches: ["Men's Training Lead",'PT Coach'],
   mea: ['MEA'],
   floor: ['Floor Tech']
@@ -277,6 +278,7 @@ async function loadRoster() {
 }
 
 function rolePillClass(role) {
+  if (role === 'Franchise Owner') return 'role-regional';
   if (role === 'Regional Director') return 'role-regional';
   if (role === 'Director of Fitness') return 'role-director';
   if (role === 'General Manager') return 'role-gm';
@@ -409,18 +411,23 @@ async function saveEmployee() {
     gym_id: 1
   };
   try {
+    let r, d;
     if (id) {
-      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'update', table:'staff_roster', values, where:{id: parseInt(id)}})});
+      d = await r.json();
+      if (!d.ok) { showToast('Save failed: ' + (d.error || 'unknown error')); return; }
       showToast('Employee updated');
     } else {
-      await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'insert', table:'staff_roster', values})});
+      d = await r.json();
+      if (!d.ok) { showToast('Save failed: ' + (d.error || 'unknown error')); return; }
       showToast('Employee added');
     }
     closeModal();
     await loadRoster();
-  } catch(e) { showToast('Save failed: ' + e.message); }
+  } catch(e) { showToast('Connection error: ' + e.message); }
 }
 
 async function toggleActive(id, newVal) {

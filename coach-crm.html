@@ -77,6 +77,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     </select>
   </div>
   <div id="today-schedule"></div>
+  <div style="margin-bottom:14px"><button class="card" style="cursor:pointer;border:1.5px dashed var(--line);justify-content:center;color:var(--red);font-weight:700" onclick="openAddAppointment()">+ Add Appointment</button></div>
+  <div id="add-appt-form" style="display:none"></div>
   <div id="coach-inbox"></div>
   <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">My Clients</div>
   <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
@@ -237,6 +239,7 @@ async function loadClients(){
     const r = await fetch(WORKER + '/coach/clients?coach=' + encodeURIComponent(coach));
     const d = await r.json();
     const clients = d.clients || [];
+    window._loadedClients = clients;
     if (!clients.length){ list.innerHTML = '<div class="empty">No clients assigned to you yet.</div>'; return; }
     list.innerHTML = clients.map(c => {
       const initials = ((c.first_name||'?')[0] + (c.last_name||'')[0]).toUpperCase();
@@ -261,6 +264,60 @@ async function loadClients(){
 }
 if (saved || IS_LOCKED) loadClients();
 setInterval(loadBell, 60000);
+
+function openAddAppointment() {
+  const clients = window._loadedClients || [];
+  const el = document.getElementById('add-appt-form');
+  el.style.display = 'block';
+  const today = new Date().toISOString().slice(0,10);
+  el.innerHTML = `<div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+    <div style="font-weight:800;margin-bottom:10px">New Appointment</div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Client</label>
+    <select id="appt-client" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <option value="">Select client...</option>
+      ${clients.map(c => `<option value="${c.id}">${escH(c.first_name)} ${escH(c.last_name)}</option>`).join('')}
+    </select>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Session Type / Program</label>
+    <input id="appt-program" placeholder="e.g. Strength Training" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Start Date</label><input type="date" id="appt-start" value="${today}" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">End Date</label><input type="date" id="appt-end" value="${today}" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px"></div>
+    </div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Days of Week</label>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d,i) => `<label style="font-size:12px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer"><input type="checkbox" id="appt-day-${i}" ${i>=1&&i<=5?'checked':''} style="margin-right:4px">${d}</label>`).join('')}
+    </div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Focus Notes (optional)</label>
+    <textarea id="appt-notes" rows="2" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit"></textarea>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveAppointment()" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save Appointment(s)</button>
+      <button onclick="document.getElementById('add-appt-form').style.display='none'" style="background:var(--soft);border:none;border-radius:8px;padding:12px;cursor:pointer">Cancel</button>
+    </div>
+    <div id="appt-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+}
+
+async function saveAppointment() {
+  const status = document.getElementById('appt-status');
+  const clientId = document.getElementById('appt-client').value;
+  const program = document.getElementById('appt-program').value.trim();
+  const start = document.getElementById('appt-start').value;
+  const end = document.getElementById('appt-end').value;
+  const notes = document.getElementById('appt-notes').value.trim();
+  const weekdays = [0,1,2,3,4,5,6].filter(i => document.getElementById('appt-day-'+i).checked);
+  if (!clientId || !program || !start || !end || !weekdays.length) { status.textContent = 'Client, program, dates, and at least one day are required.'; return; }
+  status.textContent = 'Saving...';
+  const coach = document.getElementById('coach-select').value;
+  try {
+    const r = await fetch(WORKER + '/schedule/create', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: parseInt(clientId,10), program_name: program, start_date: start, end_date: end, weekdays, focus_notes: notes, coach_name: coach, assigned_coach: coach }) });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not save.'; return; }
+    status.textContent = 'Created ' + d.created_count + ' session(s).';
+    loadTodaySchedule();
+    setTimeout(() => { document.getElementById('add-appt-form').style.display = 'none'; }, 1000);
+  } catch(e) { status.textContent = 'Connection error, try again.'; }
+}
 </script>
 </body>
 </html>
