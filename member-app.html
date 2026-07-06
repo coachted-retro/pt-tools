@@ -2794,7 +2794,7 @@ function renderHome() {
   // Today card
   const todayDay = DAYS[new Date().getDay()];
   const todayClasses = CLASS_SCHEDULE.find(d => d.day === todayDay)?.classes || [];
-  if (todayClasses.length) {
+  if (!IS_DEMO && todayClasses.length) {
     const first = todayClasses[0];
     document.getElementById('today-workout-card').innerHTML = `
       <div class="today-card">
@@ -2879,17 +2879,33 @@ function renderTraining() {
       </div>`;
   }
 
-  // Today\'s assigned workout placeholder
-  document.getElementById('training-today-card').innerHTML = `
-    <div class="card"><div class="card-body">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="font-size:32px">🎯</div>
-        <div>
-          <div style="font-weight:700;font-size:14px;color:var(--ink)">Coach-assigned workouts</div>
-          <div style="font-size:12px;color:var(--ink3);margin-top:2px">Ask Coach Ted to assign your weekly program. Once set, your daily workout will appear here.</div>
+  // Today's assigned workout
+  if (IS_DEMO) {
+    const goal = DATA.mealProfile?.goal_type || DATA.client?.goal_primary || '';
+    const goalKey = goal.toLowerCase().includes('cut') || goal.toLowerCase().includes('lose') ? 'cut' :
+                    goal.toLowerCase().includes('build') || goal.toLowerCase().includes('muscle') ? 'build' :
+                    goal.toLowerCase().includes('recomp') ? 'recomp' : 'general';
+    const assigned = BUNDLES.find(b => b.goal.includes(goalKey)) || BUNDLES[0];
+    const firstRoutine = assigned.routines[0];
+    document.getElementById('training-today-card').innerHTML = `
+      <div class="card" style="border-top:3px solid ${assigned.accent}"><div class="card-body">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:${assigned.accent};margin-bottom:4px;">Assigned by Coach Ted — Based on Your Assessment</div>
+        <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:2px;">${assigned.icon} ${esc(firstRoutine.label)}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">From your ${esc(assigned.name)} program</div>
+        <button class="action-btn" style="background:${assigned.accent};box-shadow:none" onclick="selectBundle('${assigned.id}');startBundleWorkout(0);">Start Your Workout →</button>
+      </div></div>`;
+  } else {
+    document.getElementById('training-today-card').innerHTML = `
+      <div class="card"><div class="card-body">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-size:32px">🎯</div>
+          <div>
+            <div style="font-weight:700;font-size:14px;color:var(--ink)">Coach-assigned workouts</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:2px">Ask Coach Ted to assign your weekly program. Once set, your daily workout will appear here.</div>
+          </div>
         </div>
-      </div>
-    </div></div>`;
+      </div></div>`;
+  }
 
   // Bundles
   renderBundles();
