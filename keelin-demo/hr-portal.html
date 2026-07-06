@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Portal — Retro Fitness Rego Park (Demo)</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{display:flex;align-items:center;gap:16px;background:var(--card);border-bottom:3px solid var(--red);padding:14px 22px}
+.topbar .brand{display:flex;flex-direction:column;line-height:1.1}
+.topbar .brand .n{font-family:'Oswald';font-weight:800;font-size:16px;text-transform:uppercase}
+.topbar .brand .s{font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.5px}
+.topbar a{margin-left:auto;font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:8px 14px}
+.wrap{max-width:900px;margin:0 auto;padding:28px 22px 60px}
+.eyebrow{font-family:'Oswald';font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:6px}
+h1{font-family:'Oswald';font-size:26px;font-weight:800;text-transform:uppercase;margin-bottom:8px}
+.desc{color:var(--muted);font-size:13px;margin-bottom:24px;max-width:560px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:14px}
+.card-title{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink);margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line)}
+td{padding:10px;border-bottom:1px solid var(--line)}
+.pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.pill-green{background:#ECFDF3;color:#1E9E5A}
+.pill-amber{background:#FFFBEB;color:#D98A0B}
+.pill-blue{background:#EFF6FF;color:#2563EB}
+.pill-red{background:#FDEAEC;color:var(--red)}
+.note{background:var(--soft);border:1px dashed var(--line);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted);margin-top:20px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><div class="n">Retro Fitness</div><div class="s">Rego Park, NY &middot; Demo Store</div></div>
+  <a href="command-center.html">&larr; Command Center</a>
+</div>
+<div class="wrap">
+  <div class="eyebrow">Store HR</div>
+  <h1>HR Portal</h1>
+  <p class="desc">Employee records, hiring documents, onboarding checklists, and performance history.</p>
+  <div class="card"><div class="card-title">Employee Records</div>
+          <table><thead><tr><th>Employee</th><th>Role</th><th>Onboarding</th></tr></thead>
+          <tbody>
+          <tr><td>Sarah Chen</td><td>Training Lead</td><td><span class="pill pill-green">Complete</span></td></tr>
+          <tr><td>Jordan Fischer</td><td>PT Coach</td><td><span class="pill pill-green">Complete</span></td></tr>
+          <tr><td>Sam Stone</td><td>PT Coach</td><td><span class="pill pill-amber">In Progress</span></td></tr>
+          </tbody></table></div>
+  <div class="note">This is a preview of the HR Portal tool for demo purposes. The full version is fully built and running at your Fairless Hills location.</div>
+</div>
+</body>
+</html>
