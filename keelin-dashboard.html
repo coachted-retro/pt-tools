@@ -119,6 +119,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   </div>
   <div class="spacer"></div>
   <span class="last-up" id="lastUp">Loading...</span>
+  <a href="keelin-demo/command-center.html" class="refresh-btn" style="text-decoration:none;display:inline-flex;align-items:center;background:var(--red);color:#fff;border-color:var(--red)">🏬 Rego Park Store Tools →</a>
   <a href="reports-portal.html" id="reports-link" class="refresh-btn" style="text-decoration:none;display:inline-flex;align-items:center">&#128202; Reports</a>
   <button class="refresh-btn" onclick="loadAll()">↻ Refresh</button>
 </div>
@@ -146,8 +147,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <div class="kpi-row">
       <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">Region Revenue MTD</div><div class="kpi-val" id="k-region-actual">—</div><div class="kpi-sub" id="k-region-pct">vs goal</div></div>
       <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">Clubs at 90%+</div><div class="kpi-val" id="k-safe-zone">—</div><div class="kpi-sub">of 15 clubs on pace</div></div>
-      <div class="kpi-card" style="--accent:var(--purple)"><div class="kpi-label">Top Club</div><div class="kpi-val" id="k-top-club" style="font-size:16px">—</div><div class="kpi-sub" id="k-top-club-pct">% to goal</div></div>
-      <div class="kpi-card" style="--accent:var(--amber)"><div class="kpi-label">Needs Attention</div><div class="kpi-val" id="k-attention" style="font-size:16px">—</div><div class="kpi-sub" id="k-attention-pct">lowest % to goal</div></div>
+      <div class="kpi-card" id="k-top-club-card" style="--accent:var(--purple);cursor:pointer"><div class="kpi-label">Top Club</div><div class="kpi-val" id="k-top-club" style="font-size:16px">—</div><div class="kpi-sub" id="k-top-club-pct">% to goal · click to view</div></div>
+      <div class="kpi-card" id="k-attention-card" style="--accent:var(--amber);cursor:pointer"><div class="kpi-label">Needs Attention</div><div class="kpi-val" id="k-attention" style="font-size:16px">—</div><div class="kpi-sub" id="k-attention-pct">lowest % to goal · click to view</div></div>
       <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">Total Sales MTD</div><div class="kpi-val" id="k-sale-count">—</div><div class="kpi-sub">region-wide</div></div>
       <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">Avg Order Value</div><div class="kpi-val" id="k-aov">—</div><div class="kpi-sub">per sale, region-wide</div></div>
     </div>
@@ -269,6 +270,14 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
 const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
+function withDemo(url) {
+  if (!DEMO_VIEW) return url;
+  return url + (url.includes('?') ? '&demo=1' : '?demo=1');
+}
+function goToGym(gymId) {
+  if (gymId == null) return;
+  location.href = withDemo('gym-profile.html?gym_id=' + gymId + '&month=' + OVERVIEW_MONTH);
+}
 if (DEMO_VIEW) { const rl = document.getElementById('reports-link'); if (rl) rl.href = 'reports-portal.html?demo=1'; }
 let eodDateStr = new Date().toISOString().slice(0,10);
 let allClients = [], allScans = [];
@@ -293,12 +302,12 @@ function changeDate(d) {
 }
 
 async function db(payload) {
-  const r = await fetch(WORKER+'/db'+DEMO_Q, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  const r = await fetch(withDemo(WORKER+'/db'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   return (await r.json()).results||[];
 }
 
 const CURRENT_MONTH = DEMO_VIEW ? '2026-06' : new Date().toISOString().slice(0,7);
-let OVERVIEW_MONTH = CURRENT_MONTH;
+let OVERVIEW_MONTH = new URLSearchParams(location.search).get('month') || CURRENT_MONTH;
 
 function shiftMonth(monthStr, delta) {
   const [y,m] = monthStr.split('-').map(Number);
@@ -321,7 +330,7 @@ function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 
 async function loadHelpQueue(){
   try {
-    const r = await fetch(WORKER+'/help-requests?status=open'+DEMO_Q);
+    const r = await fetch(withDemo(WORKER+'/help-requests?status=open'));
     const d = await r.json();
     const list = d.requests || [];
     const badge = document.getElementById('help-count-badge');
@@ -344,12 +353,12 @@ async function loadHelpQueue(){
 
 async function resolveHelp(id){
   const note = prompt('Any note on how you helped? (optional)','');
-  await fetch(WORKER+'/help-requests/resolve'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, note})});
+  await fetch(withDemo(WORKER+'/help-requests/resolve'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, note})});
   loadHelpQueue();
 }
 
 async function loadBoard(){
-  const r = await fetch(WORKER+'/region/summary?month='+CURRENT_MONTH+DEMO_Q);
+  const r = await fetch(withDemo(WORKER+'/region/summary?month='+CURRENT_MONTH));
   boardData = await r.json();
   document.getElementById('board-month').textContent = new Date(CURRENT_MONTH+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'}) + ' · Region ' + (boardData.region_pct==null?'':boardData.region_pct+'% to goal');
   const tb = document.getElementById('board-rows');
@@ -359,7 +368,7 @@ async function loadBoard(){
     const color = pct>=90?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
     return `<tr>
       <td style="font-family:'Oswald';font-weight:800;color:var(--muted)">${i+1}</td>
-      <td><a href="gym-profile.html?gym_id=${g.gym_id}&month=${CURRENT_MONTH}${DEMO_Q}" style="text-decoration:none;color:inherit"><div class="gym-name" style="text-decoration:underline dotted">${escH(g.name)}</div><div class="gym-manager">${escH(g.director||'')}</div></a></td>
+      <td><a href="gym-profile.html?gym_id=${g.gym_id}&month=${OVERVIEW_MONTH}${DEMO_Q}" style="text-decoration:none;color:inherit"><div class="gym-name" style="text-decoration:underline dotted">${escH(g.name)}</div><div class="gym-manager">${escH(g.director||'')}</div></a></td>
       <td><span style="cursor:pointer;border-bottom:1px dashed var(--muted)" onclick="editGoal(${g.gym_id},${g.goal})">${fmtMoney(g.goal)}</span></td>
       <td style="font-family:'Oswald';font-weight:700">${fmtMoney(g.actual)}</td>
       <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div></td>
@@ -374,7 +383,7 @@ async function editGoal(gymId, current){
   if (v==null) return;
   const goal = parseFloat(String(v).replace(/[^0-9.]/g,''));
   if (isNaN(goal)) return alert('Enter a number.');
-  await fetch(WORKER+'/board/set-goal'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,tcv_goal:goal})});
+  await fetch(withDemo(WORKER+'/board/set-goal'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,tcv_goal:goal})});
   loadBoard();
 }
 
@@ -384,12 +393,12 @@ async function editNote(gymId){
   if (note==null) return;
   const pick = prompt('Emoji (type a number): 1 \uD83D\uDD25  2 \uD83D\uDCAA  3 \uD83D\uDC4F  4 \uD83C\uDF89  5 \uD83D\uDE4C  6 \u2764\uFE0F  (blank = none)','1');
   const emoji = pick && EMOJIS[parseInt(pick)-1] ? EMOJIS[parseInt(pick)-1] : '';
-  await fetch(WORKER+'/board/set-note'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,note:note,emoji:emoji,author:'Keelin'})});
+  await fetch(withDemo(WORKER+'/board/set-note'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,note:note,emoji:emoji,author:'Keelin'})});
   loadBoard();
 }
 
 async function loadWins(){
-  const r = await fetch(WORKER+'/huddle/feed?channel=wins'+DEMO_Q);
+  const r = await fetch(withDemo(WORKER+'/huddle/feed?channel=wins'));
   const d = await r.json();
   const el = document.getElementById('wins-feed');
   const msgs = (d.messages||[]).filter(m=>m.author==='system' || !m.thread_ref);
@@ -405,7 +414,7 @@ async function openThread(ref, title){
   if (!ref) return;
   activeThread = ref;
   document.getElementById('thread-title').textContent = title || 'Sale Thread';
-  const r = await fetch(WORKER+'/huddle/feed?thread_ref='+encodeURIComponent(ref)+DEMO_Q);
+  const r = await fetch(withDemo(WORKER+'/huddle/feed?thread_ref='+encodeURIComponent(ref)));
   const d = await r.json();
   const box = document.getElementById('thread-box');
   box.innerHTML = (d.messages||[]).map(m=>`
@@ -423,7 +432,7 @@ async function postShout(ref, channel, fromThread){
   const input = document.getElementById(fromThread?'thread-input':'win-input');
   const body = (input?.value||'').trim();
   if (!body) return;
-  await fetch(WORKER+'/huddle/post'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:channel||'wins',author:'Keelin',body:body,thread_ref:ref||''})});
+  await fetch(withDemo(WORKER+'/huddle/post'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:channel||'wins',author:'Keelin',body:body,thread_ref:ref||''})});
   if (input) input.value='';
   if (fromThread && ref) openThread(ref, document.getElementById('thread-title').textContent);
   else loadWins();
@@ -431,7 +440,7 @@ async function postShout(ref, channel, fromThread){
 
 async function loadBell(){
   try {
-    const r = await fetch(WORKER+'/notifications?recipient=keelin'+DEMO_Q);
+    const r = await fetch(withDemo(WORKER+'/notifications?recipient=keelin'));
     const d = await r.json();
     const badge = document.getElementById('bell-badge');
     if (d.unread>0){ badge.style.display='inline-block'; badge.textContent=d.unread; } else badge.style.display='none';
@@ -453,7 +462,7 @@ function toggleBell(){
 }
 
 async function bellTap(id, threadRef){
-  await fetch(WORKER+'/notifications/read'+DEMO_Q,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})});
+  await fetch(withDemo(WORKER+'/notifications/read'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})});
   document.getElementById('bell-drop').style.display='none';
   loadBell();
   if (threadRef){ switchTab('board'); setTimeout(()=>openThread(threadRef,'Celebrate this sale'),400); }
@@ -475,7 +484,7 @@ async function renderOverview() {
   document.getElementById('revenue-chart-month').textContent = monthLabel + ' · sorted by % to goal';
   document.getElementById('saletype-month').textContent = 'New / Renewal / Upgrade, ' + monthLabel;
   document.getElementById('rep-month').textContent = 'Individual PT rep performance, ' + monthLabel;
-  const summary = await (await fetch(WORKER+'/region/summary?month='+OVERVIEW_MONTH+DEMO_Q)).json();
+  const summary = await (await fetch(withDemo(WORKER+'/region/summary?month='+OVERVIEW_MONTH))).json();
   const gyms = (summary.gyms || []).slice().sort((a,b) => (b.pct||0) - (a.pct||0));
 
   // ── KPI strip ──
@@ -487,9 +496,11 @@ async function renderOverview() {
   if (gyms.length) {
     const top = gyms[0], bottom = gyms[gyms.length-1];
     document.getElementById('k-top-club').textContent = top.name;
-    document.getElementById('k-top-club-pct').textContent = (top.pct||0) + '% to goal';
+    document.getElementById('k-top-club-pct').textContent = (top.pct||0) + '% to goal · click to view';
     document.getElementById('k-attention').textContent = bottom.name;
-    document.getElementById('k-attention-pct').textContent = (bottom.pct||0) + '% to goal';
+    document.getElementById('k-attention-pct').textContent = (bottom.pct||0) + '% to goal · click to view';
+    document.getElementById('k-top-club-card').onclick = () => goToGym(top.gym_id);
+    document.getElementById('k-attention-card').onclick = () => goToGym(bottom.gym_id);
   }
   document.getElementById('k-sale-count').textContent = totalSales;
   document.getElementById('k-aov').textContent = totalSales ? fmtMoney(Math.round(summary.region_actual/totalSales)) : '—';
@@ -507,7 +518,7 @@ async function renderOverview() {
     </tr>`;
   }).join('') || '<tr><td colspan="6" class="empty-state">No gym data.</td></tr>';
 
-  // ── Revenue vs Goal chart ──
+  // ── Revenue vs Goal chart — click a bar to drill into that club ──
   destroyChart('revenue');
   _charts.revenue = new Chart(document.getElementById('revenueChart'), {
     type: 'bar',
@@ -518,27 +529,37 @@ async function renderOverview() {
         { label: 'Actual', data: gyms.map(g => g.actual), backgroundColor: gyms.map(g => (g.pct||0)>=90?'#1E9E5A':(g.pct||0)>=50?'#D97706':'#DC2626') }
       ]
     },
-    options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+(v/1000)+'k' } } }, plugins:{ legend:{ position:'top' } } }
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+(v/1000)+'k' } } },
+      plugins:{ legend:{ position:'top' } },
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const g = gyms[elements[0].index];
+        if (g) goToGym(g.gym_id);
+      },
+      onHover: (evt, elements) => { evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; }
+    }
   });
 
-  // ── Club Leaderboard (top 5 / bottom 5) ──
+  // ── Club Leaderboard (top 5 / bottom 5) — click a row to drill into that club ──
   const top5 = gyms.slice(0,5), bottom5 = gyms.slice(-5).reverse();
   document.getElementById('league-table').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:6px">Top 5</div>
-        ${top5.map((g,i) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
+        ${top5.map((g,i) => `<div onclick="goToGym(${g.gym_id})" style="cursor:pointer;display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
           <span>${i+1}. ${escH(g.name)}</span><span style="font-weight:700;color:var(--green)">${g.pct||0}%</span></div>`).join('')}
       </div>
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:6px">Needs Attention</div>
-        ${bottom5.map((g,i) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
+        ${bottom5.map((g,i) => `<div onclick="goToGym(${g.gym_id})" style="cursor:pointer;display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
           <span>${i+1}. ${escH(g.name)}</span><span style="font-weight:700;color:var(--red)">${g.pct||0}%</span></div>`).join('')}
       </div>
     </div>`;
 
   // ── Region forecast ──
-  const fc = await (await fetch(WORKER+'/region/forecast'+DEMO_Q)).json();
+  const fc = await (await fetch(withDemo(WORKER+'/region/forecast'))).json();
   const confLabel = { insufficient_data:'Insufficient data', low:'Low confidence', moderate:'Moderate confidence' }[fc.confidence] || '';
   document.getElementById('forecast-sub').textContent = 'Trend from ' + fc.months_of_data + ' month' + (fc.months_of_data===1?'':'s') + ' of actual sales · ' + confLabel;
   const histLabels = fc.history.map(h => new Date(h.month+'-15').toLocaleDateString('en-US',{month:'short'}));
@@ -557,7 +578,7 @@ async function renderOverview() {
   });
 
   // ── Aggregate per-gym detail (funnel, sale types, reps) region-wide ──
-  const details = await Promise.all(gyms.map(g => fetch(WORKER+'/region/gym?gym_id='+g.gym_id+'&month='+OVERVIEW_MONTH+DEMO_Q).then(r=>r.json())));
+  const details = await Promise.all(gyms.map(g => fetch(withDemo(WORKER+'/region/gym?gym_id='+g.gym_id+'&month='+OVERVIEW_MONTH)).then(r=>r.json())));
 
   let fTotal=0, fBooked=0, fShowed=0, fClosed=0;
   const saleTypeAgg = {};
@@ -607,7 +628,7 @@ async function loadEOD() {
   disp.textContent = new Date(eodDateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   el.innerHTML = '<div class="empty-state">Loading...</div>';
   try {
-    const r = await fetch(WORKER+`/eod/feed?date=${eodDateStr}`+DEMO_Q);
+    const r = await fetch(withDemo(WORKER+`/eod/feed?date=${eodDateStr}`));
     const d = await r.json();
     const subs = d.submissions||[];
     if (!subs.length) { el.innerHTML = '<div class="empty-state">No submissions for this date.</div>'; return; }
