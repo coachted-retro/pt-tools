@@ -1605,7 +1605,7 @@
           </div>
 
           <div id="decision-row" class="decision-row" style="display:grid;grid-template-columns:1fr;gap:12px;margin-top:16px;">
-            <button class="decision-btn accept" id="pkg-accept-btn" onclick="acceptPackage()" disabled style="background:var(--accent);color:#fff;border-color:var(--accent);">Continue — Review your program →</button>
+
             <div style="text-align:center;padding-top:4px;">
               <span style="font-size:12px;color:var(--text2);">Member not interested in PT? </span>
               <button onclick="showDeclineFromPackages()" style="background:none;border:none;font-size:12px;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;padding:0;">Skip to decline →</button>
@@ -3627,6 +3627,10 @@ function selectPkg(id) {
   if (tp && tp.style.display === 'block') {
     refreshClosingPricing();
   }
+
+  // Any selection — a deliberate tap OR the AI's recommendation — flows
+  // straight into the QR/closing screen. No separate "Continue" click.
+  acceptPackage();
 }
 
 function toggleNutritionAddon() {
