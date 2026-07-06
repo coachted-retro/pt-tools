@@ -1514,6 +1514,19 @@
             <!-- Training Frequency -->
             <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Training Frequency</div>
             <div class="package-grid" id="pkg-grid-main" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px">
+              <div class="package-card" id="pkg-0" onclick="selectPkg(0)">
+                <div class="pkg-rec-badge" id="pkg-0-rec" style="display:none;">★ Recommended</div>
+                <div class="pkg-check"><input type="checkbox" id="pkg-0-chk" disabled></div>
+                <div class="pkg-name">Every Other Week</div>
+                <div class="pkg-freq">2 sessions / month</div>
+                <ul class="pkg-features">
+                  <li>Biweekly check-in training</li>
+                  <li>Personalized workout program</li>
+                  <li>Monthly InBody scan review</li>
+                  <li>Trainerize app access</li>
+                </ul>
+                <div class="pkg-benefit" id="pkg-0-benefit"></div>
+              </div>
               <div class="package-card" id="pkg-1" onclick="selectPkg(1)">
                 <div class="pkg-rec-badge" id="pkg-1-rec" style="display:none;">★ Recommended</div>
                 <div class="pkg-check"><input type="checkbox" id="pkg-1-chk" disabled></div>
@@ -2883,7 +2896,7 @@ async function saveNutritionProfileIfApplicable() {
 
 async function finalizeAccept() {
   var length = document.querySelector('#length-group .pill.selected');
-  if (!selectedPkg || !length) { alert('Please select a training frequency and program length.'); return; }
+  if (selectedPkg == null || !length) { alert('Please select a training frequency and program length.'); return; }
   var freqLabel = FREQ_TIERS[selectedPkg] ? FREQ_TIERS[selectedPkg].name : '';
 
   showLoading('Saving enrollment...');
@@ -3423,10 +3436,11 @@ function filterClients(query) {
 }
 
 // ── PACKAGE & ENROLLMENT FLOW ─────────────────────────────────
-var selectedPkg = 0;
+var selectedPkg = null;
 var enrollLength = '';
 
 var FREQ_TIERS = {
+  0: { name: 'Every Other Week', sessions: 2 },
   1: { name: '1x Per Week', sessions: 4 },
   2: { name: '2x Per Week', sessions: 8 },
   3: { name: '3x Per Week', sessions: 12 },
@@ -3447,7 +3461,7 @@ function computeMonthly(freqId, months) {
 }
 
 function pkgDisplayName() {
-  if (!selectedPkg || !FREQ_TIERS[selectedPkg]) return '';
+  if (selectedPkg == null || !FREQ_TIERS[selectedPkg]) return '';
   return FREQ_TIERS[selectedPkg].name + (nutritionAddon ? ' + Nutrition' : '');
 }
 
@@ -3506,13 +3520,13 @@ async function generatePkgRecommendation(){
   })();
 
   loading.style.display='block';
-  const prompt='A new PT client just completed a fitness consultation and InBody assessment. Decide how many days per week of training they need, from 1 to 4. People who are complete beginners, sedentary, have a doctor recommendation to start a program, or have body fat clearly in the higher reference range need MORE frequent training (3-4x/week) to build momentum safely. People who already work out regularly, have some experience, and are in a healthy-to-fit body composition range typically only need 1-2x/week to maintain progress. Also decide whether the weekly nutrition/meal-plan add-on would meaningfully help this specific person (true if their goal involves body composition change, weight loss, or they said they don\'t know their macros; false if nutrition isn\'t their stated focus). Return ONLY valid JSON: {"pkg":"1"|"2"|"3"|"4","nutrition":true|false,"reason":"one sentence under 22 words written directly to the member about why this frequency fits their specific goal and condition"}. No markdown. Goals: '+(gv('goals')||'not specified')+'. Experience: '+(gv('experience')||'n/a')+'. Current workout status: '+(gv('workout-status')||'n/a')+'. Doctor recommendation: '+(gv('doctor-rec')||'n/a')+'. BMI '+(gv('bmi')||'n/a')+', BF '+(gv('pbf')||'n/a')+'%, Lean '+(gv('lean-mass')||'n/a')+' lb. Macro awareness: '+(gv('tracks-macros')||'n/a')+'. Medical: '+(gv('medical')||'none')+'.';
+  const prompt='A new PT client just completed a fitness consultation and InBody assessment. Decide how often they need training: 0 = every other week (light touch, maintenance, or budget-conscious), 1 to 4 = that many times per week. People who are complete beginners, sedentary, have a doctor recommendation to start a program, or have body fat clearly in the higher reference range need MORE frequent training (3-4x/week) to build momentum safely. People who already work out regularly, have some experience, and are in a healthy-to-fit body composition range typically only need 1-2x/week to maintain progress. Every-other-week (0) fits someone who mainly wants occasional check-ins and accountability rather than structured training. Return ONLY valid JSON: {"pkg":"0"|"1"|"2"|"3"|"4","reason":"one sentence under 22 words written directly to the member about why this frequency fits their specific goal and condition"}. No markdown. Goals: '+(gv('goals')||'not specified')+'. Experience: '+(gv('experience')||'n/a')+'. Current workout status: '+(gv('workout-status')||'n/a')+'. Doctor recommendation: '+(gv('doctor-rec')||'n/a')+'. BMI '+(gv('bmi')||'n/a')+', BF '+(gv('pbf')||'n/a')+'%, Lean '+(gv('lean-mass')||'n/a')+' lb. Medical: '+(gv('medical')||'none')+'.';
   try{
     const r=await fetch(getApiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:400,messages:[{role:'user',content:prompt}]})});
     const d=await r.json();
     const raw=(d.content||[]).map(b=>b.text||'').join('').trim();
     let j; try{ j=JSON.parse(raw.replace(/```json|```/g,'').trim()); }catch(e){}
-    if(j&&j.pkg){
+    if(j&&j.pkg!=null&&j.pkg!==''){
       document.querySelectorAll('.pkg-rec-badge').forEach(b=>b.style.display='none');
       document.querySelectorAll('.package-card').forEach(c=>c.classList.remove('pkg-recommended'));
       document.querySelectorAll('.pkg-benefit').forEach(b=>b.textContent='');
@@ -3522,7 +3536,7 @@ async function generatePkgRecommendation(){
       if(badge) badge.style.display='block';
       if(card){ card.classList.add('pkg-recommended'); }
       if(benefit) benefit.textContent=j.reason||'';
-      if (j.nutrition && !nutritionAddon) { toggleNutritionAddon(); }
+      // Nutrition add-on is opt-in only — advisor checks it manually, never auto-selected.
     }
   }catch(e){}
   loading.style.display='none';
@@ -3581,7 +3595,7 @@ function editPackageSelection() {
 
 function refreshClosingPricing() {
   var sum = document.getElementById('enroll-pkg-summary');
-  if (sum && selectedPkg) {
+  if (sum && selectedPkg != null) {
     var tier = FREQ_TIERS[selectedPkg];
     sum.textContent = tier.name + ' — ' + tier.sessions + ' sessions/mo' + (nutritionAddon ? ' + Nutrition' : '');
   }
@@ -3592,7 +3606,7 @@ function refreshClosingPricing() {
 }
 
 function acceptPackage() {
-  if (!selectedPkg) return;
+  if (selectedPkg == null) return;
   if (window._editingFromClose) {
     window._editingFromClose = false;
     refreshClosingPricing();
@@ -3688,7 +3702,7 @@ function pickLengthEnroll(el, months) {
 }
 
 function updateEnrollPricing() {
-  if (!selectedPkg || !enrollLength) return;
+  if (selectedPkg == null || !enrollLength) return;
   var mo = computeMonthly(selectedPkg, enrollLength);
   var cd = document.getElementById('enroll-commitment-display');
   if (cd) {
