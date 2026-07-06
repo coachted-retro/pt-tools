@@ -85,12 +85,25 @@ h1,h2,h3,.sec-title { font-family:var(--font-display); }
     <button id="tab-gym" class="ga-tab active" onclick="showGaTab('gym')">Gym Overview</button>
     <button id="tab-pt" class="ga-tab" onclick="showGaTab('pt')">PT Analytics</button>
     <button id="tab-notes" class="ga-tab" onclick="showGaTab('notes')">Team Notes</button>
+    <button id="tab-report" class="ga-tab" onclick="showGaTab('report')">Custom Report</button>
   </div>
   <div id="gym-tab-wrap">
   <div id="loading" class="loading">Loading real data...</div>
   <div id="content" style="display:none">
 
-    <div class="sec-label">Whole-Gym KPIs — This Month</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+      <div style="display:flex;gap:6px">
+        <button class="ga-tab period-type-btn active" data-period="week" onclick="setPeriodType('week')">Week</button>
+        <button class="ga-tab period-type-btn" data-period="month" onclick="setPeriodType('month')">Month</button>
+        <button class="ga-tab period-type-btn" data-period="year" onclick="setPeriodType('year')">Year</button>
+      </div>
+      <button onclick="shiftPeriod(-1)" style="border:1.5px solid var(--border);background:#fff;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px">←</button>
+      <div id="period-label" style="font-family:var(--font-display);font-weight:700;font-size:14px;min-width:180px"></div>
+      <button onclick="shiftPeriod(1)" style="border:1.5px solid var(--border);background:#fff;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px" id="period-next-btn">→</button>
+      <button onclick="resetToCurrentPeriod()" style="border:none;background:none;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline">Back to current</button>
+    </div>
+
+    <div class="sec-label" id="kpi-section-label">Whole-Gym KPIs</div>
     <div class="data-note">Pulled live from your real client records. Some figures will be low or zero until new members flow through onboarding going forward.</div>
     <div class="kpi-grid" id="kpi-grid"></div>
     <div class="detail-panel" id="detail-panel"></div>
@@ -98,6 +111,10 @@ h1,h2,h3,.sec-title { font-family:var(--font-display); }
     <div class="sec-label">Membership Mix</div>
     <div class="data-note" id="tier-note"></div>
     <div class="card"><div class="tier-strip" id="tier-strip"></div></div>
+
+    <div class="sec-label">Corporate KPIs — Bill's View</div>
+    <div class="data-note">Matches the weekly format Bill already tracks. DPC and Waiver % need a real data source before they can show a live number — flagged rather than faked.</div>
+    <div class="kpi-grid" id="bill-kpi-grid"></div>
 
     <div class="sec-label">PT Program</div>
     <div class="kpi-grid" id="pt-kpi-grid"></div>
@@ -122,9 +139,141 @@ h1,h2,h3,.sec-title { font-family:var(--font-display); }
     </div>
     <div id="team-notes-feed"><div class="loading">Loading...</div></div>
   </div>
+
+  <div id="report-tab-content" style="display:none">
+    <div class="sec-label">Custom Report Builder</div>
+    <div class="data-note">Pick any fields, filter however you want, and pull a table straight from your live client data. Export to CSV when you're done.</div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <div style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Status</div>
+          <div id="report-status-filters"></div>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Membership Tier</div>
+          <div id="report-tier-filters"></div>
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Join Date Range</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input type="date" id="report-date-start" style="padding:8px;border:1px solid var(--border);border-radius:8px">
+            <input type="date" id="report-date-end" style="padding:8px;border:1px solid var(--border);border-radius:8px">
+          </div>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Columns to Include</div>
+        <div id="report-column-checks" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="runCustomReport()" style="background:var(--red);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.03em">Run Report</button>
+        <button onclick="exportReportCsv()" style="background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:11px 22px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.03em">Export CSV</button>
+      </div>
+    </div>
+
+    <div id="report-results-summary" style="font-size:13px;color:var(--text3);margin-bottom:10px"></div>
+    <div id="report-results" style="overflow-x:auto"></div>
+  </div>
 </div>
 
 <script>
+const REPORT_COLUMNS = [
+  { key:'first_name', label:'First Name', default:true },
+  { key:'last_name', label:'Last Name', default:true },
+  { key:'email', label:'Email', default:false },
+  { key:'phone', label:'Phone', default:true },
+  { key:'status', label:'Status', default:true },
+  { key:'membership_tier', label:'Membership Tier', default:true },
+  { key:'package', label:'Package', default:false },
+  { key:'training_start_date', label:'Join Date', default:true },
+  { key:'coach', label:'Coach', default:false },
+  { key:'advisor', label:'Advisor', default:false },
+  { key:'sessions_remaining', label:'Sessions Remaining', default:false },
+  { key:'membership_price', label:'Membership Price', default:false },
+  { key:'notes', label:'Notes', default:false },
+];
+
+let reportBuilderInitialized = false;
+let lastReportResults = [];
+let lastReportColumns = [];
+
+function initReportBuilder() {
+  if (reportBuilderInitialized) return;
+  reportBuilderInitialized = true;
+  const statuses = [...new Set(allClients.map(c => c.status).filter(Boolean))].sort();
+  document.getElementById('report-status-filters').innerHTML = statuses.map(s => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:4px;cursor:pointer">
+      <input type="checkbox" class="report-status-check" value="${esc(s)}" checked> ${esc(s)}
+    </label>`).join('') || '<div style="font-size:12px;color:var(--text3)">No statuses found</div>';
+
+  const tiers = [...new Set(allClients.map(c => c.membership_tier).filter(Boolean))].sort();
+  document.getElementById('report-tier-filters').innerHTML = tiers.map(t => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-bottom:4px;cursor:pointer">
+      <input type="checkbox" class="report-tier-check" value="${esc(t)}" checked> ${esc(t)}
+    </label>`).join('') || '<div style="font-size:12px;color:var(--text3)">No tier data found</div>';
+
+  document.getElementById('report-column-checks').innerHTML = REPORT_COLUMNS.map(c => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer">
+      <input type="checkbox" class="report-col-check" value="${c.key}" ${c.default?'checked':''}> ${esc(c.label)}
+    </label>`).join('');
+}
+
+function runCustomReport() {
+  const statusChecks = Array.from(document.querySelectorAll('.report-status-check:checked')).map(el => el.value);
+  const tierChecks = Array.from(document.querySelectorAll('.report-tier-check:checked')).map(el => el.value);
+  const colChecks = Array.from(document.querySelectorAll('.report-col-check:checked')).map(el => el.value);
+  const dateStart = document.getElementById('report-date-start').value;
+  const dateEnd = document.getElementById('report-date-end').value;
+
+  if (!colChecks.length) { document.getElementById('report-results').innerHTML = '<div class="empty" style="padding:20px;color:var(--text3)">Pick at least one column.</div>'; return; }
+
+  const allTiers = [...new Set(allClients.map(x=>x.membership_tier).filter(Boolean))];
+  const allTiersSelected = tierChecks.length >= allTiers.length;
+
+  let filtered = allClients.filter(c => {
+    if (statusChecks.length && !statusChecks.includes(c.status)) return false;
+    if (!allTiersSelected) {
+      if (!c.membership_tier || !tierChecks.includes(c.membership_tier)) return false;
+    }
+    const joined = (c.training_start_date||'').slice(0,10);
+    if (dateStart && (!joined || joined < dateStart)) return false;
+    if (dateEnd && (!joined || joined > dateEnd)) return false;
+    return true;
+  });
+
+  lastReportResults = filtered;
+  lastReportColumns = colChecks;
+
+  document.getElementById('report-results-summary').textContent = filtered.length + ' result' + (filtered.length===1?'':'s');
+  if (!filtered.length) { document.getElementById('report-results').innerHTML = '<div class="empty" style="padding:20px;color:var(--text3)">No clients match those filters.</div>'; return; }
+
+  const colLabels = colChecks.map(k => (REPORT_COLUMNS.find(c=>c.key===k)||{}).label || k);
+  let html = '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden"><thead><tr>' +
+    colLabels.map(l => `<th style="text-align:left;padding:10px 14px;font-size:11px;text-transform:uppercase;color:var(--text3);background:#F8F9FB;border-bottom:1px solid var(--border)">${esc(l)}</th>`).join('') +
+    '</tr></thead><tbody>';
+  filtered.slice(0,500).forEach(c => {
+    html += '<tr>' + colChecks.map(k => `<td style="padding:8px 14px;font-size:13px;border-bottom:1px solid var(--border)">${esc(c[k]==null?'':c[k])}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  if (filtered.length > 500) html += '<div style="font-size:12px;color:var(--text3);margin-top:8px">Showing first 500 of ' + filtered.length + ' — export CSV for the full list.</div>';
+  document.getElementById('report-results').innerHTML = html;
+}
+
+function exportReportCsv() {
+  if (!lastReportResults.length) { alert('Run the report first.'); return; }
+  const colLabels = lastReportColumns.map(k => (REPORT_COLUMNS.find(c=>c.key===k)||{}).label || k);
+  const escCsv = v => { const s = String(v==null?'':v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  let csv = colLabels.map(escCsv).join(',') + '\n';
+  lastReportResults.forEach(c => { csv += lastReportColumns.map(k => escCsv(c[k])).join(',') + '\n'; });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'gym-report-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function pillClass(c){ return c==='good'?'pill-good':c==='warn'?'pill-warn':c==='none'?'pill-none':'pill-bad'; }
@@ -191,30 +340,37 @@ function showGaTab(tab) {
   document.getElementById('tab-gym').classList.toggle('active', tab==='gym');
   document.getElementById('tab-pt').classList.toggle('active', tab==='pt');
   document.getElementById('tab-notes').classList.toggle('active', tab==='notes');
+  document.getElementById('tab-report').classList.toggle('active', tab==='report');
   document.getElementById('gym-tab-wrap').style.display = tab==='gym' ? '' : 'none';
   document.getElementById('pt-tab-content').style.display = tab==='pt' ? 'block' : 'none';
   document.getElementById('notes-tab-content').style.display = tab==='notes' ? 'block' : 'none';
+  document.getElementById('report-tab-content').style.display = tab==='report' ? 'block' : 'none';
   if (tab==='notes') loadTeamNotes();
+  if (tab==='report') initReportBuilder();
 }
 
 let allClients = [];
 let allScans = [];
 let allConsultations = [];
+let allPtSales = [];
 let KPIS = [];
 
 async function loadData() {
   try {
-    const [clientsRes, scansRes, consultRes] = await Promise.all([
+    const [clientsRes, scansRes, consultRes, salesRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'clients', limit:2000})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'inbody_scans', limit:2000})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'consultations', limit:2000})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'pt_sales', limit:2000})}).catch(()=>null),
     ]);
     allClients = (await clientsRes.json()).results || [];
     allScans = (await scansRes.json()).results || [];
     allConsultations = (await consultRes.json()).results || [];
+    allPtSales = salesRes ? ((await salesRes.json()).results || []) : [];
     computeAndRender();
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'block';
@@ -223,21 +379,84 @@ async function loadData() {
   }
 }
 
-function computeAndRender() {
+let PERIOD_TYPE = 'week';
+let PERIOD_OFFSET = 0;
+
+function getPeriodBounds(type, offset) {
   const now = new Date();
-  const monthStr = now.toISOString().slice(0,7);
-  const thisMonth = c => (c.created_at || '').slice(0,7) === monthStr;
-  const consultThisMonth = allConsultations.filter(c => (c.consult_date || c.created_at || '').slice(0,7) === monthStr);
-  const accepted = consultThisMonth.filter(c => c.outcome === 'accepted').length;
-  const declined = consultThisMonth.filter(c => c.outcome === 'declined').length;
+  let start, end, label;
+  if (type === 'week') {
+    const base = new Date(now); base.setHours(0,0,0,0);
+    base.setDate(base.getDate() - base.getDay() + (offset*7));
+    start = new Date(base);
+    end = new Date(base); end.setDate(end.getDate()+6);
+    label = start.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  } else if (type === 'month') {
+    const base = new Date(now.getFullYear(), now.getMonth()+offset, 1);
+    start = base;
+    end = new Date(base.getFullYear(), base.getMonth()+1, 0);
+    label = base.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  } else {
+    const y = now.getFullYear()+offset;
+    start = new Date(y,0,1);
+    end = new Date(y,11,31);
+    label = String(y);
+  }
+  return { start: start.toISOString().slice(0,10), end: end.toISOString().slice(0,10), label, isFuture: start > now };
+}
+
+function setPeriodType(type) {
+  PERIOD_TYPE = type;
+  PERIOD_OFFSET = 0;
+  document.querySelectorAll('.period-type-btn').forEach(b => b.classList.toggle('active', b.dataset.period === type));
+  computeAndRender();
+}
+
+function shiftPeriod(dir) {
+  PERIOD_OFFSET += dir;
+  if (PERIOD_OFFSET > 0) PERIOD_OFFSET = 0;
+  computeAndRender();
+}
+
+function resetToCurrentPeriod() {
+  PERIOD_OFFSET = 0;
+  computeAndRender();
+}
+
+function computeAndRender() {
+  const { start, end, label } = getPeriodBounds(PERIOD_TYPE, PERIOD_OFFSET);
+  document.getElementById('period-label').textContent = label + (PERIOD_OFFSET === 0 ? ' (current)' : '');
+  document.getElementById('period-next-btn').style.visibility = PERIOD_OFFSET === 0 ? 'hidden' : 'visible';
+  const periodTypeLabel = PERIOD_TYPE === 'week' ? 'Week' : PERIOD_TYPE === 'month' ? 'Month' : 'Year';
+  document.getElementById('kpi-section-label').textContent = 'Whole-Gym KPIs — ' + label;
+
+  const inPeriod = dateStr => dateStr && dateStr >= start && dateStr <= end;
+  const consultInPeriod = allConsultations.filter(c => inPeriod((c.consult_date || c.created_at || '').slice(0,10)));
+  const accepted = consultInPeriod.filter(c => c.outcome === 'accepted').length;
+  const declined = consultInPeriod.filter(c => c.outcome === 'declined').length;
   const closeRate = (accepted + declined) > 0 ? Math.round((accepted / (accepted + declined)) * 100) : null;
 
-  const active = allClients.filter(c => c.status === 'active' || c.status === 'active_pt' || c.status === 'active_member');
-  const newThisMonth = allClients.filter(thisMonth);
-  const declinedThisMonth = allClients.filter(c => (c.status === 'declined' || c.status === 'cancelled') && thisMonth(c));
+  // Point-in-time snapshot: active as of the period's END date, not "currently active".
+  // Approximates cancellation date from updated_at since there's no dedicated column —
+  // accurate for the current period, a best-effort estimate for past periods.
+  const activeAsOfEnd = allClients.filter(c => {
+    const joined = (c.training_start_date || '').slice(0,10);
+    if (!joined || joined > end) return false;
+    if (['active','active_pt','active_member'].includes(c.status)) return true;
+    if (c.status === 'cancelled') {
+      const cancelDate = (c.updated_at || '').slice(0,10);
+      return cancelDate && cancelDate > end;
+    }
+    return false;
+  });
+  const active = activeAsOfEnd;
+  const newThisPeriod = allClients.filter(c => inPeriod((c.training_start_date||'').slice(0,10)));
+  const cancelledThisPeriod = allClients.filter(c => c.status === 'cancelled' && inPeriod((c.updated_at||'').slice(0,10)));
+  const declinedThisMonth = cancelledThisPeriod.concat(allClients.filter(c => c.status === 'declined' && inPeriod((c.updated_at||c.created_at||'').slice(0,10))));
   const pastDue = allClients.filter(c => c.status === 'frozen' || c.status === 'past_due');
   const withTier = active.filter(c => c.membership_tier);
   const revenueTotal = withTier.reduce((s,c) => s + (parseFloat(c.membership_price)||0), 0);
+  const ptRevenueThisMonth = allPtSales.filter(s => inPeriod((s.sale_date||'').slice(0,10))).reduce((sum,s) => sum + (parseFloat(s.amount)||0), 0);
 
   const latestScans = {};
   allScans.forEach(s => { if (!latestScans[s.client_id] || s.scan_date > latestScans[s.client_id]) latestScans[s.client_id] = s.scan_date; });
@@ -246,25 +465,25 @@ function computeAndRender() {
   const renewalsNeeded = allClients.filter(c => c.status === 'active_pt' && (c.sessions_remaining||0) <= 2).length;
 
   KPIS = [
-    { key:'members', label:'Total Active Members', value:String(active.length), sub:newThisMonth.length + ' new this month',
+    { key:'members', label:'Total Active Members', value:String(active.length), sub:newThisPeriod.length + ' new this period',
       pill: active.length ? {t:'Live data',c:'good'} : {t:'No active members yet',c:'none'},
       detail:{title:'Active Membership', sub:'Counts any client with status active or active_pt.',
-        rows:[['Total active', active.length],['New this month', newThisMonth.length],['With tier assigned', withTier.length],['Without tier assigned (pre-dates onboarding tool)', active.length - withTier.length]]} },
+        rows:[['Total active', active.length],['New this period', newThisPeriod.length],['With tier assigned', withTier.length],['Without tier assigned (pre-dates onboarding tool)', active.length - withTier.length]]} },
     { key:'revenue', label:'Gym Revenue (Tracked)', value: withTier.length ? ('$' + revenueTotal.toFixed(0)) : '$0',
       sub: withTier.length + ' members with tier set', pill: withTier.length ? {t:'Partial — growing',c:'warn'} : {t:'No tier data yet',c:'none'},
       detail:{title:'Membership Revenue (Tracked)', sub:'Only reflects members with a membership_tier/price recorded — populates as New Member Onboarding is used going forward.',
         rows:[['Members with tier + price set', withTier.length],['Total tracked revenue', '$'+revenueTotal.toFixed(2)],['Members without tier data', active.length - withTier.length]]} },
-    { key:'attrition', label:'Cancellations (MTD)', value:String(declinedThisMonth.length), sub:'This month',
+    { key:'attrition', label:'Cancellations', value:String(declinedThisMonth.length), sub:'This period',
       pill: declinedThisMonth.length === 0 ? {t:'None yet',c:'good'} : {t:'Review reasons',c:'warn'},
-      detail:{title:'Cancellations This Month', sub:'Clients marked declined or cancelled this month.',
-        rows: declinedThisMonth.length ? declinedThisMonth.map(c => [((c.first_name||'')+' '+(c.last_name||'')).trim(), c.notes || '—']) : [['No cancellations this month','—']]} },
+      detail:{title:'Cancellations This Period', sub:'Clients marked declined or cancelled during ' + label + '.',
+        rows: declinedThisMonth.length ? declinedThisMonth.map(c => [((c.first_name||'')+' '+(c.last_name||'')).trim(), c.notes || '—']) : [['No cancellations this period','—']]} },
     { key:'pastdue', label:'Past Due / Frozen', value:String(pastDue.length), sub:'Accounts',
       pill: pastDue.length === 0 ? {t:'None',c:'good'} : {t:'Follow up',c:'warn'},
       detail:{title:'Past Due / Frozen Accounts', sub:'Clients currently marked frozen or past_due.',
         rows: pastDue.length ? pastDue.map(c => [((c.first_name||'')+' '+(c.last_name||'')).trim(), c.status]) : [['None currently','—']]} },
-    { key:'close', label:'Consultation Close Rate', value: closeRate!=null ? (closeRate+'%') : '—', sub: (accepted+declined) + ' consultations this month',
+    { key:'close', label:'Consultation Close Rate', value: closeRate!=null ? (closeRate+'%') : '—', sub: (accepted+declined) + ' consultations this period',
       pill: closeRate==null ? {t:'No data yet',c:'none'} : (closeRate>=33 ? {t:'On target (33-40%)',c:'good'} : {t:'Below target',c:'warn'}),
-      detail:{title:'Consultation Close Rate', sub:'Of consultations with a recorded outcome this month, the share that closed.',
+      detail:{title:'Consultation Close Rate', sub:'Of consultations with a recorded outcome during ' + label + ', the share that closed.',
         rows:[['Accepted', accepted],['Declined / thinking it over', declined],['Corporate target range','33-40%']]} },
     { key:'setsbooked', label:'Sets Booked / Show %', value:'—', sub:'Needs appointment tracking',
       pill:{t:'Not yet tracked',c:'none'},
@@ -295,6 +514,23 @@ function computeAndRender() {
       <div class="tn" style="color:var(--text3)">${esc(name)}</div>
       <div class="tc">${tierCounts[name]}</div>
     </div>`).join('') || '<div class="tier-chip" style="background:#F0F1F3"><div class="tn" style="color:var(--text3)">No tier data yet</div></div>';
+
+  const BILL_KPIS = [
+    { label:'New', value:String(newThisPeriod.length), sub:'Joined this period', pill:{t:'Live data',c:'good'} },
+    { label:'Cancels', value:String(cancelledThisPeriod.length), sub:'Cancelled this period', pill: cancelledThisPeriod.length ? {t:'Review reasons',c:'warn'} : {t:'None yet',c:'good'} },
+    { label:'DPC (Dollars per Check-in)', value:'—', sub:'Needs visit/check-in volume data', pill:{t:'Not yet tracked',c:'none'} },
+    { label:'PT Revenue', value:'$'+ptRevenueThisMonth.toFixed(0), sub:allPtSales.length + ' sales on file (all-time)', pill: allPtSales.length ? {t:'Live data',c:'good'} : {t:'No sales recorded yet',c:'none'} },
+    { label:'Closing %', value: closeRate!=null ? (closeRate+'%') : '—', sub:'Consultation close rate', pill: closeRate==null ? {t:'No data yet',c:'none'} : {t:'Live data',c:'good'} },
+    { label:'Waiver %', value:'—', sub:'Needs enrollment fee waiver tracking', pill:{t:'Not yet tracked',c:'none'} },
+    { label:'Active Members', value:String(active.length), sub:'Total across all tiers', pill:{t:'Live data',c:'good'} },
+  ];
+  document.getElementById('bill-kpi-grid').innerHTML = BILL_KPIS.map(k => `
+    <div class="kpi-tile" style="cursor:default">
+      <div class="kpi-label">${esc(k.label)}</div>
+      <div class="kpi-value">${esc(k.value)}</div>
+      <div class="kpi-sub">${esc(k.sub)}</div>
+      <div class="kpi-pill ${pillClass(k.pill.c)}">${esc(k.pill.t)}</div>
+    </div>`).join('');
 
   const PT_KPIS = [
     { label:'Active PT Clients', value:String(activePtCount), sub:'status = active_pt', pill:activePtCount?{t:'Live data',c:'good'}:{t:'None yet',c:'none'} },
