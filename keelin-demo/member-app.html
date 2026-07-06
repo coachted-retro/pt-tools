@@ -823,7 +823,7 @@ function demoOpenSwapPicker(idx) {
         ? `<img class="wp-meal-thumb" style="width:40px;height:40px" src="${esc(opt.photo_url)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'wp-meal-thumb-ph',textContent:'\uD83C\uDF7D'}))">`
         : `<div class="wp-meal-thumb-ph" style="width:40px;height:40px">&#127869;</div>`;
       const suppTag = opt.supplement ? '<span class="wp-supp-tag">1st Phorm</span>' : '';
-      return `<div class="mm-item-row" style="cursor:pointer" onclick="demoApplySwap(${idx},'${esc(opt.name).replace(/'/g,"\\'")}')">
+      return `<div class="mm-item-row" style="cursor:pointer" onclick="demoApplySwap(${idx},'${esc(opt.name).replace(/'/g,"\'")}')">
         ${thumb}
         <div class="mm-item-name">${esc(opt.name)}${suppTag}</div>
         <div class="mm-item-macro">${opt.calories} kcal &middot; ${opt.protein_g}g pro</div>
@@ -2668,6 +2668,15 @@ function renderHomeExtras() {
     </div></div>`;
   document.getElementById('home-referral').innerHTML = '';
 
+  renderHereNow();
+  renderChallenge();
+  renderCircle();
+  renderHappening();
+  renderCoachsEdge();
+  renderReferralLeaderboard();
+  renderBuddy();
+  renderCoachesStrip();
+
   // Nutritional Supplement Resource
   document.getElementById('home-supplement').innerHTML = `
     <div class="card"><div class="card-body">
@@ -2683,6 +2692,189 @@ function renderHomeExtras() {
 }
 
 const FB_PAGE_URL = 'https://www.facebook.com/RetroFitness.FairlessHills.PA/';
+
+// ── WHO'S HERE NOW ───────────────────────────────────────────
+function renderHereNow() {
+  const el = document.getElementById('home-here-now');
+  if (!el) return;
+  const here = [
+    { name: 'Jenna R.', badge: 'Ultimate' },
+    { name: 'Marcus T.', badge: 'Core' },
+    { name: 'Priya S.', badge: 'Ultimate' },
+    { name: 'Dave O.', badge: 'Flex' },
+    { name: 'you', me: true },
+  ];
+  el.innerHTML = `
+    <div class="sec-label">🟢 Here Now</div>
+    <div class="card"><div class="card-body">
+      <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:2px">
+        ${here.map(p => `
+          <div style="flex-shrink:0;text-align:center;width:56px" title="${esc(p.name)}">
+            <div style="width:44px;height:44px;border-radius:50%;background:${p.me?'var(--red)':'#E8EAED'};color:${p.me?'#fff':'var(--ink)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;margin:0 auto 4px;border:2px solid ${p.me?'var(--red)':'#fff'};box-shadow:0 0 0 2px ${p.me?'var(--red)':'#E8EAED'}">${p.me?'👋':p.name[0]}</div>
+            <div style="font-size:10px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.me?'You':esc(p.name.split(' ')[0])}</div>
+          </div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:8px;text-align:center">${here.length - 1} members checked in right now — say hey 👋</div>
+    </div></div>`;
+}
+
+// ── TEAM CHALLENGE ───────────────────────────────────────────
+function renderChallenge() {
+  const el = document.getElementById('home-challenge');
+  if (!el) return;
+  const teams = [
+    { name: 'Team Sunrise', pct: 78, members: 14 },
+    { name: 'Team Grindhouse', pct: 64, members: 11 },
+    { name: 'Team Iron Circle', pct: 52, members: 9 },
+  ];
+  el.innerHTML = `
+    <div class="sec-label">🏆 This Month's Challenge</div>
+    <div class="card" style="border-top:3px solid var(--red)"><div class="card-body">
+      <div style="font-weight:700;font-size:15px;margin-bottom:2px">The July Tuesday Trifecta</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">Hit Pilates, Ignite Core, and Toned! in the same week. First 10 to complete it earn a founding member badge.</div>
+      ${teams.map(t => `
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="font-weight:600">${esc(t.name)}</span>
+            <span style="color:var(--ink3)">${t.members} members · ${t.pct}%</span>
+          </div>
+          <div style="height:8px;background:#F0F1F3;border-radius:5px;overflow:hidden">
+            <div style="height:100%;width:${t.pct}%;background:var(--red);border-radius:5px"></div>
+          </div>
+        </div>`).join('')}
+      <button class="action-btn" style="margin-top:6px" onclick="joinChallenge()">Join the Challenge</button>
+    </div></div>`;
+}
+function joinChallenge() {
+  alert("You're in! Your team captain will see you on the board next class.");
+}
+
+// ── THE CIRCLE (peer shoutouts) ──────────────────────────────
+function renderCircle() {
+  const el = document.getElementById('home-circle');
+  if (!el) return;
+  const posts = [
+    { name: 'Priya S.', body: 'Hit a new deadlift PR today — 225lb! Couldn\'t have done it without this crew cheering me on.', fire: 18, strong: 22, time: '1h ago' },
+    { name: 'Dave O.', body: 'Down 15 lbs since March. Slow and steady, but it\'s working. Thank you Coach Ted for keeping me honest every week.', fire: 27, strong: 14, time: '3h ago' },
+  ];
+  el.innerHTML = `
+    <div class="sec-label">🙌 The Circle</div>
+    ${posts.map(p => `
+      <div class="card" style="margin-bottom:10px"><div class="card-body">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <div style="width:36px;height:36px;border-radius:50%;background:#E8EAED;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">${p.name[0]}</div>
+          <div><div style="font-weight:700;font-size:13px">${esc(p.name)}</div><div style="font-size:11px;color:var(--ink3)">${esc(p.time)}</div></div>
+        </div>
+        <div style="font-size:13.5px;color:var(--ink2);margin-bottom:10px">${esc(p.body)}</div>
+        <div style="display:flex;gap:8px">
+          <button class="react-btn" onclick="toggleReact(this)">🔥 ${p.fire}</button>
+          <button class="react-btn" onclick="toggleReact(this)">💪 ${p.strong}</button>
+        </div>
+      </div></div>`).join('')}
+  `;
+}
+
+// ── HAPPENING AT RETRO ────────────────────────────────────────
+function renderHappening() {
+  const el = document.getElementById('home-happening');
+  if (!el) return;
+  const events = [
+    { name: 'Toned! with Jessica', when: 'Tuesday · 6:00 PM', tag: 'New class' },
+    { name: 'Community BBQ & Guest Pass Day', when: 'Saturday · 11:00 AM', tag: 'Social' },
+    { name: 'Founding Member Badge Ceremony', when: 'Last Friday of the month', tag: 'Milestone' },
+  ];
+  el.innerHTML = `
+    <div class="sec-label">📅 Happening at Retro</div>
+    <div class="card"><div class="card-body">
+      ${events.map((e,i) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:${i?'10px 0':'0 0 10px'};${i<events.length-1?'border-bottom:1px solid var(--line)':''}">
+          <div>
+            <div style="font-weight:700;font-size:13px">${esc(e.name)}</div>
+            <div style="font-size:11.5px;color:var(--ink3)">${esc(e.when)}</div>
+          </div>
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--red);background:var(--red-light,#FDEAEC);padding:3px 8px;border-radius:10px;flex-shrink:0">${esc(e.tag)}</span>
+        </div>`).join('')}
+    </div></div>`;
+}
+
+// ── COACH'S EDGE ──────────────────────────────────────────────
+function renderCoachsEdge() {
+  const el = document.getElementById('home-coachs-edge');
+  if (!el) return;
+  const tips = [
+    "Protein at breakfast isn't optional if you want to hold onto muscle while cutting — aim for 30g in that first meal.",
+    "The best workout program is the one you actually show up for. Consistency beats perfection every time.",
+    "Sore isn't the same as sore-and-injured. Learn the difference and you'll train longer without setbacks.",
+  ];
+  const tip = tips[new Date().getDate() % tips.length];
+  el.innerHTML = `
+    <div class="sec-label">💡 Coach's Edge</div>
+    <div class="card" style="background:var(--ink);border:none"><div class="card-body">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#9CA3AF;margin-bottom:6px">Today's Tip from Coach Ted</div>
+      <div style="font-size:14px;color:#fff;line-height:1.5">${esc(tip)}</div>
+    </div></div>`;
+}
+
+// ── REFERRAL LEADERBOARD ─────────────────────────────────────
+function renderReferralLeaderboard() {
+  const el = document.getElementById('home-referral-leaderboard');
+  if (!el) return;
+  const leaders = [
+    { name: 'Priya S.', count: 4 },
+    { name: 'Marcus T.', count: 3 },
+    { name: 'You', count: 1, me: true },
+  ];
+  el.innerHTML = `
+    <div class="sec-label">🎉 Referral Leaderboard — This Month</div>
+    <div class="card"><div class="card-body">
+      ${leaders.map((l,i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:${i?'8px 0':'0 0 8px'};${i<leaders.length-1?'border-bottom:1px solid var(--line)':''}">
+          <div style="font-weight:800;font-size:14px;color:${i===0?'var(--red)':'var(--ink3)'};width:20px">${i+1}</div>
+          <div style="flex:1;font-weight:${l.me?'700':'600'};font-size:13px;${l.me?'color:var(--red)':''}">${esc(l.name)}</div>
+          <div style="font-size:12px;color:var(--ink3)">${l.count} friend${l.count===1?'':'s'} brought in</div>
+        </div>`).join('')}
+      <button class="action-btn" style="margin-top:10px" onclick="shareGuestPass()">Bring a Friend →</button>
+    </div></div>`;
+}
+
+// ── BUDDY MATCH ───────────────────────────────────────────────
+function renderBuddy() {
+  const el = document.getElementById('home-buddy');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="sec-label">🤝 Suggested Workout Buddy</div>
+    <div class="card"><div class="card-body">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;border-radius:50%;background:#E8EAED;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0">D</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13.5px">Dave O.</div>
+          <div style="font-size:11.5px;color:var(--ink3)">Similar goal · usually trains evenings</div>
+        </div>
+        <button class="cta-compact ghost" style="width:auto;flex-shrink:0" onclick="alert('Buddy request sent to Dave!')">Say Hi</button>
+      </div>
+    </div></div>`;
+}
+
+// ── MEET THE COACHES ──────────────────────────────────────────
+function renderCoachesStrip() {
+  const el = document.getElementById('home-coaches');
+  if (!el) return;
+  const coaches = [
+    { name: 'Ted Scholl', role: 'Men\'s Training Lead' },
+    { name: 'Sarah Chen', role: 'MEA / Consultations' },
+  ];
+  el.innerHTML = `
+    <div class="sec-label">Your Coaches</div>
+    <div class="card"><div class="card-body" style="display:flex;gap:16px">
+      ${coaches.map(c => `
+        <div style="flex:1;text-align:center">
+          <div style="width:48px;height:48px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;margin:0 auto 6px">${c.name[0]}</div>
+          <div style="font-weight:700;font-size:12.5px">${esc(c.name)}</div>
+          <div style="font-size:10.5px;color:var(--ink3)">${esc(c.role)}</div>
+        </div>`).join('')}
+    </div></div>`;
+}
+
 function renderFbFeed() {
   // Disabled in the Rego Park demo copy — no real Facebook page exists for this
   // demo location, so showing the real Fairless Hills feed here would be wrong.
@@ -2717,7 +2909,7 @@ function claimClassGuestPass(className, classDate) {
     <div class="fld"><label>Name</label><input id="gp-name" placeholder="Full name"></div>
     <div class="fld"><label>Phone</label><input id="gp-phone" type="tel" placeholder="(555) 555-5555"></div>
     <div class="fld"><label>Email</label><input id="gp-email" type="email" placeholder="you@email.com"></div>
-    <button class="action-btn" onclick="submitClassGuestPass('${esc(className).replace(/'/g,"\\'")}','${classDate}')">Get My Guest Pass</button>
+    <button class="action-btn" onclick="submitClassGuestPass('${esc(className).replace(/'/g,"\'")}','${classDate}')">Get My Guest Pass</button>
     <div class="mm-status" id="mm-status"></div>`;
 }
 
@@ -3102,9 +3294,9 @@ async function renderClassList() {
         <div class="class-instr">with ${esc(cls.instructor)}</div>
         <div class="class-loc">📍 ${esc(cls.location)}</div>
         <div class="class-social" id="social-${esc(cls.name).replace(/\s+/g,'-')}" style="font-size:11px;color:var(--ink3);margin-top:3px"></div>
-        <a href="#" onclick="claimClassGuestPass('${esc(cls.name).replace(/'/g,"\\'")}','${classDate}');return false;" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--red);text-decoration:none;background:var(--red-lt);padding:4px 10px;border-radius:10px">🎟️ New here? Free guest pass</a>
+        <a href="#" onclick="claimClassGuestPass('${esc(cls.name).replace(/'/g,"\'")}','${classDate}');return false;" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--red);text-decoration:none;background:var(--red-lt);padding:4px 10px;border-radius:10px">🎟️ New here? Free guest pass</a>
       </div>
-      <button class="going-btn not-going" id="btn-${esc(cls.name).replace(/\s+/g,'-')}" onclick="toggleGoing('${esc(cls.name).replace(/'/g,"\\'")}','${classDate}','${cls.time}', this)">I'm Going</button>
+      <button class="going-btn not-going" id="btn-${esc(cls.name).replace(/\s+/g,'-')}" onclick="toggleGoing('${esc(cls.name).replace(/'/g,"\'")}','${classDate}','${cls.time}', this)">I'm Going</button>
     </div>`).join('');
 
   if (SESSION && SESSION.client_id) {
@@ -3600,7 +3792,7 @@ function openSwapPicker(dayIdx, slot) {
         ? `<img class="wp-meal-thumb" style="width:40px;height:40px" src="${esc(opt.photo_url)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'wp-meal-thumb-ph',textContent:'\uD83C\uDF7D'}))">`
         : `<div class="wp-meal-thumb-ph" style="width:40px;height:40px">&#127869;</div>`;
       const suppTag = opt.supplement ? '<span class="wp-supp-tag">1st Phorm</span>' : '';
-      return `<div class="mm-item-row" style="cursor:pointer" onclick="applySwap(${dayIdx},'${slot}','${esc(opt.name).replace(/'/g,"\\'")}')">
+      return `<div class="mm-item-row" style="cursor:pointer" onclick="applySwap(${dayIdx},'${slot}','${esc(opt.name).replace(/'/g,"\'")}')">
         ${thumb}
         <div class="mm-item-name">${esc(opt.name)}${suppTag}</div>
         <div class="mm-item-macro">${opt.calories} kcal &middot; ${opt.protein_g}g pro</div>
@@ -3657,7 +3849,7 @@ function renderShoppingList(mp) {
     const rows = byAisle[aisle].map(it => {
       const isChecked = checked[it.item] === true || pantryHasItem(it.item);
       const fromPantry = pantryHasItem(it.item) && checked[it.item] !== false;
-      return `<div class="shop-item-row${isChecked?' checked':''}" onclick="toggleShoppingItem('${esc(it.item).replace(/'/g,"\\'")}')">
+      return `<div class="shop-item-row${isChecked?' checked':''}" onclick="toggleShoppingItem('${esc(it.item).replace(/'/g,"\'")}')">
         <div class="shop-item-check">${isChecked ? '&#10003;' : ''}</div>
         <div class="shop-item-name">${esc(it.item)}${it.qty ? ' <span class="shop-item-qty">'+esc(it.qty)+'</span>' : ''}</div>
         ${fromPantry ? '<div class="shop-item-pantry-tag">have it</div>' : ''}
