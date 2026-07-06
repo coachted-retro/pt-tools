@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
-<title>Body Shoppe Reports — Keelin</title>
+<title>The Body Shoppe — Regional Reports</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--lred:#FEF2F2;}
@@ -52,7 +52,7 @@ tr:last-child td{border-bottom:none}
 <div class="topbar">
   <img src="assets/retro-fitness-logo.png" alt="Retro Fitness" style="height:28px;width:auto">
   <div class="role-tag">Reports</div>
-  <a href="keelin-dashboard.html">&larr; Command Center</a>
+  <a href="keelin-dashboard.html" id="back-link">&larr; Command Center</a>
 </div>
 <div class="wrap">
 
@@ -102,6 +102,7 @@ tr:last-child td{border-bottom:none}
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
 const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
+if (DEMO_VIEW) { const bl = document.getElementById('back-link'); if (bl) bl.href = 'keelin-dashboard.html?demo=1'; }
 const DIMS = {
   members: { club:'Club', outcome:'WW Outcome', membership_type:'Membership Type', month:'Month', week:'Week' },
   pt_sales: { club:'Club', coach:'Coach', package:'Package', sale_type:'Sale Type', month:'Month', week:'Week' },
