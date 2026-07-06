@@ -1039,7 +1039,7 @@
     <div class="sidebar-logo">
       <div class="logo-mark">💪</div>
       <h1>Fitness Consultation</h1>
-      <p>Advisor intake tool</p>
+      <p id="club-name-label">Advisor intake tool</p>
     </div>
 
     <nav class="sidebar-nav">
@@ -1555,7 +1555,7 @@
                   <li>Biweekly check-in training</li>
                   <li>Personalized workout program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-0-benefit"></div>
               </div>
@@ -1568,7 +1568,7 @@
                   <li>Weekly one-on-one training</li>
                   <li>Personalized workout program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-1-benefit"></div>
               </div>
@@ -1581,7 +1581,7 @@
                   <li>Twice-weekly training momentum</li>
                   <li>Faster adaptation and results</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-2-benefit"></div>
               </div>
@@ -1594,7 +1594,7 @@
                   <li>High-frequency coaching</li>
                   <li>Full periodized program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-3-benefit"></div>
               </div>
@@ -1607,7 +1607,7 @@
                   <li>Elite daily coaching structure</li>
                   <li>Maximum accountability</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Trainerize app access</li>
+                  <li>Retro Strong app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-4-benefit"></div>
               </div>
@@ -2509,6 +2509,9 @@ function hasGLP1Selected() {
 document.addEventListener('DOMContentLoaded', function() {
   renderCatPicker('cat-medical', MEDICAL_CATEGORIES);
   renderCatPicker('cat-medications', MEDICATION_CATEGORIES);
+  applyClubMinimums();
+  var clubLabel = document.getElementById('club-name-label');
+  if (clubLabel) clubLabel.textContent = CLUB.name;
 });
 
 function buildPrompt() {
@@ -3055,12 +3058,11 @@ async function finalizeAccept() {
       phone: gv('phone') || null,
       gender: gv('gender') || null,
       age: gv('age') || null,
-      goals: gv('goals') || null,
-      medical_notes: gv('medical') || null,
+      goal_primary: gv('goals') || null,
       package: pkgDbValue(),
       training_start_date: gv('consult-date') || new Date().toISOString().slice(0,10),
       status: 'active',
-      coach_notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Assessment: ' + (assessmentText||'').substring(0,400)
+      notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Medical: ' + (gv('medical')||'none') + '. Assessment: ' + (assessmentText||'').substring(0,400)
     };
     Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]==null) delete clientPayload[k]; });
 
@@ -3142,11 +3144,10 @@ async function finalizeDecline() {
       phone: gv('phone') || null,
       gender: gv('gender') || null,
       age: gv('age') || null,
-      goals: gv('goals') || null,
-      medical_notes: gv('medical') || null,
+      goal_primary: gv('goals') || null,
       status: 'prospect',
       coach: advisorName || null,
-      coach_notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
+      notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. Medical: ' + (gv('medical')||'none') + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
     };
     Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
     var _declineSave = window.EXISTING_CLIENT_ID
@@ -3612,7 +3613,27 @@ var FREQ_TIERS = {
   3: { name: '3x Per Week', sessions: 12 },
   4: { name: '4x Per Week', sessions: 16 }
 };
-var SESSION_RATE = { '12': 45, '6': 50 };
+
+// ── CLUB-AWARE PRICING ────────────────────────────────────────────
+// Each participating club has its own per-30-min-session rate for 12-month
+// vs 6-month commitments, and its own minimum sessions/month floor.
+// Identified via ?club=slug in the URL (bookmarked per club). Defaults to
+// Fairless Hills so nothing breaks for existing bookmarks with no param.
+var CLUB_ID = (new URLSearchParams(window.location.search).get('club') || 'fairless-hills').toLowerCase();
+var CLUB_PRICING = {
+  'fairless-hills': { name: 'Retro Fitness of Fairless Hills', rate12: 45, rate6: 50, minSessions: 4, allowEveryOtherWeek: true },
+  'forest-hills':   { name: 'Retro Fitness of Forest Hills',   rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
+  'glendale':       { name: 'Retro Fitness of Glendale',       rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
+  'jersey-city':    { name: 'Retro Fitness of Jersey City',    rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
+  'cedar-city':     { name: 'Retro Fitness of Cedar City',     rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
+  'rego-park':      { name: 'Retro Fitness of Rego Park',      rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
+  'fairfield':      { name: 'Retro Fitness of Fairfield',      rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false },
+  'tottenville':    { name: 'Retro Fitness of Tottenville',    rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false },
+  'mt-olive':       { name: 'Retro Fitness of Mt. Olive',      rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
+  'whippany':       { name: 'Retro Fitness of Whippany',       rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false }
+};
+var CLUB = CLUB_PRICING[CLUB_ID] || CLUB_PRICING['fairless-hills'];
+var SESSION_RATE = { '12': CLUB.rate12, '6': CLUB.rate6 };
 var nutritionAddon = false;
 
 function nutritionAddonPrice(freqId) {
@@ -3622,8 +3643,24 @@ function nutritionAddonPrice(freqId) {
 function computeMonthly(freqId, months) {
   var tier = FREQ_TIERS[freqId];
   if (!tier) return 0;
-  var base = tier.sessions * SESSION_RATE[months];
+  // Every Other Week never earns the 12-month discount rate — it's always
+  // priced at the lower-commitment (6-month) rate regardless of the toggle.
+  var rate = (parseInt(freqId) === 0) ? SESSION_RATE['6'] : SESSION_RATE[months];
+  var base = tier.sessions * rate;
   return base + (nutritionAddon ? nutritionAddonPrice(freqId) : 0);
+}
+
+// Hides any frequency tier below this club's minimum sessions/month floor.
+// Only Fairless Hills currently allows Every Other Week (2/mo) and 1x/week (4/mo);
+// every pilot club's floor is 8 sessions/month (2x/week).
+function applyClubMinimums() {
+  Object.keys(FREQ_TIERS).forEach(function(id) {
+    var tier = FREQ_TIERS[id];
+    var card = document.getElementById('pkg-' + id);
+    if (!card) return;
+    var allowed = tier.sessions >= CLUB.minSessions || (parseInt(id) === 0 && CLUB.allowEveryOtherWeek);
+    card.style.display = allowed ? '' : 'none';
+  });
 }
 
 function pkgDisplayName() {

@@ -147,6 +147,16 @@
 
 <div class="wrap">
 
+  <div class="tools-label">Team Wins &amp; Shout-Outs</div>
+  <div style="background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:16px;margin-bottom:24px">
+    <div id="wins-feed" style="max-height:280px;overflow-y:auto;margin-bottom:10px"><div style="color:#9CA3AF;text-align:center;padding:20px;font-size:13px">Loading...</div></div>
+    <div id="win-thread-box" style="display:none;background:#F8F9FB;border-radius:10px;padding:12px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <input id="win-input" placeholder="Drop a shout-out — great job, big win, congrats..." style="flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:9px 12px;font-size:13px">
+      <button class="btn" style="background:var(--red,#E0192B);color:#fff;border:none" onclick="postWinShout()">🔥 Send</button>
+    </div>
+  </div>
+
   <div class="tools-label">Assessment Tools</div>
   <div class="tools">
     <div class="toolcard" onclick="openTool('member-onboarding.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
@@ -367,6 +377,66 @@
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+// ── CLUB IDENTITY (matches ?club=slug convention used across the platform) ──
+// gym_id values match migration-gyms-seed.sql — run that migration before
+// any club besides Fairless Hills goes live, or their wins won't tag correctly.
+const CLUB_SLUG = (new URLSearchParams(window.location.search).get('club') || 'fairless-hills').toLowerCase();
+const CLUB_GYM_ID = {
+  'fairless-hills': 1, 'forest-hills': 2, 'glendale': 3, 'jersey-city': 4, 'cedar-city': 5,
+  'rego-park': 6, 'fairfield': 7, 'tottenville': 8, 'mt-olive': 9, 'whippany': 10
+}[CLUB_SLUG] || null;
+let activeWinThread = null;
+
+async function loadWinsFeed() {
+  const el = document.getElementById('wins-feed');
+  try {
+    const r = await fetch(WORKER + '/huddle/feed?channel=wins');
+    const d = await r.json();
+    const msgs = (d.messages || []).filter(m => m.author === 'system' || !m.thread_ref);
+    if (!msgs.length) { el.innerHTML = '<div style="color:#9CA3AF;text-align:center;padding:20px;font-size:13px">No wins posted yet — be the first.</div>'; return; }
+    el.innerHTML = msgs.map(m => `
+      <div style="padding:10px 12px;border:1px solid #E5E7EB;border-radius:10px;margin-bottom:8px;cursor:pointer" onclick="openWinThread('${esc(m.thread_ref||'')}','${esc((m.body||'').slice(0,60))}')">
+        <div style="font-size:13px">${esc(m.body)}</div>
+        <div style="font-size:10px;color:#9CA3AF;margin-top:4px">${esc(m.author)} · ${new Date(m.created_at+'Z').toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}${m.thread_ref?' · tap to celebrate':''}</div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div style="color:#9CA3AF;text-align:center;padding:20px;font-size:13px">Could not load the wins feed.</div>'; }
+}
+
+async function openWinThread(ref, title) {
+  if (!ref) return;
+  activeWinThread = ref;
+  const box = document.getElementById('win-thread-box');
+  box.style.display = 'block';
+  const r = await fetch(WORKER + '/huddle/feed?thread_ref=' + encodeURIComponent(ref));
+  const d = await r.json();
+  box.innerHTML = `<div style="font-weight:700;font-size:12px;margin-bottom:8px">${esc(title||'Thread')}</div>` +
+    (d.messages||[]).map(m => `
+      <div style="padding:8px 10px;background:${m.author==='system'?'#FEF2F2':'#fff'};border-radius:8px;margin-bottom:6px">
+        <div style="font-size:11px;font-weight:700">${esc(m.author)}</div>
+        <div style="font-size:13px">${esc(m.body)}</div>
+      </div>`).join('') +
+    `<button class="btn" style="font-size:11px;padding:4px 10px;margin-top:4px" onclick="closeWinThread()">Close thread</button>`;
+}
+
+function closeWinThread() {
+  activeWinThread = null;
+  document.getElementById('win-thread-box').style.display = 'none';
+}
+
+async function postWinShout() {
+  const input = document.getElementById('win-input');
+  const body = (input.value || '').trim();
+  if (!body) return;
+  const staffName = (JSON.parse(localStorage.getItem('staff_session')||'null')||{}).name || 'Team';
+  await fetch(WORKER + '/huddle/post', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ channel:'wins', gym_id: CLUB_GYM_ID, author: staffName, body, thread_ref: activeWinThread || '' }) });
+  input.value = '';
+  if (activeWinThread) { openWinThread(activeWinThread, document.querySelector('#win-thread-box div')?.textContent); }
+  loadWinsFeed();
+}
+
+loadWinsFeed();
 
 let CLIENTS = [], LEADS = [], APPTS = [], MEAL_PROFILES = [], MEAL_PLANS = [], tab = 'nba';
 function findClientByName(name){
