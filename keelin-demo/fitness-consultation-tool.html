@@ -1402,6 +1402,11 @@
               <div class="metric-unit">years</div>
             </div>
             <div class="metric-card">
+              <div class="metric-label">Weight</div>
+              <input type="number" id="weight" step="0.1" placeholder="195.0">
+              <div class="metric-unit">lb</div>
+            </div>
+            <div class="metric-card">
               <div class="metric-label">BMI</div>
               <input type="number" id="bmi" step="0.1" placeholder="24.5">
               <div class="metric-unit">kg/m²</div>
@@ -2251,7 +2256,7 @@ async function parseAllFiles() {
     }
 
     contentBlocks.push({ type:'text', text: `Extract ALL information from these documents and return ONLY valid JSON (no markdown, no backticks, no explanation) with these exact keys - empty string "" if not found:
-{"name":"","dob":"","phone":"","email":"","gender":"","age":"","height":"","goals":"","experience":"","timeframe":"","workout_status":"","days_per_week":"","workout_duration":"","medical":"","doctor_rec":"","doctor_notes":"","medications":"","supplements":"","meals_per_day":"","calorie_target":"","breakfast":"","lunch":"","dinner":"","snacks":"","tracks_macros":"","bmi":"","water_weight":"","lean_mass":"","fat_mass":"","pbf":"","seg_la":"","seg_ra":"","seg_trunk":"","seg_ll":"","seg_rl":""}
+{"name":"","dob":"","phone":"","email":"","gender":"","age":"","height":"","goals":"","experience":"","timeframe":"","workout_status":"","days_per_week":"","workout_duration":"","medical":"","doctor_rec":"","doctor_notes":"","medications":"","supplements":"","meals_per_day":"","calorie_target":"","breakfast":"","lunch":"","dinner":"","snacks":"","tracks_macros":"","weight":"","bmi":"","water_weight":"","lean_mass":"","fat_mass":"","pbf":"","seg_la":"","seg_ra":"","seg_trunk":"","seg_ll":"","seg_rl":""}
 
 CRITICAL INBODY EXTRACTION RULES:
 - seg_la = Left Arm segmental lean mass percentage (look for "Left Arm", "L. Arm", "LA" in segmental analysis section)
@@ -2264,6 +2269,7 @@ CRITICAL INBODY EXTRACTION RULES:
 - lean_mass = Dry Lean Mass in lbs specifically (labeled "Dry Lean Mass" in the Body Composition Analysis section) — this is NOT the same number as Skeletal Muscle Mass (shown separately in Muscle-Fat Analysis) or total Lean Body Mass (shown under Research Parameters). All three appear on a real InBody report and are different values — use Dry Lean Mass only.
 - fat_mass = Body Fat Mass in lbs
 - water_weight = Total Body Water in lbs
+- weight = Total body weight in lbs (the "Weight" figure at the bottom of Body Composition Analysis)
 - bmi = BMI number only
 - For dob use YYYY-MM-DD format
 - Extract member name, height, age from the report header` });
@@ -2320,7 +2326,7 @@ const FIELD_MAP = {
   doctor_notes:'doctor-notes', medications:'medications', supplements:'supplements',
   meals_per_day:'meals-per-day', calorie_target:'calorie-target', breakfast:'breakfast',
   lunch:'lunch', dinner:'dinner', snacks:'snacks', tracks_macros:'tracks-macros',
-  bmi:'bmi',
+  bmi:'bmi', weight:'weight',
   water_weight:'water-weight', lean_mass:'lean-mass', fat_mass:'fat-mass', pbf:'pbf',
   seg_la:'seg-la', seg_ra:'seg-ra', seg_trunk:'seg-trunk', seg_ll:'seg-ll', seg_rl:'seg-rl'
 };
@@ -2746,6 +2752,37 @@ async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   return true;
 }
 
+// Saves the InBody scan captured during this session to the client's permanent
+// record — called whether the consultation ends in an accept or a decline,
+// since every real scan should be saved regardless of outcome.
+async function saveInBodyScan(clientId, source) {
+  if (!clientId) return;
+  var hasAnyData = ['bmi','pbf','lean-mass','fat-mass','weight','seg-la','seg-ra','seg-trunk','seg-ll','seg-rl']
+    .some(function(id) { return gv(id); });
+  if (!hasAnyData) return;
+  var segmental = {
+    left_arm: gv('seg-la') || null,
+    right_arm: gv('seg-ra') || null,
+    trunk: gv('seg-trunk') || null,
+    left_leg: gv('seg-ll') || null,
+    right_leg: gv('seg-rl') || null
+  };
+  var hasSegmental = Object.keys(segmental).some(function(k) { return segmental[k] != null; });
+  var payload = {
+    client_id: clientId,
+    scan_date: new Date().toISOString().slice(0,10),
+    weight: gv('weight') || null,
+    lean_mass: gv('lean-mass') || null,
+    body_fat_pct: gv('pbf') || null,
+    fat_mass: gv('fat-mass') || null,
+    bmi: gv('bmi') || null,
+    segmental_json: hasSegmental ? JSON.stringify(segmental) : null,
+    source: source || 'consultation_tool'
+  };
+  Object.keys(payload).forEach(function(k) { if (payload[k] == null) delete payload[k]; });
+  try { await dbCall({ op:'insert', table:'inbody_scans', values: payload }); } catch(e) {}
+}
+
 async function saveMeasurementsNow() {
   var status = document.getElementById('meas-save-status');
   if (status) status.textContent = 'Saving...';
@@ -2970,6 +3007,7 @@ async function finalizeAccept() {
       };
       Object.keys(consultPayload).forEach(function(k){ if(consultPayload[k]==null) delete consultPayload[k]; });
       dbCall({ op:'insert', table:'consultations', values: consultPayload }).catch(function(){});
+      saveInBodyScan(window._enrolledClientId, 'consultation_accept');
     }
 
     // 3. Save nutrition profile if Complete package
@@ -3029,6 +3067,7 @@ async function finalizeDecline() {
     _declineSave.then(function(d){
       var clientId = d.id;
       if (clientId) {
+        saveInBodyScan(clientId, 'consultation_decline');
         dbCall({ op:'insert', table:'followups', values: { client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' } }).catch(function(){});
         // Actually put it on the coach's calendar, not just the followups log
         var dow = followDate.getDay();
@@ -3540,6 +3579,7 @@ async function generatePkgRecommendation(){
     if(badge) badge.style.display='block';
     if(card) card.classList.add('pkg-recommended');
     if(benefit) benefit.textContent='A weekly session builds the consistency and accountability most new members need to start.';
+    if (typeof selectPkg === 'function') selectPkg(1);
   })();
 
   loading.style.display='block';
@@ -3559,6 +3599,7 @@ async function generatePkgRecommendation(){
       if(badge) badge.style.display='block';
       if(card){ card.classList.add('pkg-recommended'); }
       if(benefit) benefit.textContent=j.reason||'';
+      if (typeof selectPkg === 'function') selectPkg(parseInt(j.pkg));
       // Nutrition add-on is opt-in only — advisor checks it manually, never auto-selected.
     }
   }catch(e){}
@@ -3807,6 +3848,13 @@ function showTerms() {
   if (tp) {
     tp.style.display = 'block';
     tp.scrollIntoView({ behavior:'smooth' });
+  }
+  refreshClosingPricing();
+  // Default to the 12-month "Best Rate" commitment if the advisor hasn't
+  // picked a length yet — Accept should never silently do nothing.
+  if (!enrollLength) {
+    var defaultPill = document.querySelector('#length-group .pill');
+    if (defaultPill) pickLengthEnroll(defaultPill, '12');
   }
   generateClosingValue();
 }
