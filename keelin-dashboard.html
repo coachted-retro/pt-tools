@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -132,17 +133,56 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <!-- TAB: OVERVIEW -->
   <div class="tab-pane active" id="tab-overview">
     <div class="kpi-row">
-      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">Active PT Clients</div><div class="kpi-val" id="k-active">—</div><div class="kpi-sub">across all coaches</div></div>
-      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">Renewals Needed</div><div class="kpi-val" id="k-renewals">—</div><div class="kpi-sub">sessions at 0</div></div>
-      <div class="kpi-card" style="--accent:var(--amber)"><div class="kpi-label">Frozen Accounts</div><div class="kpi-val" id="k-frozen">—</div><div class="kpi-sub">on hold</div></div>
-      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">Active Members</div><div class="kpi-val" id="k-members">—</div><div class="kpi-sub">latest KPI snapshot</div></div>
-      <div class="kpi-card" style="--accent:var(--purple)"><div class="kpi-label">Closing %</div><div class="kpi-val" id="k-closing">—</div><div class="kpi-sub">membership conversion</div></div>
-      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">PT Revenue MTD</div><div class="kpi-val" id="k-pt">—</div><div class="kpi-sub">personal training</div></div>
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">Region Revenue MTD</div><div class="kpi-val" id="k-region-actual">—</div><div class="kpi-sub" id="k-region-pct">vs goal</div></div>
+      <div class="kpi-card" style="--accent:var(--blue)"><div class="kpi-label">Clubs at 90%+</div><div class="kpi-val" id="k-safe-zone">—</div><div class="kpi-sub">of 15 clubs on pace</div></div>
+      <div class="kpi-card" style="--accent:var(--purple)"><div class="kpi-label">Top Club</div><div class="kpi-val" id="k-top-club" style="font-size:16px">—</div><div class="kpi-sub" id="k-top-club-pct">% to goal</div></div>
+      <div class="kpi-card" style="--accent:var(--amber)"><div class="kpi-label">Needs Attention</div><div class="kpi-val" id="k-attention" style="font-size:16px">—</div><div class="kpi-sub" id="k-attention-pct">lowest % to goal</div></div>
+      <div class="kpi-card" style="--accent:var(--red)"><div class="kpi-label">Total Sales MTD</div><div class="kpi-val" id="k-sale-count">—</div><div class="kpi-sub">region-wide</div></div>
+      <div class="kpi-card" style="--accent:var(--green)"><div class="kpi-label">Avg Order Value</div><div class="kpi-val" id="k-aov">—</div><div class="kpi-sub">per sale, region-wide</div></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Revenue vs Goal by Club</div>
+        <div class="card-sub">June 2026 · sorted by % to goal</div>
+        <div style="height:340px"><canvas id="revenueChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Region Trend &amp; Forecast</div>
+        <div class="card-sub" id="forecast-sub">Loading...</div>
+        <div style="height:340px"><canvas id="forecastChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Welcome Workout Funnel — Region</div>
+        <div class="card-sub">New member → assessment booked → showed → closed PT</div>
+        <div id="funnel-box" style="padding:8px 0"><div class="empty-state">Loading...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Sale Type Mix — Region</div>
+        <div class="card-sub">New / Renewal / Upgrade, June 2026</div>
+        <div style="height:260px;display:flex;align-items:center;justify-content:center"><canvas id="saleTypeChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Club Leaderboard</div>
+        <div class="card-sub">Ranked by % to goal — top 5 vs. bottom 5</div>
+        <div id="league-table"><div class="empty-state">Loading...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Top Sellers — Region-Wide</div>
+        <div class="card-sub">Individual PT rep performance, June 2026</div>
+        <div id="rep-leaderboard"><div class="empty-state">Loading...</div></div>
+      </div>
     </div>
 
     <div class="section-hdr"><div class="section-title">Gym Locations</div><div class="section-line"></div></div>
     <table class="gym-table" id="gym-table">
-      <thead><tr><th>Gym</th><th>Manager</th><th>Active PT</th><th>Renewals</th><th>Frozen</th><th>EOD Today</th></tr></thead>
+      <thead><tr><th>Gym</th><th>Manager</th><th>Goal</th><th>MTD</th><th>%</th><th>Sales</th></tr></thead>
       <tbody id="gym-rows"><tr><td colspan="6" class="empty-state">Loading gym data...</td></tr></tbody>
     </table>
   </div>
@@ -394,54 +434,139 @@ async function bellTap(id, threadRef){
 
 async function loadAll() {
   document.getElementById('lastUp').textContent = 'Loading...';
-  [allClients, allScans] = await Promise.all([
-    db({op:'select', table:'clients', limit:500}),
-    db({op:'select', table:'inbody_scans', orderBy:'scan_date desc', limit:500})
-  ]);
-  renderOverview();
+  await renderOverview();
   loadEOD();
   document.getElementById('lastUp').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
 }
 
-function renderOverview() {
-  const active = allClients.filter(c=>c.status==='active_pt');
-  const frozen = allClients.filter(c=>c.status==='frozen');
-  const renewals = active.filter(c=>(c.sessions_remaining||0)===0);
-  document.getElementById('k-active').textContent = active.length;
-  document.getElementById('k-renewals').textContent = renewals.length;
-  document.getElementById('k-frozen').textContent = frozen.length;
+let _charts = {};
+function destroyChart(key){ if (_charts[key]) { _charts[key].destroy(); delete _charts[key]; } }
 
-  // Latest KPI snapshot
-  db({op:'select', table:'kpi_snapshots', orderBy:'snapshot_date desc', limit:1}).then(rows => {
-    const snap = rows[0]; if (!snap) return;
-    document.getElementById('k-members').textContent = snap.active_members||'—';
-    document.getElementById('k-closing').textContent = snap.closing_pct ? snap.closing_pct+'%' : '—';
-    document.getElementById('k-pt').textContent = snap.pt_revenue||'—';
-  });
+async function renderOverview() {
+  const summary = await (await fetch(WORKER+'/region/summary?month='+CURRENT_MONTH+DEMO_Q)).json();
+  const gyms = (summary.gyms || []).slice().sort((a,b) => (b.pct||0) - (a.pct||0));
 
-  // Gym table — currently one gym, expandable
-  const coaches = {};
-  active.forEach(c => {
-    const a = c.advisor||c.coach||'Unassigned';
-    if (!coaches[a]) coaches[a] = {clients:0, renewals:0};
-    coaches[a].clients++;
-    if ((c.sessions_remaining||0)===0) coaches[a].renewals++;
-  });
-  document.getElementById('gym-rows').innerHTML = `
-    <tr>
-      <td><div class="gym-name">Retro Fitness Fairless Hills</div><div class="gym-manager">GM: Sarah Aldrich · DoF: Dani</div></td>
-      <td>${active.length}</td>
-      <td style="color:${renewals.length>0?'var(--red)':'var(--green)'};font-weight:700">${renewals.length}</td>
-      <td style="color:${frozen.length>0?'var(--amber)':'var(--muted)'};font-weight:700">${frozen.length}</td>
-      <td id="gym-eod-status">Checking...</td>
+  // ── KPI strip ──
+  const safeZone = gyms.filter(g => (g.pct||0) >= 90).length;
+  const totalSales = gyms.reduce((s,g) => s + (g.sale_count||0), 0);
+  document.getElementById('k-region-actual').textContent = fmtMoney(summary.region_actual);
+  document.getElementById('k-region-pct').textContent = (summary.region_pct==null?'—':summary.region_pct+'%') + ' of ' + fmtMoney(summary.region_goal) + ' goal';
+  document.getElementById('k-safe-zone').textContent = safeZone + '/' + gyms.length;
+  if (gyms.length) {
+    const top = gyms[0], bottom = gyms[gyms.length-1];
+    document.getElementById('k-top-club').textContent = top.name;
+    document.getElementById('k-top-club-pct').textContent = (top.pct||0) + '% to goal';
+    document.getElementById('k-attention').textContent = bottom.name;
+    document.getElementById('k-attention-pct').textContent = (bottom.pct||0) + '% to goal';
+  }
+  document.getElementById('k-sale-count').textContent = totalSales;
+  document.getElementById('k-aov').textContent = totalSales ? fmtMoney(Math.round(summary.region_actual/totalSales)) : '—';
+
+  // ── Gym table ──
+  document.getElementById('gym-rows').innerHTML = gyms.map(g => {
+    const color = (g.pct||0)>=90?'var(--green)':(g.pct||0)>=50?'var(--amber)':'var(--red)';
+    return `<tr>
+      <td><div class="gym-name">${escH(g.name)}</div><div class="gym-manager">${escH(g.director||'')}</div></td>
+      <td>${escH(g.director||'—')}</td>
+      <td>${fmtMoney(g.goal)}</td>
+      <td style="font-weight:700">${fmtMoney(g.actual)}</td>
+      <td style="color:${color};font-weight:700">${g.pct==null?'—':g.pct+'%'}</td>
+      <td>${g.sale_count||0}</td>
     </tr>`;
+  }).join('') || '<tr><td colspan="6" class="empty-state">No gym data.</td></tr>';
 
-  // Check today's EOD
-  fetch(WORKER+`/eod/feed?date=${new Date().toISOString().slice(0,10)}`+DEMO_Q).then(r=>r.json()).then(d=>{
-    const el = document.getElementById('gym-eod-status');
-    const count = (d.submissions||[]).length;
-    el.innerHTML = count ? `<span style="color:var(--green);font-weight:700">✓ ${count} submitted</span>` : '<span style="color:var(--muted)">Pending</span>';
-  }).catch(()=>{});
+  // ── Revenue vs Goal chart ──
+  destroyChart('revenue');
+  _charts.revenue = new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels: gyms.map(g => g.name.split(',')[0]),
+      datasets: [
+        { label: 'Goal', data: gyms.map(g => g.goal), backgroundColor: '#E5E7EB' },
+        { label: 'Actual', data: gyms.map(g => g.actual), backgroundColor: gyms.map(g => (g.pct||0)>=90?'#1E9E5A':(g.pct||0)>=50?'#D97706':'#DC2626') }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+(v/1000)+'k' } } }, plugins:{ legend:{ position:'top' } } }
+  });
+
+  // ── Club Leaderboard (top 5 / bottom 5) ──
+  const top5 = gyms.slice(0,5), bottom5 = gyms.slice(-5).reverse();
+  document.getElementById('league-table').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:6px">Top 5</div>
+        ${top5.map((g,i) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
+          <span>${i+1}. ${escH(g.name)}</span><span style="font-weight:700;color:var(--green)">${g.pct||0}%</span></div>`).join('')}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:6px">Needs Attention</div>
+        ${bottom5.map((g,i) => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
+          <span>${i+1}. ${escH(g.name)}</span><span style="font-weight:700;color:var(--red)">${g.pct||0}%</span></div>`).join('')}
+      </div>
+    </div>`;
+
+  // ── Region forecast ──
+  const fc = await (await fetch(WORKER+'/region/forecast'+DEMO_Q)).json();
+  const confLabel = { insufficient_data:'Insufficient data', low:'Low confidence', moderate:'Moderate confidence' }[fc.confidence] || '';
+  document.getElementById('forecast-sub').textContent = 'Trend from ' + fc.months_of_data + ' month' + (fc.months_of_data===1?'':'s') + ' of actual sales · ' + confLabel;
+  const histLabels = fc.history.map(h => new Date(h.month+'-15').toLocaleDateString('en-US',{month:'short'}));
+  const projLabels = fc.projection.map(p => new Date(p.month+'-15').toLocaleDateString('en-US',{month:'short'}));
+  destroyChart('forecast');
+  _charts.forecast = new Chart(document.getElementById('forecastChart'), {
+    type: 'line',
+    data: {
+      labels: [...histLabels, ...projLabels],
+      datasets: [
+        { label: 'Actual', data: [...fc.history.map(h=>h.actual), ...projLabels.map(()=>null)], borderColor:'#E0192B', backgroundColor:'#E0192B', tension:.3 },
+        { label: 'Projected', data: [...fc.history.map(()=>null).slice(0,-1), fc.history[fc.history.length-1].actual, ...fc.projection.map(p=>p.projected)], borderColor:'#9CA3AF', borderDash:[6,4], backgroundColor:'#9CA3AF', tension:.3 }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+(v/1000)+'k' } } } }
+  });
+
+  // ── Aggregate per-gym detail (funnel, sale types, reps) region-wide ──
+  const details = await Promise.all(gyms.map(g => fetch(WORKER+'/region/gym?gym_id='+g.gym_id+'&month='+CURRENT_MONTH+DEMO_Q).then(r=>r.json())));
+
+  let fTotal=0, fBooked=0, fShowed=0, fClosed=0;
+  const saleTypeAgg = {};
+  const allReps = [];
+  details.forEach(d => {
+    if (d.funnel) {
+      fTotal += d.funnel.total_joins||0;
+      fBooked += Math.round((d.funnel.booked_pct||0)/100 * (d.funnel.total_joins||0));
+      fShowed += Math.round((d.funnel.show_pct||0)/100 * Math.round((d.funnel.booked_pct||0)/100*(d.funnel.total_joins||0)));
+      fClosed += (d.sale_count||0);
+    }
+    Object.entries(d.sale_types||{}).forEach(([t,v]) => { saleTypeAgg[t] = (saleTypeAgg[t]||0) + (v.total||0); });
+    (d.reps||[]).forEach(r => allReps.push({ ...r, gym: d.gym?.name||'' }));
+  });
+
+  const bookedPct = fTotal ? Math.round(fBooked/fTotal*100) : 0;
+  const showPct = fBooked ? Math.round(fShowed/fBooked*100) : 0;
+  const closePct = fShowed ? Math.round(Math.min(fClosed,fShowed)/fShowed*100) : 0;
+  document.getElementById('funnel-box').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>New members this month</span><b>${fTotal}</b></div><div style="height:8px;background:var(--line);border-radius:4px"><div style="height:100%;width:100%;background:var(--muted);border-radius:4px"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Booked assessment</span><b>${bookedPct}%</b></div><div style="height:8px;background:var(--line);border-radius:4px"><div style="height:100%;width:${bookedPct}%;background:var(--blue);border-radius:4px"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Showed up</span><b>${showPct}%</b></div><div style="height:8px;background:var(--line);border-radius:4px"><div style="height:100%;width:${showPct}%;background:var(--amber);border-radius:4px"></div></div></div>
+      <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Closed PT package</span><b>${closePct}%</b></div><div style="height:8px;background:var(--line);border-radius:4px"><div style="height:100%;width:${closePct}%;background:var(--green);border-radius:4px"></div></div></div>
+    </div>`;
+
+  destroyChart('saleType');
+  const stLabels = Object.keys(saleTypeAgg).length ? Object.keys(saleTypeAgg) : ['new'];
+  const stValues = stLabels.map(k => saleTypeAgg[k]||0);
+  _charts.saleType = new Chart(document.getElementById('saleTypeChart'), {
+    type: 'doughnut',
+    data: { labels: stLabels.map(l=>l[0].toUpperCase()+l.slice(1)), datasets:[{ data: stValues, backgroundColor:['#E0192B','#2563EB','#D97706','#1E9E5A'] }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' } } }
+  });
+
+  allReps.sort((a,b) => b.total - a.total);
+  document.getElementById('rep-leaderboard').innerHTML = allReps.slice(0,8).map((r,i) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px">
+      <div><span style="font-family:'Oswald';font-weight:800;color:var(--muted);margin-right:8px">${i+1}</span>${escH(r.name)}<div style="font-size:11px;color:var(--muted);margin-left:22px">${escH(r.gym)}</div></div>
+      <div style="font-weight:700">${fmtMoney(r.total)}</div>
+    </div>`).join('') || '<div class="empty-state">No rep sales yet.</div>';
 }
 
 async function loadEOD() {
