@@ -168,6 +168,8 @@
 
 <script>
 const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+const CLUB_SLUG=(new URLSearchParams(window.location.search).get('club')||'fairless-hills').toLowerCase();
+const CLUB_GYM_ID={'fairless-hills':1,'forest-hills':2,'glendale':3,'jersey-city':4,'cedar-city':5,'rego-park':6,'fairfield':7,'tottenville':8,'mt-olive':9,'whippany':10}[CLUB_SLUG]||1;
 async function db(body){
   const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
   return r.json();
@@ -239,6 +241,7 @@ async function saveClient(){
     const cancelNote = 'CANCELLED (' + new Date().toISOString().slice(0,10) + ') — Reason: ' + cancelReason + (getF('m_cancel_notes') ? '. ' + getF('m_cancel_notes') : '');
     vals.notes = ((CURRENT && CURRENT.notes) ? CURRENT.notes + ' | ' : '') + cancelNote;
   }
+  if (!EDIT_ID) vals.gym_id = CLUB_GYM_ID;
   if(!vals.first_name && !vals.last_name){ alert('Enter a name'); btn.disabled=false; btn.textContent='Save'; return; }
   async function write(v){ return EDIT_ID ? db({op:'update',table:'clients',values:v,where:{id:EDIT_ID}}) : db({op:'insert',table:'clients',values:v}); }
   try{
@@ -257,7 +260,7 @@ async function saveClient(){
 }
 
 async function initSearch(){
-  const d=await db({op:'select',table:'clients',orderBy:'updated_at DESC',limit:2000});
+  const d=await db({op:'select',table:'clients',where:{gym_id:CLUB_GYM_ID},orderBy:'updated_at DESC',limit:2000});
   ALL_CLIENTS=(d.results||[]);
   document.getElementById('clientList').innerHTML=ALL_CLIENTS.map(c=>{
     const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||('Client #'+c.id);

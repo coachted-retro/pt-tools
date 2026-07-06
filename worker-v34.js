@@ -1717,14 +1717,14 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const coach = url.searchParams.get('coach');
         if (!coach) return bad('coach required', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const targetDate = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
         const rows = await env.DB.prepare(
           `SELECT s.id, s.client_id, s.program_name, s.focus_notes, c.first_name, c.last_name
            FROM scheduled_sessions s JOIN clients c ON s.client_id = c.id
            WHERE COALESCE(NULLIF(s.assigned_coach,''), c.coach) = ? AND s.scheduled_date = ? AND s.status = 'scheduled'
            ORDER BY c.last_name ASC`
-        ).bind(coach, today).all();
-        return ok({ today: rows.results || [] }, cors);
+        ).bind(coach, targetDate).all();
+        return ok({ today: rows.results || [], date: targetDate }, cors);
       }
 
       // ── CLIENTS IN JEOPARDY (no session scheduled in 7+ days) ─────

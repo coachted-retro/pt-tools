@@ -750,7 +750,7 @@
     <nav class="sidebar-nav">
       <div class="nav-group-label">Interview steps</div>
       <button class="nav-item active" id="nav-0" onclick="goPage(0)">
-        <span class="step-pip">1</span> Upload & pre-fill
+        <span class="step-pip">1</span> Welcome
       </button>
       <button class="nav-item" id="nav-1" onclick="goPage(1)">
         <span class="step-pip">2</span> Member check-in
@@ -787,7 +787,7 @@
   <!-- MAIN -->
   <main class="main">
     <div class="topbar">
-      <div style="display:flex;align-items:center;gap:12px"><a href="command-center.html" style="font-size:12px;padding:6px 12px;border:1px solid #DADEE3;border-radius:6px;text-decoration:none;color:#444;white-space:nowrap">← Command Center</a><div class="breadcrumb">6-Week Follow-Up &rsaquo; <strong id="breadcrumb-label">Upload & pre-fill</strong></div></div>
+      <div style="display:flex;align-items:center;gap:12px"><a href="command-center.html" style="font-size:12px;padding:6px 12px;border:1px solid #DADEE3;border-radius:6px;text-decoration:none;color:#444;white-space:nowrap">← Command Center</a><div class="breadcrumb">6-Week Follow-Up &rsaquo; <strong id="breadcrumb-label">Welcome</strong></div></div>
       <div class="topbar-right">
         <div class="advisor-row">
           <label>Advisor:</label>
@@ -802,26 +802,24 @@
       <!-- ══ PAGE 0: UPLOAD ══ -->
       <div class="page active" id="page-0">
         <div class="page-header">
-          <h2>Upload documents</h2>
-          <p>Upload the member's new InBody scan, previous intake form, or any relevant document. The AI will extract and pre-fill all matching fields automatically.</p>
+          <h2>Welcome</h2>
+          <p>Find the member to pull up their history, or start fresh if they're not in the system yet.</p>
         </div>
         <div class="card">
-          <div class="card-title"><span class="pip"></span> Document upload</div>
-          <div class="upload-zone" id="upload-zone"
-            ondragover="handleDrag(event,true)"
-            ondragleave="handleDrag(event,false)"
-            ondrop="handleDrop(event)">
-            <input type="file" id="pdf-input" accept=".pdf,image/*" multiple onchange="handleFiles(this.files)">
-            <div class="upload-icon">📄</div>
-            <div class="upload-label">Drop files here or click to browse</div>
-            <div class="upload-hint">InBody scan PDF or image, previous intake form, medical notes</div>
+          <div class="card-title"><span class="pip"></span> Find member</div>
+          <div class="field">
+            <label>Member name</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="welcome-search" placeholder="Start typing a name..." style="flex:1" oninput="searchMemberDebounced()">
+              <button class="btn btn-outline" onclick="searchMember()">Search</button>
+            </div>
           </div>
-          <div id="file-list" class="file-list"></div>
-          <div id="upload-status" class="status-bar"></div>
-          <div id="parsed-preview" class="preview-box"></div>
-          <button class="btn btn-primary btn-full" id="parse-btn" style="display:none; margin-top:14px;" onclick="parseAllFiles()">
-            🧠 Read documents & auto-fill
-          </button>
+          <div id="welcome-search-results"></div>
+          <div id="welcome-selected" style="display:none;margin-top:12px;padding:12px;background:var(--accent-light,#F0F7F0);border-radius:8px">
+            <div style="font-weight:700" id="welcome-selected-name"></div>
+            <div style="font-size:12px;color:var(--text2)" id="welcome-selected-sub"></div>
+            <button class="btn btn-ghost" style="margin-top:8px;padding:4px 10px;font-size:12px" onclick="clearSelectedMember()">Not this person — clear</button>
+          </div>
         </div>
         <div class="nav-row">
           <div></div>
@@ -1174,7 +1172,27 @@
       <div class="page" id="page-5">
         <div class="page-header">
           <h2>InBody scan comparison</h2>
-          <p>Enter today's scan data alongside the previous results to show measurable changes — or the lack thereof.</p>
+          <p>Upload today's scan — if we found this member at Welcome, their previous scan and intake notes pull in automatically. Otherwise upload their prior InBody scan or intake form too and AI will sort out which is which.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="pip"></span> Today's scan upload</div>
+          <div class="upload-zone" id="upload-zone"
+            ondragover="handleDrag(event,true)"
+            ondragleave="handleDrag(event,false)"
+            ondrop="handleDrop(event)">
+            <input type="file" id="pdf-input" accept=".pdf,image/*" multiple onchange="handleFiles(this.files)">
+            <div class="upload-icon">📄</div>
+            <div class="upload-label">Drop files here or click to browse</div>
+            <div class="upload-hint">InBody scan PDF or image — add a previous intake form too if we didn't find this member automatically</div>
+          </div>
+          <div id="file-list" class="file-list"></div>
+          <div id="upload-status" class="status-bar"></div>
+          <div id="parsed-preview" class="preview-box"></div>
+          <button class="btn btn-primary btn-full" id="parse-btn" style="display:none; margin-top:14px;" onclick="parseAllFiles()">
+            🧠 Read documents & auto-fill
+          </button>
+          <div id="prev-auto-status" style="display:none;margin-top:12px;padding:10px;background:var(--accent-light,#F0F7F0);border-radius:8px;font-size:13px"></div>
         </div>
 
         <div class="card">
@@ -1485,6 +1503,100 @@ function openConfig(){
 
 function openSheet(){ window.open('https://docs.google.com/spreadsheets/d/'+(getCfg('sheetId')||SHEET_ID_DEFAULT)+'/edit','_blank'); }
 
+async function prefillFromClientId(clientId){
+  try{
+    const r = await fetch(FFU_WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'clients', where:{ id: parseInt(clientId,10) }, limit:1 }) });
+    const d = await r.json();
+    const c = (d.results||[])[0];
+    if (c) selectMember(c.id, ((c.first_name||'')+' '+(c.last_name||'')).trim(), c.phone||'', c.email||'');
+  }catch(e){}
+}
+
+const FFU_WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let SELECTED_CLIENT_ID = null;
+let PREV_INTAKE_NOTES = '';
+let searchDebounceTimer = null;
+
+function searchMemberDebounced() {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(searchMember, 400);
+}
+
+async function searchMember() {
+  const q = document.getElementById('welcome-search').value.trim();
+  const resultsEl = document.getElementById('welcome-search-results');
+  if (q.length < 2) { resultsEl.innerHTML = ''; return; }
+  try {
+    const r = await fetch(FFU_WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'clients', limit:200 }) });
+    const d = await r.json();
+    const matches = (d.results || []).filter(c => ((c.first_name||'')+' '+(c.last_name||'')).toLowerCase().includes(q.toLowerCase()));
+    if (!matches.length) { resultsEl.innerHTML = '<div style="font-size:12px;color:var(--text3,#888);margin-top:8px">No match found — you can still proceed manually.</div>'; return; }
+    resultsEl.innerHTML = matches.slice(0,6).map(c => `
+      <div onclick='selectMember(${c.id}, ${JSON.stringify((c.first_name||'')+' '+(c.last_name||''))}, ${JSON.stringify(c.phone||'')}, ${JSON.stringify(c.email||'')})' style="padding:10px 12px;border:1px solid var(--line,#ddd);border-radius:8px;margin-top:6px;cursor:pointer">
+        <div style="font-weight:600">${(c.first_name||'')} ${(c.last_name||'')}</div>
+        <div style="font-size:12px;color:var(--text3,#888)">${c.status||''}${c.phone?' · '+c.phone:''}</div>
+      </div>`).join('');
+  } catch(e) { resultsEl.innerHTML = '<div style="font-size:12px;color:var(--text3,#888)">Could not search — you can still proceed manually.</div>'; }
+}
+
+function selectMember(id, name, phone, email) {
+  SELECTED_CLIENT_ID = id;
+  document.getElementById('welcome-search-results').innerHTML = '';
+  document.getElementById('welcome-selected').style.display = 'block';
+  document.getElementById('welcome-selected-name').textContent = name;
+  document.getElementById('welcome-selected-sub').textContent = 'Selected — their history will pull in at the InBody step.';
+  sf('name', name.trim());
+  sf('phone', phone);
+  sf('email', email);
+}
+
+function clearSelectedMember() {
+  SELECTED_CLIENT_ID = null;
+  document.getElementById('welcome-selected').style.display = 'none';
+  document.getElementById('welcome-search').value = '';
+}
+
+async function loadPreviousInBody() {
+  const statusEl = document.getElementById('prev-auto-status');
+  if (!SELECTED_CLIENT_ID) { if (statusEl) statusEl.style.display = 'none'; return; }
+  try {
+    const [scanRes, consultRes] = await Promise.all([
+      fetch(FFU_WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ op:'select', table:'inbody_scans', where:{ client_id: SELECTED_CLIENT_ID }, orderBy:'scan_date desc', limit:1 }) }),
+      fetch(FFU_WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ op:'select', table:'consultations', where:{ client_id: SELECTED_CLIENT_ID }, orderBy:'consult_date desc', limit:1 }) }),
+    ]);
+    const scans = (await scanRes.json()).results || [];
+    const consults = (await consultRes.json()).results || [];
+    let filled = false;
+    if (scans.length) {
+      const s = scans[0];
+      sf('prev-height', s.height); sf('prev-age', s.age); sf('prev-bmi', s.bmi);
+      sf('prev-fat', s.fat_mass); sf('prev-lean', s.lean_mass); sf('prev-water', s.water_weight); sf('prev-pbf', s.pbf);
+      sf('prev-seg-la', s.seg_la); sf('prev-seg-ra', s.seg_ra); sf('prev-seg-trunk', s.seg_trunk); sf('prev-seg-ll', s.seg_ll); sf('prev-seg-rl', s.seg_rl);
+      if (typeof refreshPrevSeg === 'function') refreshPrevSeg();
+      filled = true;
+    }
+    if (consults.length) {
+      const c = consults[0];
+      PREV_INTAKE_NOTES = 'Goals: ' + (c.goals||'none noted') + '. Medical: ' + (c.medical_notes||'none noted') + '. Prior assessment: ' + (c.assessment_summary||'');
+      if (c.goals && !gv('orig-goals')) sf('orig-goals', c.goals);
+    }
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.textContent = filled
+        ? '✓ Pulled in their previous InBody scan (' + (scans[0].scan_date||'date unknown') + ') and intake notes automatically.'
+        : 'No previous InBody scan on file for this member yet — upload one below if you have it, or enter it manually.';
+    }
+  } catch(e) {
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = 'Could not auto-load previous data — enter manually below.'; }
+  }
+}
+
+function getFfuWorker() { return FFU_WORKER; }
+
 window.addEventListener('load',()=>{
   saveConfig(); // auto-populate all keys
 
@@ -1496,6 +1608,8 @@ window.addEventListener('load',()=>{
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('fu-date').value=today;
   updateNextFuDate();
+  const preClientId = new URLSearchParams(window.location.search).get('client_id');
+  if (preClientId) prefillFromClientId(preClientId);
 
 });
 
@@ -1503,12 +1617,13 @@ window.addEventListener('load',()=>{
 // NAVIGATION
 // ===================================
 let currentPage=0;
-const pageLabels=['Upload & pre-fill','Member check-in','Training progress','Obstacles & challenges','Mindset & motivation','InBody comparison','Summary & next steps'];
+const pageLabels=['Welcome','Member check-in','Training progress','Obstacles & challenges','Mindset & motivation','InBody comparison','Summary & next steps'];
 
 function goPage(n){
   document.getElementById('page-'+currentPage).classList.remove('active');
   document.getElementById('nav-'+currentPage).classList.remove('active');
   currentPage=n;
+  if (n === 5) loadPreviousInBody();
   document.getElementById('page-'+n).classList.add('active');
   for(let i=0;i<7;i++){
     const nav=document.getElementById('nav-'+i);
@@ -1762,12 +1877,13 @@ function buildPrompt() {
   const prevSegLL = gv('prev-seg-ll'); const nowSegLL = gv('now-seg-ll');
   const prevSegRL = gv('prev-seg-rl'); const nowSegRL = gv('now-seg-rl');
   const scanNotes = gv('scan-notes');
+  const priorIntakeContext = PREV_INTAKE_NOTES ? ('\nPRIOR INTAKE ON FILE: ' + PREV_INTAKE_NOTES) : '';
  
   return `You are a Retro Fitness personal training advisor conducting a 6-week follow-up re-engagement consultation. Generate a SHORT, scannable member summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 3 minutes.
  
 MEMBER: ${name} | Age: ${age} | Gender: ${gender}
 ORIGINAL GOALS: ${originalGoals}
-ORIGINAL DECLINE REASON: ${declineReason || 'Not recorded'}
+ORIGINAL DECLINE REASON: ${declineReason || 'Not recorded'}${priorIntakeContext}
  
 WELLBEING TODAY: Energy/Wellbeing ${energyScore}/10 | Satisfaction with progress ${resultsScore}/10 | Commitment to change ${commitment}/10
  
@@ -1845,11 +1961,14 @@ async function generateAssessment(){
     document.getElementById('assessment-box').style.display='block';
     document.getElementById('outcome-grid').style.display='grid';
     setStatus('assess-status','','');
-    // Open Gmail with assessment - fires after AI completes
+    // Auto-send the internal PT assessment notification via the domain email —
+    // no more Gmail popup that still needs a manual click to send.
     try {
       var _s = 'PT Assessment: '+(gv('name')||gv('fu-name')||'Member');
-      var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'\nPhone: '+(gv('phone')||gv('fu-phone')||'')+'\nEmail: '+(gv('email')||gv('fu-email')||'')+'\nGender: '+(gv('gender')||'')+'\nGoals: '+(gv('goals')||gv('orig-goals')||'')+'\n\n'+assessmentText;
-      window.open('https://mail.google.com/mail/?view=cm&to=tedscholl%40gmail.com,healthylifewithdani1%40gmail.com&su='+encodeURIComponent(_s)+'&body='+encodeURIComponent(_b.substring(0,800)),'_blank');
+      var _b = 'Name: '+(gv('name')||gv('fu-name')||'')+'<br>Phone: '+(gv('phone')||gv('fu-phone')||'')+'<br>Email: '+(gv('email')||gv('fu-email')||'')+'<br>Gender: '+(gv('gender')||'')+'<br>Goals: '+(gv('goals')||gv('orig-goals')||'')+'<br><br>'+assessmentText.replace(/\n/g,'<br>');
+      fetch(FFU_WORKER + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ to: 'tedscholl@gmail.com', subject: _s, html: _b }) })
+        .then(r=>r.json()).then(d=>{ if(!d.sent) console.warn('Email not sent:', d.error||d.reason); });
     } catch(_em) {}
   } catch(e){
     setStatus('assess-status','error','? Error: '+e.message);

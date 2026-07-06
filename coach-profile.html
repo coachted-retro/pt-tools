@@ -106,6 +106,20 @@ function renderView(staff, profile, isMine) {
     ${isMine ? `<button class="action-btn secondary" onclick="showEdit()">Edit My Profile</button>` : ''}
     ${isMine ? `
     <a href="coach-crm.html?coach=${encodeURIComponent(staff.name)}&locked=1" class="action-btn" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Open Coach CRM — My Clients</a>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
+      <a href="fitness-consultation-tool.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-size:9px;font-weight:800;color:var(--red);text-transform:uppercase">Step 1</div>
+        <div style="font-weight:700;font-size:12px;margin-top:2px">Initial Consult</div>
+      </a>
+      <a href="fitness-followup-tool.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-size:9px;font-weight:800;color:#2563EB;text-transform:uppercase">Step 2</div>
+        <div style="font-weight:700;font-size:12px;margin-top:2px">6-Wk Follow-Up</div>
+      </a>
+      <a href="fitness-monthly-checkin.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:10px;padding:10px 8px;text-align:center">
+        <div style="font-size:9px;font-weight:800;color:#1E9E5A;text-transform:uppercase">Step 3</div>
+        <div style="font-weight:700;font-size:12px;margin-top:2px">Monthly Check-In</div>
+      </a>
+    </div>
     <div class="card" style="margin-top:14px">
       <div class="sec-label" style="margin-top:0">My Schedule</div>
       <div id="my-shifts-body"><div class="empty-state">Loading...</div></div>

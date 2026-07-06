@@ -347,26 +347,13 @@
 
       <!-- PAGE 0: UPLOAD -->
       <div class="page active" id="page-0">
-        <div class="page-header"><h2 id="welcome-heading">Welcome</h2><p>Enter the member's name, then upload their latest InBody scan — we'll take it from there.</p></div>
+        <div class="page-header"><h2 id="welcome-heading">Welcome</h2><p>Enter the member's name — we'll pull up their history automatically. The InBody scan happens later, at step 6.</p></div>
         <div class="card">
           <div class="card-title"><span class="dot"></span> Member name</div>
           <div class="field" style="position:relative">
             <input type="text" id="name" placeholder="Full name" oninput="onNameInput()" onblur="onNameBlur()" autocomplete="off">
             <div id="name-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:20;background:var(--card,#fff);border:1px solid var(--border,#E5E7EB);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.10)"></div>
           </div>
-        </div>
-        <div class="card">
-          <div class="card-title"><span class="dot"></span> Document upload</div>
-          <div class="upload-zone" id="upload-zone" ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)" onclick="document.getElementById('pdf-input').click()">
-            <input type="file" id="pdf-input" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(this.files)">
-            <div class="upload-icon">📄</div>
-            <div class="upload-label">Drop files here or click to browse</div>
-            <div class="upload-hint">InBody scan PDF or image, previous check-in notes</div>
-          </div>
-          <div id="file-list" class="file-list"></div>
-          <div id="upload-status" class="status-bar"></div>
-          <div id="parsed-preview" class="preview-box"></div>
-          <button class="btn btn-primary btn-full" id="parse-btn" style="display:none;margin-top:14px" onclick="parseAllFiles()">🧠 Read documents & auto-fill</button>
         </div>
         <div class="nav-row"><div></div><button class="btn btn-outline" onclick="goPage(1)">Skip or Next →</button></div>
       </div>
@@ -693,7 +680,20 @@
 
       <!-- PAGE 5: INBODY -->
       <div class="page" id="page-5">
-        <div class="page-header"><h2>InBody comparison</h2><p>Enter today's scan alongside last month's results.</p></div>
+        <div class="page-header"><h2>InBody comparison</h2><p>Upload today's scan — last month's numbers are already pulled in above if we matched their name at Welcome.</p></div>
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Today's scan upload</div>
+          <div class="upload-zone" id="upload-zone" ondragover="handleDrag(event,true)" ondragleave="handleDrag(event,false)" ondrop="handleDrop(event)" onclick="document.getElementById('pdf-input').click()">
+            <input type="file" id="pdf-input" accept=".pdf,image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+            <div class="upload-icon">📄</div>
+            <div class="upload-label">Drop files here or click to browse</div>
+            <div class="upload-hint">InBody scan PDF or image — add last month's scan too if we didn't auto-match this member</div>
+          </div>
+          <div id="file-list" class="file-list"></div>
+          <div id="upload-status" class="status-bar"></div>
+          <div id="parsed-preview" class="preview-box"></div>
+          <button class="btn btn-primary btn-full" id="parse-btn" style="display:none;margin-top:14px" onclick="parseAllFiles()">🧠 Read documents & auto-fill</button>
+        </div>
         <div class="card">
           <div class="card-title"><span class="dot"></span> Body composition — last month vs. today</div>
           <div class="compare-wrap">
@@ -819,7 +819,17 @@ window.addEventListener('load',()=>{
   document.getElementById('checkin-date').value=today;
   updateDates();
   const adv=getCfg('advisor'); if(adv){ const el=document.getElementById('advisor-name'); if(el&&!el.value) el.value=adv; }
+  const preClientId = new URLSearchParams(window.location.search).get('client_id');
+  if (preClientId) prefillFromClientId(preClientId);
 });
+
+async function prefillFromClientId(clientId){
+  try{
+    const d = await _db({op:'select', table:'clients', where:{id:parseInt(clientId,10)}, limit:1});
+    const c = (d.results||[])[0];
+    if (c) { _fillFromClient(c); _fillPrevFromLastCheckin(c.id); }
+  }catch(e){}
+}
 
 function updateDates(){
   const checkinVal=document.getElementById('checkin-date').value;
@@ -937,7 +947,7 @@ Two scans: older=prev_, newer=now_. Single scan=now_. seg values are PERCENTAGE 
     const pv=document.getElementById('parsed-preview'); pv.style.display='block';
     pv.textContent='Extracted:\n'+Object.entries(parsed).filter(([k,v])=>v).map(([k,v])=>('  '+k+': '+v)).join('\n');
     btn.innerHTML='✓ Re-upload or add more'; btn.disabled=false;
-    setTimeout(() => goPage(1), 1200);
+    setTimeout(() => goPage(6), 1200);
   } catch(e){ setStatus('upload-status','error','? Error: '+e.message); btn.innerHTML='? Read documents & auto-fill'; btn.disabled=false; }
 }
 

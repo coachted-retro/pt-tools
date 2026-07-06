@@ -2683,12 +2683,13 @@ async function generateAssessment() {
     document.getElementById('assess-continue-row').style.display = 'grid';
     setStatus('assess-status','','');
 
-    // Open Gmail with assessment
+    // Auto-send the internal PT assessment notification via the domain email.
     try {
       var _s = 'PT Assessment: ' + (gv('name') || 'Member');
-      var _b = 'Name: ' + (gv('name') || '') + '\nPhone: ' + (gv('phone') || '') + '\nGoal: ' + (gv('goals') || '') + '\n\n' + assessmentText;
-      var _url = 'https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent('tedscholl@gmail.com,healthylifewithdani1@gmail.com') + '&su=' + encodeURIComponent(_s) + '&body=' + encodeURIComponent(_b);
-      // Don't auto-open - just make available
+      var _b = 'Name: ' + (gv('name') || '') + '<br>Phone: ' + (gv('phone') || '') + '<br>Goal: ' + (gv('goals') || '') + '<br><br>' + assessmentText.replace(/\n/g,'<br>');
+      fetch(getApiUrl() + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ to: 'tedscholl@gmail.com', subject: _s, html: _b }) })
+        .then(r=>r.json()).then(d=>{ if(!d.sent) console.warn('Email not sent:', d.error||d.reason); });
     } catch(e) {}
 
   } catch(e) {
@@ -3062,6 +3063,7 @@ async function finalizeAccept() {
       package: pkgDbValue(),
       training_start_date: gv('consult-date') || new Date().toISOString().slice(0,10),
       status: 'active',
+      gym_id: CLUB_GYM_ID,
       notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Medical: ' + (gv('medical')||'none') + '. Assessment: ' + (assessmentText||'').substring(0,400)
     };
     Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]==null) delete clientPayload[k]; });
@@ -3147,6 +3149,7 @@ async function finalizeDecline() {
       goal_primary: gv('goals') || null,
       status: 'prospect',
       coach: advisorName || null,
+      gym_id: CLUB_GYM_ID,
       notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. Medical: ' + (gv('medical')||'none') + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
     };
     Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
@@ -3633,6 +3636,10 @@ var CLUB_PRICING = {
   'whippany':       { name: 'Retro Fitness of Whippany',       rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false }
 };
 var CLUB = CLUB_PRICING[CLUB_ID] || CLUB_PRICING['fairless-hills'];
+var CLUB_GYM_ID = {
+  'fairless-hills': 1, 'forest-hills': 2, 'glendale': 3, 'jersey-city': 4, 'cedar-city': 5,
+  'rego-park': 6, 'fairfield': 7, 'tottenville': 8, 'mt-olive': 9, 'whippany': 10
+}[CLUB_ID] || 1;
 var SESSION_RATE = { '12': CLUB.rate12, '6': CLUB.rate6 };
 var nutritionAddon = false;
 

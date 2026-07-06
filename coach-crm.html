@@ -76,10 +76,37 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <option value="James">James</option>
     </select>
   </div>
+  <div id="schedule-daynav" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    <button onclick="shiftScheduleDay(-1)" style="border:1.5px solid var(--line);background:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer">←</button>
+    <div id="schedule-day-label" style="font-family:'Oswald';font-weight:700;font-size:13px"></div>
+    <button onclick="shiftScheduleDay(1)" style="border:1.5px solid var(--line);background:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer">→</button>
+    <a href="#" onclick="resetScheduleDay();return false" style="font-size:12px;color:var(--red);font-weight:700;margin-left:4px">Today</a>
+  </div>
   <div id="today-schedule"></div>
   <div id="jeopardy-section"></div>
   <div style="margin-bottom:14px"><button class="card" style="cursor:pointer;border:1.5px dashed var(--line);justify-content:center;color:var(--red);font-weight:700" onclick="openAddAppointment()">+ Add Appointment</button></div>
   <div id="add-appt-form" style="display:none"></div>
+
+  <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Start an Intake</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+    <a href="fitness-consultation-tool.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;display:block">
+      <div style="font-size:10px;font-weight:800;color:var(--red);text-transform:uppercase">Step 1 · New Member</div>
+      <div style="font-weight:700;font-size:13px;margin-top:2px">Initial Consultation</div>
+    </a>
+    <a href="fitness-followup-tool.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;display:block">
+      <div style="font-size:10px;font-weight:800;color:#2563EB;text-transform:uppercase">Step 2 · Declined</div>
+      <div style="font-weight:700;font-size:13px;margin-top:2px">6-Week Follow-Up</div>
+    </a>
+    <a href="fitness-monthly-checkin.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;display:block">
+      <div style="font-size:10px;font-weight:800;color:#1E9E5A;text-transform:uppercase">Step 3 · Active</div>
+      <div style="font-weight:700;font-size:13px;margin-top:2px">Monthly Check-In</div>
+    </a>
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin:-8px 0 14px">Best practice is still to click a client's name from the agenda above, so the right record loads automatically — these are here for a quick manual start.</div>
+
+  <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Industry News &amp; Updates</div>
+  <div id="coach-news-feed"></div>
+
   <div id="coach-inbox"></div>
   <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">My Clients</div>
   <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
@@ -167,21 +194,72 @@ async function loadJeopardy(){
   } catch(e) { box.innerHTML = ''; }
 }
 
+let SCHEDULE_DAY_OFFSET = 0;
+
+function scheduleDateForOffset(offset){
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0,10);
+}
+
+function shiftScheduleDay(dir){
+  SCHEDULE_DAY_OFFSET += dir;
+  loadTodaySchedule();
+}
+
+function resetScheduleDay(){
+  SCHEDULE_DAY_OFFSET = 0;
+  loadTodaySchedule();
+}
+
 async function loadTodaySchedule(){
   const coach = document.getElementById('coach-select').value;
   const box = document.getElementById('today-schedule');
+  const dateStr = scheduleDateForOffset(SCHEDULE_DAY_OFFSET);
+  const dateLabel = new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  const labelEl = document.getElementById('schedule-day-label');
+  if (labelEl) labelEl.textContent = dateLabel + (SCHEDULE_DAY_OFFSET===0 ? ' (today)' : '');
   if (!coach) { box.innerHTML = ''; return; }
   try {
-    const r = await fetch(WORKER + '/coach/today-schedule?coach=' + encodeURIComponent(coach));
+    const [r, r2, clientsRes] = await Promise.all([
+      fetch(WORKER + '/coach/today-schedule?coach=' + encodeURIComponent(coach) + '&date=' + dateStr),
+      fetch(WORKER + '/schedule/clubos-day?date=' + dateStr),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'clients', limit:2000})})
+    ]);
     const d = await r.json();
+    const d2 = await r2.json();
+    const clients = (await clientsRes.json()).results || [];
     const rows = d.today || [];
-    if (!rows.length) {
-      box.innerHTML = `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Today's Schedule</div>
-        <div class="card" style="padding:16px;color:var(--muted);font-size:13px">Nothing scheduled today. Build a schedule from any client's profile.</div>`;
-      return;
+    const clubosRows = d2.appointments || [];
+
+    let html = '';
+    if (clubosRows.length) {
+      html += `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:#2563EB;margin-bottom:6px">Club OS Bookings</div>` +
+        clubosRows.map(a => {
+          const resolved = resolveClubOsLinkCrm(a.summary, clients);
+          const timeLabel = new Date(a.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+          if (resolved) {
+            const href = resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}` : '');
+            return `<a class="card" href="${href}" style="border-left:4px solid #2563EB">
+              <div style="flex:1">
+                <div class="name">${escH(a.summary||'Booking')}</div>
+                <div class="sub">${timeLabel}${resolved.clientId ? '' : ' · no exact client match, opens blank'}</div>
+              </div>
+              <div class="badges"><span class="badge badge-red">Start &rarr;</span></div>
+            </a>`;
+          }
+          return `<div class="card" style="border-left:4px solid #2563EB">
+            <div style="flex:1"><div class="name">${escH(a.summary||'Booking')}</div><div class="sub">${timeLabel}</div></div>
+          </div>`;
+        }).join('') + `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:12px 0 6px">Retro One Schedule</div>`;
+    } else {
+      html += `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">${rows.length ? rows.length + ' client' + (rows.length===1?'':'s') + ' scheduled' : ''}</div>`;
     }
-    box.innerHTML = `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Today's Schedule — ${rows.length} client${rows.length===1?'':'s'}</div>` +
-      rows.map(s => `<a class="card" href="gym-floor.html?client=${s.client_id}" style="border-left:4px solid var(--red)">
+
+    if (!rows.length && !clubosRows.length) {
+      html += `<div class="card" style="padding:16px;color:var(--muted);font-size:13px">Nothing scheduled ${SCHEDULE_DAY_OFFSET===0?'today':'this day'}. Build a schedule from any client's profile.</div>`;
+    } else {
+      html += rows.map(s => `<a class="card" href="gym-floor.html?client=${s.client_id}" style="border-left:4px solid var(--red)">
         <div class="avatar">${((s.first_name||'?')[0]+(s.last_name||'')[0]).toUpperCase()}</div>
         <div style="flex:1">
           <div class="name">${escH(s.first_name)} ${escH(s.last_name)}</div>
@@ -189,7 +267,26 @@ async function loadTodaySchedule(){
         </div>
         <div class="badges"><span class="badge badge-red">Start &rarr;</span></div>
       </a>`).join('');
+    }
+    box.innerHTML = html;
   } catch(e) { box.innerHTML = ''; }
+}
+
+function resolveClubOsLinkCrm(summary, clients){
+  const s = (summary||'').toLowerCase();
+  let tool = null;
+  if (s.includes('new member') && s.includes('inbody')) tool = 'fitness-consultation-tool.html';
+  else if (s.includes('monthly') && (s.includes('progress') || s.includes('check'))) tool = 'fitness-monthly-checkin.html';
+  else if (s.includes('follow') || s.includes('re-engagement') || s.includes('6 week') || s.includes('6-week')) tool = 'fitness-followup-tool.html';
+  if (!tool) return null;
+  const namePart = (summary||'').split(/[-–]/)[0].trim();
+  if (!namePart) return { tool, clientId: null };
+  const nameLower = namePart.toLowerCase();
+  const match = (clients||[]).find(c => {
+    const full = ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase();
+    return full === nameLower || full.includes(nameLower) || nameLower.includes(full);
+  });
+  return { tool, clientId: match ? match.id : null };
 }
 
 async function loadInbox(){
@@ -284,9 +381,30 @@ async function loadClients(){
   loadTodaySchedule();
   loadInbox();
   loadJeopardy();
+  loadCoachNewsFeed();
 }
 if (saved || IS_LOCKED) loadClients();
 setInterval(loadBell, 60000);
+
+async function loadCoachNewsFeed(){
+  const el = document.getElementById('coach-news-feed');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/feed/list?limit=8');
+    const d = await r.json();
+    const posts = (d.posts || []).filter(p => p.category === 'industry_news' || p.category === 'recognition');
+    if (!posts.length) { el.innerHTML = '<div class="card" style="padding:14px;color:var(--muted);font-size:13px">Nothing posted yet.</div>'; return; }
+    const catIcon = { industry_news: '📰', recognition: '🏆' };
+    el.innerHTML = posts.map(p => `
+      <div class="card" style="display:flex;gap:10px;align-items:flex-start">
+        <div style="font-size:18px">${catIcon[p.category]||'📌'}</div>
+        <div style="flex:1">
+          <div class="name" style="font-size:13px">${escH(p.title||'')}</div>
+          ${p.body ? `<div class="sub">${escH(p.body)}</div>` : ''}
+        </div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = ''; }
+}
 
 function openAddAppointment() {
   const clients = window._loadedClients || [];

@@ -78,7 +78,7 @@ h1,h2,h3,.sec-title { font-family:var(--font-display); }
   <div class="spacer"></div>
   <div class="title">GYM <span>ANALYTICS</span></div>
   <div class="spacer"></div>
-  <div class="sub">Retro Fitness Fairless Hills</div>
+  <div class="sub" id="club-sub">Retro Fitness Fairless Hills</div>
 </div>
 
 <div class="wrap">
@@ -288,6 +288,12 @@ function exportReportCsv() {
 }
 
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const CLUB_SLUG = (new URLSearchParams(window.location.search).get('club') || 'fairless-hills').toLowerCase();
+const CLUB_GYM_ID = {
+  'fairless-hills': 1, 'forest-hills': 2, 'glendale': 3, 'jersey-city': 4, 'cedar-city': 5,
+  'rego-park': 6, 'fairfield': 7, 'tottenville': 8, 'mt-olive': 9, 'whippany': 10
+}[CLUB_SLUG] || 1;
+const CLUB_NAMES = {1:'Fairless Hills',2:'Forest Hills',3:'Glendale',4:'Jersey City',5:'Cedar City',6:'Rego Park',7:'Fairfield',8:'Tottenville',9:'Mt. Olive',10:'Whippany'};
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function pillClass(c){ return c==='good'?'pill-good':c==='warn'?'pill-warn':c==='none'?'pill-none':'pill-bad'; }
 
@@ -343,7 +349,7 @@ async function postTeamNote() {
   const author = getTeamNoteAuthor();
   try {
     await fetch(WORKER + '/huddle/post', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ channel: 'team-notes', gym_id: 1, author, body }) });
+      body: JSON.stringify({ channel: 'team-notes', gym_id: CLUB_GYM_ID, author, body }) });
     input.value = '';
     loadTeamNotes();
   } catch(e) { alert('Could not post note, try again.'); }
@@ -372,17 +378,20 @@ async function loadData() {
   try {
     const [clientsRes, scansRes, consultRes, salesRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'clients', limit:2000})}),
+        body: JSON.stringify({op:'select', table:'clients', where:{gym_id: CLUB_GYM_ID}, limit:2000})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'inbody_scans', limit:2000})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'consultations', limit:2000})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'pt_sales', limit:2000})}).catch(()=>null),
+        body: JSON.stringify({op:'select', table:'pt_sales', where:{gym_id: CLUB_GYM_ID}, limit:2000})}).catch(()=>null),
     ]);
     allClients = (await clientsRes.json()).results || [];
-    allScans = (await scansRes.json()).results || [];
-    allConsultations = (await consultRes.json()).results || [];
+    // inbody_scans and consultations only link to a client_id, not a gym_id directly —
+    // scope them client-side to this club's clients rather than needing a server-side join.
+    const clubClientIds = new Set(allClients.map(c => c.id));
+    allScans = ((await scansRes.json()).results || []).filter(s => clubClientIds.has(s.client_id));
+    allConsultations = ((await consultRes.json()).results || []).filter(c => clubClientIds.has(c.client_id));
     allPtSales = salesRes ? ((await salesRes.json()).results || []) : [];
     computeAndRender();
     document.getElementById('loading').style.display = 'none';

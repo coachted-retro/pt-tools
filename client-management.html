@@ -78,9 +78,9 @@
   <div class="page-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px">
     <div>
       <h1>Client Management</h1>
-      <p>Unified roster, leads, and prospects — with duplicate detection and a safe merge tool.</p>
+      <p>Unified roster, leads, and prospects — with duplicate detection and a safe merge tool. <span id="club-label" style="font-weight:700;color:var(--red,#E0192B)"></span></p>
     </div>
-    <a href="client-profile.html?add=1" style="flex-shrink:0;background:var(--red,#E0192B);color:#fff;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:10px;font-size:13px;white-space:nowrap">+ Add Client</a>
+    <a href="client-profile.html?add=1" id="add-client-link" style="flex-shrink:0;background:var(--red,#E0192B);color:#fff;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:10px;font-size:13px;white-space:nowrap">+ Add Client</a>
   </div>
 
   <div id="dupeBanner" class="dupe-banner">Checking for duplicates...</div>
@@ -123,6 +123,11 @@
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const CLUB_SLUG = (new URLSearchParams(window.location.search).get('club') || 'fairless-hills').toLowerCase();
+const CLUB_GYM_ID = {
+  'fairless-hills': 1, 'forest-hills': 2, 'glendale': 3, 'jersey-city': 4, 'cedar-city': 5,
+  'rego-park': 6, 'fairfield': 7, 'tottenville': 8, 'mt-olive': 9, 'whippany': 10
+}[CLUB_SLUG] || 1;
 let ALL_CLIENTS = [];
 let ALL_LEADS = [];
 let mergeGroup = null;
@@ -149,9 +154,14 @@ function setTab(t){
 }
 
 async function loadAll(){
+  const CLUB_NAMES = {1:'Fairless Hills',2:'Forest Hills',3:'Glendale',4:'Jersey City',5:'Cedar City',6:'Rego Park',7:'Fairfield',8:'Tottenville',9:'Mt. Olive',10:'Whippany'};
+  const labelEl = document.getElementById('club-label');
+  if (labelEl) labelEl.textContent = CLUB_NAMES[CLUB_GYM_ID] || 'Fairless Hills';
+  const addLinkEl = document.getElementById('add-client-link');
+  if (addLinkEl) addLinkEl.href = 'client-profile.html?add=1&club=' + encodeURIComponent(CLUB_SLUG);
   const [c, l] = await Promise.all([
-    db({ op:'select', table:'clients', orderBy:'updated_at DESC', limit:2000 }),
-    db({ op:'select', table:'leads', orderBy:'created_at DESC', limit:2000 })
+    db({ op:'select', table:'clients', where:{ gym_id: CLUB_GYM_ID }, orderBy:'updated_at DESC', limit:2000 }),
+    db({ op:'select', table:'leads', where:{ gym_id: CLUB_GYM_ID }, orderBy:'created_at DESC', limit:2000 })
   ]);
   ALL_CLIENTS = c.results || [];
   ALL_LEADS = l.results || [];

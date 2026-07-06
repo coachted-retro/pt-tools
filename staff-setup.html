@@ -187,6 +187,21 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <option value="Floor Tech">Floor Tech</option>
       </select>
     </div>
+    <div class="field">
+      <label>Club *</label>
+      <select id="fGymId">
+        <option value="1">Fairless Hills</option>
+        <option value="2">Forest Hills</option>
+        <option value="3">Glendale</option>
+        <option value="4">Jersey City</option>
+        <option value="5">Cedar City</option>
+        <option value="6">Rego Park</option>
+        <option value="7">Fairfield</option>
+        <option value="8">Tottenville</option>
+        <option value="9">Mt. Olive</option>
+        <option value="10">Whippany</option>
+      </select>
+    </div>
     <div class="field-row">
       <div class="field">
         <label>Email</label>
@@ -313,11 +328,12 @@ function renderGroup(containerId, roles) {
     el.innerHTML = '<div class="empty-state">No employees in this group yet.</div>';
     return;
   }
+  const CLUB_NAMES = {1:'Fairless Hills',2:'Forest Hills',3:'Glendale',4:'Jersey City',5:'Cedar City',6:'Rego Park',7:'Fairfield',8:'Tottenville',9:'Mt. Olive',10:'Whippany'};
   el.innerHTML = members.map(e => `
     <div class="roster-row">
       <div>
         <div class="r-name"><span class="active-dot ${e.active ? 'dot-green' : 'dot-gray'}"></span>${esc(e.name)}</div>
-        ${e.email ? `<div class="r-sub">${esc(e.email)}</div>` : ''}
+        <div class="r-sub">${CLUB_NAMES[e.gym_id]||'Fairless Hills'}${e.email ? ' · '+esc(e.email) : ''}</div>
       </div>
       <div><span class="role-pill ${rolePillClass(e.role)}">${esc(e.role)}</span></div>
       <div><span class="eod-badge ${e.eod_required ? 'eod-yes' : 'eod-no'}">${e.eod_required ? '✓ Yes' : '— No'}</span></div>
@@ -344,6 +360,7 @@ function openModal(id) {
   if (!id) {
     document.getElementById('fName').value = '';
     document.getElementById('fRole').value = '';
+    document.getElementById('fGymId').value = '1';
     document.getElementById('fEmail').value = '';
     document.getElementById('fPhone').value = '';
     document.getElementById('fHireDate').value = '';
@@ -356,6 +373,7 @@ function openModal(id) {
     if (!emp) return;
     document.getElementById('fName').value = emp.name || '';
     document.getElementById('fRole').value = emp.role || '';
+    document.getElementById('fGymId').value = emp.gym_id || '1';
     document.getElementById('fEmail').value = emp.email || '';
     document.getElementById('fPhone').value = emp.phone || '';
     document.getElementById('fHireDate').value = emp.hire_date || '';
@@ -422,7 +440,7 @@ async function saveEmployee() {
     eod_required: document.getElementById('fEOD').checked ? 1 : 0,
     eod_template: document.getElementById('fTemplate').value || null,
     active: document.getElementById('fActive').checked ? 1 : 0,
-    gym_id: 1
+    gym_id: parseInt(getF('fGymId'), 10) || 1
   };
   try {
     let r, d;

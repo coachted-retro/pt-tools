@@ -205,6 +205,39 @@ async function confirmBulkReassign(){
   }
 }
 
+let CLIENTS_CACHE = null;
+async function getClientsCached2(){
+  if (CLIENTS_CACHE) return CLIENTS_CACHE;
+  try {
+    const r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({op:'select', table:'clients', limit:2000})});
+    const d = await r.json();
+    CLIENTS_CACHE = d.results || [];
+  } catch(e) { CLIENTS_CACHE = []; }
+  return CLIENTS_CACHE;
+}
+
+// Club OS booking summaries are free text like "Gary Chun-New Member InBody Scan"
+// or "Bill Richards-Monthly Progress Check-in" — no client_id, so we parse the
+// name out and match it against real clients, then route to the right intake tool.
+function resolveClubOsLink(summary, clients){
+  const s = (summary||'').toLowerCase();
+  let tool = null;
+  if (s.includes('new member') && s.includes('inbody')) tool = 'fitness-consultation-tool.html';
+  else if (s.includes('monthly') && (s.includes('progress') || s.includes('check'))) tool = 'fitness-monthly-checkin.html';
+  else if (s.includes('follow') || s.includes('re-engagement') || s.includes('6 week') || s.includes('6-week')) tool = 'fitness-followup-tool.html';
+  if (!tool) return null;
+
+  const namePart = (summary||'').split(/[-–]/)[0].trim();
+  if (!namePart) return { tool, clientId: null };
+  const nameLower = namePart.toLowerCase();
+  const match = (clients||[]).find(c => {
+    const full = ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase();
+    return full === nameLower || full.includes(nameLower) || nameLower.includes(full);
+  });
+  return { tool, clientId: match ? match.id : null, name: namePart };
+}
+
 async function syncClubOS(){
   const btn = document.getElementById('sync-btn');
   btn.textContent = 'Syncing...'; btn.disabled = true;
@@ -280,9 +313,10 @@ async function openDay(dateStr){
   const c = coach();
   const panel = document.getElementById('day-panel');
   panel.innerHTML = '<div class="empty-state">Loading...</div>';
-  const [r, r2] = await Promise.all([
+  const [r, r2, clients] = await Promise.all([
     fetch(WORKER + `/schedule/day?date=${dateStr}` + (c?`&coach=${encodeURIComponent(c)}`:'')),
-    fetch(WORKER + `/schedule/clubos-day?date=${dateStr}`)
+    fetch(WORKER + `/schedule/clubos-day?date=${dateStr}`),
+    getClientsCached2()
   ]);
   const d = await r.json();
   const d2 = await r2.json();
@@ -292,11 +326,19 @@ async function openDay(dateStr){
 
   if (clubosRows.length) {
     html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#2563EB;margin:10px 0 4px">Club OS Bookings</div>` +
-      clubosRows.map(a => `
-        <div class="sess-item" style="border-left:3px solid #2563EB;padding-left:10px">
-          <div class="name">${esc(a.summary||'Booking')}</div>
-          <div class="prog">${new Date(a.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}${a.location ? ' \u00B7 ' + esc(a.location) : ''}</div>
-        </div>`).join('');
+      clubosRows.map(a => {
+        const resolved = resolveClubOsLink(a.summary, clients);
+        const timeLabel = new Date(a.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+(a.location ? ' \u00B7 ' + esc(a.location) : '');
+        const inner = `<div class="name">${esc(a.summary||'Booking')}</div><div class="prog">${timeLabel}</div>`;
+        if (resolved) {
+          const href = resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}` : '');
+          const hint = resolved.clientId ? '' : `<div class="prog" style="color:#D97706">No exact client match — opens the intake blank, name it manually.</div>`;
+          return `<a href="${href}" style="color:inherit;text-decoration:none">
+            <div class="sess-item" style="border-left:3px solid #2563EB;padding-left:10px;cursor:pointer">${inner}${hint}</div>
+          </a>`;
+        }
+        return `<div class="sess-item" style="border-left:3px solid #2563EB;padding-left:10px">${inner}</div>`;
+      }).join('');
   }
 
   html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:10px 0 4px">${clubosRows.length ? 'Retro One Schedule' : ''}</div>`;
