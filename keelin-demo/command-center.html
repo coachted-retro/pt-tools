@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Command Center — Retro Fitness Rego Park (Demo)</title>
 
-<link rel="icon" type="image/x-icon" href="icons/favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/x-icon" href="../icons-strong/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons-strong/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="../icons-strong/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="../icons-strong/apple-touch-icon.png">
 <meta name="theme-color" content="#E0192B"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -156,6 +156,9 @@
 
   <div class="tools-label">Assessment Tools</div>
   <div class="tools">
+    <div class="toolcard" onclick="openTool('member-onboarding.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+      <span class="ic">🚪</span><div class="eb" style="color:var(--red)">Step 0 · Guest Walks In</div><div class="tt">New Member Onboarding</div>
+      <div class="td">Guest → tour → membership tier → close → schedule, one continuous record.</div><span class="arrow" style="color:var(--red)">→</span></div>
     <div class="toolcard" onclick="openTool('fitness-consultation-tool.html')">
       <span class="ic">📋</span><div class="eb">Step 1 · New Member</div><div class="tt">Initial Consultation</div>
       <div class="td">Full intake, InBody, AI assessment. Welcome Packet on sign-up.</div><span class="arrow">→</span></div>
