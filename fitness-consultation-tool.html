@@ -4206,6 +4206,7 @@ function parseHeightToInches(str) {
 function buildDemoUrl() {
   var name = gv('name') || 'Future Member';
   var goals = gv('goals') || 'general';
+  if (goals.length > 30) goals = goals.slice(0, 30).replace(/\s+\S*$/, ''); // keep the QR payload short and reliable
   var weight = gv('weight') || '';
   var pbf = gv('pbf') || '';
   var age = gv('age') || '';
@@ -4234,14 +4235,20 @@ function renderDemoQR() {
     box.innerHTML = '<div style="font-size:10px;color:#B0121F;padding:4px;max-width:120px;line-height:1.4;">QR unavailable — <a href="' + url + '" target="_blank" style="color:#B0121F">open link</a></div>';
     return;
   }
-  try {
-    var qr = qrcode(0, 'M');
-    qr.addData(url);
-    qr.make();
-    box.innerHTML = qr.createImgTag(4, 4);
-  } catch (e) {
-    box.innerHTML = '<div style="font-size:10px;color:#B0121F;padding:4px;max-width:120px;line-height:1.4;">QR failed — <a href="' + url + '" target="_blank" style="color:#B0121F">open link</a></div>';
+  // Auto-detect (typeNumber 0) can throw on some payload lengths in this library
+  // version — try it first, then fall back to explicit type numbers big enough
+  // to hold the data before giving up and showing the link instead.
+  var attempts = [0, 6, 10, 14, 20, 30, 40];
+  for (var i = 0; i < attempts.length; i++) {
+    try {
+      var qr = qrcode(attempts[i], 'M');
+      qr.addData(url);
+      qr.make();
+      box.innerHTML = qr.createImgTag(4, 4);
+      return;
+    } catch (e) { /* try the next type number */ }
   }
+  box.innerHTML = '<div style="font-size:10px;color:#B0121F;padding:4px;max-width:120px;line-height:1.4;">QR failed — <a href="' + url + '" target="_blank" style="color:#B0121F">open link</a></div>';
 }
 
 </script>
