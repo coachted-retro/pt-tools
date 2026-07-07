@@ -74,6 +74,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div id="locked-header" style="display:none;background:var(--ink);color:#fff;border-radius:12px;padding:18px;margin-bottom:16px">
     <div style="font-family:'Oswald';font-size:20px;font-weight:800;text-transform:uppercase" id="locked-name"></div>
     <div style="font-size:12px;color:#9CA3AF;margin-top:2px">Your personal coach portal</div>
+    <div id="coverage-toggle-wrap" style="display:none;margin-top:12px">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:#9CA3AF">Viewing</label>
+      <select id="coverage-toggle" onchange="switchCoverageView()" style="display:block;width:100%;margin-top:4px;padding:10px;border-radius:8px;border:none;font-weight:700"></select>
+    </div>
   </div>
   <div class="picker" id="picker-box">
     <label style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted)">Coach</label>
@@ -159,11 +163,41 @@ if (IS_LOCKED) {
   document.getElementById('locked-header').style.display = 'block';
   document.getElementById('locked-name').textContent = URL_COACH;
   document.getElementById('picker-box').style.display = 'none';
+  document.getElementById('coach-select').innerHTML = `<option value="${URL_COACH}">${URL_COACH}</option>`;
   document.getElementById('coach-select').value = URL_COACH;
   document.getElementById('calendar-link').href = 'coach-calendar.html?coach=' + encodeURIComponent(URL_COACH) + '&locked=1';
   localStorage.setItem('coach_crm_name', URL_COACH);
+  loadActiveCoverage();
 } else if (saved) {
   document.getElementById('coach-select').value = saved;
+}
+
+async function loadActiveCoverage(){
+  try {
+    const r = await fetch(WORKER + '/coverage/active?coach=' + encodeURIComponent(URL_COACH));
+    const d = await r.json();
+    const covering = d.covering || [];
+    if (!covering.length) return;
+    // Restrict the underlying select to exactly what this coach is authorized to see —
+    // their own clients, plus anyone they're actively covering for today.
+    const sel = document.getElementById('coach-select');
+    sel.innerHTML = `<option value="${URL_COACH}">My Clients (${URL_COACH})</option>` +
+      covering.map(name => `<option value="${name}">Covering: ${name}'s Clients</option>`).join('');
+    sel.value = URL_COACH;
+    const toggleWrap = document.getElementById('coverage-toggle-wrap');
+    const toggle = document.getElementById('coverage-toggle');
+    toggle.innerHTML = sel.innerHTML;
+    toggle.value = URL_COACH;
+    toggleWrap.style.display = 'block';
+  } catch(e) {}
+}
+
+function switchCoverageView(){
+  const chosen = document.getElementById('coverage-toggle').value;
+  document.getElementById('coach-select').value = chosen;
+  loadClients();
+  loadTodaySchedule();
+  loadCoachStats();
 }
 
 
