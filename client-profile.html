@@ -1100,6 +1100,13 @@ function woCalNav(dir){
 }
 
 function calDayClick(dateStr){
+  const appts = woAllAppts.filter(a => a.appointment_date === dateStr);
+  if (appts.length) {
+    const a = appts[0];
+    const toolFor = { initial_consultation:'fitness-consultation-tool.html', follow_up:'fitness-followup-tool.html', monthly_checkin:'fitness-monthly-checkin.html' };
+    const tool = toolFor[a.appointment_type];
+    if (tool) { location.href = tool + '?client_id=' + CURRENT.id; return; }
+  }
   const ws=woAllWorkouts.filter(w=>w.workout_date&&w.workout_date.slice(0,10)===dateStr);
   if(ws.length) openSessionLogger(dateStr,ws[0]);
   else openSessionLogger(dateStr);
