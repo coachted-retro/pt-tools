@@ -709,19 +709,14 @@
 <div class="config-overlay" id="config-overlay">
   <div class="config-modal">
     <h3>⚙️ Setup</h3>
-    <p>Enter your credentials to connect to the Personalized Assessment engine and Google Sheets database. Saved locally in this browser.</p>
+    <p>Enter your credentials to connect to the Personalized Assessment engine. Saved locally in this browser.</p>
     <div class="cfg-field">
       <label>Anthropic API Key</label>
       <input type="password" id="cfg-api-key" placeholder="sk-ant-api03-...">
       <div class="cfg-note">From <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent)">console.anthropic.com</a> → API Keys</div>
     </div>
     <div class="cfg-field">
-      <label>Google Sheets ID (Follow-Up Database)</label>
-      <input type="text" id="cfg-sheet-id" placeholder="Paste your Sheet ID">
-      <div class="cfg-note">Use the same sheet as the intake tool, or a separate follow-up sheet. The ID is in the URL between /d/ and /edit.</div>
-    </div>
-    <div class="cfg-field">
-      <label>Google Sheets API Key</label>
+      <label>Google API Key</label>
       <input type="password" id="cfg-gkey" placeholder="AIza...">
     </div>
     <div class="cfg-field">
@@ -772,9 +767,6 @@
       </button>
 
       <div class="nav-group-label" style="margin-top:22px">Database</div>
-      <button class="nav-item" onclick="openSheet()">
-        <span class="step-pip" style="font-size:12px">↗</span> Follow-up records
-      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -1473,7 +1465,6 @@ function getApiHeaders(apiKey) {
 // CONFIG
 // ===================================
 const NOTIFY_EMAILS = 'tedscholl@gmail.com, healthylifewithdani1@gmail.com';
-const SHEET_ID_DEFAULT = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
 
 function getCfg(k){ return localStorage.getItem('fct_'+k)||localStorage.getItem('ffu_'+k)||localStorage.getItem('ptci_'+k)||localStorage.getItem('pttools_'+k)||''; }
 function setCfg(k,v){ localStorage.setItem('fct_'+k,v);localStorage.setItem('ffu_'+k,v);localStorage.setItem('fct_'+k,v);localStorage.setItem('ffu_'+k,v);localStorage.setItem('ptci_'+k,v);localStorage.setItem('pttools_'+k,v);localStorage.setItem('pttools_'+k,v); }
@@ -1486,8 +1477,6 @@ function saveConfig() {
     localStorage.setItem(p+'gKey', 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE');
     localStorage.setItem(p+'configured', '1');
     localStorage.setItem(p+'proxyUrl', 'https://broken-cake-e9c2.tedscholl.workers.dev');
-    localStorage.setItem(p+'sheetId', '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g');
-    localStorage.setItem(p+'ptSheetId', '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs');
   });
   var el = document.getElementById('config-overlay');
   if (el) el.style.display = 'none';
@@ -1496,12 +1485,9 @@ function saveConfig() {
 function openConfig(){
   /* config overlay suppressed - keys hardcoded */
   if(getCfg('apiKey')) document.getElementById('cfg-api-key').value=getCfg('apiKey');
-  if(getCfg('sheetId')) document.getElementById('cfg-sheet-id').value=getCfg('sheetId');
   if('AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE') document.getElementById('cfg-gkey').value='AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE';
   if(getCfg('emails')) document.getElementById('cfg-emails').value=getCfg('emails');
 }
-
-function openSheet(){ window.open('https://docs.google.com/spreadsheets/d/'+(getCfg('sheetId')||SHEET_ID_DEFAULT)+'/edit','_blank'); }
 
 async function prefillFromClientId(clientId){
   try{
@@ -2019,48 +2005,6 @@ function showNotReady(){
 // GOOGLE SHEETS
 // ===================================
 
-async function ensureSheetHeaders() { /* simplified */ }
-
-async function appendToSheet(tab, row) {
-  try {
-    var resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write', {
-      method: 'POST', headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({tab: tab, row: row, sheetId: '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g'})
-    });
-    var data = JSON.parse(await resp.text());
-    if (!data.ok) { console.error('Sheet error:', data.error); return false; }
-    console.log('Sheet write OK:', tab);
-    return true;
-  } catch(e) { console.error('Sheet failed:', e.message); return false; }
-}
-
-function buildBaseRow(outcome, freq, length){
-  // Calculate next follow-up date
-  var fuDate = gv('fu-date');
-  var nextDate = '';
-  if (fuDate) {
-    var d = new Date(fuDate + 'T12:00:00');
-    d.setDate(d.getDate() + 42); // 6 weeks default
-    nextDate = d.toISOString().split('T')[0];
-  }
-  var outcomeStr = outcome + (freq ? ' - ' + freq + (length ? ', ' + length : '') : '');
-  return [
-    fuDate,
-    nextDate,
-    getCfg('advisor'),
-    gv('gender'),
-    gv('age'),
-    gv('name'),
-    gv('phone'),
-    gv('email'),
-    gv('orig-goals'),
-    outcomeStr,
-    '',
-    assessmentText ? assessmentText.substring(0,800)+(assessmentText.length>800?'...':'') : '',
-    '=HYPERLINK("https://myretrostrong.com/fitness-followup-tool.html","View Tool")'
-  ];
-}
-
 function addToCalendar(name, followUpDate, phone, email) {
   var title = encodeURIComponent('Monthly Check-In: ' + name);
   var details = encodeURIComponent('Phone: ' + phone + '\nEmail: ' + email + '\nMonthly PT check-in');
@@ -2101,9 +2045,6 @@ async function createClientFolder(name, gKey, content) {
   } catch(e) { return null; }
 }
 
-// ?? Save to PT Member Progress Tracker ??
-async function saveToPTTracker() { /* simplified */ }
-
 // syncGoalToClientRecord: keeps clients.goal_primary current with whatever's
 // on this follow-up, independent of the legacy Sheets save path — so the
 // client-facing/coach-facing name tag always reflects the latest goal.
@@ -2114,6 +2055,39 @@ async function syncGoalToClientRecord(){
     await fetch(FFU_WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ op:'update', table:'clients', values:{ goal_primary: goal }, where:{ id: SELECTED_CLIENT_ID } }) });
   } catch(e) {}
+}
+
+async function saveFollowupToD1(outcome, freq, length){
+  try {
+    const fullIntake = {
+      overall_feeling: gv('overall-feeling'), energy_score: gv('energy-score'),
+      been_working_out: gv('been-working-out'), actual_days: gv('actual-days'), exercise_type: gv('exercise-type'),
+      workout_duration: gv('workout-duration'), workout_description: gv('workout-description'),
+      physical_changes: gv('physical-changes'), results_score: gv('results-score'),
+      diet_changes: gv('diet-changes'), diet_change_detail: gv('diet-change-detail'),
+      obstacles: gv('obstacle-list'), biggest_obstacle: gv('biggest-obstacle'), tried_to_overcome: gv('tried-to-overcome'),
+      new_medical: gv('new-medical'), new_meds: gv('new-meds'), new_doctor_guidance: gv('new-doctor-guidance'),
+      goals_shifted: gv('goals-shifted'), new_goals: gv('new-goals'), urgency_event: gv('urgency-event'),
+      commitment_score: gv('commitment-score'), home_support: gv('home-support'),
+      trainer_perception: gv('trainer-perception'), life_impact: gv('life-impact'), status_quo_impact: gv('status-quo-impact'),
+      decline_reason: gv('decline-reason')
+    };
+    const vals = {
+      client_id: SELECTED_CLIENT_ID || null,
+      followup_date: gv('fu-date') || null,
+      advisor: getCfg('advisor') || null,
+      outcome: outcome || null,
+      program_freq: freq || null,
+      program_length: length || null,
+      goals: gv('orig-goals') || null,
+      assessment_summary: (assessmentText||'').substring(0,2000) || null,
+      full_intake_json: JSON.stringify(fullIntake),
+      created_at: new Date().toISOString()
+    };
+    Object.keys(vals).forEach(k => { if (vals[k]===null||vals[k]===undefined) delete vals[k]; });
+    await fetch(FFU_WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'followups', values: vals }) });
+  } catch(e) { console.warn('D1 followup save failed', e); }
 }
 
 async function finalizeEnrolled(){
@@ -2142,15 +2116,10 @@ async function finalizeEnrolled(){
     'ASSESSMENT:\n' + assessmentText;
   var folderResult = await createClientFolder(memberName, gKey, summary).catch(()=>null);
 
-  // 3. Save to follow-up sheet
-  var tab = memberGender === 'Female' ? 'Female Follow-Ups' : 'Male Follow-Ups';
-  var row = buildBaseRow('ENROLLED', selectedFreq, selectedLength);
-  await appendToSheet(tab, row);
+  // 3. Save to D1
+  await saveFollowupToD1('enrolled', selectedFreq, selectedLength);
 
-  // 4. Save to PT tracker
-  await saveToPTTracker(memberName, folderResult ? folderResult.folderUrl : '', selectedFreq, selectedLength, nextCheckin);
-
-  // 5. Send email
+  // 4. Send email
   await sendEmail('ENROLLED');
 
   hideLoading();
@@ -2192,9 +2161,7 @@ async function finalizeLongFollowup() {
   var months = document.getElementById('long-fu-months').value;
   var notes = document.getElementById('long-fu-notes').value;
   var gender = gv('gender');
-  var tab = gender === 'Female' ? 'Female Follow-Ups' : 'Male Follow-Ups';
-  var row = buildBaseRow('LONG-TERM FOLLOW-UP (' + months + ' months): ' + fuDate, '', '');
-  await appendToSheet(tab, row);
+  await saveFollowupToD1('long_followup: ' + months + ' months (' + fuDate + ')', '', '');
   await sendEmail('LONG-TERM FOLLOW-UP');
   hideLoading();
 
@@ -2217,9 +2184,7 @@ async function finalizeAnotherFollowup(){
   syncGoalToClientRecord();
   showLoading('Saving follow-up record...');
   const gender=gv('gender');
-  const tab=gender==='Female'?'Female Follow-Ups':'Male Follow-Ups';
-  const row=buildBaseRow('RE-FOLLOW-UP: '+gv('next-fu-date'),'','');
-  await appendToSheet(tab,row);
+  await saveFollowupToD1('another_followup: ' + gv('next-fu-date'), '', '');
   await sendEmail('ANOTHER FOLLOW-UP: '+gv('next-fu-date'),'','');
   hideLoading();
   document.getElementById('confirm-another-fu').classList.add('show');
@@ -2242,9 +2207,7 @@ async function finalizeNotReady(){
   syncGoalToClientRecord();
   showLoading('Closing record...');
   const gender=gv('gender');
-  const tab=gender==='Female'?'Female Follow-Ups':'Male Follow-Ups';
-  const row=buildBaseRow('CLOSED: '+gv('close-reason'),'','');
-  await appendToSheet(tab,row);
+  await saveFollowupToD1('not_ready: ' + gv('close-reason'), '', '');
   await sendEmail('CLOSED - NOT INTERESTED: '+gv('close-reason'),'','');
   hideLoading();
   document.getElementById('confirm-not-ready').classList.add('show');

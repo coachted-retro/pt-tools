@@ -1022,15 +1022,27 @@ function setInterest(val) {
 }
 
 async function writeToSheet(tab, row) {
+  // retired — kept only so any stray call sites don't throw; real save now goes to D1 directly.
+  return true;
+}
+
+async function saveLeadToD1(prospect){
   try {
-    const resp = await fetch(WORKER, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({tab, row})
+    const names = (prospect.name||'').trim().split(' ');
+    const first = names.shift() || '';
+    const last = names.join(' ');
+    await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'leads', values:{
+        business_name: prospect.name, first_name: first, last_name: last,
+        phone: prospect.phone||null, email: prospect.email||null,
+        lead_type: prospect.type||null, status: 'new', category: prospect.interest||null,
+        notes: prospect.notes||null, advisor: prospect.advisor||null,
+        created_at: new Date().toISOString()
+      }})
     });
-    const data = JSON.parse(await resp.text());
-    return data.ok;
-  } catch(e) { console.error('Sheet write failed:', e); return false; }
+    return true;
+  } catch(e) { console.warn('D1 lead save failed', e); return false; }
 }
 
 async function callAppsScript(params) {
@@ -1285,9 +1297,8 @@ async function saveProspect(first, last, phone) {
   };
   prospects.unshift(prospect);
   saveLocal();
-  const row = [prospect.date, prospect.name, prospect.phone, prospect.email, prospect.type, prospect.interest, prospect.timeframe, prospect.referred, prospect.advisor, prospect.notes];
-  const ok = await writeToSheet(PROSPECT_TAB, row);
-  setStatus('add-status', ok ? 'success' : 'error', ok ? 'Prospect saved!' : 'Saved locally. Sheet write failed.');
+  const ok = await saveLeadToD1(prospect);
+  setStatus('add-status', ok ? 'success' : 'error', ok ? 'Prospect saved!' : 'Saved locally. D1 write failed — check connection.');
   renderList(); updateStats(); updateTabCounts(); hideAddForm(); clearForm();
 }
 
@@ -1758,73 +1769,6 @@ function renderCalendar() {
   }
   grid.innerHTML = html;
 }
-
-// SYNC BC TO SHEET
-// ══════════════════════════════════════════════════
-async function syncBCToSheet() {
-  const btn = document.getElementById('sync-btn');
-  btn.textContent = '↑ Syncing...';
-  btn.disabled = true;
-  let count = 0;
-  for (const b of bcBookings) {
-    try {
-      const timeForSheet = b.apptTime ? formatTime(b.apptTime) : '';
-      await callAppsScript({
-        action: 'updateBookedConsultation',
-        name: b.name || '',
-        phone: b.phone || '',
-        status: b.status || 'Booked',
-        apptDate: b.apptDate || '',
-        apptTime: timeForSheet,
-        bookedBy: b.bookedBy || '',
-        advisor: b.advisor || '',
-        notes: b.notes || '',
-        email: b.email || ''
-      });
-      count++;
-    } catch(e) { console.warn('Sync failed for', b.name, e); }
-  }
-  btn.textContent = '✅ Synced ' + count;
-  btn.disabled = false;
-  setTimeout(() => { btn.textContent = '↑ Sync Sheet'; }, 3000);
-}
-
-// ══════════════════════════════════════════════════
-// DIAGNOSTIC
-// ══════════════════════════════════════════════════
-async function runDiagnostic() {
-  const results = [];
-
-  // Test 1: Cloudflare Worker (Prospects)
-  try {
-    const r = await fetch(WORKER, {
-      method: 'POST', headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({tab: 'Prospects', row: ['TEST-DATE','TEST NAME','0000000000','test@test.com','Test','Warm','ASAP','','Diagnostic','Diagnostic test - delete me']})
-    });
-    const d = JSON.parse(await r.text());
-    results.push('✅ Prospects (Worker): ' + JSON.stringify(d));
-  } catch(e) { results.push('❌ Prospects (Worker): ' + e.message); }
-
-  // Test 2: Cloudflare Worker (Touchpoints)
-  try {
-    const r = await fetch(WORKER, {
-      method: 'POST', headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({tab: 'Touchpoints', row: ['TEST-DATE','TEST NAME','Interested','Diagnostic test - delete me','Advisor']})
-    });
-    const d = JSON.parse(await r.text());
-    results.push('✅ Touchpoints (Worker): ' + JSON.stringify(d));
-  } catch(e) { results.push('❌ Touchpoints (Worker): ' + e.message); }
-
-  // Test 3: Apps Script (Booked Consultations)
-  try {
-    const d = await callAppsScript({action:'addBookedConsultation',dateBooked:'TEST',name:'TEST NAME',phone:'0000000000',email:'',apptDate:'2026-01-01',apptTime:'10:00',bookedBy:'Diagnostic',status:'Booked',notes:'Diagnostic test - delete me',originalProspectDate:''});
-    results.push('✅ Booked Consultations (AppsScript): ' + JSON.stringify(d));
-  } catch(e) { results.push('❌ Booked Consultations (AppsScript): ' + e.message); }
-
-  alert('DIAGNOSTIC RESULTS:\n\n' + results.join('\n\n'));
-}
-
-// ══════════════════════════════════════════════════
 // EDIT BOOKING
 // ══════════════════════════════════════════════════
 function openEditBookingModal() {
@@ -1958,12 +1902,6 @@ async function confirmNewBooking() {
 // ══════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════
-// Cache bust — bump CACHE_VERSION any time a clean re-sync is needed
-const CACHE_VERSION = 'v2';
-if (localStorage.getItem('pt_cache_version') !== CACHE_VERSION) {
-  localStorage.clear();
-  localStorage.setItem('pt_cache_version', CACHE_VERSION);
-}
 loadLocal();
 renderList();
 updateStats();

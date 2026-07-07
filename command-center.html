@@ -650,7 +650,7 @@ function renderRoster(){
   document.getElementById('rosterCount').textContent = list.length;
   const el = document.getElementById('rosterList');
   if(!list.length){
-    el.innerHTML = `<div class="empty"><div class="big">No clients yet</div>Import your saved clients from Google Sheets, or add one by hand. Your check-in tool also writes new clients here automatically.<div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><a class="btn" href="data-import.html">Import from Sheets</a><a class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" href="client-profile.html?add=1">+ Add Client</a></div></div>`;
+    el.innerHTML = `<div class="empty"><div class="big">No clients yet</div>Add one by hand, or your check-in tool will write new clients here automatically.<div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><a class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" href="client-profile.html?add=1">+ Add Client</a></div></div>`;
   } else {
     el.innerHTML = list.map(c=>{
       const nm = esc((c.first_name||'')+' '+(c.last_name||'')).trim()||'(no name)';

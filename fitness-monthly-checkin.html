@@ -289,7 +289,7 @@
     <p>Enter your credentials once — saved locally in this browser.</p>
     <div class="cfg-f"><label>Anthropic API Key</label><input type="password" id="cfg-api-key" placeholder="sk-ant-api03-..."></div>
     <div class="cfg-f"><label>PT Member Progress Tracker — Sheet ID</label><input type="text" id="cfg-sheet-id" value="1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs"></div>
-    <div class="cfg-f"><label>Google Sheets API Key</label><input type="password" id="cfg-gkey" placeholder="AIza..."></div>
+    <div class="cfg-f"><label>Google API Key</label><input type="password" id="cfg-gkey" placeholder="AIza..."></div>
     <div class="cfg-f"><label>Notification emails</label><input type="text" id="cfg-emails" value="tedscholl@gmail.com, healthylifewithdani1@gmail.com"></div>
     <button class="btn btn-primary btn-full" onclick="saveConfig()" style="margin-top:4px">Save & continue</button>
   </div>
@@ -317,7 +317,6 @@
       <button class="nav-item" id="nav-5" onclick="goPage(5)"><span class="pip">6</span> InBody comparison</button>
       <button class="nav-item" id="nav-6" onclick="goPage(6)"><span class="pip">7</span> Assessment & save</button>
       <div class="nav-section" style="margin-top:20px">Database</div>
-      <button class="nav-item" onclick="openSheet()"><span class="pip" style="font-size:12px">↗</span> Progress tracker</button>
     </nav>
     <div class="sidebar-footer">
       Monthly PT Check-In<br>
@@ -796,7 +795,6 @@
 function getApiUrl(){ return getCfg('proxyUrl')||'https://broken-cake-e9c2.tedscholl.workers.dev'; }
 function getApiHeaders(){ return {'Content-Type':'application/json'}; }
 
-const SHEET_ID_DEFAULT='1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
 const NOTIFY_EMAILS='tedscholl@gmail.com, healthylifewithdani1@gmail.com';
 
 function getCfg(k){ return localStorage.getItem('fct_'+k)||localStorage.getItem('ffu_'+k)||localStorage.getItem('ptci_'+k)||localStorage.getItem('pttools_'+k)||''; }
@@ -809,14 +807,11 @@ function saveConfig(){
     localStorage.setItem(p+'gKey','AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE');
     localStorage.setItem(p+'configured','1');
     localStorage.setItem(p+'proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
-    localStorage.setItem(p+'sheetId','1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g');
-    localStorage.setItem(p+'ptSheetId','1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs');
   });
   var el=document.getElementById('config-overlay'); if(el) el.style.display='none';
 }
 
 function openConfig(){}
-function openSheet(){ window.open('https://docs.google.com/spreadsheets/d/1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs','_blank'); }
 
 window.addEventListener('load',()=>{
   saveConfig();
@@ -1158,15 +1153,6 @@ async function generateAssessment(){
     setStatus('assess-status','','');
   } catch(e){ setStatus('assess-status','error','? Error: '+e.message); }
   btn.disabled=false; btn.innerHTML='* Regenerate assessment';
-}
-
-async function appendToSheet(tab,row){
-  try{
-    var resp=await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({tab:tab,row:row,sheetId:'1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs'})});
-    var data=JSON.parse(await resp.text());
-    if(!data.ok){console.error('Sheet error:',data.error);return false;}
-    return true;
-  } catch(e){console.error('Sheet failed:',e.message);return false;}
 }
 
 function addToCalendar(name,followUpDate){

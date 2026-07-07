@@ -254,6 +254,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <label for="fEOD">Submits End of Day report</label>
     </div>
     <div class="checkbox-row">
+      <input type="checkbox" id="fCanGrantAppAccess">
+      <label for="fCanGrantAppAccess">Can grant client app access</label>
+    </div>
+    <div class="checkbox-row">
       <input type="checkbox" id="fActive" checked>
       <label for="fActive">Active employee</label>
     </div>
@@ -460,6 +464,7 @@ function openModal(id) {
     document.getElementById('fHireDate').value = '';
     document.getElementById('fNotes').value = '';
     document.getElementById('fEOD').checked = false;
+    document.getElementById('fCanGrantAppAccess').checked = false;
     document.getElementById('fActive').checked = true;
     document.getElementById('fTemplate').value = '';
   } else {
@@ -473,6 +478,7 @@ function openModal(id) {
     document.getElementById('fHireDate').value = emp.hire_date || '';
     document.getElementById('fNotes').value = emp.notes || '';
     document.getElementById('fEOD').checked = !!emp.eod_required;
+    document.getElementById('fCanGrantAppAccess').checked = !!emp.can_grant_app_access;
     document.getElementById('fActive').checked = !!emp.active;
     document.getElementById('fTemplate').value = emp.eod_template || '';
   }
@@ -532,9 +538,10 @@ async function saveEmployee() {
     hire_date: document.getElementById('fHireDate').value || null,
     notes: document.getElementById('fNotes').value.trim() || null,
     eod_required: document.getElementById('fEOD').checked ? 1 : 0,
+    can_grant_app_access: document.getElementById('fCanGrantAppAccess').checked ? 1 : 0,
     eod_template: document.getElementById('fTemplate').value || null,
     active: document.getElementById('fActive').checked ? 1 : 0,
-    gym_id: parseInt(getF('fGymId'), 10) || 1
+    gym_id: parseInt(document.getElementById('fGymId').value, 10) || 1
   };
   try {
     let r, d;

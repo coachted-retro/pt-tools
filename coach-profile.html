@@ -117,6 +117,7 @@ function renderView(staff, profile, isMine) {
     ${isMine ? `<button class="action-btn secondary" onclick="showEdit()">Edit My Profile</button>` : ''}
     ${isMine ? `
     <a href="coach-crm.html?coach=${encodeURIComponent(staff.name)}&locked=1" class="action-btn" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Open Coach CRM — My Clients</a>
+    <a href="${(function(n){ n=(n||'').toLowerCase(); if(n.includes('ted')) return 'ted-eod.html'; if(n.includes('dani')) return 'dani-eod.html'; if(n.includes('sarah')) return 'sarah-eod.html'; return 'eod-picker.html'; })(staff.name)}" class="action-btn secondary" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Submit End of Day Report</a>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
       <a href="fitness-consultation-tool.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:10px;padding:10px 8px;text-align:center">
         <div style="font-size:9px;font-weight:800;color:var(--red);text-transform:uppercase">Step 1</div>

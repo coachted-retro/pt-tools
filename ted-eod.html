@@ -114,7 +114,7 @@ textarea{resize:vertical;min-height:72px}
 <body>
 
 <div class="topbar">
-  <a href="command-center.html" class="nav-btn">← Hub</a>
+  <a href="coach-profile.html?coach=Ted%20Scholl&locked=1" class="nav-btn">← Coach Dashboard</a>
   <div class="role-tag">Coach Ted</div>
   <div class="spacer"></div>
   <div class="date-badge" id="dateBadge"></div>
@@ -127,6 +127,20 @@ textarea{resize:vertical;min-height:72px}
     <span style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);white-space:nowrap">EOD Progress</span>
     <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     <span style="font-family:'Oswald';font-size:15px;font-weight:700;color:var(--ink)" id="progressPct">0%</span>
+  </div>
+
+  <!-- ROLLING NOTES SUMMARY — everything auto-saved today, at a glance -->
+  <div class="section" id="sec-notes-summary" style="border:1.5px solid #1E9E5A">
+    <div class="section-header" onclick="toggleSection('sec-notes-summary')">
+      <span class="section-num" style="background:#1E9E5A">✓</span>
+      <span class="section-title">Today's Notes Summary</span>
+      <span class="section-status status-auto" id="status-notes-summary">Loading...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Every note you've saved today, pulled live from each client's profile — this is what actually goes to Keelin.</div>
+      <div class="auto-list" id="notes-summary-list"><div class="empty-auto">Loading...</div></div>
+    </div>
   </div>
 
   <!-- SECTION 1: SESSIONS TODAY -->
@@ -185,40 +199,6 @@ textarea{resize:vertical;min-height:72px}
     </div>
   </div>
 
-  <!-- SECTION 2: WELCOME WORKOUTS -->
-  <div class="section collapsed" id="sec-ww">
-    <div class="section-header" onclick="toggleSection('sec-ww')">
-      <span class="section-num">05</span>
-      <span class="section-title">Welcome Workouts</span>
-      <span class="section-status status-empty" id="status-ww">Empty</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="field-row two">
-        <div class="field"><label>How many WW were booked today?</label><input type="number" id="ww-booked" placeholder="0" oninput="updateStatus('ww')"></div>
-        <div class="field"><label>How many showed?</label><input type="number" id="ww-showed" placeholder="0" oninput="updateStatus('ww')"></div>
-      </div>
-      <div class="field-row two">
-        <div class="field"><label>Rescheduled</label><input type="number" id="ww-rescheduled" placeholder="0" oninput="updateStatus('ww')"></div>
-        <div class="field"><label>Cancelled / No-Showed</label><input type="number" id="ww-noshowed" placeholder="0" oninput="updateStatus('ww')"></div>
-      </div>
-      <div class="field-row two">
-        <div class="field"><label>Did you update UDFs?</label>
-          <select id="ww-udf" onchange="updateStatus('ww')"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="na">N/A — none today</option></select></div>
-        <div class="field"><label>Did you add a note to each session?</label>
-          <select id="ww-session-notes" onchange="updateStatus('ww')"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="na">N/A — none today</option></select></div>
-      </div>
-      <div class="field-row two">
-        <div class="field"><label>Did you add a member alert?</label>
-          <select id="ww-alert" onchange="updateStatus('ww')"><option value="">Select</option><option value="yes">Yes</option><option value="no">No</option><option value="na">N/A — none needed</option></select></div>
-        <div class="field"><label>WW that turned into paying PT clients</label><input type="number" id="ww-closed" placeholder="0" oninput="updateStatus('ww')"></div>
-      </div>
-      <div class="field"><label>Bought / No Buy — with objection reason if applicable</label><textarea id="ww-noshows" placeholder="e.g. Amelia Stefanowski — no buy, price objection. Mike Chen — bought, 12-pack." oninput="updateStatus('ww')"></textarea></div>
-      <div class="field"><label>If no buy, did you book the 6-week follow-up?</label>
-        <select id="ww-followup-booked" onchange="updateStatus('ww')"><option value="">Select</option><option value="yes">Yes — all booked</option><option value="partial">Some booked</option><option value="no">Not yet</option><option value="na">N/A — no no-buys today</option></select></div>
-    </div>
-  </div>
-
 
   <!-- SECTION: SALES BREAKDOWN -->
   <div class="section collapsed" id="sec-sales">
@@ -251,20 +231,6 @@ textarea{resize:vertical;min-height:72px}
       <div class="auto-list" id="leads-list"><div class="empty-auto">Loading...</div></div>
       <button class="add-row-btn" onclick="addLeadNote()">+ Add Lead Not in System</button>
       <div id="extra-leads"></div>
-    </div>
-  </div>
-
-  <!-- SECTION 4: PROGRESS MONITORING -->
-  <div class="section collapsed" id="sec-monitoring">
-    <div class="section-header" onclick="toggleSection('sec-monitoring')">
-      <span class="section-num">08</span>
-      <span class="section-title">Progress Monitoring</span>
-      <span class="section-status status-auto" id="status-monitoring">Loading...</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="kpi-hint">Auto-flagged from InBody scan dates. Red = overdue (60+ days), Amber = due soon (45+ days).</div>
-      <div class="auto-list" id="monitoring-list"><div class="empty-auto">Loading...</div></div>
     </div>
   </div>
 
@@ -379,12 +345,13 @@ let allLeads = [];
 let allConsultations = [];
 let allCheckins = [];
 let allJeopardy = [];
+let todaySessionClientIds_GLOBAL = new Set();
 let sessionNotes = {};
 let todayDismissals = [];
 
 document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 
-const SECTIONS = ['sessions','consultations','jeopardy','checkins','ww','sales','leads','monitoring','frozen','renewals','wins','plan','notes'];
+const SECTIONS = ['sessions','consultations','jeopardy','checkins','sales','leads','frozen','renewals','wins','plan','notes'];
 
 function toggleSection(id) { document.getElementById(id).classList.toggle('collapsed'); }
 
@@ -468,7 +435,7 @@ function toggleInlineNote(id) {
 async function loadData() {
   try {
     const today = new Date().toISOString().slice(0,10);
-    const [clientsRes, scansRes, leadsRes, dismissalsRes, consultRes, checkinRes] = await Promise.all([
+    const [clientsRes, scansRes, leadsRes, dismissalsRes, consultRes, checkinRes, sessionsRes, apptSessionsRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:200})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
@@ -480,7 +447,11 @@ async function loadData() {
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'consultations', where:{consult_date: today}, limit:100})}).catch(function(){return null;}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'checkins', where:{checkin_date: today}, limit:100})}).catch(function(){return null;})
+        body: JSON.stringify({op:'select', table:'checkins', where:{checkin_date: today}, limit:100})}).catch(function(){return null;}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'scheduled_sessions', where:{scheduled_date: today}, limit:200})}).catch(function(){return null;}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'pt_appointments', where:{appointment_date: today, appointment_type:'training_session'}, limit:200})}).catch(function(){return null;})
     ]);
     allClients = (await clientsRes.json()).results || [];
     allScans = (await scansRes.json()).results || [];
@@ -488,6 +459,14 @@ async function loadData() {
     todayDismissals = dismissalsRes ? ((await dismissalsRes.json()).results || []) : [];
     allConsultations = consultRes ? ((await consultRes.json()).results || []) : [];
     allCheckins = checkinRes ? ((await checkinRes.json()).results || []) : [];
+    const scheduledToday = sessionsRes ? ((await sessionsRes.json()).results || []) : [];
+    const apptSessionsToday = apptSessionsRes ? ((await apptSessionsRes.json()).results || []) : [];
+    // Merge both sources into one client_id list — a client only needs to
+    // appear once even if they somehow have rows in both tables.
+    const todaySessionClientIds = new Set();
+    scheduledToday.forEach(function(s){ if (s.status !== 'cancelled') todaySessionClientIds.add(s.client_id); });
+    apptSessionsToday.forEach(function(a){ if (a.status !== 'cancelled' && a.client_id) todaySessionClientIds.add(a.client_id); });
+    todaySessionClientIds_GLOBAL = todaySessionClientIds;
     try {
       const jr = await fetch(WORKER + '/jeopardy/clients?coach=' + encodeURIComponent('Ted Scholl'));
       allJeopardy = ((await jr.json()).jeopardy) || [];
@@ -529,9 +508,9 @@ function renderAll() {
   renderJeopardy();
   renderCheckins();
   renderLeads();
-  renderMonitoring();
   renderFrozen();
   renderRenewals();
+  renderNotesSummary();
 }
 
 function renderJeopardy() {
@@ -583,12 +562,13 @@ function renderCheckins() {
 }
 
 function renderSessions() {
-  // Show today's active PT clients as expected sessions
-  const active = allClients.filter(c => c.status === 'active_pt' && (c.advisor||'').toLowerCase().includes('ted'));
+  // Only clients with a real scheduled session or training-type appointment
+  // TODAY specifically — not every active PT client on the books.
+  const active = allClients.filter(c => todaySessionClientIds_GLOBAL.has(c.id));
   const el = document.getElementById('sessions-list');
   if (!active.length) {
-    el.innerHTML = '<div class="empty-auto">✓ No active PT clients assigned to Ted</div>';
-    updateStatus('sessions', 'No clients', 'status-empty');
+    el.innerHTML = '<div class="empty-auto">✓ No sessions scheduled today</div>';
+    updateStatus('sessions', 'None', 'status-empty');
     return;
   }
   el.innerHTML = active.map(c => autoRow('💪', 'flag-green', name(c),
@@ -610,37 +590,30 @@ function renderLeads() {
   updateStatus('leads', active.length + ' active', 'status-auto');
 }
 
-function renderMonitoring() {
-  const el = document.getElementById('monitoring-list');
-  const active = allClients.filter(c => c.status === 'active_pt');
-  const latestScans = {};
-  allScans.forEach(s => { if (!latestScans[s.client_id] || s.scan_date > latestScans[s.client_id]) latestScans[s.client_id] = s.scan_date; });
-  const today = new Date();
-  const flags = active.map(c => {
-    const last = latestScans[c.id];
-    if (!last) return {c, days: 999, flag: 'red'};
-    const diff = Math.floor((today - new Date(last)) / 86400000);
-    if (diff >= 60) return {c, days: diff, flag: 'red'};
-    if (diff >= 45) return {c, days: diff, flag: 'amber'};
-    return null;
-  }).filter(Boolean).filter(f => !isDismissedToday('monitoring', f.c.id)).sort((a,b) => b.days - a.days);
-
-  if (!flags.length) {
-    el.innerHTML = '<div class="empty-auto">✓ All clients current on progress monitoring</div>';
-    updateStatus('monitoring', 'All current', 'status-done');
-    return;
-  }
-  el.innerHTML = `<button class="note-btn" style="margin-bottom:8px" onclick='dismissAllFlags("monitoring",${JSON.stringify(flags.map(f=>f.c.id))})'>✓ Dismiss all for today</button>` +
-    flags.map(f => autoRow(
-    f.flag === 'red' ? '🔴' : '🟡',
-    'flag-' + f.flag,
-    name(f.c),
-    f.days === 999 ? 'No InBody scan on file' : `Last scan: ${latestScans[f.c.id]} (${f.days} days ago)`,
-    'mon-' + f.c.id,
-    {flagType: 'monitoring', clientId: f.c.id},
-    f.c.id, 'EOD - Monitoring'
-  )).join('');
-  updateStatus('monitoring', flags.length + ' flagged', flags.some(f=>f.flag==='red') ? 'status-partial' : 'status-auto');
+async function renderNotesSummary() {
+  const el = document.getElementById('notes-summary-list');
+  try {
+    const r = await fetch(WORKER + '/coach/notes-today?coach=' + encodeURIComponent('Ted Scholl'));
+    const d = await r.json();
+    const notes = d.notes || [];
+    if (!notes.length) {
+      el.innerHTML = "<div class='empty-auto'>No notes saved yet today — they'll show up here the moment you add one below.</div>";
+      updateStatus('notes-summary', 'None yet', 'status-empty');
+      return;
+    }
+    el.innerHTML = notes.map(n => {
+      const clientName = (n.first_name || n.last_name) ? (n.first_name + ' ' + n.last_name).trim() : 'Client #' + n.client_id;
+      const time = n.created_at ? new Date(n.created_at + (n.created_at.includes('Z')?'':'Z')).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+      return `<div class="auto-row flag-green" style="cursor:default">
+        <span class="ar-icon">📝</span>
+        <div class="ar-info">
+          <div class="ar-name">${esc(clientName)} <span style="font-weight:400;color:var(--muted);font-size:11px">— ${esc((n.tag||'').replace('EOD - ',''))}${time?' · '+time:''}</span></div>
+          <div class="ar-note">${esc(n.body)}</div>
+        </div>
+      </div>`;
+    }).join('');
+    updateStatus('notes-summary', notes.length + ' saved', 'status-done');
+  } catch(e) { el.innerHTML = "<div class='empty-auto'>Could not load today's notes.</div>"; }
 }
 
 function renderFrozen() {
@@ -737,18 +710,8 @@ async function confirmSubmit() {
     notable_wins: document.getElementById('notable-wins').value,
     game_plan: document.getElementById('game-plan').value,
     notes: notes,
-    ww: {
-      booked: document.getElementById('ww-booked').value,
-      showed: document.getElementById('ww-showed').value,
-      rescheduled: document.getElementById('ww-rescheduled').value,
-      noshowed: document.getElementById('ww-noshowed').value,
-      udf_updated: document.getElementById('ww-udf').value,
-      session_notes_added: document.getElementById('ww-session-notes').value,
-      member_alert_added: document.getElementById('ww-alert').value,
-      closed: document.getElementById('ww-closed').value,
-      followup_booked: document.getElementById('ww-followup-booked').value,
-      noshows: document.getElementById('ww-noshows').value
-    },
+    consultations_today: allConsultations.map(c => ({ client_id: c.client_id, outcome: c.outcome, note: sessionNotes['consult-'+c.id] || '' })),
+    checkins_today: allCheckins.map(ci => ({ client_id: ci.client_id, note: sessionNotes['checkin-'+ci.id] || '' })),
     sales: {
       total: document.getElementById('sales-total').value,
       new_business: document.getElementById('sales-new').value,

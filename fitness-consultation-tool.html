@@ -1068,9 +1068,6 @@
       </button>
 
       <div class="nav-section-label" style="margin-top:24px">Database</div>
-      <button class="nav-item" onclick="window.open('https://docs.google.com/spreadsheets/d/'+getCfg('sheetId')+'/edit','_blank')">
-        <span class="step-num" style="font-size:12px">↗</span> All intakes
-      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -2089,7 +2086,6 @@ function getApiHeaders(apiKey) {
 // ===========================================
 // CONFIG
 // ===========================================
-const SHEET_ID = '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g';
 const NOTIFY_EMAIL = 'tedscholl@gmail.com, healthylifewithdani1@gmail.com';
 
 function getCfg(k) {
@@ -2112,8 +2108,6 @@ function saveConfig() {
     localStorage.setItem(p+'gKey', 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE');
     localStorage.setItem(p+'configured', '1');
     localStorage.setItem(p+'proxyUrl', 'https://broken-cake-e9c2.tedscholl.workers.dev');
-    localStorage.setItem(p+'sheetId', '1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g');
-    localStorage.setItem(p+'ptSheetId', '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs');
   });
   var el = document.getElementById('config-overlay');
   if (el) el.style.display = 'none';
@@ -2160,7 +2154,6 @@ window.addEventListener('load', () => {
     document.getElementById('config-overlay').style.display = 'none';
     const advisor = getCfg('advisor');
     if (advisor) document.getElementById('advisor-name').value = advisor;
-    ensureSheetTabs();
   }
   // Set today's date
   const today = new Date().toISOString().split('T')[0];
@@ -2879,13 +2872,7 @@ function showDecline() {
 
 async function ensureSheetHeaders() { /* simplified */ }
 
-// Sheets write is retired — D1 is the primary store.
-// These stubs return true silently so existing call sites don't break.
-async function appendToSheet(tabName, rowValues) {
-  console.log('[appendToSheet] retired — data written to D1. Tab was:', tabName);
-  return true;
-}
-async function ensureSheetTabs() { return; }
+
 async function appendRowIfTabExists() { return; }
 async function saveToPTTracker(name, folderUrl, freq, length, nextCheckin) {
   console.log('[saveToPTTracker] retired — client saved to D1 via finalizeAccept.');
@@ -3175,7 +3162,6 @@ async function finalizeAccept() {
 
     // 4. Fire Sheets write as silent fallback (non-blocking)
     var row = buildIntakeRow('ACCEPTED');
-    appendToSheet('All Intakes', row).catch(function(){});
 
     // 5. Save draft and notify
     markDraftSynced(clientName);
@@ -3261,9 +3247,7 @@ async function finalizeDecline() {
   // 2. Sheets as silent fallback
   markDraftSynced(clientName);
   const intakeRow = buildIntakeRow('DECLINED', '', '');
-  appendToSheet('All Intakes', intakeRow).catch(function(){});
   const followRow = buildFollowUpRow(followDateStr);
-  appendToSheet(tabName, followRow).catch(function(){});
 
   await sendNotificationEmail('DECLINED', '', '');
 
