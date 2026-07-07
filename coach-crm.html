@@ -14,7 +14,12 @@
 :root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--lred:#FEF2F2;}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
-.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;border-bottom:3px solid var(--red)}
+.topbar{background:var(--ink);display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;min-height:56px;border-bottom:3px solid var(--red)}
+@media(max-width:640px){
+  .topbar{padding:10px 14px}
+  .topbar .logo{font-size:16px;width:100%}
+  .topbar a, .topbar button{margin-left:0 !important;font-size:11px;padding:7px 12px}
+}
 .topbar .logo{font-family:'Oswald';font-weight:800;font-size:18px;color:#fff;text-transform:uppercase}
 .topbar .logo span{color:var(--red)}
 .topbar a{margin-left:auto;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
@@ -43,6 +48,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   .picker{flex-direction:column;align-items:stretch;gap:8px}
   .picker select{padding:14px;font-size:16px}
   .card{padding:16px;gap:12px}
+  .intake-grid{grid-template-columns:1fr !important}
+  #coach-stats{grid-template-columns:repeat(2,1fr) !important}
   .badges{flex-direction:column;align-items:flex-end;gap:4px}
   .name{font-size:15px}
 }
@@ -102,7 +109,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 
   <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Start an Intake</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+  <div class="intake-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
     <a href="fitness-consultation-tool.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;display:block">
       <div style="font-size:10px;font-weight:800;color:var(--red);text-transform:uppercase">Step 1 · New Member</div>
       <div style="font-weight:700;font-size:13px;margin-top:2px">Initial Consultation</div>
