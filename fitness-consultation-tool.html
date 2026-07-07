@@ -2793,35 +2793,12 @@ function showThinkingAboutIt() {
     '&details=' + encodeURIComponent('Discussed: ' + (pkgDisplayName()||'—') + ' | Phone: ' + (gv('phone')||'—') + ' | Goals: ' + (gv('goals')||'—'));
   setTimeout(function(){ window.open(calUrl, '_blank'); }, 400);
 
-  // Generate warmer thank-you email
+  // Generate warmer thank-you email — same robust letter used for a firm
+  // decline (6-week follow-up mention, signature block, auto-send). "Still
+  // thinking it over" gets the identical letter; the 3-day callback above is
+  // a separate personal-touch reminder for Ted, not a different letter.
   var stage = document.getElementById('thankyou-stage');
-  if (stage) { stage.style.display = 'block'; generateThinkingEmail(); }
-}
-
-async function generateThinkingEmail() {
-  var status = document.getElementById('ty-status');
-  var toEl = document.getElementById('ty-to');
-  var subEl = document.getElementById('ty-subject');
-  var bodyEl = document.getElementById('ty-body');
-  if (status) status.textContent = 'Generating follow-up email...';
-  if (toEl) toEl.value = gv('email') || '';
-  if (subEl) subEl.value = 'Great meeting you today, ' + (gv('name')||'') + ' — your program summary inside';
-
-  var prompt = 'Write a warm, brief follow-up email from Coach Ted at Retro Fitness to ' + (gv('name')||'a prospective member') + ' who just had a consultation and wants to think it over. Their goals: ' + (gv('goals')||'improve their health') + '. Package discussed: ' + (pkgDisplayName()||'personal training') + '. Tone: encouraging, zero pressure, remind them what they shared about their goals and why they came in, let them know the door is open. 3 short paragraphs. Sign off as Coach Ted, Retro Fitness Fairless Hills. No subject line in the body.';
-
-  try {
-    var r = await fetch(getApiUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 500, messages: [{ role: 'user', content: prompt }] })
-    });
-    var d = await r.json();
-    var text = (d.content || []).map(function(b){ return b.text || ''; }).join('').trim();
-    if (bodyEl) bodyEl.value = text;
-    if (status) status.textContent = 'Ready to send or edit below.';
-  } catch(e) {
-    if (status) status.textContent = 'Could not generate — type manually.';
-  }
+  if (stage) { stage.style.display = 'block'; generateThankYouEmail(); }
 }
 
 function showDeclineFromPackages() {
@@ -3275,9 +3252,10 @@ async function generateThankYouEmail(){
   const firstName=name.split(' ')[0]||'there';
   const advisor=(gv('advisor-name')||getCfg('advisor')||'Coach Ted');
   const toEl=document.getElementById('ty-to'); if(toEl) toEl.value=gv('email')||'';
+  const followDateStr = (function(){ const d=new Date(); d.setDate(d.getDate()+42); return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}); })();
   const prompt="Write a warm, professional follow-up email from a personal trainer to a prospective client who just completed a fitness consultation and InBody assessment but decided NOT to start personal training right now. Return ONLY the plain-text email body. No subject line, no markdown, no asterisks, no symbols, no bullet characters. Use natural paragraphs with line breaks.\n\n"+
     "Address them by first name: "+firstName+". Sign off as "+advisor+", Retro Fitness of Fairless Hills, 215-295-2004.\n\n"+
-    "Cover these in order, woven naturally, not as a numbered list: (1) a brief, genuine thank-you for coming in and completing their assessment; (2) a clear, detailed, plain-language summary of their assessment findings and what their numbers actually mean for their body and health, drawn from the assessment below; (3) based on their physical condition and goals, caring and compelling reasons why their health is worth prioritizing now, framed around them, not pressure; (4) why personal training is a smart, supported path to their goals, and the honest point that without accountability, consistency, and proper support, the time and effort they put in at the gym is easily wasted or can even lead to injury or burnout, and that coaching protects that investment; (5) a low-pressure, encouraging close inviting them to start whenever they're ready, making clear you are here to help. Keep it human and sincere, not salesy. Around 250 to 350 words.\n\n"+
+    "Cover these in order, woven naturally, not as a numbered list: (1) a brief, genuine thank-you for coming in and completing their assessment; (2) a clear, detailed, plain-language summary of their assessment findings and what their numbers actually mean for their body and health, drawn from the assessment below; (3) based on their physical condition and goals, caring and compelling reasons why their health is worth prioritizing now, framed around them, not pressure; (4) why personal training is a smart, supported path to their goals, and the honest point that without accountability, consistency, and proper support, the time and effort they put in at the gym is easily wasted or can even lead to injury or burnout, and that coaching protects that investment; (5) mention naturally that we'll follow up with them on "+followDateStr+" to see how things are going, and a low-pressure, encouraging close inviting them to start whenever they're ready, making clear you are here to help. Keep it human and sincere, not salesy. Around 250 to 350 words.\n\n"+
     "MEMBER GOALS: "+(gv('goals')||'not specified')+"\n"+
     "INBODY: BMI "+(gv('bmi')||'n/a')+", body fat "+(gv('pbf')||'n/a')+"%, lean mass "+(gv('lean-mass')||'n/a')+" lb, fat mass "+(gv('fat-mass')||'n/a')+" lb\n"+
     "MEDICAL NOTES: "+(gv('medical')||'none noted')+"\n\n"+
@@ -3286,11 +3264,26 @@ async function generateThankYouEmail(){
     const r=await fetch(getApiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1300,messages:[{role:'user',content:prompt}]})});
     const d=await r.json();
     if(d.error) throw new Error((d.error.message)||'AI error');
-    const body=(d.content||[]).map(b=>b.text||'').join('').trim();
+    const body=(d.content||[]).map(b=>b.text||'').join('').trim() + '\n\n' + PHORM_SIGNATURE;
     const subEl=document.getElementById('ty-subject'); if(subEl) subEl.value='Your Retro Fitness assessment, and a thought on your next step';
     const bodyEl=document.getElementById('ty-body'); if(bodyEl) bodyEl.value=body;
-    if(st) st.textContent='Ready. Review and edit if you like, then Open in Gmail or Copy.';
+    if(st) st.textContent='Ready — sending automatically...';
+    autoSendThankYou();
   }catch(e){ if(st) st.textContent='Could not generate ('+e.message+'). You can still write the email below.'; }
+}
+async function autoSendThankYou(){
+  const st=document.getElementById('ty-status');
+  const to=(document.getElementById('ty-to')||{}).value||'';
+  const subject=(document.getElementById('ty-subject')||{}).value||'';
+  const body=(document.getElementById('ty-body')||{}).value||'';
+  if (!to) { if(st) st.textContent='No email on file — review below and send manually.'; return; }
+  try{
+    const r=await fetch(getApiUrl().replace(/\/$/,'')+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ to, subject, html: String(body).replace(/\n/g,'<br>') })});
+    const d=await r.json();
+    if (d.sent) { if(st) st.textContent='✅ Sent to '+to+'. Review below anytime, or resend if you edit it.'; }
+    else { if(st) st.textContent='Could not auto-send ('+(d.error||'check email setup with Ted')+') — review below and use Open in Gmail instead.'; }
+  }catch(e){ if(st) st.textContent='Connection error sending — review below and use Open in Gmail instead.'; }
 }
 function openThankYouGmail(){
   const to=encodeURIComponent((document.getElementById('ty-to')||{}).value||'');

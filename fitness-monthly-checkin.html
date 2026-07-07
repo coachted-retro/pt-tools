@@ -1562,6 +1562,35 @@ function runMonthlyReport() {
     wins: gv('wins-list') || '',
   };
   triggerReportWorkflow('monthly', clientData, assessmentText || '', 'report-monthly-status');
+  generateCheckinThankYou(clientData);
+}
+
+// === PERSONAL CHECK-IN THANK YOU / RECAP LETTER ===
+// Separate from the formal Monthly Progress Report above — this is the warm,
+// personal note: thanks for coming in, a brief recap, and direction on
+// whether we're adjusting the program or staying the course. Auto-sends the
+// same way the consultation tool's decline letter does.
+async function generateCheckinThankYou(clientData){
+  const statusEl = document.getElementById('report-monthly-status');
+  const firstName = (clientData.name||'').split(' ')[0] || 'there';
+  const prompt = "Write a warm, personal check-in recap email from a personal trainer to their active client, right after a monthly check-in session. Return ONLY the plain-text email body. No subject line, no markdown, no asterisks, no bullet characters. Use natural paragraphs.\n\n"+
+    "Address them by first name: "+firstName+". Sign off as "+(clientData.advisor||'Coach Ted')+", Retro Fitness of Fairless Hills.\n\n"+
+    "Cover naturally, not as a numbered list: (1) a brief, genuine thank-you for coming in for their monthly check-in; (2) a short, warm recap of how things are going based on the session below; (3) clear direction on whether we're adjusting their program to help them progress further, or staying the current course because it's working — decide which fits based on the data below, and briefly say why; (4) an encouraging close. Around 150 to 250 words, noticeably shorter and more personal than a formal report.\n\n"+
+    "SESSION DATA: sessions completed "+(clientData.sessionsDone||'n/a')+", sessions missed "+(clientData.sessionsMissed||'n/a')+", diet score "+(clientData.dietScore||'n/a')+"/10, wins noted: "+(clientData.wins||'none specific noted')+", nutrition wins: "+(clientData.nutritionWins||'n/a')+", nutrition struggles: "+(clientData.nutritionStruggles||'n/a')+"\n"+
+    "WEIGHT/BODY: current weight "+(clientData.weight||'n/a')+", lean mass "+(clientData.leanMass||'n/a')+", fat mass "+(clientData.fatMass||'n/a')+"\n"+
+    "GOALS: "+(clientData.goals||'not specified')+"\n\n"+
+    "ASSESSMENT SUMMARY: "+(assessmentText||'(base tone on the session data above)');
+  try {
+    const r = await fetch(getApiUrl(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:900,messages:[{role:'user',content:prompt}]})});
+    const d = await r.json();
+    if (d.error) throw new Error(d.error.message||'AI error');
+    const body = (d.content||[]).map(b=>b.text||'').join('').trim() + '\n\n' + PHORM_SIGNATURE;
+    if (!clientData.email) return; // formal report status already shows; nothing more to say here
+    const send = await fetch(getApiUrl().replace(/\/$/,'')+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ to: clientData.email, subject: 'Great seeing you today, '+firstName+'!', html: String(body).replace(/\n/g,'<br>') })});
+    const sd = await send.json();
+    if (statusEl && sd.sent) statusEl.innerHTML += '<br><span style="color:#4caf7d">✅ Personal check-in note also sent to '+clientData.email+'</span>';
+  } catch(e) { /* silent — the formal report is the primary deliverable, this is a bonus touch */ }
 }
 
 // Patch saveCheckin to show report button
