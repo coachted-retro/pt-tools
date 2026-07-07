@@ -138,6 +138,11 @@ function renderView(staff, profile, isMine) {
       <button class="action-btn secondary" style="margin-top:10px" onclick="syncCalendarToPhone(${staff.id})">Sync to My Phone Calendar</button>
     </div>
     <div class="card">
+      <div class="sec-label" style="margin-top:0">My Prospects</div>
+      <p style="font-size:12px;color:var(--ink3,#6B7280);margin:-4px 0 10px">Anyone who declined or hasn't signed up yet, where you're the advisor — for consistent follow-up. Pulled from consultation outcomes directly, not a separate list to maintain.</p>
+      <div id="my-prospects-body"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="card">
       <div class="sec-label" style="margin-top:0">Upcoming at the Gym</div>
       <div id="gym-events-body"><div class="empty-state">Loading...</div></div>
     </div>
@@ -163,10 +168,58 @@ function renderView(staff, profile, isMine) {
   window._currentProfile = profile;
   if (isMine) {
     loadMyShiftsProfile(staff.id, staff.name);
+    loadMyProspects(staff.name);
     loadGymEventsProfile();
     if (NEEDS_COVERAGE_ROLES.includes(staff.role)) loadAvailabilityProfile(staff.id);
     loadMyTimeOffProfile(staff.id);
   }
+}
+
+async function loadMyProspects(coachName){
+  const el = document.getElementById('my-prospects-body');
+  if (!el || !coachName) return;
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'clients', where:{ status:'prospect' }, orderBy:'updated_at DESC', limit:200 }) });
+    const d = await r.json();
+    const mine = (d.results||[]).filter(c => (c.advisor||'').trim().toLowerCase() === coachName.trim().toLowerCase() || (c.coach||'').trim().toLowerCase() === coachName.trim().toLowerCase());
+    if (!mine.length) { el.innerHTML = '<div class="empty-state">No prospects assigned to you right now.</div>'; return; }
+    el.innerHTML = mine.map(c => `
+      <div style="padding:10px 0;border-bottom:1px solid var(--line,#E4E7EC)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <a href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(coachName)}" style="font-weight:700;font-size:13px;color:inherit;text-decoration:none">${esc(c.first_name)} ${esc(c.last_name)}</a>
+          <span style="font-size:11px;color:var(--ink3,#6B7280)">${esc(fmtDateProspect(c.updated_at))}</span>
+        </div>
+        <div style="font-size:12px;color:var(--ink3,#6B7280);margin-top:2px">${esc(c.goal_primary||'No goal on file')}</div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <input type="text" placeholder="Add a follow-up note..." id="prospect-note-${c.id}" style="flex:1;padding:6px 8px;font-size:12px;border:1px solid var(--line,#E4E7EC);border-radius:6px">
+          <button onclick="logProspectFollowup(${c.id},'${esc(c.first_name+' '+c.last_name).replace(/'/g,"")}','${esc(coachName).replace(/'/g,"")}')" style="background:var(--red,#E0192B);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">Log</button>
+        </div>
+        <div id="prospect-status-${c.id}" style="font-size:11px;color:var(--ink3,#6B7280);margin-top:4px"></div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load your prospects.</div>'; }
+}
+
+function fmtDateProspect(dt){
+  if (!dt) return '';
+  return new Date(dt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+async function logProspectFollowup(clientId, clientName, coachName){
+  const input = document.getElementById('prospect-note-'+clientId);
+  const status = document.getElementById('prospect-status-'+clientId);
+  const body = input.value.trim();
+  if (!body) { status.textContent = 'Type a note first.'; return; }
+  status.textContent = 'Saving...';
+  try {
+    await fetch(WORKER + '/coach/note', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, coach_name: coachName, tag: 'Prospect Follow-Up', body }) });
+    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'clients', values:{ updated_at: new Date().toISOString() }, where:{ id: clientId } }) });
+    input.value = '';
+    status.textContent = '✓ Logged';
+    setTimeout(() => loadMyProspects(coachName), 800);
+  } catch(e) { status.textContent = 'Could not save.'; }
 }
 
 async function loadMyShiftsProfile(staffId, coachName) {

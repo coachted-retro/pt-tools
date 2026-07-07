@@ -4357,10 +4357,11 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.setFont('helvetica', 'normal');
   doc.text('Coach Ted Scholl  |  Retro Fitness of Fairless Hills  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
 
-  // Save
+  // Save locally as a backup copy, and return base64 for automated email attachment
   const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf';
   doc.save(filename);
-  return filename;
+  const base64 = doc.output('datauristring').split(',')[1];
+  return { filename, base64 };
 }
 
 // ---- EMAIL BODIES ----
@@ -4411,25 +4412,33 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
     loadJsPDF(async () => {
       try {
         const reportContent = await generateReportContent(reportType, clientData, assessmentSummary);
-        const filename = buildPDF(reportType, clientData.name, reportContent, clientData);
+        const { filename, base64 } = buildPDF(reportType, clientData.name, reportContent, clientData);
 
-        if (statusEl) statusEl.innerHTML = '<span style="color:#4caf7d">✅ PDF downloaded: ' + filename + '</span>';
+        if (statusEl) statusEl.innerHTML = '<span style="color:#4caf7d">✅ PDF saved: ' + filename + '</span><br><span style="color:#d4a843">⏳ Sending to client...</span>';
 
-        // Open Gmail compose to client
-        setTimeout(() => {
-          const emailBody = buildEmailBody(reportType, clientData.name, clientData, assessmentSummary);
-          const subjects = {
-            welcome: 'Welcome to Retro Fitness Elite Training — Your Welcome Packet',
-            thankyou: 'Your Body Composition Results — Retro Fitness of Fairless Hills',
-            monthly: 'Your Monthly Progress Report — ' + new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'})
-          };
-          const gmailUrl = 'https://mail.google.com/mail/?view=cm' +
-            '&to=' + encodeURIComponent(clientData.email || '') +
-            '&su=' + encodeURIComponent(subjects[reportType]) +
-            '&body=' + encodeURIComponent(emailBody);
-          window.open(gmailUrl, '_blank');
-          if (statusEl) statusEl.innerHTML += '<br><span style="color:#5a8ec8">📧 Gmail compose opened — attach the PDF before sending.</span>';
-        }, 1200);
+        const emailBody = buildEmailBody(reportType, clientData.name, clientData, assessmentSummary);
+        const subjects = {
+          welcome: 'Welcome to Retro Fitness Elite Training — Your Welcome Packet',
+          thankyou: 'Your Body Composition Results — Retro Fitness of Fairless Hills',
+          monthly: 'Your Monthly Progress Report — ' + new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'})
+        };
+        if (!clientData.email) {
+          if (statusEl) statusEl.innerHTML = '<span style="color:#DC2626">❌ No email on file for this client — PDF saved locally, add their email to send it.</span>';
+          return;
+        }
+        try {
+          const r = await fetch(getApiUrl().replace(/\/$/,'') + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ to: clientData.email, subject: subjects[reportType], html: String(emailBody).replace(/\n/g,'<br>'),
+              attachment: { filename, content: base64 } }) });
+          const d = await r.json();
+          if (d.sent) {
+            if (statusEl) statusEl.innerHTML = '<span style="color:#4caf7d">✅ Sent to ' + clientData.email + '</span>';
+          } else {
+            if (statusEl) statusEl.innerHTML = '<span style="color:#DC2626">❌ Could not send (' + (d.error||'check email setup with Ted') + ') — PDF saved locally as a backup.</span>';
+          }
+        } catch(e) {
+          if (statusEl) statusEl.innerHTML = '<span style="color:#DC2626">❌ Connection error sending email — PDF saved locally as a backup.</span>';
+        }
 
       } catch(e) {
         if (statusEl) statusEl.innerHTML = '<span style="color:#DC2626">❌ Error: ' + e.message + '</span>';

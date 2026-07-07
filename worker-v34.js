@@ -2840,10 +2840,14 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.RESEND_KEY) return bad('RESEND_KEY not configured', cors);
         const b = await request.json();
         if (!b.to || !b.subject || !b.html) return bad('to, subject, html required', cors);
+        const payload = { from: env.MAIL_FROM || 'onboarding@resend.dev', to: [b.to], subject: b.subject, html: b.html };
+        if (b.attachment && b.attachment.content && b.attachment.filename) {
+          payload.attachments = [{ filename: b.attachment.filename, content: b.attachment.content }];
+        }
         const r = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ from: env.MAIL_FROM || 'onboarding@resend.dev', to: [b.to], subject: b.subject, html: b.html })
+          body: JSON.stringify(payload)
         });
         const d = await r.json();
         return ok({ sent: r.ok, id: d.id || null, error: r.ok ? null : (d.message || 'send failed') }, cors);

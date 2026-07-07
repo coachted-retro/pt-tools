@@ -86,6 +86,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="sess-pill"><div class="n" id="c-sessions">—</div><div class="l">Sessions Left</div></div>
     <a href="gym-floor.html?client=" id="start-workout-btn" style="background:var(--red);color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;white-space:nowrap">Build / Log Workout &rarr;</a>
+    <button onclick="openEmailModal()" style="background:#fff;color:var(--ink);border:1.5px solid var(--line);padding:12px 20px;border-radius:8px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;white-space:nowrap;cursor:pointer">✉ Email Client</button>
     <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px">Exercise library, routine bundles, AI Program Builder, and HERO WOD all live here</div>
   </div>
 
@@ -503,6 +504,49 @@ function scRenderSelected(){
         </div>
       `}
     </div>`).join('');
+}
+
+function openEmailModal(){
+  const c = DATA.client || {};
+  if (!c.email) { alert("No email on file for this client — add one from their full profile first."); return; }
+  const existing = document.getElementById('email-modal-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'email-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto">
+    <div style="font-weight:800;font-size:16px;margin-bottom:4px">Email ${escH((c.first_name||'')+' '+(c.last_name||''))}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Sending to ${escH(c.email)}</div>
+    <div class="fld"><label>Subject</label><input id="em-subject" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px" placeholder="e.g. Great session today!"></div>
+    <div class="fld" style="margin-top:10px"><label>Message</label><textarea id="em-body" rows="8" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit" placeholder="Write your message..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="sendClientEmail(${CLIENT_ID})" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Send Email</button>
+      <button onclick="document.getElementById('email-modal-overlay').remove()" style="background:var(--soft,#F5F6F8);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
+    </div>
+    <div id="email-send-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function sendClientEmail(clientId){
+  const c = DATA.client || {};
+  const status = document.getElementById('email-send-status');
+  const subject = document.getElementById('em-subject').value.trim();
+  const bodyText = document.getElementById('em-body').value.trim();
+  if (!subject || !bodyText) { status.textContent = 'Add a subject and message first.'; return; }
+  status.textContent = 'Sending...';
+  const html = `<p>${escH(bodyText).replace(/\n/g,'<br>')}</p><p style="color:#6B7280;font-size:12px;margin-top:20px">— ${escH(COACH_NAME)}, Retro Fitness</p>`;
+  try {
+    const r = await fetch(WORKER + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ to: c.email, subject, html }) });
+    const d = await r.json();
+    if (!d.sent) { status.textContent = d.error || 'Could not send — check email setup with Ted.'; return; }
+    // Log it as a coach note too, so it's part of the client's rolling record
+    await fetch(WORKER + '/coach/note', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, coach_name: COACH_NAME, tag: 'Email Sent', body: subject + ': ' + bodyText.slice(0,200) }) });
+    status.textContent = '✓ Sent';
+    setTimeout(() => document.getElementById('email-modal-overlay').remove(), 900);
+  } catch(e) { status.textContent = 'Connection error — try again.'; }
 }
 
 function openScheduleModal(){
