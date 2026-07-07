@@ -200,7 +200,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <input type="hidden" id="editId">
     <div class="field">
       <label>Full Name *</label>
-      <input type="text" id="fName" placeholder="e.g. Sarah Aldrich">
+      <input type="text" id="fName" placeholder="e.g. Sarah Aldrich" oninput="autoGenerateWorkEmail()">
     </div>
     <div class="field">
       <label>Role *</label>
@@ -233,12 +233,22 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     </div>
     <div class="field-row">
       <div class="field">
-        <label>Email</label>
+        <label>Personal Email</label>
         <input type="email" id="fEmail" placeholder="name@email.com">
       </div>
       <div class="field">
         <label>Phone</label>
         <input type="tel" id="fPhone" placeholder="(555) 000-0000">
+      </div>
+    </div>
+    <div class="field-row" style="background:#F0F7F0;border-radius:10px;padding:10px;margin:0 0 12px">
+      <div class="field">
+        <label>Work Email (myretrostrong.com)</label>
+        <input type="email" id="fWorkEmail" placeholder="tscholl@myretrostrong.com" oninput="_workEmailManuallyEdited=true">
+      </div>
+      <div class="field">
+        <label>Login PIN (4 digits)</label>
+        <input type="text" id="fWorkPin" inputmode="numeric" maxlength="6" placeholder="e.g. last 4 of phone">
       </div>
     </div>
     <div class="field">
@@ -467,6 +477,9 @@ function openModal(id) {
     document.getElementById('fCanGrantAppAccess').checked = false;
     document.getElementById('fActive').checked = true;
     document.getElementById('fTemplate').value = '';
+    document.getElementById('fWorkEmail').value = '';
+    document.getElementById('fWorkPin').value = '';
+    _workEmailManuallyEdited = false;
   } else {
     const emp = roster.find(e => e.id === id);
     if (!emp) return;
@@ -477,6 +490,9 @@ function openModal(id) {
     document.getElementById('fPhone').value = emp.phone || '';
     document.getElementById('fHireDate').value = emp.hire_date || '';
     document.getElementById('fNotes').value = emp.notes || '';
+    document.getElementById('fWorkEmail').value = '';
+    document.getElementById('fWorkPin').value = '';
+    _workEmailManuallyEdited = true; // editing an existing employee — don't auto-overwrite if they type a name change
     document.getElementById('fEOD').checked = !!emp.eod_required;
     document.getElementById('fCanGrantAppAccess').checked = !!emp.can_grant_app_access;
     document.getElementById('fActive').checked = !!emp.active;
@@ -526,6 +542,17 @@ function updateEODTemplate() {
   document.getElementById('fEOD').checked = !!ROLE_DEFAULT_EOD[role];
 }
 
+let _workEmailManuallyEdited = false;
+function autoGenerateWorkEmail(){
+  if (_workEmailManuallyEdited) return;
+  const name = document.getElementById('fName').value.trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return;
+  const first = parts[0], last = parts[parts.length-1];
+  const generated = (first[0] + last).toLowerCase().replace(/[^a-z]/g,'') + '@myretrostrong.com';
+  document.getElementById('fWorkEmail').value = generated;
+}
+
 async function saveEmployee() {
   const name = document.getElementById('fName').value.trim();
   const role = document.getElementById('fRole').value;
@@ -543,20 +570,38 @@ async function saveEmployee() {
     active: document.getElementById('fActive').checked ? 1 : 0,
     gym_id: parseInt(document.getElementById('fGymId').value, 10) || 1
   };
+  const workEmail = document.getElementById('fWorkEmail').value.trim();
+  const workPin = document.getElementById('fWorkPin').value.trim();
   try {
-    let r, d;
+    let r, d, staffId;
     if (id) {
+      staffId = parseInt(id);
       r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'update', table:'staff_roster', values, where:{id: parseInt(id)}})});
+        body: JSON.stringify({op:'update', table:'staff_roster', values, where:{id: staffId}})});
       d = await r.json();
       if (!d.ok) { showToast('Save failed: ' + (d.error || 'unknown error')); return; }
-      showToast('Employee updated');
     } else {
       r = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'insert', table:'staff_roster', values})});
       d = await r.json();
       if (!d.ok) { showToast('Save failed: ' + (d.error || 'unknown error')); return; }
-      showToast('Employee added');
+      staffId = d.id;
+    }
+    // Auto-provision login if a work email + PIN were entered — same endpoint
+    // "Set Login" already uses, just folded into the same form so it's one step.
+    if (workEmail && workPin) {
+      if (!/^\d{4,6}$/.test(workPin)) {
+        showToast('Employee saved, but PIN must be 4-6 digits — set login separately.');
+      } else {
+        const pr = await fetch(WORKER + '/staff/provision', {
+          method: 'POST', headers: {'Content-Type':'application/json', 'X-Admin-Key': ADMIN_KEY},
+          body: JSON.stringify({ staff_id: staffId, email: workEmail, pin: workPin })
+        });
+        const pd = await pr.json();
+        showToast(pd.ok ? 'Employee saved and login set up' : 'Employee saved, but login setup failed: ' + (pd.error||''));
+      }
+    } else {
+      showToast(id ? 'Employee updated' : 'Employee added');
     }
     closeModal();
     await loadRoster();

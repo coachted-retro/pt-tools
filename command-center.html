@@ -188,6 +188,17 @@
       <div class="cc-center-frame"><iframe src="gym-analytics.html" title="Gym Analytics"></iframe></div>
     </div>
 
+    <div>
+      <div class="tools-label">Gym Social Links — Shown on the Public App</div>
+      <div style="background:#fff;border:1px solid var(--line,#E4E7EC);border-radius:14px;padding:16px">
+        <div class="fld"><label>Facebook URL</label><input id="soc-fb" placeholder="https://facebook.com/..." style="width:100%;padding:9px 12px;border:1px solid var(--line,#E4E7EC);border-radius:8px"></div>
+        <div class="fld" style="margin-top:10px"><label>Instagram URL</label><input id="soc-ig" placeholder="https://instagram.com/..." style="width:100%;padding:9px 12px;border:1px solid var(--line,#E4E7EC);border-radius:8px"></div>
+        <div class="fld" style="margin-top:10px"><label>TikTok URL</label><input id="soc-tt" placeholder="https://tiktok.com/@..." style="width:100%;padding:9px 12px;border:1px solid var(--line,#E4E7EC);border-radius:8px"></div>
+        <button class="btn red" style="margin-top:12px" onclick="saveSocialLinks()">Save</button>
+        <span id="soc-status" style="font-size:12px;color:var(--muted);margin-left:10px"></span>
+      </div>
+    </div>
+
     <div class="cc-stack">
       <div class="tools-label">Management</div>
       <div class="toolcard" onclick="location.href='coaches-hub.html'" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
@@ -385,6 +396,34 @@
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+async function loadSocialLinksAdmin(){
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'gyms', where:{ id: 1 }, limit:1 }) });
+    const d = await r.json();
+    const gym = (d.results||[])[0];
+    if (!gym) return;
+    if (document.getElementById('soc-fb')) document.getElementById('soc-fb').value = gym.facebook_url || '';
+    if (document.getElementById('soc-ig')) document.getElementById('soc-ig').value = gym.instagram_url || '';
+    if (document.getElementById('soc-tt')) document.getElementById('soc-tt').value = gym.tiktok_url || '';
+  } catch(e) {}
+}
+async function saveSocialLinks(){
+  const status = document.getElementById('soc-status');
+  status.textContent = 'Saving...';
+  try {
+    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'gyms', values:{
+        facebook_url: document.getElementById('soc-fb').value.trim() || null,
+        instagram_url: document.getElementById('soc-ig').value.trim() || null,
+        tiktok_url: document.getElementById('soc-tt').value.trim() || null
+      }, where:{ id: 1 } }) });
+    status.textContent = '✓ Saved';
+    setTimeout(() => status.textContent = '', 2000);
+  } catch(e) { status.textContent = 'Could not save.'; }
+}
+document.addEventListener('DOMContentLoaded', loadSocialLinksAdmin);
 
 // ── CLUB IDENTITY (matches ?club=slug convention used across the platform) ──
 // gym_id values match migration-gyms-seed.sql — run that migration before

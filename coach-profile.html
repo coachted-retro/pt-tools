@@ -51,7 +51,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <div class="topbar">
   <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" onerror="this.style.display='none'">
-  <a href="member-app.html">&larr; Back</a>
+  <a href="member-app.html?forceGuest=1">&larr; Back</a>
 </div>
 
 <div class="wrap" id="wrap">
@@ -62,7 +62,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 const NEEDS_COVERAGE_ROLES = ['MEA', 'Floor Tech'];
 const params = new URLSearchParams(window.location.search);
-const staffId = parseInt(params.get('staff_id'), 10);
+const sessionForFallback = (function(){ try { return JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){ return null; } })();
+const staffId = parseInt(params.get('staff_id'), 10) || (sessionForFallback && parseInt(sessionForFallback.staff_id, 10)) || null;
 
 function esc(s) { return String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -167,7 +168,7 @@ function renderView(staff, profile, isMine) {
   window._currentStaff = staff;
   window._currentProfile = profile;
   if (isMine) {
-    loadMyShiftsProfile(staff.id, staff.name);
+    loadMyShiftsProfile(staff.id, staff.name, staff.role);
     loadMyProspects(staff.name);
     loadGymEventsProfile();
     if (NEEDS_COVERAGE_ROLES.includes(staff.role)) loadAvailabilityProfile(staff.id);
@@ -222,22 +223,29 @@ async function logProspectFollowup(clientId, clientName, coachName){
   } catch(e) { status.textContent = 'Could not save.'; }
 }
 
-async function loadMyShiftsProfile(staffId, coachName) {
+async function loadMyShiftsProfile(staffId, coachName, role) {
   const el = document.getElementById('my-shifts-body');
   if (!el) return;
+  const isTrainingLead = role === "Men's Training Lead";
   try {
     const today = new Date().toISOString().slice(0,10);
+    // Training Lead sees every intake-type appointment across the whole department
+    // (consultations/InBody scans, follow-ups, check-ins) plus their own training
+    // sessions. Regular coaches only see training sessions with their own clients.
+    const apptWhere = isTrainingLead ? { status:'scheduled' } : { assigned_coach:coachName, status:'scheduled', appointment_type:'training_session' };
     const [shiftsRes, sessRes, apptRes, clubosRes, clientsRes] = await Promise.all([
       fetch(WORKER + '/shifts/mine?staff_id=' + staffId),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'scheduled_sessions', where:{assigned_coach:coachName, status:'scheduled'}, orderBy:'scheduled_date asc', limit:50})}),
-      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'pt_appointments', where:{assigned_coach:coachName, status:'scheduled'}, orderBy:'appointment_date asc', limit:50})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'pt_appointments', where: apptWhere, orderBy:'appointment_date asc', limit:200})}),
       fetch(WORKER + '/schedule/clubos-day?date=' + today),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'clients', limit:2000})})
     ]);
     const shifts = (await shiftsRes.json()).shifts || [];
     const sessions = (await sessRes.json()).results || [];
     const ptAppts = (await apptRes.json()).results || [];
-    const clubosRows = (await clubosRes.json()).appointments || [];
+    // ClubOS bookings only apply to the Training Lead's system-wide view — a
+    // regular coach's calendar is strictly their own training sessions.
+    const clubosRows = isTrainingLead ? ((await clubosRes.json()).appointments || []) : [];
     const clients = (await clientsRes.json()).results || [];
 
     const typeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Wk Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', staff_meeting:'Staff Meeting', other:'Appointment' };
@@ -251,7 +259,7 @@ async function loadMyShiftsProfile(staffId, coachName) {
       date: s.scheduled_date, label: s.program_name || 'Training Session', sub: 'Retro One Schedule', href: 'gym-floor.html?client='+s.client_id, color: 'var(--red,#E0192B)'
     }));
     ptAppts.forEach(a => items.push({
-      date: a.appointment_date, label: typeLabels[a.appointment_type] || a.appointment_type, sub: a.appointment_time || '', href: (toolFor(a.appointment_type)||'client-profile.html') + (a.client_id ? '?client_id='+a.client_id : ''), color: '#2563EB'
+      date: a.appointment_date, label: typeLabels[a.appointment_type] || a.appointment_type, sub: (a.appointment_time || '') + (isTrainingLead && a.assigned_coach && a.assigned_coach !== coachName ? ' · ' + a.assigned_coach : ''), href: (toolFor(a.appointment_type)||'client-profile.html') + (a.client_id ? '?client_id='+a.client_id : ''), color: '#2563EB'
     }));
     clubosRows.forEach(c => {
       const namePart = (c.summary||'').split(/[-–]/)[0].trim().toLowerCase();

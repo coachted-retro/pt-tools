@@ -4358,7 +4358,9 @@ if (IS_DEMO) {
 } else {
   const saved = localStorage.getItem('member_session');
   const savedStaff = localStorage.getItem('staff_session');
-  if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); startGuestMode(); } }
+  const forceGuest = new URLSearchParams(location.search).get('forceGuest');
+  if (forceGuest) { startGuestMode(); }
+  else if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); startGuestMode(); } }
   else if (savedStaff) { try { STAFF_SESSION = JSON.parse(savedStaff); startStaffApp(); } catch(e) { localStorage.removeItem('staff_session'); startGuestMode(); } }
   else { startGuestMode(); }
 }
