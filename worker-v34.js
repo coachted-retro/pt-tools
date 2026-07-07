@@ -97,7 +97,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -1917,6 +1917,61 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!b.id) return bad('id required', cors);
         await env.DB.prepare('DELETE FROM coach_coverage WHERE id=?').bind(b.id).run();
         return ok({ deleted: true }, cors);
+      }
+
+      // ── GROUP CLASSES: recurring weekly classes with AI-rotated weekly content ──
+      if (url.pathname === '/classes/upcoming' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const gymId = parseInt(url.searchParams.get('gym_id') || '1', 10);
+        const days = Math.min(parseInt(url.searchParams.get('days') || '14', 10), 60);
+        const classesRes = await env.DB.prepare('SELECT * FROM group_classes WHERE gym_id=? AND active=1').bind(gymId).all();
+        const classes = classesRes.results || [];
+        const occurrences = [];
+        const today = new Date(); today.setHours(0,0,0,0);
+        for (let i = 0; i <= days; i++) {
+          const d = new Date(today); d.setDate(d.getDate() + i);
+          const dow = d.getDay();
+          const dateStr = d.toISOString().slice(0,10);
+          classes.forEach(c => {
+            if (c.day_of_week === dow) {
+              occurrences.push({ class_id: c.id, name: c.name, date: dateStr, start_time: c.start_time, duration_minutes: c.duration_minutes, room: c.room, focus: c.focus, coach: c.coach });
+            }
+          });
+        }
+        occurrences.sort((a,b) => (a.date+a.start_time).localeCompare(b.date+b.start_time));
+        return ok({ occurrences }, cors);
+      }
+
+      if (url.pathname === '/classes/session' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const classId = url.searchParams.get('class_id');
+        const date = url.searchParams.get('date');
+        if (!classId || !date) return bad('class_id and date required', cors);
+        const existing = await env.DB.prepare('SELECT * FROM group_class_sessions WHERE class_id=? AND session_date=?').bind(classId, date).first();
+        if (existing) return ok({ session: existing }, cors);
+
+        const cls = await env.DB.prepare('SELECT * FROM group_classes WHERE id=?').bind(classId).first();
+        if (!cls) return bad('class not found', cors);
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+
+        const equipment = JSON.parse(cls.equipment_pool || '[]').join(', ');
+        const workMinutes = Math.max(cls.duration_minutes - 10, 20); // reserve ~10 min for warmup+cooldown combined
+        const sys = `You are designing this week's rotation for a recurring group fitness class called "${cls.name}" (${cls.focus}). Room: ${cls.room}. Available equipment: ${equipment}. Class is ${cls.duration_minutes} minutes total, with a 5-minute warmup and 5-minute cooldown, leaving about ${workMinutes} minutes of main work. Use a circuit format: 6-8 stations, ${cls.rest_seconds} seconds of rest between each station, timed or rep-based work per station appropriate for a mixed-ability group class. Make this week's exercise selection genuinely different from a generic template — vary station order, equipment combinations, and movement patterns week to week. Return ONLY valid JSON, no markdown, in this exact shape: {"warmup":[{"name":"","duration":"e.g. 60 sec"}],"stations":[{"name":"","work":"e.g. 45 sec work","equipment":"","cue":"one-line form/coaching cue","scale_up":"one-line harder variation","scale_down":"one-line easier variation"}],"cooldown":[{"name":"","duration":"e.g. 60 sec"}]}. No commentary outside the JSON.`;
+        const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, system: sys, messages: [{ role: 'user', content: `Design this week's ${cls.name} class for ${date}.` }] })
+        });
+        const aiData = await aiResp.json();
+        const text = (aiData.content && aiData.content[0] && aiData.content[0].text) || '{}';
+        let parsed;
+        try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+        catch(e) { return bad('AI response could not be parsed as JSON', cors); }
+
+        await env.DB.prepare('INSERT INTO group_class_sessions (class_id,session_date,stations_json,warmup_json,cooldown_json,created_at) VALUES (?,?,?,?,?,?)')
+          .bind(classId, date, JSON.stringify(parsed.stations||[]), JSON.stringify(parsed.warmup||[]), JSON.stringify(parsed.cooldown||[]), new Date().toISOString()).run();
+        const saved = await env.DB.prepare('SELECT * FROM group_class_sessions WHERE class_id=? AND session_date=?').bind(classId, date).first();
+        return ok({ session: saved }, cors);
       }
 
       if (url.pathname === '/jeopardy/clients' && request.method === 'GET') {

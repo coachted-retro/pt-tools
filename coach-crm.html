@@ -545,6 +545,7 @@ function openQuickAddClient(){
   el.style.display = 'block';
   el.innerHTML = `<div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
     <div style="font-weight:800;margin-bottom:10px">Quick Add Client</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">For someone already booked elsewhere (ClubOS, ABC) whose full info you already have — get them into the system now so the calendar matches them correctly going forward.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
       <input id="qa-first" placeholder="First name" style="padding:10px;border:1px solid var(--line);border-radius:8px">
       <input id="qa-last" placeholder="Last name" style="padding:10px;border:1px solid var(--line);border-radius:8px">
@@ -553,6 +554,7 @@ function openQuickAddClient(){
       <input id="qa-phone" placeholder="Phone" style="padding:10px;border:1px solid var(--line);border-radius:8px">
       <input id="qa-email" placeholder="Email" style="padding:10px;border:1px solid var(--line);border-radius:8px">
     </div>
+    <div class="fld" style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Birthday</label><input id="qa-birthday" type="date" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px"></div>
     <div style="display:flex;gap:8px">
       <button onclick="saveQuickAddClient()" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save Client</button>
       <button onclick="document.getElementById('quick-add-form').style.display='none'" style="background:var(--soft);border:none;border-radius:8px;padding:12px;cursor:pointer">Cancel</button>
@@ -568,16 +570,35 @@ async function saveQuickAddClient(){
   const last = document.getElementById('qa-last').value.trim();
   const phone = document.getElementById('qa-phone').value.trim();
   const email = document.getElementById('qa-email').value.trim();
+  const birthday = document.getElementById('qa-birthday').value;
   if (!first && !last) { status.textContent = 'Enter a name.'; return; }
   status.textContent = 'Saving...';
   try {
     const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ op:'insert', table:'clients', values:{ first_name: first, last_name: last, phone: phone||null, email: email||null, status: 'active_pt', coach: coach||null } }) });
+      body: JSON.stringify({ op:'insert', table:'clients', values:{ first_name: first, last_name: last, phone: phone||null, email: email||null, birthday: birthday||null, status: 'active_pt', coach: coach||null } }) });
     const d = await r.json();
     if (d.ok === false) { status.textContent = d.error || 'Could not save.'; return; }
-    status.textContent = 'Added!';
-    setTimeout(() => { document.getElementById('quick-add-form').style.display = 'none'; loadClients(); }, 800);
+    const newClientId = d.id;
+    status.innerHTML = `Added! <a href="#" onclick="bookIntakeForNewClient(${newClientId},'${first.replace(/'/g,"")} ${last.replace(/'/g,"")}');return false" style="color:var(--red);font-weight:700">Book their intake appointment now →</a>`;
+    loadClients();
   } catch(e) { status.textContent = 'Error: ' + e.message; }
+}
+
+function bookIntakeForNewClient(clientId, name){
+  document.getElementById('quick-add-form').style.display = 'none';
+  closeClientPanel();
+  openBookIntake();
+  const sel = document.getElementById('intake-client');
+  if (sel) {
+    // The new client may not be in window._loadedClients yet on this render pass — add them if missing.
+    if (!Array.from(sel.options).some(o => o.value === String(clientId))) {
+      const opt = document.createElement('option');
+      opt.value = clientId; opt.textContent = name;
+      sel.appendChild(opt);
+    }
+    sel.value = clientId;
+    toggleIntakeProspectFields();
+  }
 }
 
 function openClientPanel(){ document.getElementById('client-panel-overlay').style.display = 'block'; }

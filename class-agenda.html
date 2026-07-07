@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Class Agenda — Retro Strong</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F5F6F8;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif}
+.header{background:var(--ink);color:#fff;padding:24px 20px;text-align:center}
+.header .cname{font-family:'Oswald';font-weight:800;font-size:28px;text-transform:uppercase;letter-spacing:.02em}
+.header .cname span{color:var(--red)}
+.header .meta{font-size:13px;color:#9CA3AF;margin-top:6px}
+.wrap{max-width:640px;margin:0 auto;padding:24px 20px 60px}
+.section-label{font-family:'Oswald';font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:24px 0 10px;display:flex;align-items:center;gap:8px}
+.section-label:first-child{margin-top:0}
+.warmup-item, .cooldown-item{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:600}
+.warmup-item .dur, .cooldown-item .dur{color:var(--muted);font-size:14px;font-weight:700}
+.station{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.station-num{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--red);color:#fff;font-family:'Oswald';font-weight:800;font-size:16px;border-radius:50%;margin-right:10px}
+.station-name{font-family:'Oswald';font-size:22px;font-weight:700;text-transform:uppercase;display:inline-block;vertical-align:middle}
+.station-work{font-size:15px;font-weight:700;color:var(--red);margin:10px 0 4px}
+.station-equipment{font-size:13px;color:var(--muted);margin-bottom:10px}
+.station-cue{font-size:14px;background:#FFFBEB;border-left:3px solid #D98A0B;padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:8px}
+.station-scale{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px}
+.scale-box{padding:8px 10px;border-radius:8px}
+.scale-up{background:#FDEAEC;color:#991B1B}
+.scale-down{background:#E3F5EC;color:#166534}
+.scale-label{font-weight:800;text-transform:uppercase;font-size:10px;display:block;margin-bottom:2px}
+.rest-note{text-align:center;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:8px 0}
+.loading, .empty{text-align:center;color:var(--muted);padding:60px 20px}
+.print-btn{display:block;width:100%;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:14px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:14px;cursor:pointer;margin-top:20px}
+@media print{.print-btn{display:none}body{background:#fff}.station,.warmup-item,.cooldown-item{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="cname" id="class-name">Loading...</div>
+  <div class="meta" id="class-meta"></div>
+</div>
+<div class="wrap" id="content">
+  <div class="loading">Loading this week's class...</div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const params = new URLSearchParams(location.search);
+const classId = params.get('class_id');
+const date = params.get('date');
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function load(){
+  if (!classId || !date) {
+    document.getElementById('content').innerHTML = '<div class="empty">No class specified.</div>';
+    return;
+  }
+  try {
+    const r = await fetch(WORKER + '/classes/session?class_id=' + encodeURIComponent(classId) + '&date=' + encodeURIComponent(date));
+    const d = await r.json();
+    if (!d.ok || !d.session) {
+      document.getElementById('content').innerHTML = '<div class="empty">Could not load this class. It may not be generated yet — try again in a moment.</div>';
+      return;
+    }
+    const s = d.session;
+    const warmup = JSON.parse(s.warmup_json || '[]');
+    const stations = JSON.parse(s.stations_json || '[]');
+    const cooldown = JSON.parse(s.cooldown_json || '[]');
+
+    const dateObj = new Date(date + 'T00:00:00');
+    document.getElementById('class-meta').textContent = dateObj.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+    let html = '';
+    if (warmup.length) {
+      html += `<div class="section-label">🔥 Warm-Up</div>`;
+      warmup.forEach(w => { html += `<div class="warmup-item"><span>${esc(w.name)}</span><span class="dur">${esc(w.duration)}</span></div>`; });
+    }
+
+    html += `<div class="section-label">💪 Stations</div>`;
+    stations.forEach((st, i) => {
+      html += `<div class="station">
+        <div><span class="station-num">${i+1}</span><span class="station-name">${esc(st.name)}</span></div>
+        <div class="station-work">${esc(st.work)}</div>
+        ${st.equipment ? `<div class="station-equipment">Equipment: ${esc(st.equipment)}</div>` : ''}
+        ${st.cue ? `<div class="station-cue">💡 ${esc(st.cue)}</div>` : ''}
+        <div class="station-scale">
+          ${st.scale_up ? `<div class="scale-box scale-up"><span class="scale-label">Harder</span>${esc(st.scale_up)}</div>` : ''}
+          ${st.scale_down ? `<div class="scale-box scale-down"><span class="scale-label">Easier</span>${esc(st.scale_down)}</div>` : ''}
+        </div>
+      </div>`;
+      if (i < stations.length - 1) html += `<div class="rest-note">— rest —</div>`;
+    });
+
+    if (cooldown.length) {
+      html += `<div class="section-label">🧘 Cool-Down</div>`;
+      cooldown.forEach(c => { html += `<div class="cooldown-item"><span>${esc(c.name)}</span><span class="dur">${esc(c.duration)}</span></div>`; });
+    }
+
+    html += `<button class="print-btn" onclick="window.print()">Print / Save for Whiteboard</button>`;
+    document.getElementById('content').innerHTML = html;
+  } catch(e) {
+    document.getElementById('content').innerHTML = '<div class="empty">Could not connect. Try again.</div>';
+  }
+}
+
+async function loadClassName(){
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'group_classes', where:{ id: parseInt(classId,10) }, limit:1 }) });
+    const d = await r.json();
+    const cls = (d.results||[])[0];
+    if (cls) document.getElementById('class-name').innerHTML = cls.name.replace(/(Core|Camp)$/, '<span>$1</span>');
+  } catch(e) {}
+}
+
+loadClassName();
+load();
+</script>
+</body>
+</html>
