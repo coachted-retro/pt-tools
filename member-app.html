@@ -517,6 +517,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-classes"></div>
         <div id="home-coachs-edge"></div>
         <div id="home-booking"></div>
+        <div id="home-social" style="margin-top:14px"></div>
         <div id="home-referral"></div>
         <div id="home-referral-leaderboard"></div>
         <div id="home-supplement"></div>
@@ -2884,6 +2885,27 @@ function renderGatedTabPrompt(tab) {
   </div>`;
 }
 
+async function loadSocialLinks(){
+  const el = document.getElementById('home-social');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'gyms', where:{ id: 1 }, limit:1 }) });
+    const d = await r.json();
+    const gym = (d.results||[])[0];
+    if (!gym) { el.innerHTML = ''; return; }
+    const links = [
+      gym.facebook_url ? { url: gym.facebook_url, icon: '📘', label: 'Facebook' } : null,
+      gym.instagram_url ? { url: gym.instagram_url, icon: '📷', label: 'Instagram' } : null,
+      gym.tiktok_url ? { url: gym.tiktok_url, icon: '🎵', label: 'TikTok' } : null
+    ].filter(Boolean);
+    if (!links.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="card"><div class="card-body" style="display:flex;gap:10px;justify-content:center">
+      ${links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none;color:var(--ink);background:var(--soft,#F5F6F8);border-radius:10px;padding:12px;font-size:12px;font-weight:700">${l.icon}<br>${esc(l.label)}</a>`).join('')}
+    </div></div>`;
+  } catch(e) { el.innerHTML = ''; }
+}
+
 function renderHomeExtras() {
   // Nutrition preview — demo mode only, shown during the consultation close
   const nutEl = document.getElementById('home-nutrition-demo');
@@ -2948,6 +2970,7 @@ function renderHomeExtras() {
         <button class="cta-compact ghost" style="flex-shrink:0;width:auto" onclick="shareGuestPass()">Share Pass</button>
       </div>
     </div></div>`;
+  loadSocialLinks();
   document.getElementById('home-referral').innerHTML = '';
 
   // Nutritional Supplement Resource
