@@ -91,7 +91,7 @@ const ALLOWED_TABLES = new Set([
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
   'inbody_scans','workouts',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins','feed_posts','class_rsvps','coach_profiles',
-  'daily_content','client_wins','gym_events',
+  'daily_content','client_wins','gym_events','gym_calendar_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
   'eod_submissions','kpi_snapshots','shake_counts','prospect_log','guest_pass_log',
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
@@ -1223,7 +1223,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
         if (!b.title || !b.event_date) return bad('title and event_date required', cors);
-        await env.DB.prepare('INSERT INTO gym_events (gym_id,title,event_date,end_date,type,notes,created_by,created_at) VALUES (?,?,?,?,?,?,?,?)')
+        await env.DB.prepare('INSERT INTO gym_calendar_events (gym_id,title,event_date,end_date,type,notes,created_by,created_at) VALUES (?,?,?,?,?,?,?,?)')
           .bind(b.gym_id || 1, b.title, b.event_date, b.end_date || null, b.type || 'event', b.notes || null, b.created_by || null, new Date().toISOString()).run();
         return ok({ added: true }, cors);
       }
@@ -1233,7 +1233,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const gymId = url.searchParams.get('gym_id') || 1;
         const days = parseInt(url.searchParams.get('days') || '60', 10);
         const rows = await env.DB.prepare(
-          `SELECT * FROM gym_events WHERE gym_id=? AND event_date >= date('now') AND event_date <= date('now','+${days} day')
+          `SELECT * FROM gym_calendar_events WHERE gym_id=? AND event_date >= date('now') AND event_date <= date('now','+${days} day')
            ORDER BY event_date ASC LIMIT 50`
         ).bind(gymId).all();
         return ok({ events: rows.results || [] }, cors);
@@ -1256,7 +1256,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
            AND s.scheduled_date >= date('now','-7 day') ORDER BY s.scheduled_date ASC LIMIT 100`
         ).bind(coachName).all() : { results: [] };
         const events = await env.DB.prepare(
-          "SELECT * FROM gym_events WHERE event_date >= date('now','-7 day') ORDER BY event_date ASC LIMIT 100"
+          "SELECT * FROM gym_calendar_events WHERE event_date >= date('now','-7 day') ORDER BY event_date ASC LIMIT 100"
         ).all();
         const icsDate = (d, t) => (d || '').replace(/-/g, '') + 'T' + ((t || '09:00').replace(':', '') + '00');
         const esc = s => String(s || '').replace(/[\\;,]/g, c => '\\' + c).replace(/\n/g, '\\n');
