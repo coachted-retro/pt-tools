@@ -1,8 +1,8 @@
 {
   "name": "Retro Strong",
   "short_name": "Retro Strong",
-  "description": "Retro Fitness of Fairless Hills member app",
-  "start_url": "/pt-tools/member-app.html",
+  "description": "Retro Strong member app",
+  "start_url": "/member-app.html",
   "display": "standalone",
   "background_color": "#F5F6F8",
   "theme_color": "#E0192B",
