@@ -630,6 +630,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   // check-in history
   html+='<div class="panel collapsible collapsed" onclick="togglePanel(this,event)"><div class="ph"><h3>Consultation History</h3><span style="display:flex;align-items:center"><span class="pill">'+consults.length+'</span><span class="chev">▾</span></span></div><div class="pb" id="consultList"></div></div>';
   html+='<div class="panel collapsible collapsed" onclick="togglePanel(this,event)"><div class="ph"><h3>Check-In History</h3><span style="display:flex;align-items:center"><span class="pill">'+checkins.length+'</span><span class="chev">▾</span></span></div><div class="pb" id="checkinList"></div></div>';
+  html+='<div class="panel collapsible collapsed" onclick="togglePanel(this,event)"><div class="ph"><h3>Email History</h3><span style="display:flex;align-items:center"><span class="pill" id="emailHistCount">…</span><span class="chev">▾</span></span></div><div class="pb" id="emailHistList"></div></div>';
   // training sessions
   html+='<div class="panel collapsible collapsed" onclick="togglePanel(this,event)"><div class="ph"><h3>Training Sessions</h3><span style="display:flex;align-items:center"><span class="pill">'+sessions.length+'</span><span class="chev">▾</span></span></div><div class="pb" id="sessionList"></div></div>';
   // meal plans
@@ -669,6 +670,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
 
   renderConsults(consults);
   renderCheckins(checkins);
+  loadEmailHistory(client.id);
   renderSessions(sessions);
   renderMeals(meals);
   renderMeasures(measures);
@@ -757,6 +759,31 @@ function openConsultRecall(consultId){
     ${fieldRow('Advisor Notes', c.advisor_notes)}
   </div>`;
   document.body.appendChild(overlay);
+}
+
+async function loadEmailHistory(clientId){
+  const listEl = document.getElementById('emailHistList');
+  const countEl = document.getElementById('emailHistCount');
+  if (!listEl) return;
+  try {
+    const r = await fetch(WORKER + '/reports/email-log?client_id=' + clientId);
+    const d = await r.json();
+    const log = d.log || [];
+    if (countEl) countEl.textContent = log.length;
+    if (!log.length) { listEl.innerHTML = '<div class="empty">No emails logged for this client yet.</div>'; return; }
+    listEl.innerHTML = log.map(e => {
+      const when = e.sent_at ? new Date(e.sent_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : '';
+      return `<div class="row" style="cursor:default">
+        <div class="main">
+          <div class="name">${e.sent ? '✅' : '❌'} ${esc(e.subject||'(no subject)')}</div>
+          <div class="meta">${esc(when)} · to ${esc(e.to_email)}${e.context ? ' · ' + esc(e.context) : ''}${!e.sent && e.error ? ' · <span style="color:var(--red,#E0192B)">' + esc(e.error) + '</span>' : ''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    if (countEl) countEl.textContent = '?';
+    listEl.innerHTML = '<div class="empty">Could not load email history.</div>';
+  }
 }
 
 function renderCheckins(checkins){

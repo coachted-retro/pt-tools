@@ -2733,7 +2733,7 @@ async function generateAssessment() {
       var _s = 'PT Assessment: ' + (gv('name') || 'Member');
       var _b = 'Name: ' + (gv('name') || '') + '<br>Phone: ' + (gv('phone') || '') + '<br>Goal: ' + (gv('goals') || '') + '<br><br>' + assessmentText.replace(/\n/g,'<br>');
       fetch(getApiUrl() + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ to: 'tedscholl@gmail.com', subject: _s, html: _b }) })
+        body: JSON.stringify({ to: 'tedscholl@gmail.com', subject: _s, html: _b, client_id: window.EXISTING_CLIENT_ID||null, context: 'Internal — New Assessment Notification' }) })
         .then(r=>r.json()).then(d=>{ if(!d.sent) console.warn('Email not sent:', d.error||d.reason); });
     } catch(e) {}
 
@@ -3279,7 +3279,7 @@ async function autoSendThankYou(){
   if (!to) { if(st) st.textContent='No email on file — review below and send manually.'; return; }
   try{
     const r=await fetch(getApiUrl().replace(/\/$/,'')+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ to, subject, html: String(body).replace(/\n/g,'<br>') })});
+      body:JSON.stringify({ to, subject, html: String(body).replace(/\n/g,'<br>'), client_id: window.EXISTING_CLIENT_ID||null, context: 'Initial Consultation — Thank You Letter', coach_name: getCfg('advisor')||'Coach Ted' })});
     const d=await r.json();
     if (d.sent) { if(st) st.textContent='✅ Sent to '+to+'. Review below anytime, or resend if you edit it.'; }
     else { if(st) st.textContent='Could not auto-send ('+(d.error||'check email setup with Ted')+') — review below and use Open in Gmail instead.'; }
@@ -4422,7 +4422,7 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
         try {
           const r = await fetch(getApiUrl().replace(/\/$/,'') + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ to: clientData.email, subject: subjects[reportType], html: String(emailBody).replace(/\n/g,'<br>'),
-              attachment: { filename, content: base64 } }) });
+              attachment: { filename, content: base64 }, client_id: clientData.id||null, context: 'Initial Consultation — ' + (reportType==='welcome'?'Welcome Packet':reportType==='thankyou'?'Body Composition Results':'Monthly Report'), coach_name: clientData.advisor||'Coach Ted' }) });
           const d = await r.json();
           if (d.sent) {
             if (statusEl) statusEl.innerHTML = '<span style="color:#4caf7d">✅ Sent to ' + clientData.email + '</span>';
@@ -4446,6 +4446,7 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
 // === CONSULTATION REPORT TRIGGER ===
 function runConsultReport(type) {
   var clientData = {
+    id: window.EXISTING_CLIENT_ID || null,
     name: gv('name') || 'Member',
     email: gv('email') || '',
     advisor: gv('advisor-name') || getCfg('advisor') || 'Coach Ted Scholl',

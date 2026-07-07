@@ -569,7 +569,7 @@ async function sendClientEmail(clientId){
   const html = `<p>${escH(bodyText).replace(/\n/g,'<br>')}</p><p style="color:#6B7280;font-size:12px;margin-top:20px">— ${escH(COACH_NAME)}, Retro Fitness</p>`;
   try {
     const r = await fetch(WORKER + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ to: c.email, subject, html }) });
+      body: JSON.stringify({ to: c.email, subject, html, client_id: clientId, coach_name: COACH_NAME, context: 'Direct message from coach' }) });
     const d = await r.json();
     if (!d.sent) { status.textContent = d.error || 'Could not send — check email setup with Ted.'; return; }
     // Log it as a coach note too, so it's part of the client's rolling record

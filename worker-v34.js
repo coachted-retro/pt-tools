@@ -2837,20 +2837,63 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
 
       if (url.pathname === '/reports/email' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
-        if (!env.RESEND_KEY) return bad('RESEND_KEY not configured', cors);
         const b = await request.json();
         if (!b.to || !b.subject || !b.html) return bad('to, subject, html required', cors);
+
+        async function logAttempt(sent, error, resendId) {
+          try {
+            await env.DB.prepare(
+              'INSERT INTO email_log (to_email,subject,context,client_id,sent,error,resend_id,sent_at) VALUES (?,?,?,?,?,?,?,?)'
+            ).bind(b.to, b.subject, b.context || null, b.client_id || null, sent ? 1 : 0, error || null, resendId || null, new Date().toISOString()).run();
+          } catch(e) { /* logging failure should never block the response */ }
+        }
+        // Emails that actually send, and are tied to a real client, also show
+        // up as a touchpoint on that client's profile — the same place calls
+        // and texts get logged — so the full contact history lives in one spot.
+        async function logTouchpointForEmail() {
+          if (!b.client_id) return;
+          try {
+            const body = (b.context ? b.context + ' — ' : '') + b.subject;
+            await env.DB.prepare('INSERT INTO coach_touchpoints (coach_name,client_id,type,body) VALUES (?,?,?,?)')
+              .bind(b.coach_name || 'System', b.client_id, 'email', body).run();
+          } catch(e) {}
+        }
+
+        if (!env.RESEND_KEY) {
+          await logAttempt(false, 'RESEND_KEY not configured on the Worker');
+          return bad('RESEND_KEY not configured', cors);
+        }
         const payload = { from: env.MAIL_FROM || 'onboarding@resend.dev', to: [b.to], subject: b.subject, html: b.html };
         if (b.attachment && b.attachment.content && b.attachment.filename) {
           payload.attachments = [{ filename: b.attachment.filename, content: b.attachment.content }];
         }
-        const r = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const d = await r.json();
+        let r, d;
+        try {
+          r = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          d = await r.json();
+        } catch(e) {
+          await logAttempt(false, 'Network error calling Resend: ' + e.message);
+          return ok({ sent: false, id: null, error: 'Network error sending — ' + e.message }, cors);
+        }
+        await logAttempt(r.ok, r.ok ? null : (d.message || 'send failed'), d.id || null);
+        if (r.ok) await logTouchpointForEmail();
         return ok({ sent: r.ok, id: d.id || null, error: r.ok ? null : (d.message || 'send failed') }, cors);
+      }
+
+      if (url.pathname === '/reports/email-log' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const clientId = url.searchParams.get('client_id');
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '100', 10) || 100, 300);
+        let query = 'SELECT e.*, c.first_name, c.last_name FROM email_log e LEFT JOIN clients c ON e.client_id = c.id';
+        const binds = [];
+        if (clientId) { query += ' WHERE e.client_id = ?'; binds.push(clientId); }
+        query += ' ORDER BY e.sent_at DESC LIMIT ' + limit;
+        const rows = await env.DB.prepare(query).bind(...binds).all();
+        return ok({ log: rows.results || [] }, cors);
       }
 
       // ── BODY SHOPPE BOARD + CELEBRATION LOOP ─────────────────────
