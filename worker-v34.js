@@ -97,7 +97,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -1881,6 +1881,42 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           .bind(today, parsed.industry_news||'', parsed.coaching_tip||'', parsed.nutrition_note||'', new Date().toISOString()).run();
         const saved = await env.DB.prepare('SELECT * FROM coach_daily_tips WHERE tip_date=?').bind(today).first();
         return ok({ tip: saved }, cors);
+      }
+
+      // ── COACH CLIENT COVERAGE: temporary visibility grant, doesn't touch session data ──
+      if (url.pathname === '/coverage/create' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.covering_coach || !b.covered_coach || !b.start_date || !b.end_date) return bad('covering_coach, covered_coach, start_date, end_date required', cors);
+        await env.DB.prepare('INSERT INTO coach_coverage (covering_coach,covered_coach,start_date,end_date,created_by,created_at) VALUES (?,?,?,?,?,?)')
+          .bind(b.covering_coach, b.covered_coach, b.start_date, b.end_date, b.created_by||null, new Date().toISOString()).run();
+        return ok({ created: true }, cors);
+      }
+
+      if (url.pathname === '/coverage/list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const rows = await env.DB.prepare(
+          `SELECT * FROM coach_coverage WHERE end_date >= date('now','-1 day') ORDER BY start_date ASC LIMIT 200`
+        ).all();
+        return ok({ coverage: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/coverage/active' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const coach = url.searchParams.get('coach');
+        if (!coach) return bad('coach required', cors);
+        const rows = await env.DB.prepare(
+          `SELECT * FROM coach_coverage WHERE covering_coach = ? AND date('now') BETWEEN start_date AND end_date`
+        ).bind(coach).all();
+        return ok({ covering: (rows.results||[]).map(r => r.covered_coach) }, cors);
+      }
+
+      if (url.pathname === '/coverage/delete' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        await env.DB.prepare('DELETE FROM coach_coverage WHERE id=?').bind(b.id).run();
+        return ok({ deleted: true }, cors);
       }
 
       if (url.pathname === '/jeopardy/clients' && request.method === 'GET') {

@@ -170,6 +170,55 @@
 const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
 const CLUB_SLUG=(new URLSearchParams(window.location.search).get('club')||'fairless-hills').toLowerCase();
 const CLUB_GYM_ID={'fairless-hills':1,'forest-hills':2,'glendale':3,'jersey-city':4,'cedar-city':5,'rego-park':6,'fairfield':7,'tottenville':8,'mt-olive':9,'whippany':10}[CLUB_SLUG]||1;
+
+function toggleAppAccessFields(){
+  const checked = document.getElementById('app-access-check').checked;
+  document.getElementById('app-access-fields').style.display = checked ? 'block' : 'none';
+  if (checked) loadGranters();
+}
+
+async function loadGranters(){
+  const sel = document.getElementById('app-access-granter');
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'staff_roster', where:{ gym_id: CLUB_GYM_ID, can_grant_app_access: 1, active: 1 }, limit:50 }) });
+    const d = await r.json();
+    const names = (d.results || []).map(g => g.name);
+    sel.innerHTML = names.length
+      ? '<option value="">Select who is granting access...</option>' + names.map(n => `<option value="${n}">${n}</option>`).join('')
+      : '<option value="">No one at this club is set up to grant access yet — check Staff Roster</option>';
+  } catch(e) { sel.innerHTML = '<option value="">Could not load — try again</option>'; }
+}
+
+function genTempPassword(){
+  const words = ['Strong','Retro','Power','Focus','Drive','Rise','Grit','Push'];
+  return words[Math.floor(Math.random()*words.length)] + Math.floor(1000+Math.random()*9000);
+}
+
+async function sendClientApp(clientId){
+  const status = document.getElementById('app-access-status');
+  const email = document.getElementById('app-access-email').value.trim();
+  const granter = document.getElementById('app-access-granter').value;
+  if (!granter) { status.textContent = 'Select who is granting this access.'; return; }
+  if (!email) { status.textContent = 'Client needs an email on file first.'; return; }
+  status.textContent = 'Sending...';
+  const tempPassword = genTempPassword();
+  try {
+    const provisionRes = await fetch(WORKER + '/auth/provision', { method:'POST', headers:{'Content-Type':'application/json','X-Admin-Key':'retro-admin-2024'},
+      body: JSON.stringify({ client_id: clientId, email, password: tempPassword }) });
+    const provisionData = await provisionRes.json();
+    if (!provisionData.provisioned && !provisionData.ok) { status.textContent = 'Error: ' + (provisionData.error || 'could not grant access'); return; }
+    const appUrl = 'https://myretrostrong.com/member-app.html';
+    const emailHtml = `<p>Your Retro Strong training app is ready.</p>
+      <p><a href="${appUrl}">${appUrl}</a></p>
+      <p>Log in with <b>PT Client Login</b> using:<br>Email: ${email}<br>Temporary password: <b>${tempPassword}</b></p>
+      <p>You'll be asked to set your own password the first time you log in.</p>
+      <p>Granted by ${granter}.</p>`;
+    await fetch(WORKER + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ to: email, subject: 'Your Retro Strong Training App', html: emailHtml }) });
+    status.textContent = 'App access granted and emailed to ' + email + '.';
+  } catch(e) { status.textContent = 'Connection error — try again.'; }
+}
 async function db(body){
   const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
   return r.json();
@@ -378,6 +427,18 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<a class="btn" href="fitness-consultation-tool.html?client_id='+client.id+'">'+(start?'New Consultation':'Start Initial Consultation')+'</a>'+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
     '</div>';
+
+  html+='<div class="card" style="margin-top:16px">'+
+    '<div style="font-weight:800;margin-bottom:10px">Client App Access</div>'+
+    '<div style="font-size:12px;color:var(--muted,#6B7280);margin-bottom:10px">Gives this client their own login for self-guided workout logging, history, goals, and progress. Internal — clients never see this control.</div>'+
+    '<label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:10px;cursor:pointer">'+
+    '<input type="checkbox" id="app-access-check" onchange="toggleAppAccessFields()"> Grant self-guided workout app access</label>'+
+    '<div id="app-access-fields" style="display:none">'+
+    '<div class="fld"><label>Client Email</label><input id="app-access-email" value="'+esc(client.email||'')+'" placeholder="client@email.com"></div>'+
+    '<div class="fld"><label>Granted By</label><select id="app-access-granter"><option value="">Loading...</option></select></div>'+
+    '<button class="btn red" style="border-radius:999px;padding:10px 24px;margin-top:8px" onclick="sendClientApp('+client.id+')">Send App</button>'+
+    '<div id="app-access-status" style="font-size:12px;color:var(--muted,#6B7280);margin-top:8px"></div>'+
+    '</div></div>';
 
   // stat tiles
   html+='<div class="stats">'+
