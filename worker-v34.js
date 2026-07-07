@@ -1824,7 +1824,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         ).bind(coach).first().catch(() => ({ total: 0 }));
 
         const activeCount = await env.DB.prepare(
-          `SELECT COUNT(*) as n FROM clients WHERE coach = ? AND status = 'active_pt'`
+          `SELECT COUNT(*) as n FROM clients WHERE coach = ? AND status IN ('active_pt','active','active_member')`
         ).bind(coach).first().catch(() => ({ n: 0 }));
         const cancelledCount = await env.DB.prepare(
           `SELECT COUNT(*) as n FROM clients WHERE coach = ? AND status = 'cancelled'`
@@ -1833,11 +1833,11 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const retentionPct = totalEver > 0 ? Math.round((activeCount.n / totalEver) * 100) : null;
 
         const avgSessionsRow = await env.DB.prepare(
-          `SELECT AVG(sessions_per_week) as avg FROM clients WHERE coach = ? AND status = 'active_pt' AND sessions_per_week IS NOT NULL`
+          `SELECT AVG(sessions_per_week) as avg FROM clients WHERE coach = ? AND status IN ('active_pt','active','active_member') AND sessions_per_week IS NOT NULL`
         ).bind(coach).first().catch(() => ({ avg: null }));
 
         const renewalsRow = await env.DB.prepare(
-          `SELECT COUNT(*) as n FROM clients WHERE coach = ? AND status = 'active_pt' AND sessions_remaining <= 2`
+          `SELECT COUNT(*) as n FROM clients WHERE coach = ? AND status IN ('active_pt','active','active_member') AND sessions_remaining <= 2`
         ).bind(coach).first().catch(() => ({ n: 0 }));
 
         const consultRows = await env.DB.prepare(

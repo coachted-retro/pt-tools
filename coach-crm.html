@@ -536,11 +536,13 @@ async function loadCoachStats(){
   const el = document.getElementById('coach-stats');
   if (!el) return;
   if (!coach) { el.innerHTML = ''; return; }
+  const FULL_STATS_COACHES = ['Ted Scholl', 'Roman Benedetti', 'Danielle Pellegrini'];
+  const showFull = FULL_STATS_COACHES.includes(coach);
   try {
     const r = await fetch(WORKER + '/coach/stats?coach=' + encodeURIComponent(coach));
     const d = await r.json();
     if (!d.ok) { el.innerHTML = ''; return; }
-    const tiles = [
+    let tiles = [
       { label: 'Revenue (7d)', value: '$' + (d.revenue_this_week||0).toFixed(0) },
       { label: 'Retention', value: d.retention_pct!=null ? d.retention_pct+'%' : '—' },
       { label: 'Avg Sessions/Wk', value: d.avg_sessions_per_week!=null ? d.avg_sessions_per_week : '—' },
@@ -548,6 +550,10 @@ async function loadCoachStats(){
       { label: 'Close Rate (30d)', value: d.close_rate_30d!=null ? d.close_rate_30d+'%' : '—' },
       { label: 'Active Clients', value: String(d.active_clients||0) },
     ];
+    if (!showFull) {
+      tiles = tiles.filter(t => t.label === 'Active Clients' || t.label === 'Avg Sessions/Wk');
+    }
+    el.style.gridTemplateColumns = showFull ? 'repeat(3,1fr)' : 'repeat(2,1fr)';
     el.innerHTML = tiles.map(t => `
       <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px">
         <div style="font-size:18px;font-weight:800;font-family:'Oswald'">${escH(t.value)}</div>
