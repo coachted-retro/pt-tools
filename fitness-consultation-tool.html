@@ -1148,8 +1148,23 @@
         <div class="card">
           <div class="card-title"><span class="dot"></span> Fitness goals & activity</div>
           <div class="field">
-            <label>Primary fitness goals</label>
-            <textarea id="goals" placeholder="Weight loss, muscle gain, endurance, sport-specific, rehab, general health..."></textarea>
+            <label>Tell us about why you joined Retro — specifically, your goals (select all that apply)</label>
+            <div id="goals-checks" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Lose Weight" onchange="syncGoalsField()">Lose Weight</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Gain Weight" onchange="syncGoalsField()">Gain Weight</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Build Muscle" onchange="syncGoalsField()">Build Muscle</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Improve Strength" onchange="syncGoalsField()">Improve Strength</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Improve Cardio/Endurance" onchange="syncGoalsField()">Improve Cardio/Endurance</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Tone & Definition" onchange="syncGoalsField()">Tone &amp; Definition</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="General Health & Wellness" onchange="syncGoalsField()">General Health &amp; Wellness</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Sports Performance" onchange="syncGoalsField()">Sports Performance</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Injury Recovery/Rehab" onchange="syncGoalsField()">Injury Recovery/Rehab</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Flexibility & Mobility" onchange="syncGoalsField()">Flexibility &amp; Mobility</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Stress Relief/Mental Health" onchange="syncGoalsField()">Stress Relief/Mental Health</label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Preparing for an Event" onchange="syncGoalsField()">Preparing for an Event</label>
+            </div>
+            <input type="text" id="goals-other" placeholder="Anything else? (optional)" onblur="syncGoalsField()" style="width:100%;padding:10px;border:1px solid var(--line,#E4E7EC);border-radius:8px">
+            <input type="hidden" id="goals" value="">
           </div>
           <div class="grid2">
             <div class="field">
@@ -2447,6 +2462,15 @@ let assessmentText = '';
 
 
 function gv(id) { return (document.getElementById(id)||{}).value || ''; }
+
+function syncGoalsField() {
+  const checked = Array.from(document.querySelectorAll('.goal-check:checked')).map(el => el.value);
+  const other = (document.getElementById('goals-other')||{}).value?.trim();
+  if (other) checked.push(other);
+  document.getElementById('goals').value = checked.join(', ');
+  if (typeof updateWelcome === 'function') updateWelcome();
+  if (typeof saveDraftSilent === 'function') saveDraftSilent();
+}
 
 // ── CATEGORIZED MULTI-SELECT: medical conditions & medications ──────────
 function escCat(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }

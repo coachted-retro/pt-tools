@@ -97,7 +97,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -2007,8 +2007,13 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/schedule/create' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
-        if (!b.client_id || !b.program_name || !b.start_date || !b.end_date || !Array.isArray(b.weekdays) || !b.weekdays.length)
-          return bad('client_id, program_name, start_date, end_date, weekdays[] required', cors);
+        if (!b.client_id || !b.start_date || !b.end_date || !Array.isArray(b.weekdays) || !b.weekdays.length)
+          return bad('client_id, start_date, end_date, weekdays[] required', cors);
+        // day_routines (optional): { "1": {program_name, exercises}, "3": {...}, "5": {...} }
+        // lets each weekday carry its own routine. Falls back to one flat
+        // program_name/exercises applied to every date if day_routines isn't sent.
+        const dayRoutines = (b.day_routines && typeof b.day_routines === 'object') ? b.day_routines : null;
+        if (!dayRoutines && !b.program_name) return bad('program_name required when day_routines is not provided', cors);
         const start = new Date(b.start_date + 'T00:00:00');
         const end = new Date(b.end_date + 'T00:00:00');
         if (end < start) return bad('end_date must be after start_date', cors);
@@ -2017,15 +2022,19 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           const client = await env.DB.prepare('SELECT coach FROM clients WHERE id=?').bind(b.client_id).first();
           assignedCoach = client?.coach || '';
         }
-        const exercisesJson = Array.isArray(b.exercises) ? JSON.stringify(b.exercises) : null;
+        const fallbackExercisesJson = Array.isArray(b.exercises) ? JSON.stringify(b.exercises) : null;
         const created = [];
         for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
-          if (b.weekdays.includes(d.getDay())) {
+          const dow = d.getDay();
+          if (b.weekdays.includes(dow)) {
             const dateStr = d.toISOString().slice(0,10);
+            const dayRoutine = dayRoutines ? dayRoutines[String(dow)] : null;
+            const programName = dayRoutine?.program_name || b.program_name || 'Training Session';
+            const exercisesJson = dayRoutine?.exercises ? JSON.stringify(dayRoutine.exercises) : fallbackExercisesJson;
             const ins = await env.DB.prepare(
               'INSERT INTO scheduled_sessions (client_id,scheduled_date,program_name,focus_notes,status,created_by,assigned_coach,exercises_json) VALUES (?,?,?,?,?,?,?,?)'
-            ).bind(b.client_id, dateStr, b.program_name, b.focus_notes||'', 'scheduled', b.coach_name||'', assignedCoach, exercisesJson).run();
-            created.push({ date: dateStr, id: ins.meta?.last_row_id });
+            ).bind(b.client_id, dateStr, programName, b.focus_notes||'', 'scheduled', b.coach_name||'', assignedCoach, exercisesJson).run();
+            created.push({ date: dateStr, id: ins.meta?.last_row_id, program_name: programName });
           }
         }
         return ok({ created_count: created.length, sessions: created }, cors);

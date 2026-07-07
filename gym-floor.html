@@ -269,6 +269,8 @@ input,select,textarea{font-family:inherit;font-size:16px;}
   </div>
 
   <div class="log-body">
+    <div id="setPlan" style="margin-bottom:14px"></div>
+
     <div class="stepper-wrap">
       <div class="stepper">
         <div class="lbl">Weight</div>
@@ -288,9 +290,8 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       </div>
     </div>
 
-    <button class="logset-btn" onclick="logSet()">Log Set</button>
+    <button class="logset-btn" onclick="logSet()" id="logSetBtn">Log Set 1</button>
 
-    <div class="sets-done" id="setsDone"></div>
     <div style="display:flex;gap:8px;align-items:flex-start;margin-top:12px">
       <textarea class="note-in" id="exNote" rows="2" placeholder="Exercise note (form cues, pain flags, adjustments)..." onchange="saveExNote()" style="margin-top:0;flex:1"></textarea>
       <button class="btn sm" id="micEx" onclick="voiceNote('exNote','micEx')" style="padding:14px;font-size:18px">🎙</button>
@@ -674,26 +675,58 @@ let OPEN_BUNDLE = null;
 
 function renderRoutineLibrary(){
   const box = $('routineLibBody');
+  const recommended = recommendedBundleIdsForGoals(CLIENT && CLIENT.goal_primary);
   box.innerHTML = ROUTINE_LIBRARY.map(b => `
-    <div class="card" style="margin-bottom:10px">
+    <div class="card" style="margin-bottom:10px;${recommended.has(b.id)?'border:1.5px solid #1E9E5A':''}">
       <div onclick="toggleBundle('${b.id}')" style="display:flex;align-items:center;gap:12px;cursor:pointer">
         <span style="font-size:22px">${b.icon}</span>
-        <div style="flex:1"><b>${esc(b.name)}</b><div style="font-size:11px;color:var(--ink2)">${b.routines.length} day${b.routines.length===1?'':'s'}</div></div>
+        <div style="flex:1"><b>${esc(b.name)}</b>${recommended.has(b.id)?' <span style="color:#1E9E5A;font-size:11px;font-weight:800">&#9733; RECOMMENDED FOR THIS CLIENT</span>':''}<div style="font-size:11px;color:var(--ink2)">${b.routines.length} day${b.routines.length===1?'':'s'}</div></div>
         <span>${OPEN_BUNDLE===b.id?'\\u2212':'+'}</span>
       </div>
-      ${OPEN_BUNDLE===b.id ? b.routines.map(r => `
-        <div style="display:flex;gap:8px;margin-top:8px;align-items:stretch">
-          <button class="opt-tile" style="flex:1;margin-top:0" onclick='startRoutineDay(${JSON.stringify(r.exercises)}, "${esc(r.label)}")'>
-            <span class="ic">\\u25B6</span>
-            <span><span class="t">${esc(r.label)}</span><br><span class="d">${r.exercises.length} exercises</span></span>
-          </button>
-          <button class="btn sm" style="flex-shrink:0" onclick='saveExercisesAsTemplate(${JSON.stringify(r.exercises)}, "${esc(b.name + " - " + r.label)}")'>Save</button>
+      ${OPEN_BUNDLE===b.id ? b.routines.map((r,ri) => `
+        <div style="margin-top:8px">
+          <div style="display:flex;gap:8px;align-items:stretch">
+            <button class="opt-tile" style="flex:1;margin-top:0" onclick='startRoutineDay(${JSON.stringify(r.exercises)}, "${esc(r.label)}")'>
+              <span class="ic">\\u25B6</span>
+              <span><span class="t">${esc(r.label)}</span><br><span class="d">${r.exercises.length} exercises</span></span>
+            </button>
+            <button class="btn sm" style="flex-shrink:0" onclick="toggleRoutinePreview('${b.id}',${ri})">${OPEN_PREVIEW===(b.id+'-'+ri)?'Hide':'Preview'}</button>
+            <button class="btn sm" style="flex-shrink:0" onclick='saveExercisesAsTemplate(${JSON.stringify(r.exercises)}, "${esc(b.name + " - " + r.label)}")'>Save</button>
+          </div>
+          ${OPEN_PREVIEW===(b.id+'-'+ri) ? renderRoutinePreview(r.exercises) : ''}
         </div>`).join('') : ''}
     </div>`).join('');
 }
 
+let OPEN_PREVIEW = null;
+function toggleRoutinePreview(bundleId, routineIdx){
+  const key = bundleId + '-' + routineIdx;
+  OPEN_PREVIEW = OPEN_PREVIEW === key ? null : key;
+  renderRoutineLibrary();
+}
+
+// renderRoutinePreview: for every exercise in a routine, show what this client
+// did last time and this week's suggested progression — same formula used
+// during live logging, just surfaced for the whole routine at once.
+function renderRoutinePreview(exercises){
+  return `<div style="background:var(--soft,#F5F6F8);border-radius:10px;padding:10px;margin-top:6px">
+    ${exercises.map(name => {
+      const exObj = { name };
+      const lastSets = lastSetDetail(name);
+      const lastText = lastSets && lastSets.length ? lastSets.length+'x'+lastSets[0].reps+' @ '+topWeight(lastSets)+' lb' : 'No history yet';
+      const sug = suggestedLoad(exObj);
+      return `<div style="padding:6px 0;border-bottom:1px solid var(--line,#E4E7EC);font-size:12px">
+        <div style="font-weight:700">${esc(name)}</div>
+        <div style="color:var(--ink2)">Last time: ${esc(lastText)}</div>
+        ${sug ? `<div style="color:var(--green);font-weight:700">This week: ${esc(sug.text)}</div><div style="color:var(--text3,#888);font-size:11px">${esc(sug.reason)}</div>` : `<div style="color:var(--text3,#888);font-size:11px">No prior data — start light and establish a baseline.</div>`}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 function toggleBundle(id){
   OPEN_BUNDLE = OPEN_BUNDLE === id ? null : id;
+  OPEN_PREVIEW = null;
   renderRoutineLibrary();
 }
 
@@ -857,7 +890,7 @@ async function handleFormVideo(ev){
 function newSession(exs,title){
   SESSION={client_id:CLIENT.id,client_name:((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim(),
     title:title||'Training Session',date:todayStr(),startedAt:Date.now(),
-    exercises:exs.map(n=>({name:n,sets:[],note:''})),workoutNote:''};
+    exercises:exs.map(n=>(typeof n==='object'?{name:n.name,sets:[],note:'',targetSets:n.targetSets||3}:{name:n,sets:[],note:'',targetSets:3})),workoutNote:''};
   persistActive();EXI=0;renderQueue();show('scr-queue');
 }
 function startFresh(){newSession([],'Training Session');}
@@ -900,10 +933,15 @@ function renderQueue(){
   let html='';
   SESSION.exercises.forEach((e,i)=>{
     const gc=e.group?GROUP_COLORS[(e.group-1)%GROUP_COLORS.length]:null;
+    const target=e.targetSets||3;
+    const sug=suggestedLoad(e);
+    const agendaLine=e.sets.length
+      ? e.sets.length+' sets · '+setsBrief(e.sets)
+      : (sug ? target+' sets planned &mdash; today: '+esc(sug.text) : target+' sets planned &mdash; '+lastBrief(e.name));
     html+=`<div class="ex-row ${e.sets.length?'done':''}" style="${gc?'border-left:4px solid '+gc:''}">
       <div style="flex:1" onclick="jumpTo(${i})">
         <div class="nm">${esc(e.name)}${e.group?' <span style="font-size:10px;color:'+gc+';font-weight:800">SS'+e.group+'</span>':''}</div>
-        <div class="meta">${e.sets.length?e.sets.length+' sets · '+setsBrief(e.sets):lastBrief(e.name)}</div>
+        <div class="meta">${agendaLine}</div>
       </div>
       <button class="x" onclick="removeExercise(${i})">✕</button>
     </div>`;
@@ -953,36 +991,107 @@ function openLogging(){
   $('lastPerf').innerHTML=lp?('Last: <b>'+esc(lp)+'</b>'):'No history for this exercise';
   const sug=suggestedLoad(ex);
   const sugEl=$('loadSuggest');
-  if(sugEl) sugEl.innerHTML = sug ? `<span style="color:var(--green);font-weight:700">&#9650; Suggested: ${esc(sug)}</span>` : '';
+  if(sugEl) sugEl.innerHTML = sug ? `<span style="color:var(--green);font-weight:700">&#9650; Suggested: ${esc(sug.text)}</span><div style="font-size:11px;color:var(--text3,#888);margin-top:2px">${esc(sug.reason)}</div>` : '';
   const seed=seedNumbers(ex);curW=seed.w;curR=seed.r;paintSteppers();
   $('exNote').value=ex.note||'';
   renderSets();show('scr-log');
 }
-function suggestedLoad(ex){
-  const lastSet = lastSetDetail(ex.name);
-  if (!lastSet || !lastSet.length) return null;
-  const reps = lastSet.map(s => parseInt(s.reps)||0);
-  const weights = lastSet.map(s => parseFloat(s.weight)||0);
-  const minReps = Math.min(...reps);
-  const topWt = Math.max(...weights);
-  if (!topWt) return null;
-  // Double progression: hit 8+ reps across the board -> bump weight, reset toward bottom of range.
-  // Grinding under 8 -> hold weight, chase one more rep.
-  if (minReps >= 8) {
-    const bump = topWt >= 60 ? Math.round(topWt * 1.05 / 5) * 5 : topWt + 5;
-    return bump + ' lb x ' + Math.max(6, minReps - 2) + ' reps';
-  }
-  return topWt + ' lb x ' + (minReps + 1) + '+ reps';
+// classifyGoalRepRange: rep range target depends on the client's actual goal,
+// not one-size-fits-all — standard strength/hypertrophy/endurance training zones.
+function classifyGoalRepRange(goalText){
+  const g = (goalText||'').toLowerCase();
+  // Exact structured values from the consultation intake take priority; fuzzy
+  // matching remains as a fallback for clients whose goals predate the dropdown.
+  if (g.includes('improve strength')) return { bottom:4, top:6, label:'strength' };
+  if (g.includes('improve cardio/endurance') || g.includes('lose weight')) return { bottom:12, top:20, label:'endurance/fat-loss' };
+  if (/strength|power|1rm|powerlift/.test(g)) return { bottom:4, top:6, label:'strength' };
+  if (/endur|fat loss|weight loss|tone|conditioning|cardio/.test(g)) return { bottom:12, top:20, label:'endurance/fat-loss' };
+  return { bottom:8, top:12, label:'hypertrophy' }; // default general-fitness range
 }
-function lastSetDetail(name){
+
+// GOAL_PROGRAM_MAP: which routine bundles best fit each structured goal —
+// surfaced as a recommendation when picking a bundle for this client.
+const GOAL_PROGRAM_MAP = {
+  'Lose Weight': ['fat_loss_circuit','core_conditioning'],
+  'Gain Weight': ['bodybuilding_5day','push_pull_legs'],
+  'Build Muscle': ['bodybuilding_5day','push_pull_legs','upper_lower'],
+  'Improve Strength': ['strength_5x5','functional_strength'],
+  'Improve Cardio/Endurance': ['fat_loss_circuit','core_conditioning'],
+  'Tone & Definition': ['full_body','fat_loss_circuit'],
+  'General Health & Wellness': ['full_body','beginner_foundation'],
+  'Sports Performance': ['athletic_performance','functional_strength'],
+  'Injury Recovery/Rehab': ['mobility_recovery'],
+  'Flexibility & Mobility': ['mobility_recovery'],
+  'Stress Relief/Mental Health': ['mobility_recovery','full_body'],
+  'Preparing for an Event': ['full_body','fat_loss_circuit'],
+};
+function recommendedBundleIdsForGoals(goalText){
+  const goals = (goalText||'').split(',').map(s=>s.trim());
+  const ids = new Set();
+  goals.forEach(g => (GOAL_PROGRAM_MAP[g]||[]).forEach(id => ids.add(id)));
+  return ids;
+}
+
+// getExerciseHistorySessions: every past session (most recent first) where this
+// exercise appears, not just the last one — needed to detect a plateau.
+function getExerciseHistorySessions(name, limit){
+  limit = limit || 4;
+  const out = [];
   for (const w of HISTORY) {
     try {
       const exs = JSON.parse(w.exercises_json||'[]') || [];
       const m = exs.find(x => (x.name||'').toLowerCase() === name.toLowerCase());
-      if (m && Array.isArray(m.set_detail) && m.set_detail.length) return m.set_detail;
+      if (m && Array.isArray(m.set_detail) && m.set_detail.length) {
+        out.push({ date: w.workout_date, sets: m.set_detail });
+        if (out.length >= limit) break;
+      }
     } catch(e) {}
   }
-  return null;
+  return out;
+}
+
+function lastSetDetail(name){
+  const sessions = getExerciseHistorySessions(name, 1);
+  return sessions.length ? sessions[0].sets : null;
+}
+
+function suggestedLoad(ex){
+  const sessions = getExerciseHistorySessions(ex.name, 4);
+  if (!sessions.length) return null;
+  const last = sessions[0];
+  const reps = last.sets.map(s => parseInt(s.reps)||0);
+  const weights = last.sets.map(s => parseFloat(s.weight)||0);
+  const minReps = Math.min(...reps);
+  const topWt = Math.max(...weights);
+  if (!topWt) return null;
+
+  const goalRange = classifyGoalRepRange(CLIENT && CLIENT.goal_primary);
+  const compound = isCompoundLift(ex.name);
+  const bump = compound ? 0.05 : 0.025; // 5% compound, 2.5% isolation
+  const maxJump = compound ? 10 : 5; // safety cap regardless of computed % — never a jarring jump
+
+  // Plateau check: same top weight and same-or-lower reps for the last 3 logged sessions.
+  // Real progress has stalled — a deload (lighter week) breaks it more reliably than
+  // grinding the same numbers again.
+  if (sessions.length >= 3) {
+    const last3 = sessions.slice(0,3);
+    const sameWeight = last3.every(s => Math.max(...s.sets.map(x=>parseFloat(x.weight)||0)) === topWt);
+    const noRepGain = last3.every(s => Math.min(...s.sets.map(x=>parseInt(x.reps)||0)) <= minReps);
+    if (sameWeight && noRepGain) {
+      const deloadWt = Math.round((topWt * 0.9) / 2.5) * 2.5;
+      return { text: deloadWt + ' lb x ' + goalRange.bottom + ' reps (deload)', reason: 'Same weight and reps for 3 sessions in a row — take a lighter deload week, then push again.' };
+    }
+  }
+
+  if (minReps >= goalRange.top) {
+    let bumped = Math.round((topWt * (1 + bump)) / 2.5) * 2.5;
+    if (bumped - topWt > maxJump) bumped = topWt + maxJump;
+    return { text: bumped + ' lb x ' + goalRange.bottom + ' reps', reason: `Hit ${minReps}+ reps — top of the ${goalRange.label} range (${goalRange.bottom}-${goalRange.top}). Step up and reset reps.` };
+  }
+  if (minReps >= goalRange.bottom) {
+    return { text: topWt + ' lb x ' + (minReps+1) + ' reps', reason: `In the ${goalRange.label} range at ${minReps} reps — add one more rep at this weight before increasing load.` };
+  }
+  return { text: topWt + ' lb x ' + (minReps+1) + '+ reps', reason: `Under the ${goalRange.label} range (${goalRange.bottom}-${goalRange.top}) — hold this weight and build back up.` };
 }
 function lastPerf(name){
   for(const w of HISTORY){
@@ -1011,6 +1120,15 @@ function seedNumbers(ex){
     }catch(e){}
   }
   return{w:45,r:8};
+}
+
+// COMPOUND_KEYWORDS: exercises using larger muscle groups get bigger load jumps (5%)
+// when progressing; everything else (isolation work) gets smaller jumps (2.5%) —
+// standard practice since compound lifts tolerate bigger absolute increases safely.
+const COMPOUND_KEYWORDS = ['squat','deadlift','bench press','press','row','pull-up','pulldown','clean','snatch','lunge','thrust','dip'];
+function isCompoundLift(name){
+  const n = (name||'').toLowerCase();
+  return COMPOUND_KEYWORDS.some(k => n.includes(k));
 }
 function paintSteppers(){
   $('wVal').innerHTML=(curW%1?curW.toFixed(1):curW)+'<span class="unit"> lb</span>';
@@ -1047,10 +1165,31 @@ function logSet(){
 function renderSets(){
   const ex=SESSION.exercises[EXI];
   const best=histBest(ex.name);
-  $('setsDone').innerHTML=ex.sets.map((s,i)=>{
-    const isPR=best!=null&&s.weight>best;
-    return `<div class="set-chip"><div class="n">${i+1}</div><div class="v">${s.reps} reps @ ${s.weight%1?s.weight.toFixed(1):s.weight} lb</div>${isPR?'<div class="pr">PR</div>':''}<button class="del" onclick="delSet(${i})">✕</button></div>`;
-  }).join('');
+  const target=ex.targetSets||3;
+  const totalRows=Math.max(target,ex.sets.length+ (ex.sets.length>=target?0:1));
+  let html='';
+  for(let i=0;i<totalRows;i++){
+    if(i<ex.sets.length){
+      const s=ex.sets[i];
+      const isPR=best!=null&&s.weight>best;
+      html+=`<div class="set-chip set-chip-done"><div class="n">${i+1}</div><div class="v">${s.reps} reps @ ${s.weight%1?s.weight.toFixed(1):s.weight} lb</div>${isPR?'<div class="pr">PR</div>':''}<button class="del" onclick="delSet(${i})">✕</button></div>`;
+    }else if(i===ex.sets.length){
+      html+=`<div class="set-chip set-chip-current"><div class="n">${i+1}</div><div class="v">Up now &mdash; use the steppers below</div></div>`;
+    }else{
+      html+=`<div class="set-chip set-chip-upcoming"><div class="n">${i+1}</div><div class="v" style="opacity:.5">Target: ${curR} reps @ ${curW%1?curW.toFixed(1):curW} lb</div></div>`;
+    }
+  }
+  if(ex.sets.length>=target){
+    html+=`<div style="text-align:center;padding:8px 0"><a href="#" onclick="bumpTargetSets();return false" style="color:var(--red);font-weight:700;font-size:13px">&#10003; Planned ${target} sets done &mdash; + Add Another Set</a></div>`;
+  }
+  $('setPlan').innerHTML=html;
+  const btn=$('logSetBtn');
+  if(btn) btn.textContent = ex.sets.length>=target ? 'Log Extra Set' : 'Log Set '+(ex.sets.length+1);
+}
+function bumpTargetSets(){
+  const ex=SESSION.exercises[EXI];if(!ex)return;
+  ex.targetSets=(ex.targetSets||3)+1;
+  persistActive();renderSets();
 }
 function histBest(name){
   let best=null;

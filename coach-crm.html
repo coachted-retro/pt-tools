@@ -587,52 +587,339 @@ async function loadCoachDailyTip(){
   } catch(e) { el.innerHTML = ''; }
 }
 
+const ROUTINE_LIBRARY = [
+  {id:"upper_lower", icon:"\ud83d\udd01", name:"Upper / Lower Split", routines:[{label:"Day A \u2014 Upper Body Push", exercises:["Barbell Bench Press", "Incline Dumbbell Press", "Overhead Press", "Lateral Raises", "Tricep Pushdown"]}, {label:"Day B \u2014 Lower Body", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Calf Raises"]}, {label:"Day C \u2014 Upper Body Pull", exercises:["Pull-Ups / Lat Pulldown", "Seated Cable Row", "Face Pulls", "Barbell Curl", "Hammer Curl"]}, {label:"Day D \u2014 Lower Body + Core", exercises:["Deadlift", "Bulgarian Split Squat", "Hip Thrust", "Plank", "Cable Crunch"]}]},
+  {id:"push_pull_legs", icon:"\ud83d\udd3a", name:"Push / Pull / Legs", routines:[{label:"Push \u2014 Chest, Shoulders, Triceps", exercises:["Flat Bench Press", "Incline Dumbbell Press", "Shoulder Press", "Cable Fly", "Lateral Raise", "Tricep Dips"]}, {label:"Pull \u2014 Back, Biceps", exercises:["Deadlift", "Pull-Ups", "Barbell Row", "Lat Pulldown", "Face Pulls", "EZ Bar Curl"]}, {label:"Legs \u2014 Quads, Hamstrings, Glutes, Calves", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Walking Lunges", "Leg Curl", "Standing Calf Raise"]}]},
+  {id:"full_body", icon:"\u26a1", name:"Full Body", routines:[{label:"Full Body A", exercises:["Squat", "Bench Press", "Barbell Row", "Overhead Press", "Romanian Deadlift", "Plank"]}, {label:"Full Body B", exercises:["Deadlift", "Incline Dumbbell Press", "Pull-Ups / Lat Pulldown", "Dumbbell Shoulder Press", "Leg Press", "Cable Crunch"]}]},
+  {id:"core_conditioning", icon:"\ud83d\udd25", name:"Core & Conditioning", routines:[{label:"Core + Cardio Circuit", exercises:["Plank Hold", "Dead Bug", "Cable Crunch", "Russian Twist", "Mountain Climbers", "Rowing Machine or Bike"]}, {label:"Glutes & Core", exercises:["Hip Thrust", "Glute Bridge", "Side-Lying Clam Shell", "Bird Dog", "Reverse Crunch", "Pallof Press"]}]},
+  {id:"strength_5x5", icon:"\ud83c\udfcb\ufe0f", name:"Strength Foundation 5\u00d75", routines:[{label:"Workout A", exercises:["Barbell Squat", "Barbell Bench Press", "Barbell Row"]}, {label:"Workout B", exercises:["Barbell Squat", "Overhead Press", "Deadlift"]}]},
+  {id:"fat_loss_circuit", icon:"\u26a1", name:"Fat Loss Circuit", routines:[{label:"Circuit A \u2014 Upper + Lower Superset", exercises:["Dumbbell Press (superset with Row)", "Dumbbell Row", "Goblet Squat (superset with RDL)", "Romanian Deadlift", "Plank to Push-Up"]}, {label:"Circuit B \u2014 Push + Pull Superset", exercises:["Incline Press (superset with Pull-Up)", "Pull-Up or Lat Pulldown", "Shoulder Press (superset with Face Pull)", "Face Pull", "Dip (superset with Curl)", "Barbell Curl"]}]},
+  {id:"functional_strength", icon:"\ud83d\udd29", name:"Functional Strength", routines:[{label:"Day 1 \u2014 Hinge & Push", exercises:["Trap Bar Deadlift or Kettlebell Swing", "Push-Up Variations (tempo)", "Cable Pull-Through", "Farmers Carry", "Pallof Press"]}, {label:"Day 2 \u2014 Squat & Pull", exercises:["Goblet Squat or Safety Bar Squat", "Single-Arm Dumbbell Row", "Step-Up with Dumbbells", "Band Pull-Apart", "Dead Bug"]}, {label:"Day 3 \u2014 Carry & Rotate", exercises:["Single-Leg RDL", "Landmine Press", "Suitcase Carry", "Cable Woodchop", "Plank Row"]}]},
+  {id:"chest_arms", icon:"\ud83d\udcaa", name:"Chest & Arms", routines:[{label:"Chest Specialization Day", exercises:["Flat Barbell Bench Press", "Incline Dumbbell Press", "Low Cable Fly", "Decline Push-Up", "Cable Chest Press"]}, {label:"Arms Specialization Day", exercises:["EZ Bar Preacher Curl", "Skull Crushers", "Incline Dumbbell Curl", "Cable Tricep Pushdown", "Hammer Curl", "Overhead Tricep Extension", "Reverse Curl"]}]},
+  {id:"bodybuilding_5day", icon:"\ud83c\udfc6", name:"Bodybuilding Split", routines:[{label:"Day 1 \u2014 Chest", exercises:["Flat Barbell Bench Press", "Incline Dumbbell Press", "Decline Bench Press", "Cable Fly", "Push-Up Burnout"]}, {label:"Day 2 \u2014 Back", exercises:["Deadlift", "Wide-Grip Pull-Up", "T-Bar Row", "Seated Cable Row", "Straight-Arm Pulldown", "Face Pull"]}, {label:"Day 3 \u2014 Shoulders", exercises:["Overhead Press (Barbell)", "Dumbbell Lateral Raise", "Arnold Press", "Rear Delt Fly", "Cable Lateral Raise", "Shrugs"]}, {label:"Day 4 \u2014 Arms", exercises:["EZ Bar Curl", "Close-Grip Bench Press", "Incline Dumbbell Curl", "Skull Crushers", "Concentration Curl", "Overhead Tricep Extension", "Reverse Curl"]}, {label:"Day 5 \u2014 Legs", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Leg Extension", "Standing Calf Raise"]}]},
+  {id:"beginner_foundation", icon:"\ud83c\udf31", name:"Beginner Foundation", routines:[{label:"Week 1\u20132: Movement Patterns", exercises:["Goblet Squat", "Dumbbell Bench Press", "Seated Cable Row", "Dumbbell Shoulder Press", "Plank"]}, {label:"Week 3\u20134: Adding Load", exercises:["Barbell Squat (light)", "Barbell Bench Press (light)", "Lat Pulldown", "Dumbbell Row", "Romanian Deadlift (dumbbell)", "Plank + Side Plank"]}, {label:"Week 5\u20136: Progressive Overload", exercises:["Barbell Squat", "Barbell Bench Press", "Deadlift (intro)", "Barbell Row", "Overhead Press", "Ab Wheel or Cable Crunch"]}]},
+  {id:"athletic_performance", icon:"\ud83d\ude80", name:"Athletic Performance", routines:[{label:"Power Day A", exercises:["Box Jump", "Power Clean or Hang Clean", "Barbell Squat (explosive)", "Broad Jump", "Med Ball Slam"]}, {label:"Power Day B", exercises:["Trap Bar Jump Deadlift", "Push Press (barbell)", "Single-Leg Bound", "Battle Ropes", "Sprint (treadmill or turf)"]}]},
+  {id:"mobility_recovery", icon:"\ud83e\uddd8", name:"Mobility & Recovery", routines:[{label:"Full Body Mobility Flow", exercises:["Foam Roll \u2014 T-Spine", "Foam Roll \u2014 Lats", "90/90 Hip Stretch", "World's Greatest Stretch", "Cat-Cow", "Thoracic Rotation (half-kneeling)", "Hip Flexor Stretch", "Shoulder CARs (Controlled Articular Rotations)", "Hamstring Floss (banded or towel)"]}, {label:"Pre-Session Activation", exercises:["Band Pull-Apart", "Hip Circle", "Glute Bridge Activation", "Inchworm", "Leg Swing (front-back + lateral)", "Light Goblet Squat (warm-up weight)"]}]}
+];
+
 function openAddAppointment() {
   const clients = window._loadedClients || [];
   const el = document.getElementById('add-appt-form');
   el.style.display = 'block';
   const today = new Date().toISOString().slice(0,10);
+  const selectedClientObj = clients.find(c => String(c.id) === document.getElementById('appt-client')?.value);
+  const recommendedIds = recommendedBundleIdsForGoalsCrm(selectedClientObj && selectedClientObj.goal_primary);
+  const bundleOptions = ROUTINE_LIBRARY.map(b => `<option value="${b.id}">${recommendedIds.has(b.id)?'\u2605 ':''}${b.icon} ${escH(b.name)}${recommendedIds.has(b.id)?' (recommended)':''}</option>`).join('');
   el.innerHTML = `<div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
-    <div style="font-weight:800;margin-bottom:10px">New Appointment</div>
+    <div style="font-weight:800;margin-bottom:10px">New Recurring Session</div>
+
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Load a Saved Program</label>
+    <select id="appt-load-program" onchange="loadSavedProgram()" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <option value="">-- Build from scratch --</option>
+    </select>
+
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Client</label>
-    <select id="appt-client" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
+    <select id="appt-client" onchange="refreshBundleRecommendations()" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
       <option value="">Select client...</option>
       ${clients.map(c => `<option value="${c.id}">${escH(c.first_name)} ${escH(c.last_name)}</option>`).join('')}
     </select>
-    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Session Type / Program</label>
-    <input id="appt-program" placeholder="e.g. Strength Training" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Start Date</label><input type="date" id="appt-start" value="${today}" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px"></div>
-      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">End Date</label><input type="date" id="appt-end" value="${today}" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Repeat Weekly For</label>
+        <select id="appt-weeks" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px">
+          <option value="1">Just this week</option>
+          <option value="4" selected>4 weeks</option>
+          <option value="8">8 weeks</option>
+          <option value="12">12 weeks</option>
+          <option value="26">26 weeks (ongoing)</option>
+        </select>
+      </div>
     </div>
-    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Days of Week</label>
-    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-      ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d,i) => `<label style="font-size:12px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer"><input type="checkbox" id="appt-day-${i}" ${i>=1&&i<=5?'checked':''} style="margin-right:4px">${d}</label>`).join('')}
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Same weekly pattern repeats for however many weeks you pick — no need to re-enter it each week.</div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Routine by Day</label>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Check a day to schedule it, then pick that day's routine — Tuesday can be Push while Thursday is Pull, for example.</div>
+    <div id="appt-day-routines" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+      ${[0,1,2,3,4,5,6].map(i => `
+        <div style="border:1px solid var(--line);border-radius:8px;padding:10px">
+          <label style="font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="appt-day-${i}" ${i>=1&&i<=5?'checked':''} onchange="toggleApptDay(${i})">${WEEKDAY_NAMES[i]}
+          </label>
+          <div id="appt-day-${i}-routine" style="margin-top:8px;${i>=1&&i<=5?'':'display:none'}">
+            <select id="appt-day-${i}-bundle" onchange="renderDayRoutineOptions(${i})" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px">
+              <option value="">-- Custom / type your own --</option>
+              ${bundleOptions}
+            </select>
+            <select id="appt-day-${i}-routinesel" onchange="applyDayRoutine(${i})" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px;display:none"></select>
+            <input id="appt-day-${i}-program" placeholder="Session name, e.g. Push Day" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px">
+            <input id="appt-day-${i}-exercises" placeholder="Exercises, comma separated" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:12px">
+            <div id="appt-day-${i}-preview" style="margin-top:8px"></div>
+          </div>
+        </div>`).join('')}
     </div>
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Focus Notes (optional)</label>
     <textarea id="appt-notes" rows="2" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit"></textarea>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <input id="appt-program-name" placeholder="Name this weekly split, e.g. Sarah's PPL Split" style="flex:1;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <button onclick="saveAsProgram()" style="background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:0 14px;font-weight:700;cursor:pointer;font-size:12px">Save as Program</button>
+    </div>
+
     <div style="display:flex;gap:8px">
       <button onclick="saveAppointment()" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save Appointment(s)</button>
       <button onclick="document.getElementById('add-appt-form').style.display='none'" style="background:var(--soft);border:none;border-radius:8px;padding:12px;cursor:pointer">Cancel</button>
     </div>
     <div id="appt-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
   </div>`;
+  loadSavedProgramsList();
+}
+
+async function loadSavedProgramsList(){
+  const sel = document.getElementById('appt-load-program');
+  if (!sel) return;
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'saved_programs', orderBy:'created_at DESC', limit:100 }) });
+    const d = await r.json();
+    const programs = d.results || [];
+    sel.innerHTML = '<option value="">-- Build from scratch --</option>' +
+      programs.map(p => `<option value='${p.id}'>${escH(p.name)}</option>`).join('');
+    window._savedPrograms = programs;
+  } catch(e) {}
+}
+
+function loadSavedProgram(){
+  const id = document.getElementById('appt-load-program').value;
+  if (!id) return;
+  const program = (window._savedPrograms || []).find(p => String(p.id) === id);
+  if (!program) return;
+  let dayRoutines;
+  try { dayRoutines = JSON.parse(program.day_routines_json); } catch(e) { return; }
+  for (let i = 0; i <= 6; i++) {
+    const has = dayRoutines[i] || dayRoutines[String(i)];
+    document.getElementById('appt-day-'+i).checked = !!has;
+    toggleApptDay(i);
+    if (has) {
+      document.getElementById('appt-day-'+i+'-program').value = has.program_name || '';
+      document.getElementById('appt-day-'+i+'-exercises').value = (has.exercises || []).join(', ');
+    }
+  }
+  document.getElementById('appt-program-name').value = program.name;
+}
+
+async function saveAsProgram(){
+  const status = document.getElementById('appt-status');
+  const name = document.getElementById('appt-program-name').value.trim();
+  if (!name) { status.textContent = 'Give the program a name first.'; return; }
+  const weekdays = [0,1,2,3,4,5,6].filter(i => document.getElementById('appt-day-'+i).checked);
+  const dayRoutines = {};
+  for (const i of weekdays) {
+    const programName = document.getElementById('appt-day-'+i+'-program').value.trim();
+    const exercisesRaw = document.getElementById('appt-day-'+i+'-exercises').value.trim();
+    if (programName || exercisesRaw) {
+      dayRoutines[i] = { program_name: programName || 'Training Session', exercises: exercisesRaw ? exercisesRaw.split(',').map(s=>s.trim()).filter(Boolean) : [] };
+    }
+  }
+  if (!Object.keys(dayRoutines).length) { status.textContent = "Set up at least one day's routine before saving."; return; }
+  const coach = document.getElementById('coach-select').value;
+  try {
+    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'saved_programs', values:{ name, coach: coach||null, day_routines_json: JSON.stringify(dayRoutines), created_at: new Date().toISOString() } }) });
+    status.textContent = 'Saved "' + name + '" as a reusable program.';
+    loadSavedProgramsList();
+  } catch(e) { status.textContent = 'Could not save program.'; }
+}
+
+const WEEKDAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function refreshBundleRecommendations(){
+  const clients = window._loadedClients || [];
+  const clientId = document.getElementById('appt-client').value;
+  const clientObj = clients.find(c => String(c.id) === clientId);
+  const recommendedIds = recommendedBundleIdsForGoalsCrm(clientObj && clientObj.goal_primary);
+  for (let i = 0; i <= 6; i++) {
+    const sel = document.getElementById('appt-day-'+i+'-bundle');
+    if (!sel) continue;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">-- Custom / type your own --</option>' +
+      ROUTINE_LIBRARY.map(b => `<option value="${b.id}">${recommendedIds.has(b.id)?'\u2605 ':''}${b.icon} ${escH(b.name)}${recommendedIds.has(b.id)?' (recommended)':''}</option>`).join('');
+    sel.value = current;
+  }
+}
+
+function toggleApptDay(i) {
+  const checked = document.getElementById('appt-day-'+i).checked;
+  document.getElementById('appt-day-'+i+'-routine').style.display = checked ? 'block' : 'none';
+}
+
+function renderDayRoutineOptions(i) {
+  const bundleId = document.getElementById('appt-day-'+i+'-bundle').value;
+  const routineSel = document.getElementById('appt-day-'+i+'-routinesel');
+  if (!bundleId) { routineSel.style.display = 'none'; routineSel.innerHTML = ''; return; }
+  const bundle = ROUTINE_LIBRARY.find(b => b.id === bundleId);
+  if (!bundle) return;
+  routineSel.innerHTML = '<option value="">-- Pick a day from this split --</option>' +
+    bundle.routines.map((r,idx) => `<option value="${idx}">${escH(r.label)}</option>`).join('');
+  routineSel.style.display = 'block';
+}
+
+const COMPOUND_KEYWORDS = ['squat','deadlift','bench press','press','row','pull-up','pulldown','clean','snatch','lunge','thrust','dip'];
+function isCompoundLiftCrm(name){ const n=(name||'').toLowerCase(); return COMPOUND_KEYWORDS.some(k=>n.includes(k)); }
+
+function classifyGoalRepRangeCrm(goalText){
+  const g = (goalText||'').toLowerCase();
+  if (g.includes('improve strength')) return { bottom:4, top:6, label:'strength' };
+  if (g.includes('improve cardio/endurance') || g.includes('lose weight')) return { bottom:12, top:20, label:'endurance/fat-loss' };
+  if (/strength|power|1rm|powerlift/.test(g)) return { bottom:4, top:6, label:'strength' };
+  if (/endur|fat loss|weight loss|tone|conditioning|cardio/.test(g)) return { bottom:12, top:20, label:'endurance/fat-loss' };
+  return { bottom:8, top:12, label:'hypertrophy' };
+}
+
+const GOAL_PROGRAM_MAP = {
+  'Lose Weight': ['fat_loss_circuit','core_conditioning'],
+  'Gain Weight': ['bodybuilding_5day','push_pull_legs'],
+  'Build Muscle': ['bodybuilding_5day','push_pull_legs','upper_lower'],
+  'Improve Strength': ['strength_5x5','functional_strength'],
+  'Improve Cardio/Endurance': ['fat_loss_circuit','core_conditioning'],
+  'Tone & Definition': ['full_body','fat_loss_circuit'],
+  'General Health & Wellness': ['full_body','beginner_foundation'],
+  'Sports Performance': ['athletic_performance','functional_strength'],
+  'Injury Recovery/Rehab': ['mobility_recovery'],
+  'Flexibility & Mobility': ['mobility_recovery'],
+  'Stress Relief/Mental Health': ['mobility_recovery','full_body'],
+  'Preparing for an Event': ['full_body','fat_loss_circuit'],
+};
+function recommendedBundleIdsForGoalsCrm(goalText){
+  const goals = (goalText||'').split(',').map(s=>s.trim());
+  const ids = new Set();
+  goals.forEach(g => (GOAL_PROGRAM_MAP[g]||[]).forEach(id => ids.add(id)));
+  return ids;
+}
+
+let CLIENT_WORKOUT_HISTORY = {};
+async function getClientWorkoutHistory(clientId){
+  if (CLIENT_WORKOUT_HISTORY[clientId]) return CLIENT_WORKOUT_HISTORY[clientId];
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'workouts', where:{ client_id: parseInt(clientId,10) }, orderBy:'workout_date DESC', limit:60 }) });
+    const d = await r.json();
+    CLIENT_WORKOUT_HISTORY[clientId] = d.results || [];
+  } catch(e) { CLIENT_WORKOUT_HISTORY[clientId] = []; }
+  return CLIENT_WORKOUT_HISTORY[clientId];
+}
+
+function getExerciseSessionsForClient(history, name, limit){
+  limit = limit || 4;
+  const out = [];
+  for (const w of history) {
+    try {
+      const exs = JSON.parse(w.exercises_json||'[]') || [];
+      const m = exs.find(x => (x.name||'').toLowerCase() === name.toLowerCase());
+      if (m && Array.isArray(m.set_detail) && m.set_detail.length) {
+        out.push({ date: w.workout_date, sets: m.set_detail });
+        if (out.length >= limit) break;
+      }
+    } catch(e) {}
+  }
+  return out;
+}
+
+function suggestForExerciseCrm(history, name, clientGoal){
+  const sessions = getExerciseSessionsForClient(history, name, 4);
+  if (!sessions.length) return null;
+  const last = sessions[0];
+  const reps = last.sets.map(s => parseInt(s.reps)||0);
+  const weights = last.sets.map(s => parseFloat(s.weight)||0);
+  const minReps = Math.min(...reps);
+  const topWt = Math.max(...weights);
+  if (!topWt) return null;
+
+  const goalRange = classifyGoalRepRangeCrm(clientGoal);
+  const compound = isCompoundLiftCrm(name);
+  const bump = compound ? 0.05 : 0.025;
+  const maxJump = compound ? 10 : 5;
+  const lastText = last.sets.length + 'x' + minReps + ' @ ' + topWt + ' lb (' + (last.date||'') + ')';
+
+  if (sessions.length >= 3) {
+    const last3 = sessions.slice(0,3);
+    const sameWeight = last3.every(s => Math.max(...s.sets.map(x=>parseFloat(x.weight)||0)) === topWt);
+    const noRepGain = last3.every(s => Math.min(...s.sets.map(x=>parseInt(x.reps)||0)) <= minReps);
+    if (sameWeight && noRepGain) {
+      const deloadWt = Math.round((topWt * 0.9) / 2.5) * 2.5;
+      return { last: lastText, suggested: deloadWt + ' lb x ' + goalRange.bottom + ' reps (deload)', reason: 'Same weight/reps 3 sessions running — deload lighter this week, then push again.' };
+    }
+  }
+
+  if (minReps >= goalRange.top) {
+    let bumped = Math.round((topWt * (1 + bump)) / 2.5) * 2.5;
+    if (bumped - topWt > maxJump) bumped = topWt + maxJump;
+    return { last: lastText, suggested: bumped + ' lb x ' + goalRange.bottom + ' reps', reason: `Hit ${minReps}+ reps — top of ${goalRange.label} range. Step up and reset.` };
+  }
+  if (minReps >= goalRange.bottom) {
+    return { last: lastText, suggested: topWt + ' lb x ' + (minReps+1) + ' reps', reason: `In ${goalRange.label} range — add a rep before adding weight.` };
+  }
+  return { last: lastText, suggested: topWt + ' lb x ' + (minReps+1) + '+ reps', reason: `Under ${goalRange.label} range (${goalRange.bottom}-${goalRange.top}) — hold and rebuild.` };
+}
+
+async function renderDayProgressionPreview(i, exercises){
+  const clientId = document.getElementById('appt-client').value;
+  const previewEl = document.getElementById('appt-day-'+i+'-preview');
+  if (!previewEl) return;
+  if (!clientId) { previewEl.innerHTML = '<div style="font-size:11px;color:var(--muted)">Pick a client above to see their progression for these exercises.</div>'; return; }
+  previewEl.innerHTML = '<div style="font-size:11px;color:var(--muted)">Loading progression...</div>';
+  const clientObj = (window._loadedClients||[]).find(c => String(c.id) === clientId);
+  const history = await getClientWorkoutHistory(clientId);
+  previewEl.innerHTML = exercises.map(name => {
+    const sug = suggestForExerciseCrm(history, name, clientObj && clientObj.goal_primary);
+    if (!sug) return `<div style="font-size:11px;padding:4px 0"><b>${escH(name)}</b> — no history yet, start light</div>`;
+    return `<div style="font-size:11px;padding:4px 0;border-bottom:1px solid var(--line)">
+      <b>${escH(name)}</b><br>Last: ${escH(sug.last)}<br><span style="color:#1E9E5A;font-weight:700">This week: ${escH(sug.suggested)}</span> — ${escH(sug.reason)}
+    </div>`;
+  }).join('');
+}
+
+function applyDayRoutine(i) {
+  const bundleId = document.getElementById('appt-day-'+i+'-bundle').value;
+  const routineIdx = document.getElementById('appt-day-'+i+'-routinesel').value;
+  if (!bundleId || routineIdx === '') return;
+  const bundle = ROUTINE_LIBRARY.find(b => b.id === bundleId);
+  const routine = bundle?.routines[parseInt(routineIdx,10)];
+  if (!routine) return;
+  document.getElementById('appt-day-'+i+'-program').value = routine.label;
+  document.getElementById('appt-day-'+i+'-exercises').value = routine.exercises.join(', ');
+  renderDayProgressionPreview(i, routine.exercises);
 }
 
 async function saveAppointment() {
   const status = document.getElementById('appt-status');
   const clientId = document.getElementById('appt-client').value;
-  const program = document.getElementById('appt-program').value.trim();
   const start = document.getElementById('appt-start').value;
-  const end = document.getElementById('appt-end').value;
+  const weeks = parseInt(document.getElementById('appt-weeks').value, 10) || 1;
   const notes = document.getElementById('appt-notes').value.trim();
   const weekdays = [0,1,2,3,4,5,6].filter(i => document.getElementById('appt-day-'+i).checked);
-  if (!clientId || !program || !start || !end || !weekdays.length) { status.textContent = 'Client, program, dates, and at least one day are required.'; return; }
+  if (!clientId || !start || !weekdays.length) { status.textContent = 'Client, start date, and at least one day are required.'; return; }
+  const endDateObj = new Date(start + 'T00:00:00');
+  endDateObj.setDate(endDateObj.getDate() + (weeks * 7) - 1);
+  const end = endDateObj.toISOString().slice(0,10);
+  const dayRoutines = {};
+  for (const i of weekdays) {
+    const programEl = document.getElementById('appt-day-'+i+'-program');
+    const exercisesEl = document.getElementById('appt-day-'+i+'-exercises');
+    const programName = programEl ? programEl.value.trim() : '';
+    const exercisesRaw = exercisesEl ? exercisesEl.value.trim() : '';
+    if (programName || exercisesRaw) {
+      dayRoutines[i] = {
+        program_name: programName || 'Training Session',
+        exercises: exercisesRaw ? exercisesRaw.split(',').map(s => s.trim()).filter(Boolean) : []
+      };
+    }
+  }
   status.textContent = 'Saving...';
   const coach = document.getElementById('coach-select').value;
   try {
-    const r = await fetch(WORKER + '/schedule/create', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ client_id: parseInt(clientId,10), program_name: program, start_date: start, end_date: end, weekdays, focus_notes: notes, coach_name: coach, assigned_coach: coach }) });
+    const body = { client_id: parseInt(clientId,10), start_date: start, end_date: end, weekdays, focus_notes: notes, coach_name: coach, assigned_coach: coach };
+    if (Object.keys(dayRoutines).length) body.day_routines = dayRoutines;
+    else body.program_name = 'Training Session';
+    const r = await fetch(WORKER + '/schedule/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const d = await r.json();
     if (!d.ok) { status.textContent = d.error || 'Could not save.'; return; }
     status.textContent = 'Created ' + d.created_count + ' session(s).';
