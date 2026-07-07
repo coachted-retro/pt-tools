@@ -1823,11 +1823,27 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       }
 
       // ── PT APPOINTMENTS: bookable for existing clients OR brand-new prospects ──
+      // Shared 24-hour minimum booking notice check — applies when someone
+      // books on behalf of another coach (e.g. an MEA booking for Ted).
+      // A coach booking or editing their OWN schedule is exempt — they can
+      // make same-day changes freely, the notice requirement is specifically
+      // to stop outside bookings landing on someone's calendar with no warning.
+      function hasEnoughNotice(dateStr, timeStr, bookedBy, assignedCoach) {
+        const selfBooking = bookedBy && assignedCoach && bookedBy.trim().toLowerCase() === assignedCoach.trim().toLowerCase();
+        if (selfBooking) return true;
+        const requested = new Date(dateStr + 'T' + (timeStr || '00:00') + ':00');
+        const minAllowed = new Date(Date.now() + 24*60*60*1000);
+        return requested >= minAllowed;
+      }
+
       if (url.pathname === '/appointments/create' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
         if (!b.appointment_date || !b.appointment_type) return bad('appointment_date and appointment_type required', cors);
         if (!b.client_id && !b.prospect_name) return bad('client_id or prospect_name required', cors);
+        if (!hasEnoughNotice(b.appointment_date, b.appointment_time, b.booked_by, b.assigned_coach)) {
+          return bad('Appointments booked for another coach need at least 24 hours notice. Pick a later time.', cors);
+        }
         const now = new Date().toISOString();
         const res = await env.DB.prepare(
           `INSERT INTO pt_appointments (appointment_date, appointment_time, appointment_type, prospect_name, prospect_phone, prospect_email, client_id, assigned_coach, status, gym_id, notes, created_at, updated_at)
@@ -1835,6 +1851,31 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         ).bind(b.appointment_date, b.appointment_time||null, b.appointment_type, b.prospect_name||null, b.prospect_phone||null, b.prospect_email||null,
                b.client_id||null, b.assigned_coach||null, b.gym_id||1, b.notes||null, now, now).run();
         return ok({ id: res.meta.last_row_id }, cors);
+      }
+
+      if (url.pathname === '/appointments/update' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        const existing = await env.DB.prepare('SELECT * FROM pt_appointments WHERE id=?').bind(b.id).first();
+        if (!existing) return bad('Appointment not found', cors);
+        const newDate = b.appointment_date || existing.appointment_date;
+        const newTime = b.appointment_time !== undefined ? b.appointment_time : existing.appointment_time;
+        const newCoach = b.assigned_coach !== undefined ? b.assigned_coach : existing.assigned_coach;
+        // Editing your own appointment is always allowed regardless of notice window —
+        // the 24-hour rule is about outside bookings landing unexpectedly, not about
+        // a coach cleaning up their own calendar.
+        if (!hasEnoughNotice(newDate, newTime, b.booked_by, newCoach)) {
+          return bad("Moving this to another coach's calendar needs at least 24 hours notice.", cors);
+        }
+        const fields = [], binds = [];
+        ['appointment_date','appointment_time','appointment_type','assigned_coach','notes','status'].forEach(k => {
+          if (b[k] !== undefined) { fields.push(k+'=?'); binds.push(b[k]); }
+        });
+        fields.push('updated_at=?'); binds.push(new Date().toISOString());
+        binds.push(b.id);
+        await env.DB.prepare(`UPDATE pt_appointments SET ${fields.join(',')} WHERE id=?`).bind(...binds).run();
+        return ok({ updated: true }, cors);
       }
 
       if (url.pathname === '/appointments/day' && request.method === 'GET') {
@@ -2026,17 +2067,40 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const coach = url.searchParams.get('coach');
         const threshold = "date('now','-7 day')";
-        let query = `
-          SELECT c.id, c.first_name, c.last_name, c.coach, c.advisor,
-            (SELECT MAX(s.scheduled_date) FROM scheduled_sessions s WHERE s.client_id = c.id) as last_scheduled
+        let noSessionQuery = `
+          SELECT c.id, c.first_name, c.last_name, c.coach, c.advisor, c.package, c.package_end_date,
+            (SELECT MAX(s.scheduled_date) FROM scheduled_sessions s WHERE s.client_id = c.id) as last_scheduled,
+            'no_recent_session' as jeopardy_reason
           FROM clients c
           WHERE c.status = 'active_pt'
         `;
-        const binds = [];
-        if (coach) { query += ' AND COALESCE(NULLIF(c.coach,\'\'), c.advisor) = ?'; binds.push(coach); }
-        query += ` HAVING last_scheduled IS NULL OR last_scheduled < ${threshold} ORDER BY (last_scheduled IS NOT NULL), last_scheduled ASC`;
-        const rows = await env.DB.prepare(query).bind(...binds).all();
-        return ok({ jeopardy: rows.results || [] }, cors);
+        const binds1 = [];
+        if (coach) { noSessionQuery += ' AND COALESCE(NULLIF(c.coach,\'\'), c.advisor) = ?'; binds1.push(coach); }
+        noSessionQuery += ` HAVING last_scheduled IS NULL OR last_scheduled < ${threshold}`;
+
+        // Package expiring within 7 days, or already expired — separate reason so the
+        // coach knows this is a resign conversation, not a "come back in" nudge.
+        let expiringQuery = `
+          SELECT c.id, c.first_name, c.last_name, c.coach, c.advisor, c.package, c.package_end_date,
+            NULL as last_scheduled, 'package_expiring' as jeopardy_reason
+          FROM clients c
+          WHERE c.status = 'active_pt' AND c.package_end_date IS NOT NULL
+            AND c.package_end_date <= date('now','+7 day')
+        `;
+        const binds2 = [];
+        if (coach) { expiringQuery += ' AND COALESCE(NULLIF(c.coach,\'\'), c.advisor) = ?'; binds2.push(coach); }
+
+        const [noSessionRows, expiringRows] = await Promise.all([
+          env.DB.prepare(noSessionQuery).bind(...binds1).all(),
+          env.DB.prepare(expiringQuery).bind(...binds2).all()
+        ]);
+        // Merge, de-duping by client id — a client can be BOTH no-recent-session and
+        // expiring; if so, show as package_expiring since that's the more urgent conversation.
+        const byId = {};
+        (noSessionRows.results||[]).forEach(r => byId[r.id] = r);
+        (expiringRows.results||[]).forEach(r => byId[r.id] = r);
+        const merged = Object.values(byId).sort((a,b) => (a.jeopardy_reason==='package_expiring'?0:1) - (b.jeopardy_reason==='package_expiring'?0:1));
+        return ok({ jeopardy: merged }, cors);
       }
 
 
@@ -2160,6 +2224,9 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!assignedCoach) {
           const client = await env.DB.prepare('SELECT coach FROM clients WHERE id=?').bind(b.client_id).first();
           assignedCoach = client?.coach || '';
+        }
+        if (!hasEnoughNotice(b.start_date, null, b.booked_by, assignedCoach)) {
+          return bad('Sessions booked for another coach need at least 24 hours notice. Pick a later start date.', cors);
         }
         const fallbackExercisesJson = Array.isArray(b.exercises) ? JSON.stringify(b.exercises) : null;
         const created = [];

@@ -2454,6 +2454,33 @@ function autoFill(d) {
     document.getElementById('lunch-other').value = d.lunch;
   }
   if (d.gender) selectGender(d.gender);
+
+  // Fallback: if BMI wasn't successfully read off the scan but weight and
+  // height are both known, calculate it directly rather than leaving it
+  // blank — standard formula: 703 × weight(lb) / height(in)².
+  fillBmiIfMissing();
+}
+
+function fillBmiIfMissing(){
+  const bmiEl = document.getElementById('bmi');
+  if (!bmiEl || bmiEl.value) return;
+  const weight = parseFloat(gv('weight'));
+  const heightRaw = gv('height');
+  if (!weight || !heightRaw) return;
+  let heightIn = null;
+  const ftIn = heightRaw.match(/(\d+)\s*'?\s*(\d+)?/);
+  if (/'|ft|feet/i.test(heightRaw) && ftIn) {
+    heightIn = parseInt(ftIn[1],10)*12 + (parseInt(ftIn[2],10)||0);
+  } else {
+    const n = parseFloat(heightRaw);
+    if (!isNaN(n)) heightIn = n > 90 ? n / 2.54 : n; // treat large numbers as cm, convert to inches
+  }
+  if (!heightIn) return;
+  const bmi = (703 * weight) / (heightIn * heightIn);
+  if (bmi > 10 && bmi < 80) { // sanity bounds
+    bmiEl.value = bmi.toFixed(1);
+    bmiEl.classList.add('autofilled');
+  }
 }
 
 // ===========================================
@@ -3021,6 +3048,9 @@ async function loadExistingClientForConsult(id) {
       if (typeof syncGoalsField === 'function') syncGoalsField();
     }
     if (c.gender && typeof selectGender === 'function') selectGender(c.gender);
+    // We already know who this is — skip the "enter member's name" welcome
+    // page and jump straight to where the prefilled info is actually visible.
+    if (typeof goPage === 'function') goPage(1);
   } catch(e) { console.warn('Could not pre-fill from existing client:', e.message); }
 }
 

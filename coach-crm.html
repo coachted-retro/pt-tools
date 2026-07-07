@@ -260,17 +260,133 @@ async function loadJeopardy(){
     const r = await fetch(WORKER + '/jeopardy/clients?coach=' + encodeURIComponent(coach));
     const d = await r.json();
     const rows = d.jeopardy || [];
+    window._jeopardyClients = rows;
     if (!rows.length) { box.innerHTML = ''; return; }
     box.innerHTML = `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--red);margin-bottom:8px">⚠ Clients In Jeopardy — ${rows.length}</div>` +
-      rows.map(c => `<a class="card" href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(coach)}" style="border-left:4px solid var(--red)">
-        <div class="avatar" style="background:var(--lred);color:var(--red)">${escH(((c.first_name||'?')[0]+(c.last_name||'')[0]).toUpperCase())}</div>
-        <div style="flex:1">
-          <div class="name">${escH(c.first_name)} ${escH(c.last_name)}</div>
-          <div class="sub">${c.last_scheduled ? 'Last scheduled ' + escH(c.last_scheduled) : 'Never scheduled a session'}</div>
-        </div>
-        <div class="badges"><span class="badge badge-red">Reach out</span></div>
-      </a>`).join('');
+      rows.map(c => {
+        const isExpiring = c.jeopardy_reason === 'package_expiring';
+        const daysLeft = c.package_end_date ? Math.ceil((new Date(c.package_end_date+'T00:00:00') - new Date()) / 86400000) : null;
+        const subText = isExpiring
+          ? (daysLeft != null && daysLeft < 0 ? `Package expired ${escH(c.package_end_date)}` : `Package expires ${escH(c.package_end_date)}${daysLeft!=null?' ('+daysLeft+'d)':''}`)
+          : (c.last_scheduled ? 'Last scheduled ' + escH(c.last_scheduled) : 'Never scheduled a session');
+        return `<div class="card" style="border-left:4px solid var(--red);flex-direction:column;align-items:stretch;cursor:default">
+          <div style="display:flex;align-items:center;gap:10px">
+            <a href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(coach)}" style="display:flex;align-items:center;gap:10px;flex:1;text-decoration:none;color:inherit">
+              <div class="avatar" style="background:var(--lred);color:var(--red)">${escH(((c.first_name||'?')[0]+(c.last_name||'')[0]).toUpperCase())}</div>
+              <div style="flex:1">
+                <div class="name">${escH(c.first_name)} ${escH(c.last_name)}</div>
+                <div class="sub">${subText}</div>
+              </div>
+            </a>
+            <span class="badge ${isExpiring?'badge-red':'badge-red'}">${isExpiring?'Expiring':'Reach out'}</span>
+          </div>
+          ${isExpiring ? `<div style="display:flex;gap:8px;margin-top:10px">
+            <button onclick="openResignModal(${c.id},'${escH(c.first_name+' '+c.last_name).replace(/'/g,"")}')" style="flex:1;background:#1E9E5A;color:#fff;border:none;border-radius:8px;padding:8px;font-weight:700;font-size:12px;cursor:pointer">Resign</button>
+            <button onclick="openNotResigningModal(${c.id},'${escH(c.first_name+' '+c.last_name).replace(/'/g,"")}')" style="flex:1;background:var(--soft);border:none;border-radius:8px;padding:8px;font-weight:700;font-size:12px;cursor:pointer">Not Resigning</button>
+          </div>` : ''}
+        </div>`;
+      }).join('');
   } catch(e) { box.innerHTML = ''; }
+}
+
+function openResignModal(clientId, clientName){
+  const overlay = document.createElement('div');
+  overlay.id = 'resign-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:4px">Resign — ${escH(clientName)}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Same package or an upgrade — this creates a new sale and resets their term.</div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Package</label>
+    <select id="rs-package" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin:4px 0 10px">
+      <option value="weekly_1x">1x per week — $45 / half-hr (4 sessions)</option>
+      <option value="weekly_2x">2x per week — $45 / half-hr</option>
+      <option value="weekly_3x">3x per week — $45 / session</option>
+      <option value="weekly_4x">4x per week — $45 / session</option>
+      <option value="training">Training — $180 (no nutrition)</option>
+      <option value="complete">Complete — $249 (AI meal plan)</option>
+      <option value="complete_plus">Complete+ — $349 (8 sessions)</option>
+    </select>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Sold Amount ($)</label>
+    <input type="number" id="rs-amount" placeholder="e.g. 249" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin:4px 0 10px">
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Term Length</label>
+    <select id="rs-term" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin:4px 0 10px">
+      <option value="30">1 month</option>
+      <option value="90">3 months</option>
+      <option value="180">6 months</option>
+      <option value="365">12 months</option>
+    </select>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button style="flex:1;background:#1E9E5A;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer" onclick="saveResign(${clientId})">Confirm Resign</button>
+      <button style="background:var(--soft);border:none;border-radius:8px;padding:12px;cursor:pointer" onclick="document.getElementById('resign-modal-overlay').remove()">Cancel</button>
+    </div>
+    <div id="rs-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function saveResign(clientId){
+  const status = document.getElementById('rs-status');
+  const pkg = document.getElementById('rs-package').value;
+  const amount = parseFloat(document.getElementById('rs-amount').value);
+  const termDays = parseInt(document.getElementById('rs-term').value, 10);
+  const coach = document.getElementById('coach-select').value;
+  if (!amount || amount <= 0) { status.textContent = 'Enter the sold amount.'; return; }
+  status.textContent = 'Saving...';
+  const client = (window._jeopardyClients||[]).find(c => c.id === clientId);
+  const clientName = client ? (client.first_name+' '+client.last_name) : '';
+  const today = new Date();
+  const endDate = new Date(today); endDate.setDate(endDate.getDate() + termDays);
+  try {
+    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'clients', values:{ package: pkg, package_start_date: today.toISOString().slice(0,10), package_end_date: endDate.toISOString().slice(0,10), status:'active_pt' }, where:{ id: clientId } }) });
+    const r = await fetch(WORKER + '/sales/record', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ gym_id: 1, member_id: clientId, client_name: clientName, package_name: pkg, amount, sold_by: coach, sale_type: 'renewal' }) });
+    const d = await r.json();
+    if (d.ok === false) { status.textContent = d.error || 'Could not save sale.'; return; }
+    status.textContent = 'Resigned! Tracked as a new sale.';
+    setTimeout(() => { document.getElementById('resign-modal-overlay').remove(); loadJeopardy(); }, 900);
+  } catch(e) { status.textContent = 'Error: ' + e.message; }
+}
+
+function openNotResigningModal(clientId, clientName){
+  const overlay = document.createElement('div');
+  overlay.id = 'not-resign-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:12px">Not Resigning — ${escH(clientName)}</div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Reason</label>
+    <select id="nr-reason" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin:4px 0 10px">
+      <option value="price">Price / budget</option>
+      <option value="moving">Moving away</option>
+      <option value="results">Not seeing results</option>
+      <option value="schedule">Scheduling conflict</option>
+      <option value="injury">Injury / medical</option>
+      <option value="other">Other</option>
+    </select>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Notes</label>
+    <textarea id="nr-notes" rows="2" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin:4px 0 10px;font-family:inherit"></textarea>
+    <div style="display:flex;gap:8px">
+      <button style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer" onclick="saveNotResigning(${clientId})">Confirm</button>
+      <button style="background:var(--soft);border:none;border-radius:8px;padding:12px;cursor:pointer" onclick="document.getElementById('not-resign-modal-overlay').remove()">Cancel</button>
+    </div>
+    <div id="nr-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function saveNotResigning(clientId){
+  const status = document.getElementById('nr-status');
+  const reason = document.getElementById('nr-reason').value;
+  const notes = document.getElementById('nr-notes').value.trim();
+  status.textContent = 'Saving...';
+  try {
+    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'churn_surveys', values:{ client_id: clientId, cancel_reason: reason, reason_detail: notes||null, submitted_at: new Date().toISOString() } }) });
+    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'clients', values:{ status: 'cancelled' }, where:{ id: clientId } }) });
+    status.textContent = 'Recorded.';
+    setTimeout(() => { document.getElementById('not-resign-modal-overlay').remove(); loadJeopardy(); }, 700);
+  } catch(e) { status.textContent = 'Error: ' + e.message; }
 }
 
 let SCHEDULE_DAY_OFFSET = 0;
@@ -553,7 +669,7 @@ async function saveIntakeAppointment(coach){
   status.textContent = 'Saving...';
   try {
     const finalNotes = type === 'other' ? (otherText + (notes ? ' — ' + notes : '')) : notes;
-    const body = { appointment_date: date, appointment_time: time || null, appointment_type: type, assigned_coach: coach, notes: finalNotes || null };
+    const body = { appointment_date: date, appointment_time: time || null, appointment_type: type, assigned_coach: coach, booked_by: coach, notes: finalNotes || null };
     if (clientId) body.client_id = parseInt(clientId,10);
     else if (prospectName) { body.prospect_name = prospectName; body.prospect_phone = prospectPhone || null; body.prospect_email = prospectEmail || null; }
     else { body.prospect_name = type === 'staff_meeting' ? 'Staff Meeting' : (otherText || 'Appointment'); }
@@ -1017,7 +1133,7 @@ async function saveAppointment() {
   status.textContent = 'Saving...';
   const coach = document.getElementById('coach-select').value;
   try {
-    const body = { client_id: parseInt(clientId,10), start_date: start, end_date: end, weekdays, focus_notes: notes, coach_name: coach, assigned_coach: coach };
+    const body = { client_id: parseInt(clientId,10), start_date: start, end_date: end, weekdays, focus_notes: notes, coach_name: coach, assigned_coach: coach, booked_by: coach };
     if (Object.keys(dayRoutines).length) body.day_routines = dayRoutines;
     else body.program_name = 'Training Session';
     const r = await fetch(WORKER + '/schedule/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });

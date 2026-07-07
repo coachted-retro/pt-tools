@@ -191,8 +191,26 @@ async function loadGranters(){
 }
 
 function genTempPassword(){
-  const words = ['Strong','Retro','Power','Focus','Drive','Rise','Grit','Push'];
-  return words[Math.floor(Math.random()*words.length)] + Math.floor(1000+Math.random()*9000);
+  return String(Math.floor(1000 + Math.random()*9000)); // 4-digit temp PIN — they set their own permanent PIN on first login
+}
+
+function shareAppLink(){
+  const status = document.getElementById('app-access-status');
+  const appUrl = 'https://myretrostrong.com/member-app.html';
+  if (navigator.share) {
+    navigator.share({ title: 'Retro Strong App', text: 'Log in with PT Client Login using your email.', url: appUrl }).catch(()=>{});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(appUrl);
+    if (status) status.textContent = 'Link copied — paste it in a text or email.';
+  }
+}
+
+function fmt12hr(timeStr){
+  if (!timeStr) return '';
+  const [h,m] = timeStr.split(':').map(Number);
+  const ap = h >= 12 ? 'PM' : 'AM';
+  const h12 = ((h+11)%12)+1;
+  return h12 + ':' + String(m).padStart(2,'0') + ' ' + ap + ' ET';
 }
 
 async function loadUpcomingAppointments(clientId){
@@ -203,26 +221,30 @@ async function loadUpcomingAppointments(clientId){
     const today = new Date().toISOString().slice(0,10);
     const upcoming = (r.results||[]).filter(a => a.appointment_date >= today && a.status !== 'cancelled');
     if (!upcoming.length) { body.innerHTML = '<div style="font-size:12px;color:var(--muted,#6B7280)">Nothing scheduled — use + Schedule Appointment above.</div>'; return; }
+    window._upcomingAppts = upcoming;
     const typeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Week Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', staff_meeting:'Staff Meeting', other:'Other' };
     body.innerHTML = upcoming.map(a => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC)">
       <div>
         <div style="font-weight:700;font-size:13px">${esc(typeLabels[a.appointment_type]||a.appointment_type)}</div>
-        <div style="font-size:12px;color:var(--muted,#6B7280)">${esc(fmtDate(a.appointment_date))}${a.appointment_time?' at '+esc(a.appointment_time):''}${a.assigned_coach?' · '+esc(a.assigned_coach):''}</div>
+        <div style="font-size:12px;color:var(--muted,#6B7280)">${esc(fmtDate(a.appointment_date))}${a.appointment_time?' at '+esc(fmt12hr(a.appointment_time)):''}${a.assigned_coach?' · '+esc(a.assigned_coach):''}</div>
       </div>
+      <button class="btn" style="font-size:11px;padding:6px 12px" onclick="openScheduleModal(${clientId},'',${a.id})">Edit</button>
     </div>`).join('');
   } catch(e) { body.innerHTML = '<div style="font-size:12px;color:var(--muted,#6B7280)">Could not load appointments.</div>'; }
 }
 
-function openScheduleModal(clientId, clientName){
+function openScheduleModal(clientId, clientName, editId){
   const existing = document.getElementById('schedule-modal-overlay');
   if (existing) existing.remove();
   const today = new Date();
   const minDate = new Date(today.getTime() + 24*60*60*1000).toISOString().slice(0,10);
+  const isEdit = !!editId;
+  const editing = isEdit ? (window._upcomingAppts||[]).find(a => a.id === editId) : null;
   const overlay = document.createElement('div');
   overlay.id = 'schedule-modal-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:420px;width:100%">
-    <div style="font-weight:800;font-size:16px;margin-bottom:12px">Schedule Appointment — ${esc(clientName)}</div>
+    <div style="font-weight:800;font-size:16px;margin-bottom:12px">${isEdit ? 'Edit Appointment' : 'Schedule Appointment'}${clientName?' — '+esc(clientName):''}</div>
     <div class="fld"><label>Appointment Type</label>
       <select id="sm-type">
         <option value="initial_consultation">Initial Consultation</option>
@@ -233,37 +255,40 @@ function openScheduleModal(clientId, clientName){
         <option value="other">Other</option>
       </select>
     </div>
-    <div class="fld"><label>Date (24 hours notice minimum)</label><input type="date" id="sm-date" min="${minDate}" value="${minDate}"></div>
-    <div class="fld"><label>Time</label><input type="time" id="sm-time" value="09:00"></div>
-    <div class="fld"><label>Coach</label><input type="text" id="sm-coach" placeholder="Who's running this?"></div>
-    <div class="fld"><label>Notes (optional)</label><input type="text" id="sm-notes"></div>
+    <div class="fld"><label>Date</label><input type="date" id="sm-date" value="${editing ? editing.appointment_date : minDate}"></div>
+    <div class="fld"><label>Time (Eastern)</label><input type="time" id="sm-time" value="${editing ? (editing.appointment_time||'09:00') : '09:00'}"></div>
+    <div class="fld"><label>Coach</label><input type="text" id="sm-coach" placeholder="Who's running this?" value="${esc(editing ? (editing.assigned_coach||'') : '')}"></div>
+    <div class="fld"><label>Booked By <span style="font-weight:400;color:var(--muted,#6B7280)">(you — waives the 24hr rule if this is your own schedule)</span></label><input type="text" id="sm-booked-by" placeholder="Your name"></div>
+    <div class="fld"><label>Notes (optional)</label><input type="text" id="sm-notes" value="${esc(editing ? (editing.notes||'') : '')}"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
-      <button class="btn red" style="flex:1" onclick="saveScheduledAppointment(${clientId})">Book It</button>
+      <button class="btn red" style="flex:1" onclick="saveScheduledAppointment(${clientId},${editId||'null'})">${isEdit ? 'Save Changes' : 'Book It'}</button>
       <button class="btn" onclick="document.getElementById('schedule-modal-overlay').remove()">Cancel</button>
     </div>
     <div id="sm-status" style="font-size:12px;color:var(--muted,#6B7280);margin-top:8px"></div>
   </div>`;
   document.body.appendChild(overlay);
+  if (editing) document.getElementById('sm-type').value = editing.appointment_type;
 }
 
-async function saveScheduledAppointment(clientId){
+async function saveScheduledAppointment(clientId, editId){
   const status = document.getElementById('sm-status');
   const type = document.getElementById('sm-type').value;
   const date = document.getElementById('sm-date').value;
   const time = document.getElementById('sm-time').value;
   const coach = document.getElementById('sm-coach').value.trim();
+  const bookedBy = document.getElementById('sm-booked-by').value.trim();
   const notes = document.getElementById('sm-notes').value.trim();
   if (!date) { status.textContent = 'Pick a date.'; return; }
-  const requested = new Date(date + 'T' + (time||'00:00') + ':00');
-  const minAllowed = new Date(Date.now() + 24*60*60*1000);
-  if (requested < minAllowed) { status.textContent = 'Needs at least 24 hours notice.'; return; }
-  status.textContent = 'Booking...';
+  status.textContent = editId ? 'Saving...' : 'Booking...';
   try {
-    const r = await fetch(WORKER + '/appointments/create', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ appointment_date: date, appointment_time: time||null, appointment_type: type, client_id: clientId, assigned_coach: coach||null, notes: notes||null }) });
+    const url = editId ? WORKER + '/appointments/update' : WORKER + '/appointments/create';
+    const payload = editId
+      ? { id: editId, appointment_date: date, appointment_time: time||null, appointment_type: type, assigned_coach: coach||null, notes: notes||null, booked_by: bookedBy||null }
+      : { appointment_date: date, appointment_time: time||null, appointment_type: type, client_id: clientId, assigned_coach: coach||null, notes: notes||null, booked_by: bookedBy||null };
+    const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     const d = await r.json();
-    if (!d.ok) { status.textContent = d.error || 'Could not book.'; return; }
-    status.textContent = 'Booked!';
+    if (!d.ok) { status.textContent = d.error || 'Could not save.'; return; }
+    status.textContent = editId ? 'Saved!' : 'Booked!';
     setTimeout(() => { document.getElementById('schedule-modal-overlay').remove(); loadUpcomingAppointments(clientId); }, 700);
   } catch(e) { status.textContent = 'Error: ' + e.message; }
 }
@@ -282,10 +307,10 @@ async function sendClientApp(clientId){
     const provisionData = await provisionRes.json();
     if (!provisionData.provisioned && !provisionData.ok) { status.textContent = 'Error: ' + (provisionData.error || 'could not grant access'); return; }
     const appUrl = 'https://myretrostrong.com/member-app.html';
-    const emailHtml = `<p>Your Retro Strong training app is ready.</p>
+    const emailHtml = `<p>Your Retro Strong training app is ready — save it to your phone's home screen for quick access.</p>
       <p><a href="${appUrl}">${appUrl}</a></p>
-      <p>Log in with <b>PT Client Login</b> using:<br>Email: ${email}<br>Temporary password: <b>${tempPassword}</b></p>
-      <p>You'll be asked to set your own password the first time you log in.</p>
+      <p>Log in with <b>PT Client Login</b> using:<br>Email: ${email}<br>Temporary PIN: <b>${tempPassword}</b></p>
+      <p>You'll be asked to set your own permanent PIN the first time you log in.</p>
       <p>Granted by ${granter}.</p>`;
     await fetch(WORKER + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ to: email, subject: 'Your Retro Strong Training App', html: emailHtml }) });
@@ -439,6 +464,7 @@ async function loadProfile(clientId){
   if(!client){ wrap.innerHTML='<div class="empty"><div class="big">Client not found</div></div>'; return; }
   render(client, checkins, consults, meals, measures, sessions, scans, workouts, photos);
   loadUpcomingAppointments(client.id);
+  loadAllApptsForCalendar(client.id);
 }
 
 function latestStats(checkins, consults){
@@ -474,6 +500,17 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   const nextCheckin = lastCheckin ? lastCheckin.next_checkin : null;
 
   let html='';
+  // persistent expiration warning — visible the moment anyone opens this client's profile
+  if (client.package_end_date && client.status === 'active_pt') {
+    const daysLeft = Math.ceil((new Date(client.package_end_date+'T00:00:00') - new Date()) / 86400000);
+    if (daysLeft <= 7) {
+      const expText = daysLeft < 0 ? `Package expired ${esc(fmtDate(client.package_end_date))}` : (daysLeft === 0 ? 'Package expires today' : `Package expires in ${daysLeft} day${daysLeft===1?'':'s'} (${esc(fmtDate(client.package_end_date))})`);
+      html += '<div style="background:#FEF3E2;border:1px solid #D98A0B;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'+
+        '<div style="font-weight:700;color:#92400E;font-size:13px">⚠ '+expText+' — resign or capture a reason before it lapses.</div>'+
+        '<a href="coach-crm.html?coach='+encodeURIComponent(client.coach||client.advisor||'')+'&locked=1" style="background:#D98A0B;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0;text-decoration:none">Handle in Coach CRM &rarr;</a>'+
+      '</div>';
+    }
+  }
   // header
   html+='<div class="head-card"><div class="avatar">'+esc(initials.trim()||'?')+'</div><div class="head-main">'+
     '<h1>'+esc(nm)+'</h1><div class="head-meta">'+
@@ -495,11 +532,11 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
 
   // actions
   const q='?client='+encodeURIComponent(nm);
+  const hasNutritionPkg = client.package === 'complete' || client.package === 'complete_plus';
   html+='<div class="actions">'+
     '<a class="btn red" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Start Check-In</a>'+
     '<a class="btn" href="gym-floor.html?client='+client.id+'">Log Session</a>'+
-    '<a class="btn" href="meal-plans.html">Build Meal Plan</a>'+
-    '<a class="btn" href="fitness-consultation-tool.html?client_id='+client.id+'">'+(start?'New Consultation':'Start Initial Consultation')+'</a>'+
+    (hasNutritionPkg ? '<a class="btn" href="meal-plans.html">Build Meal Plan</a>' : '')+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
     '<button class="btn" style="border-radius:999px;background:#2563EB;color:#fff;border:none" onclick="openScheduleModal('+client.id+',\''+esc(nm).replace(/'/g,"")+'\')">+ Schedule Appointment</button>'+
     '</div>';
@@ -517,7 +554,10 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<div id="app-access-fields" style="display:none">'+
     '<div class="fld"><label>Client Email</label><input id="app-access-email" value="'+esc(client.email||'')+'" placeholder="client@email.com"></div>'+
     '<div class="fld"><label>Granted By</label><select id="app-access-granter"><option value="">Loading...</option></select></div>'+
-    '<button class="btn red" style="border-radius:999px;padding:10px 24px;margin-top:8px" onclick="sendClientApp('+client.id+')">Send App</button>'+
+    '<div style="display:flex;gap:8px;margin-top:8px">'+
+    '<button class="btn red" style="border-radius:999px;padding:10px 24px" onclick="sendClientApp('+client.id+')">Send App</button>'+
+    '<button class="btn" style="border-radius:999px;padding:10px 24px" onclick="shareAppLink()">Share Link</button>'+
+    '</div>'+
     '<div id="app-access-status" style="font-size:12px;color:var(--muted,#6B7280);margin-top:8px"></div>'+
     '</div></div>';
 
@@ -834,6 +874,15 @@ const EXERCISES = [
 let woView='calendar'; // 'calendar' | 'list'
 let woCalYear=new Date().getFullYear(), woCalMonth=new Date().getMonth();
 let woAllWorkouts=[];
+let woAllAppts=[];
+
+async function loadAllApptsForCalendar(clientId){
+  try {
+    const r = await db({ op:'select', table:'pt_appointments', where:{ client_id: clientId }, orderBy:'appointment_date asc', limit:200 });
+    woAllAppts = (r.results||[]).filter(a => a.status !== 'cancelled');
+    if (woView === 'calendar') document.getElementById('woViewArea').innerHTML = renderWoView(woAllWorkouts);
+  } catch(e) {}
+}
 
 function buildWorkoutPanel(workouts){
   woAllWorkouts=workouts;
@@ -863,6 +912,9 @@ function renderWoView(workouts){
 function renderWoCal(workouts){
   const byDate={};
   workouts.forEach(w=>{ if(w.workout_date){ const d=w.workout_date.slice(0,10); if(!byDate[d]) byDate[d]=[]; byDate[d].push(w); }});
+  const apptsByDate={};
+  const typeLabels={ initial_consultation:'Initial Consult', follow_up:'6-Wk Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training', tour:'Tour', staff_meeting:'Meeting', other:'Appointment' };
+  woAllAppts.forEach(a=>{ if(a.appointment_date){ if(!apptsByDate[a.appointment_date]) apptsByDate[a.appointment_date]=[]; apptsByDate[a.appointment_date].push(a); }});
   const today=new Date(); const todayStr=today.toISOString().slice(0,10);
   const first=new Date(woCalYear,woCalMonth,1);
   const lastDay=new Date(woCalYear,woCalMonth+1,0).getDate();
@@ -881,10 +933,13 @@ function renderWoCal(workouts){
   for(let d=1;d<=lastDay;d++){
     const ds=woCalYear+'-'+String(woCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const ws=byDate[ds]||[];
+    const as=apptsByDate[ds]||[];
     const isToday=ds===todayStr;
     const hasWo=ws.length>0;
+    const hasAppt=as.length>0;
     html+='<div class="wo-day'+(isToday?' today':'')+(hasWo?' has-workout':'')+'" onclick="calDayClick(\''+ds+'\')">'+'<div class="wo-day-num">'+d+'</div>'+
       (hasWo?'<div class="wo-day-label">'+esc(ws[0].title||'Workout')+(ws.length>1?' +'+( ws.length-1):'')+'</div>':'')+
+      (hasAppt?'<div class="wo-day-label" style="color:#2563EB">'+esc(typeLabels[as[0].appointment_type]||as[0].appointment_type)+(as.length>1?' +'+(as.length-1):'')+'</div>':'')+
     '</div>';
   }
   html+='</div></div>';
