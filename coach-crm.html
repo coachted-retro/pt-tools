@@ -80,6 +80,17 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       <option value="James">James</option>
     </select>
   </div>
+
+  <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:0 0 10px">My Clients</div>
+  <a class="card" onclick="openClientPanel()" style="cursor:pointer;margin-bottom:16px">
+    <div class="avatar">👥</div>
+    <div style="flex:1">
+      <div class="name" id="client-count-label">Loading...</div>
+      <div class="sub">Tap to view your full client list</div>
+    </div>
+    <div class="badges"><span class="badge badge-muted">View All &rarr;</span></div>
+  </a>
+
   <div id="schedule-daynav" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
     <button onclick="shiftScheduleDay(-1)" style="border:1.5px solid var(--line);background:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer">←</button>
     <div id="schedule-day-label" style="font-family:'Oswald';font-weight:700;font-size:13px"></div>
@@ -114,15 +125,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div id="coach-daily-tip"></div>
 
   <div id="coach-inbox"></div>
-  <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">My Clients</div>
-  <a class="card" onclick="openClientPanel()" style="cursor:pointer">
-    <div class="avatar">👥</div>
-    <div style="flex:1">
-      <div class="name" id="client-count-label">Loading...</div>
-      <div class="sub">Tap to view your full client list</div>
-    </div>
-    <div class="badges"><span class="badge badge-muted">View All &rarr;</span></div>
-  </a>
 </div>
 
 <div id="client-panel-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100" onclick="if(event.target===this) closeClientPanel()">
