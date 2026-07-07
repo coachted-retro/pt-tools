@@ -467,14 +467,16 @@ async function loadProfile(clientId){
   loadAllApptsForCalendar(client.id);
 }
 
-function latestStats(checkins, consults){
+function latestStats(checkins, consults, scans){
   if(checkins.length){ const c=checkins[checkins.length-1]; return {weight:c.now_weight,lean:c.now_lean,bf:c.now_body_fat_pct,bmi:c.now_bmi,date:c.checkin_date}; }
   if(consults.length){ const c=consults[consults.length-1]; return {weight:c.weight,lean:c.lean_mass,bf:c.body_fat_pct,bmi:c.bmi,date:c.consult_date}; }
+  if(scans && scans.length){ const real=scans.filter(s=>s.source!=='inbody_history'); if(real.length){ const s=real[real.length-1]; return {weight:s.weight,lean:s.lean_mass,bf:s.body_fat_pct,bmi:s.bmi,date:s.scan_date}; } }
   return {};
 }
-function firstStats(checkins, consults){
+function firstStats(checkins, consults, scans){
   if(consults.length){ const c=consults[0]; return {weight:c.weight,lean:c.lean_mass,bf:c.body_fat_pct}; }
   if(checkins.length){ const c=checkins[0]; return {weight:c.prev_weight||c.now_weight,lean:c.prev_lean||c.now_lean,bf:c.prev_body_fat_pct||c.now_body_fat_pct}; }
+  if(scans && scans.length){ const real=scans.filter(s=>s.source!=='inbody_history'); if(real.length){ const s=real[0]; return {weight:s.weight,lean:s.lean_mass,bf:s.body_fat_pct}; } }
   return {};
 }
 function deltaHtml(now, first, lowerBetter){
@@ -491,7 +493,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   CURRENT=client;
   const nm=((client.first_name||'')+' '+(client.last_name||'')).trim()||('Client #'+client.id);
   const initials=((client.first_name||' ')[0]+(client.last_name||' ')[0]).toUpperCase();
-  const stat=latestStats(checkins,consults), first=firstStats(checkins,consults);
+  const stat=latestStats(checkins,consults,scans), first=firstStats(checkins,consults,scans);
   const start=client.training_start_date;
   const tenure = start? (daysBetween(start)+' days training') : 'start date not set';
   const statusCls = (client.status||'').indexOf('active')>=0?'active':((client.status||'')==='prospect'?'prospect':'');
@@ -625,6 +627,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '</div>';
 
   // check-in history
+  html+='<div class="panel collapsible collapsed" onclick="togglePanel(this,event)"><div class="ph"><h3>Consultation History</h3><span style="display:flex;align-items:center"><span class="pill">'+consults.length+'</span><span class="chev">▾</span></span></div><div class="pb" id="consultList"></div></div>';
   html+='<div class="panel collapsible collapsed" onclick="togglePanel(this,event)"><div class="ph"><h3>Check-In History</h3><span style="display:flex;align-items:center"><span class="pill">'+checkins.length+'</span><span class="chev">▾</span></span></div><div class="pb" id="checkinList"></div></div>';
   // training sessions
   html+='<div class="panel collapsible collapsed" onclick="togglePanel(this,event)"><div class="ph"><h3>Training Sessions</h3><span style="display:flex;align-items:center"><span class="pill">'+sessions.length+'</span><span class="chev">▾</span></span></div><div class="pb" id="sessionList"></div></div>';
@@ -640,6 +643,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px" onclick="event.stopPropagation()">'+
     '<label class="btn red" style="cursor:pointer">Upload InBody PDF<input type="file" accept="application/pdf,image/*" style="display:none" onchange="uploadInbody(event)"></label>'+
     '<span id="ibStatus" style="font-size:12px;color:var(--muted)"></span></div>'+
+    '<div id="scanTrendChart" style="margin-bottom:16px"></div>'+
     '<div id="scansList" onclick="event.stopPropagation()"></div>'+
     '<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)"><h4 style="font-family:Oswald;font-size:13px;text-transform:uppercase;margin-bottom:10px">Muscle Balance</h4><div id="muscleBalance"></div></div></div></div>';
   html+='<div class="panel"><div class="ph"><h3>Progress Photos</h3><span class="pill">'+(photos||[]).length+'</span></div><div class="pb">'+
@@ -662,6 +666,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   drawBody(pts);
   drawScores(checkins);
 
+  renderConsults(consults);
   renderCheckins(checkins);
   renderSessions(sessions);
   renderMeals(meals);
@@ -708,15 +713,132 @@ function drawScores(checkins){
   ]},options:{plugins:{legend:{labels:{font:{family:'Inter'},boxWidth:12}}},scales:{y:{min:0,max:10}}}});
 }
 
+function renderConsults(consults){
+  const el=document.getElementById('consultList');
+  window._allConsults = consults;
+  if(!consults.length){ el.innerHTML='<div class="empty">No consultations recorded yet.</div>'; return; }
+  el.innerHTML=consults.slice().reverse().map(c=>{
+    const outcomeLabel = c.outcome==='accepted'?'Accepted':c.outcome==='declined'?'Declined':'Pending';
+    return '<div class="row" onclick="openConsultRecall('+c.id+')" style="cursor:pointer"><div class="main"><div class="name" style="text-decoration:underline;text-decoration-style:dotted">'+esc(fmtDate(c.consult_date))+(c.advisor?' · '+esc(c.advisor):'')+'</div>'+
+      '<div class="meta">'+esc(outcomeLabel)+(c.goals?' · '+esc(String(c.goals).slice(0,60)):'')+'</div></div></div>';
+  }).join('');
+}
+
+function fieldRow(label, val){
+  if (val === null || val === undefined || val === '') return '';
+  return '<div style="padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC)"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280)">'+esc(label)+'</div><div style="font-size:14px;margin-top:2px">'+esc(String(val))+'</div></div>';
+}
+
+function openConsultRecall(consultId){
+  const c = (window._allConsults||[]).find(x => x.id === consultId);
+  if (!c) return;
+  const existing = document.getElementById('recall-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'recall-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:24px;max-width:600px;width:100%;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-weight:800;font-size:18px">Initial Consultation — ${esc(fmtDate(c.consult_date))}</div>
+      <button onclick="document.getElementById('recall-overlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted,#6B7280)">&times;</button>
+    </div>
+    ${fieldRow('Outcome', c.outcome==='accepted'?'Accepted':c.outcome==='declined'?'Declined':'Pending')}
+    ${fieldRow('Advisor', c.advisor)}
+    ${fieldRow('Weight', c.weight)}
+    ${fieldRow('Lean Mass', c.lean_mass)}
+    ${fieldRow('Body Fat %', c.body_fat_pct)}
+    ${fieldRow('Fat Mass', c.fat_mass)}
+    ${fieldRow('BMI', c.bmi)}
+    ${fieldRow('Goals', c.goals)}
+    ${fieldRow('Medical Notes', c.medical_notes)}
+    ${fieldRow('Diet Habits', c.diet_habits)}
+    ${fieldRow('Assessment Summary', c.assessment_summary)}
+    ${fieldRow('Advisor Notes', c.advisor_notes)}
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
 function renderCheckins(checkins){
   const el=document.getElementById('checkinList');
+  window._allCheckins = checkins;
   if(!checkins.length){ el.innerHTML='<div class="empty">No check-ins recorded yet. Each monthly check-in you save lands here and feeds the charts.</div>'; return; }
   el.innerHTML=checkins.slice().reverse().map(c=>{
     const scores=[['S',c.session_score],['D',c.diet_score],['Sl',c.sleep_score],['St',c.stress_score]].filter(x=>x[1]!=null).map(x=>'<span class="scorechip">'+x[0]+' '+x[1]+'</span>').join('');
     const w=num(c.now_weight), bf=num(c.now_body_fat_pct);
-    return '<div class="row"><div class="main"><div class="name">'+esc(fmtDate(c.checkin_date))+(c.advisor?' · '+esc(c.advisor):'')+'</div>'+
+    return '<div class="row" onclick="openCheckinRecall('+c.id+')" style="cursor:pointer"><div class="main"><div class="name" style="text-decoration:underline;text-decoration-style:dotted">'+esc(fmtDate(c.checkin_date))+(c.advisor?' · '+esc(c.advisor):'')+'</div>'+
       '<div class="meta">'+(w!==''?'Weight '+w+' lb':'')+(bf!==''?' · BF '+bf+'%':'')+(c.wins?' · '+esc(String(c.wins).slice(0,60)):'')+'</div></div>'+scores+'</div>';
   }).join('');
+}
+
+function openCheckinRecall(checkinId){
+  const c = (window._allCheckins||[]).find(x => x.id === checkinId);
+  if (!c) return;
+  let fi = {};
+  try { fi = JSON.parse(c.full_intake_json || '{}'); } catch(e) {}
+  const existing = document.getElementById('recall-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'recall-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  const tr = fi.training_review || {}, dn = fi.diet_nutrition || {}, wl = fi.wellbeing_lifestyle || {};
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:24px;max-width:600px;width:100%;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-weight:800;font-size:18px">Check-In — ${esc(fmtDate(c.checkin_date))}</div>
+      <button onclick="document.getElementById('recall-overlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted,#6B7280)">&times;</button>
+    </div>
+
+    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Body Stats</div>
+    ${fieldRow('Weight', c.now_weight ? c.now_weight+' lb (prev '+(c.prev_weight||'—')+')' : '')}
+    ${fieldRow('Body Fat %', c.now_body_fat_pct ? c.now_body_fat_pct+'% (prev '+(c.prev_body_fat_pct||'—')+')' : '')}
+    ${fieldRow('Lean Mass', c.now_lean ? c.now_lean+' lb (prev '+(c.prev_lean||'—')+')' : '')}
+    ${fieldRow('BMI', c.now_bmi ? c.now_bmi+' (prev '+(c.prev_bmi||'—')+')' : '')}
+
+    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Training Review</div>
+    ${fieldRow('Sessions Completed', tr.sessions_completed)}
+    ${fieldRow('Sessions Missed', tr.sessions_missed)}
+    ${fieldRow('Reason for Missed Sessions', tr.missed_reason)}
+    ${fieldRow('Session Quality Score', tr.session_quality_score)}
+    ${fieldRow('Strength Improvements', tr.strength_progress)}
+    ${fieldRow('Endurance & Stamina Changes', tr.endurance_progress)}
+    ${fieldRow('Flexibility & Mobility Changes', tr.flexibility_progress)}
+    ${fieldRow('Most Confident Movements', tr.confident_movements)}
+    ${fieldRow('Challenging Movements', tr.challenging_movements)}
+    ${fieldRow('Recovery Score', tr.recovery_score)}
+    ${fieldRow('How the Program Feels', tr.program_feel)}
+    ${fieldRow('Program Adjustments Requested', tr.program_adjustments)}
+
+    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Diet & Nutrition</div>
+    ${fieldRow('Diet Score', dn.diet_score)}
+    ${fieldRow('Calorie Tracking', dn.calorie_tracking)}
+    ${fieldRow('Protein Tracking', dn.protein_tracking)}
+    ${fieldRow('Water Intake', dn.water_intake)}
+    ${fieldRow('Meals Per Day', dn.meals_per_day)}
+    ${fieldRow('Typical Breakfast', dn.breakfast)}
+    ${fieldRow('Typical Lunch', dn.lunch)}
+    ${fieldRow('Typical Dinner', dn.dinner)}
+    ${fieldRow('Snacks', dn.snacks)}
+    ${fieldRow('Where They Struggle With Diet', dn.nutrition_struggles)}
+    ${fieldRow('Supplement Changes', dn.supplements_update)}
+    ${fieldRow('Training Day Nutrition', dn.training_day_nutrition)}
+    ${fieldRow('Pre/Post Workout Nutrition', dn.periworkout_nutrition)}
+
+    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Wellbeing & Lifestyle</div>
+    ${fieldRow('Energy Score', wl.energy_score)}
+    ${fieldRow('Motivation Score', wl.motivation_score)}
+    ${fieldRow('What is Keeping Them Motivated', wl.motivation_drivers)}
+    ${fieldRow('Sleep Score', wl.sleep_score)}
+    ${fieldRow('Sleep Hours', wl.sleep_hours)}
+    ${fieldRow('Stress Score', wl.stress_score)}
+    ${fieldRow('Lifestyle Changes This Month', wl.lifestyle_changes)}
+    ${fieldRow('Biggest Challenge This Month', wl.current_challenges)}
+    ${fieldRow('Wins', wl.wins)}
+
+    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Coach Notes</div>
+    ${fieldRow('Advisor Notes', c.advisor_notes)}
+    ${fieldRow('AI Assessment Summary', c.assessment_summary)}
+    ${(!Object.keys(fi).length) ? '<div style="font-size:12px;color:var(--muted,#6B7280);margin-top:10px;font-style:italic">This check-in predates full-detail capture — only the summary fields above were saved at the time.</div>' : ''}
+  </div>`;
+  document.body.appendChild(overlay);
 }
 function renderSessions(sessions){
   const el=document.getElementById('sessionList');
@@ -1173,16 +1295,108 @@ async function uploadWorkout(ev){
   }catch(e){ st.textContent='Failed: '+e.message; }
 }
 function renderWorkouts(){}
+function renderScanTrendChart(scans){
+  const el = document.getElementById('scanTrendChart');
+  if (!el) return;
+  const real = (scans||[]).filter(s=>s.source!=='inbody_history').slice().sort((a,b)=>String(a.scan_date).localeCompare(String(b.scan_date)));
+  if (real.length < 2) { el.innerHTML = ''; return; } // need at least 2 points for a trend line to mean anything
+  const W = 600, H = 200, padL = 44, padR = 16, padT = 16, padB = 30;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+
+  function buildLine(key, color, label){
+    const pts = real.map((s,i) => ({ x: i, y: num(s[key]), date: s.scan_date })).filter(p => p.y !== '');
+    if (pts.length < 2) return '';
+    const ys = pts.map(p=>+p.y);
+    let yMin = Math.min(...ys), yMax = Math.max(...ys);
+    if (yMin === yMax) { yMin -= 1; yMax += 1; } // avoid a flat zero-range chart
+    const pad = (yMax - yMin) * 0.15;
+    yMin -= pad; yMax += pad;
+    const xStep = real.length > 1 ? plotW / (real.length - 1) : 0;
+    const coords = pts.map(p => ({
+      x: padL + p.x * xStep,
+      y: padT + plotH - ((+p.y - yMin) / (yMax - yMin)) * plotH,
+      val: p.y, date: p.date
+    }));
+    const path = coords.map((c,i) => (i===0?'M':'L') + c.x.toFixed(1) + ',' + c.y.toFixed(1)).join(' ');
+    const dots = coords.map(c => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.5" fill="${color}"><title>${esc(fmtDate(c.date))}: ${c.val}</title></circle>`).join('');
+    const lastPt = coords[coords.length-1];
+    const firstPt = coords[0];
+    const trendUp = lastPt.val > firstPt.val;
+    return { svg: `<path d="${path}" fill="none" stroke="${color}" stroke-width="2"/>` + dots,
+             label, color, last: lastPt.val, first: firstPt.val, trendUp };
+  }
+
+  const weightLine = buildLine('weight', '#E0192B', 'Weight');
+  const bfLine = buildLine('body_fat_pct', '#2563EB', 'Body Fat %');
+
+  const dateLabels = real.map((s,i) => {
+    const x = padL + (real.length>1 ? (plotW/(real.length-1))*i : 0);
+    return `<text x="${x.toFixed(1)}" y="${H-8}" font-size="10" fill="#6B7280" text-anchor="middle">${esc(fmtDate(s.scan_date).split(',')[0])}</text>`;
+  }).join('');
+
+  const legend = [weightLine, bfLine].filter(Boolean).map(l =>
+    `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:16px;font-size:12px">
+      <span style="width:10px;height:10px;border-radius:50%;background:${l.color};display:inline-block"></span>
+      ${esc(l.label)} <b style="color:${l.trendUp?'var(--red,#E0192B)':'var(--green,#1E9E5A)'}">${l.trendUp?'▲':'▼'} ${Math.abs(+(l.last-l.first).toFixed(1))}</b>
+    </span>`).join('');
+
+  el.innerHTML = `
+    <h4 style="font-family:Oswald;font-size:13px;text-transform:uppercase;margin-bottom:8px">Progress Trend</h4>
+    <div style="margin-bottom:8px">${legend}</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;max-height:220px">
+      ${[0,0.25,0.5,0.75,1].map(f => `<line x1="${padL}" y1="${padT+plotH*f}" x2="${W-padR}" y2="${padT+plotH*f}" stroke="#F0F2F5" stroke-width="1"/>`).join('')}
+      ${weightLine ? weightLine.svg : ''}
+      ${bfLine ? bfLine.svg : ''}
+      ${dateLabels}
+    </svg>`;
+}
+
 function renderScans(scans){
   const el=document.getElementById('scansList'); if(!el) return;
   const real=scans.filter(s=>s.source!=='inbody_history').slice().reverse();
+  window._allScans = real;
+  renderScanTrendChart(scans);
   if(!real.length){ el.innerHTML='<div class="empty">No InBody scans yet. Upload the PDF or a photo and the numbers read in automatically.</div>'; return; }
-  el.innerHTML=real.map(s=>'<div class="row"><div class="main"><div class="name">'+esc(fmtDate(s.scan_date))+'</div><div class="meta">'+
+  el.innerHTML=real.map(s=>'<div class="row" onclick="openScanRecall('+s.id+')" style="cursor:pointer"><div class="main"><div class="name" style="text-decoration:underline;text-decoration-style:dotted">'+esc(fmtDate(s.scan_date))+'</div><div class="meta">'+
     [s.weight!=null?'Wt '+s.weight:'', s.skeletal_muscle!=null?'SMM '+s.skeletal_muscle:'', s.body_fat_pct!=null?'BF '+s.body_fat_pct+'%':'', s.bmi!=null?'BMI '+s.bmi:''].filter(Boolean).join(' · ')+
-    '</div></div>'+(s.file_url?'<a class="btn" target="_blank" href="'+WORKER+'/file/get?key='+encodeURIComponent(s.file_url)+'">View</a>':'')+'</div>').join('');
-  const withSeg = real.find(s=>s.segmental_json);
+    '</div></div></div>').join('');
+  renderMuscleBalanceFor(real[0]);
+}
+function renderMuscleBalanceFor(scan){
   const mbEl = document.getElementById('muscleBalance');
-  if (mbEl) mbEl.innerHTML = renderMuscleBalance(withSeg);
+  if (mbEl) mbEl.innerHTML = renderMuscleBalance(scan);
+}
+function openScanRecall(scanId){
+  const s = (window._allScans||[]).find(x => x.id === scanId);
+  if (!s) return;
+  renderMuscleBalanceFor(s); // clicking a scan updates Muscle Balance to that scan's data too
+  const existing = document.getElementById('recall-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'recall-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:24px;max-width:480px;width:100%;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-weight:800;font-size:18px">InBody Scan — ${esc(fmtDate(s.scan_date))}</div>
+      <button onclick="document.getElementById('recall-overlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted,#6B7280)">&times;</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      ${scanStat('Weight', s.weight, 'lb')}
+      ${scanStat('Lean Mass', s.lean_mass, 'lb')}
+      ${scanStat('Skeletal Muscle', s.skeletal_muscle, 'lb')}
+      ${scanStat('Body Fat', s.body_fat_pct, '%')}
+      ${scanStat('Fat Mass', s.fat_mass, 'lb')}
+      ${scanStat('BMI', s.bmi, '')}
+    </div>
+    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 8px">Muscle Balance</div>
+    ${renderMuscleBalance(s)}
+    ${s.file_url ? `<a class="btn" target="_blank" href="${WORKER}/file/get?key=${encodeURIComponent(s.file_url)}" style="display:block;text-align:center;margin-top:16px">View Original Upload</a>` : ''}
+  </div>`;
+  document.body.appendChild(overlay);
+}
+function scanStat(label, val, unit){
+  if (val == null) return '';
+  return `<div style="background:var(--soft,#F5F6F8);border-radius:10px;padding:10px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280)">${esc(label)}</div><div style="font-size:18px;font-weight:800">${esc(String(val))}${unit?' <span style="font-size:12px;font-weight:400">'+unit+'</span>':''}</div></div>`;
 }
 function renderMuscleBalance(scan){
   if (!scan || !scan.segmental_json) return '<div class="empty">No segmental data on file yet — the AI reads this automatically from the InBody scan when it includes a Segmental Lean Analysis section.</div>';

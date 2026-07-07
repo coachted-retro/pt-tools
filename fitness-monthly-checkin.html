@@ -1724,6 +1724,32 @@ async function _saveCheckinToD1(){
     }
     if(!clientId) return false;
     const pf=v=>{ const n=parseFloat(v); return isNaN(n)?null:n; };
+
+    // Full capture — every field on this intake, guaranteed. Individual typed
+    // columns below feed charts and quick summaries; this JSON blob is the
+    // actual full recall of everything entered, so nothing gets silently lost
+    // when new fields get added to the form later.
+    const fullIntake = {
+      training_review: {
+        sessions_completed: gv('sessions-done'), sessions_missed: gv('sessions-missed'), missed_reason: gv('missed-reason'),
+        session_quality_score: gv('session-score'), strength_progress: gv('strength-progress'), endurance_progress: gv('endurance-progress'),
+        flexibility_progress: gv('flex-progress'), confident_movements: gv('confident-movements'), challenging_movements: gv('challenging-movements'),
+        recovery_score: gv('recovery-score'), program_feel: gv('program-feel'), program_adjustments: gv('program-adjustments')
+      },
+      diet_nutrition: {
+        diet_score: gv('diet-score'), calorie_tracking: gv('cal-tracking'), protein_tracking: gv('protein-tracking'), water_intake: gv('water-intake'),
+        meals_per_day: gv('meals-per-day'), breakfast: gv('breakfast'), lunch: gv('lunch'), dinner: gv('dinner'), snacks: gv('snacks'),
+        nutrition_struggles: gv('nutrition-struggles'), supplements_update: gv('supplements-update'),
+        training_day_nutrition: gv('training-day-nutrition'), periworkout_nutrition: gv('periworkout-nutrition')
+      },
+      wellbeing_lifestyle: {
+        energy_score: gv('energy-score'), motivation_score: gv('motivation-score'), motivation_drivers: gv('motivation-drivers'),
+        sleep_score: gv('sleep-score'), sleep_hours: gv('sleep-hours'), stress_score: gv('stress-score'),
+        lifestyle_changes: gv('lifestyle-changes'), current_challenges: gv('current-challenges'), wins: gv('wins-list')
+      },
+      advisor_notes: gv('advisor-notes')
+    };
+
     const vals={
       client_id:clientId,
       checkin_date:gv('checkin-date'), next_checkin:gv('next-checkin'),
@@ -1738,11 +1764,19 @@ async function _saveCheckinToD1(){
       now_seg_la:pf(gv('now-seg-la')), now_seg_ra:pf(gv('now-seg-ra')), now_seg_trunk:pf(gv('now-seg-trunk')),
       now_seg_ll:pf(gv('now-seg-ll')), now_seg_rl:pf(gv('now-seg-rl')),
       training_freq:gv('training-freq'), wins:gv('wins-list'),
-      assessment_summary:(assessmentText||'').substring(0,2000), advisor_notes:gv('advisor-notes')
+      assessment_summary:(assessmentText||'').substring(0,2000), advisor_notes:gv('advisor-notes'),
+      full_intake_json: JSON.stringify(fullIntake)
     };
     Object.keys(vals).forEach(k=>{ if(vals[k]===null||vals[k]===''||vals[k]===undefined) delete vals[k]; });
     vals.client_id=clientId;
-    try{ const ex=await _db({op:'select',table:'checkins',where:{client_id:clientId},limit:500}); const dts=new Set((ex.results||[]).map(r=>r.checkin_date)); if(vals.checkin_date && dts.has(vals.checkin_date)) return true; }catch(e){}
+    // If a check-in for this date already exists, UPDATE it rather than silently
+    // discarding the new submission — the old behavior reported success while
+    // actually throwing away everything just entered.
+    try{
+      const ex=await _db({op:'select',table:'checkins',where:{client_id:clientId},limit:500});
+      const existing=(ex.results||[]).find(r=>r.checkin_date===vals.checkin_date);
+      if(existing){ await _db({op:'update',table:'checkins',values:vals,where:{id:existing.id}}); return true; }
+    }catch(e){}
     await _db({op:'insert',table:'checkins',values:vals});
     return true;
   }catch(e){ console.warn('D1 checkin save failed', e); return false; }
