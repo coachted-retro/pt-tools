@@ -1303,6 +1303,15 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
            WHERE COALESCE(NULLIF(s.assigned_coach,''), c.coach) = ? AND s.status = 'scheduled'
            AND s.scheduled_date >= date('now','-7 day') ORDER BY s.scheduled_date ASC LIMIT 100`
         ).bind(coachName).all() : { results: [] };
+        const ptAppts = coachName ? await env.DB.prepare(
+          `SELECT a.id, a.appointment_date, a.appointment_time, a.appointment_type, a.client_id, c.first_name, c.last_name, a.prospect_name
+           FROM pt_appointments a LEFT JOIN clients c ON a.client_id = c.id
+           WHERE a.assigned_coach = ? AND a.status = 'scheduled'
+           AND a.appointment_date >= date('now','-7 day') ORDER BY a.appointment_date ASC LIMIT 100`
+        ).bind(coachName).all() : { results: [] };
+        const clubOsAppts = await env.DB.prepare(
+          "SELECT * FROM clubos_appointments WHERE substr(start_datetime,1,10) >= date('now','-7 day') AND (status IS NULL OR status='scheduled') ORDER BY start_datetime ASC LIMIT 200"
+        ).all();
         const events = await env.DB.prepare(
           "SELECT * FROM gym_calendar_events WHERE event_date >= date('now','-7 day') ORDER BY event_date ASC LIMIT 100"
         ).all();
@@ -1324,6 +1333,27 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           lines.push('DTEND:' + icsDate(a.scheduled_date, '10:00'));
           lines.push('SUMMARY:' + esc('Session — ' + a.first_name + ' ' + a.last_name + (a.program_name ? ' (' + a.program_name + ')' : '')));
           if (a.focus_notes) lines.push('DESCRIPTION:' + esc(a.focus_notes));
+          lines.push('END:VEVENT');
+        }
+        const typeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Week Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', staff_meeting:'Staff Meeting', other:'Appointment' };
+        for (const a of (ptAppts.results || [])) {
+          lines.push('BEGIN:VEVENT');
+          lines.push('UID:ptappt-' + a.id + '@retrostrong');
+          lines.push('DTSTART:' + icsDate(a.appointment_date, a.appointment_time));
+          lines.push('DTEND:' + icsDate(a.appointment_date, a.appointment_time));
+          const clientLabel = a.first_name ? (a.first_name + ' ' + a.last_name) : (a.prospect_name || 'Client');
+          lines.push('SUMMARY:' + esc((typeLabels[a.appointment_type]||a.appointment_type) + ' — ' + clientLabel));
+          lines.push('END:VEVENT');
+        }
+        for (const c of (clubOsAppts.results || [])) {
+          lines.push('BEGIN:VEVENT');
+          lines.push('UID:clubos-' + c.id + '@retrostrong');
+          const dt = (c.start_datetime || '').replace(/[-:]/g, '').replace(' ', 'T').slice(0, 15);
+          lines.push('DTSTART:' + dt);
+          const dtEnd = (c.end_datetime || c.start_datetime || '').replace(/[-:]/g, '').replace(' ', 'T').slice(0, 15);
+          lines.push('DTEND:' + (dtEnd || dt));
+          lines.push('SUMMARY:' + esc(c.summary || 'ClubOS Booking'));
+          if (c.location) lines.push('LOCATION:' + esc(c.location));
           lines.push('END:VEVENT');
         }
         for (const e of (events.results || [])) {
@@ -2085,7 +2115,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
             NULL as last_scheduled, 'package_expiring' as jeopardy_reason
           FROM clients c
           WHERE c.status = 'active_pt' AND c.package_end_date IS NOT NULL
-            AND c.package_end_date <= date('now','+7 day')
+            AND c.package_end_date <= date('now','+14 day')
         `;
         const binds2 = [];
         if (coach) { expiringQuery += ' AND COALESCE(NULLIF(c.coach,\'\'), c.advisor) = ?'; binds2.push(coach); }
@@ -2330,13 +2360,57 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       }
 
 
+      if (url.pathname === '/staff/photo-upload' && request.method === 'POST') {
+        if (!env.PHOTOS) return bad('R2 binding "PHOTOS" not found.', cors);
+        const staffId = url.searchParams.get('staff_id');
+        if (!staffId) return bad('staff_id required', cors);
+        const key = `staff-photos/${staffId}-${Date.now()}.jpg`;
+        const bytes = await request.arrayBuffer();
+        await env.PHOTOS.put(key, bytes, { httpMetadata: { contentType: 'image/jpeg' } });
+        const publicUrl = `https://broken-cake-e9c2.tedscholl.workers.dev/marketing-media/get?key=${encodeURIComponent(key)}`;
+        return ok({ url: publicUrl, key }, cors);
+      }
+
+      if (url.pathname === '/coach/notes-today' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const coach = url.searchParams.get('coach');
+        if (!coach) return bad('coach required', cors);
+        const date = url.searchParams.get('date'); // optional — defaults to today
+        const rows = await env.DB.prepare(
+          `SELECT n.*, c.first_name, c.last_name FROM coach_notes n
+           LEFT JOIN clients c ON n.client_id = c.id
+           WHERE n.coach_name = ? AND date(n.created_at) = date(?)
+           ORDER BY n.created_at ASC`
+        ).bind(coach, date || new Date().toISOString().slice(0,10)).all();
+        return ok({ notes: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/eod/history' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const author = url.searchParams.get('author');
+        if (!author) return bad('author required', cors);
+        const rows = await env.DB.prepare(
+          `SELECT id, log_date, submitted_at, notable_wins FROM eod_submissions WHERE author_name = ? ORDER BY log_date DESC LIMIT 90`
+        ).bind(author).all();
+        return ok({ history: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/eod/detail' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const id = url.searchParams.get('id');
+        if (!id) return bad('id required', cors);
+        const sub = await env.DB.prepare(`SELECT * FROM eod_submissions WHERE id=?`).bind(id).first();
+        if (!sub) return bad('Not found', cors);
+        return ok({ submission: sub }, cors);
+      }
+
       if (url.pathname === '/coach/note' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
         if (!b.client_id || !b.coach_name || !b.body) return bad('client_id, coach_name, body required', cors);
         const tag = b.tag || 'General';
-        const ins = await env.DB.prepare('INSERT INTO coach_notes (client_id,coach_name,tag,body) VALUES (?,?,?,?)')
-          .bind(b.client_id, b.coach_name, tag, b.body).run();
+        const ins = await env.DB.prepare('INSERT INTO coach_notes (client_id,coach_name,tag,body,created_at) VALUES (?,?,?,?,?)')
+          .bind(b.client_id, b.coach_name, tag, b.body, new Date().toISOString()).run();
         return ok({ saved: true, id: ins.meta?.last_row_id }, cors);
       }
 

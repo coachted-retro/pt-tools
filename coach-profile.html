@@ -162,27 +162,70 @@ function renderView(staff, profile, isMine) {
   window._currentStaff = staff;
   window._currentProfile = profile;
   if (isMine) {
-    loadMyShiftsProfile(staff.id);
+    loadMyShiftsProfile(staff.id, staff.name);
     loadGymEventsProfile();
     if (NEEDS_COVERAGE_ROLES.includes(staff.role)) loadAvailabilityProfile(staff.id);
     loadMyTimeOffProfile(staff.id);
   }
 }
 
-async function loadMyShiftsProfile(staffId) {
+async function loadMyShiftsProfile(staffId, coachName) {
   const el = document.getElementById('my-shifts-body');
   if (!el) return;
   try {
-    const r = await fetch(WORKER + '/shifts/mine?staff_id=' + staffId);
-    const d = await r.json();
-    const shifts = d.shifts || [];
-    if (!shifts.length) { el.innerHTML = '<div class="empty-state">No upcoming shifts scheduled.</div>'; return; }
-    el.innerHTML = shifts.map(s => {
-      const dateLabel = new Date(s.shift_date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
-      return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
-        <div style="font-weight:700;font-size:13px">${esc(dateLabel)} · ${esc(s.start_time)}–${esc(s.end_time)}</div>
-        <div style="font-size:12px;color:var(--ink3)">${esc(s.role||'')}</div>
-      </div>`;
+    const today = new Date().toISOString().slice(0,10);
+    const [shiftsRes, sessRes, apptRes, clubosRes, clientsRes] = await Promise.all([
+      fetch(WORKER + '/shifts/mine?staff_id=' + staffId),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'scheduled_sessions', where:{assigned_coach:coachName, status:'scheduled'}, orderBy:'scheduled_date asc', limit:50})}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'pt_appointments', where:{assigned_coach:coachName, status:'scheduled'}, orderBy:'appointment_date asc', limit:50})}),
+      fetch(WORKER + '/schedule/clubos-day?date=' + today),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'clients', limit:2000})})
+    ]);
+    const shifts = (await shiftsRes.json()).shifts || [];
+    const sessions = (await sessRes.json()).results || [];
+    const ptAppts = (await apptRes.json()).results || [];
+    const clubosRows = (await clubosRes.json()).appointments || [];
+    const clients = (await clientsRes.json()).results || [];
+
+    const typeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Wk Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', staff_meeting:'Staff Meeting', other:'Appointment' };
+    const toolFor = (type) => ({ initial_consultation:'fitness-consultation-tool.html', follow_up:'fitness-followup-tool.html', monthly_checkin:'fitness-monthly-checkin.html' }[type] || null);
+
+    let items = [];
+    shifts.filter(s => s.shift_date >= today).forEach(s => items.push({
+      date: s.shift_date, label: 'Shift — ' + (s.role||'Work'), sub: s.start_time+'–'+s.end_time, href: null, color: '#7C3AED'
+    }));
+    sessions.forEach(s => items.push({
+      date: s.scheduled_date, label: s.program_name || 'Training Session', sub: 'Retro One Schedule', href: 'gym-floor.html?client='+s.client_id, color: 'var(--red,#E0192B)'
+    }));
+    ptAppts.forEach(a => items.push({
+      date: a.appointment_date, label: typeLabels[a.appointment_type] || a.appointment_type, sub: a.appointment_time || '', href: (toolFor(a.appointment_type)||'client-profile.html') + (a.client_id ? '?client_id='+a.client_id : ''), color: '#2563EB'
+    }));
+    clubosRows.forEach(c => {
+      const namePart = (c.summary||'').split(/[-–]/)[0].trim().toLowerCase();
+      const match = clients.find(cl => { const full=((cl.first_name||'')+' '+(cl.last_name||'')).trim().toLowerCase(); return full===namePart||full.includes(namePart)||namePart.includes(full); });
+      const s = (c.summary||'').toLowerCase();
+      let tool = null;
+      if (s.includes('new member') && s.includes('inbody')) tool = 'fitness-consultation-tool.html';
+      else if (s.includes('monthly') && (s.includes('progress')||s.includes('check'))) tool = 'fitness-monthly-checkin.html';
+      else if (s.includes('follow') || s.includes('6 week') || s.includes('6-week')) tool = 'fitness-followup-tool.html';
+      items.push({
+        date: (c.start_datetime||'').slice(0,10),
+        label: c.summary || 'ClubOS Booking',
+        sub: new Date(c.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' · ClubOS',
+        href: tool ? (tool + (match ? '?client_id='+match.id : '')) : (match ? 'coach-client-profile.html?client='+match.id : null),
+        color: '#D98A0B'
+      });
+    });
+
+    items = items.filter(i => i.date >= today).sort((a,b) => a.date.localeCompare(b.date));
+
+    if (!items.length) { el.innerHTML = '<div class="empty-state">Nothing on your schedule right now.</div>'; return; }
+    el.innerHTML = items.map(i => {
+      const dateLabel = new Date(i.date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+      const inner = `<div style="font-weight:700;font-size:13px">${esc(dateLabel)}${i.sub?' · '+esc(i.sub):''}</div><div style="font-size:12px;color:${i.color}">${esc(i.label)}</div>`;
+      return i.href
+        ? `<a href="${i.href}" style="display:block;padding:8px 0;border-bottom:1px solid var(--line);text-decoration:none;color:inherit">${inner}</a>`
+        : `<div style="padding:8px 0;border-bottom:1px solid var(--line)">${inner}</div>`;
     }).join('');
   } catch(e) { el.innerHTML = '<div class="empty-state">Could not load your schedule.</div>'; }
 }
@@ -288,6 +331,23 @@ async function loadMyTimeOffProfile(staffId) {
   } catch(e) { el.innerHTML = ''; }
 }
 
+async function uploadProfilePhoto(ev, staffId){
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  const status = document.getElementById('photo-upload-status');
+  status.textContent = 'Uploading...';
+  try {
+    const r = await fetch(`${WORKER}/staff/photo-upload?staff_id=${staffId}`, { method:'POST', body: file });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not upload.'; return; }
+    document.getElementById('e-photo').value = d.url;
+    const preview = document.getElementById('photo-preview');
+    preview.src = d.url; preview.style.display = 'block';
+    status.textContent = 'Uploaded — hit Save Profile to keep it.';
+  } catch(e) { status.textContent = 'Upload failed — try again.'; }
+}
+
 function showEdit() {
   renderEdit(window._currentStaff, window._currentProfile || {});
 }
@@ -296,7 +356,16 @@ function renderEdit(staff, profile) {
   document.getElementById('wrap').innerHTML = `
     <div class="card">
       <div class="name" style="margin-bottom:14px">Edit Your Profile</div>
-      <div class="fld"><label>Photo URL</label><input id="e-photo" value="${esc(profile.photo_url||'')}" placeholder="Link to your photo"></div>
+      <div class="fld"><label>Profile Photo</label>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+          <img id="photo-preview" src="${esc(profile.photo_url||'')}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--soft,#F5F6F8);${profile.photo_url?'':'display:none'}">
+          <label style="cursor:pointer;background:var(--red);color:#fff;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px">Upload Photo
+            <input type="file" accept="image/*" capture="environment" style="display:none" onchange="uploadProfilePhoto(event, ${staff.id})">
+          </label>
+        </div>
+        <input id="e-photo" value="${esc(profile.photo_url||'')}" placeholder="Or paste a photo link" oninput="document.getElementById('photo-preview').src=this.value;document.getElementById('photo-preview').style.display=this.value?'block':'none'">
+        <div id="photo-upload-status" style="font-size:12px;color:var(--muted,#6B7280);margin-top:4px"></div>
+      </div>
       <div class="fld"><label>Tagline</label><input id="e-tagline" value="${esc(profile.tagline||'')}" placeholder="A short line about your style"></div>
       <div class="fld"><label>Bio / Background</label><textarea id="e-bio" rows="5" placeholder="Your history, how you got into training, what drives you">${esc(profile.bio||'')}</textarea></div>
       <div class="fld"><label>Specialties (comma separated)</label><input id="e-specialties" value="${esc(profile.specialties||'')}" placeholder="Strength training, weight loss, mobility"></div>
