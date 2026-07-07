@@ -1181,41 +1181,13 @@ async function saveCheckin(){
   showLoading('Saving to progress tracker...');
   await rememberStartDate();
   const nextCheckin=gv('next-checkin');
-  const row=[
-    gv('checkin-date'),                                    // A: Check-In Date
-    gv('advisor-name')||getCfg('advisor'),                 // B: Advisor
-    nextCheckin,                                           // C: Next Check-In
-    gv('name'),                                            // D: Name
-    gv('email'),                                           // E: Email
-    gv('gender'),                                          // F: Gender
-    gv('age'),                                             // G: Age
-    gv('session-score'),                                   // H: Session Score
-    gv('diet-score'),                                      // I: Diet Score
-    gv('energy-score'),                                    // J: Energy Score
-    gv('sleep-score'),                                     // K: Sleep Score
-    gv('stress-score'),                                    // L: Stress Score
-    gv('prev-weight'),                                     // M: Prev Weight
-    gv('prev-lean'),                                       // N: Prev Lean Mass
-    gv('prev-pbf'),                                        // O: Prev BF%
-    gv('prev-fat'),                                        // P: Prev Fat Mass
-    gv('prev-bmi'),                                        // Q: Prev BMI
-    gv('now-weight'),                                      // R: Weight
-    gv('now-lean'),                                        // S: Lean Mass
-    gv('now-pbf'),                                         // T: BF%
-    gv('now-fat'),                                         // U: Fat Mass
-    gv('training-freq'),                                   // V: Training Freq
-    gv('advisor-notes'),                                   // W: Advisor Notes
-    (assessmentText?assessmentText.substring(0,800)+(assessmentText.length>800?'...':''):'')  // X: Summary
-  ];
-  const gender = gv('gender') || '';
-  const ok=await appendToSheet('PT Check-In History',row);
-  try{ await _saveCheckinToD1(); }catch(e){ console.warn(e); }
+  const ok = await _saveCheckinToD1();
   hideLoading();
   const confirm=document.getElementById('confirm-save');
   confirm.classList.add('show');
-  if(!ok) confirm.innerHTML='[!] Could not write to Google Sheets — check connection.';
-  else confirm.innerHTML='✅ Saved to PT Check-In History. Next check-in: '+nextCheckin;
-  if(nextCheckin){ setTimeout(()=>addToCalendar(gv('name'),nextCheckin),800); }
+  if(!ok) confirm.innerHTML='[!] Could not save this check-in — check your connection and try again.';
+  else confirm.innerHTML='✅ Saved to progress tracker. Next check-in: '+nextCheckin;
+  if(nextCheckin && ok){ setTimeout(()=>addToCalendar(gv('name'),nextCheckin),800); }
 }
 
 function showLoading(msg){ document.getElementById('loading-text').textContent=msg||'Saving...'; document.getElementById('loading-overlay').classList.add('show'); }
@@ -1722,11 +1694,11 @@ async function _saveCheckinToD1(){
       if(Object.keys(uv).length>1){ await _db({op:'update',table:'clients',values:uv,where:{id:clientId}}); }
     } else {
       const parts=(name||'').trim().split(' '); const first=parts.shift()||''; const last=parts.join(' ');
-      if(!first && !email && !phone) return;
+      if(!first && !email && !phone) return false;
       const ins=await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,gender:gv('gender'),status:'active_pt',advisor:(gv('advisor-name')||getCfg('advisor')||''),coach:coach||'',training_start_date:start||null,goal_primary:goal||null}});
       clientId=ins.id;
     }
-    if(!clientId) return;
+    if(!clientId) return false;
     const pf=v=>{ const n=parseFloat(v); return isNaN(n)?null:n; };
     const vals={
       client_id:clientId,
@@ -1746,9 +1718,10 @@ async function _saveCheckinToD1(){
     };
     Object.keys(vals).forEach(k=>{ if(vals[k]===null||vals[k]===''||vals[k]===undefined) delete vals[k]; });
     vals.client_id=clientId;
-    try{ const ex=await _db({op:'select',table:'checkins',where:{client_id:clientId},limit:500}); const dts=new Set((ex.results||[]).map(r=>r.checkin_date)); if(vals.checkin_date && dts.has(vals.checkin_date)) return; }catch(e){}
+    try{ const ex=await _db({op:'select',table:'checkins',where:{client_id:clientId},limit:500}); const dts=new Set((ex.results||[]).map(r=>r.checkin_date)); if(vals.checkin_date && dts.has(vals.checkin_date)) return true; }catch(e){}
     await _db({op:'insert',table:'checkins',values:vals});
-  }catch(e){ console.warn('D1 checkin save failed', e); }
+    return true;
+  }catch(e){ console.warn('D1 checkin save failed', e); return false; }
 }
 async function _fillPrevFromLastCheckin(clientId){
   if(!clientId) return;

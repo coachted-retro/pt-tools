@@ -417,19 +417,47 @@ function updateProgress() {
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function name(c) { return ((c.first_name||'')+' '+(c.last_name||'')).trim() || 'Unknown'; }
 
-function autoRow(icon, flagClass, clientName, note, id, dismissArgs) {
+function autoRow(icon, flagClass, clientName, note, id, dismissArgs, clientId, noteTag) {
   return `<div class="auto-row ${flagClass}" id="ar-${id}">
     <span class="ar-icon">${icon}</span>
     <div class="ar-info">
       <div class="ar-name">${esc(clientName)}</div>
       <div class="ar-note">${esc(note)}</div>
       <div class="inline-note" id="note-${id}">
-        <textarea placeholder="Add a note..." oninput="sessionNotes['${id}']=this.value"></textarea>
+        <textarea placeholder="Add a note..." oninput="sessionNotes['${id}']=this.value" onblur="autoSaveClientNote('${id}',${clientId||'null'},'${esc(noteTag||'EOD Note')}')"></textarea>
+        <div class="note-save-status" id="note-save-${id}" style="font-size:10px;color:var(--muted);margin-top:2px"></div>
       </div>
     </div>
     ${dismissArgs ? `<button class="note-btn" style="background:transparent;color:#8a8f98" onclick="dismissFlag('${dismissArgs.flagType}',${dismissArgs.clientId})" title="Dismiss for today">✓</button>` : ''}
     <button class="note-btn" onclick="toggleInlineNote('${id}')">+ Note</button>
   </div>`;
+}
+
+// autoSaveClientNote: fires when a coach clicks away from an inline note field.
+// Saves straight to that client's rolling coach-notes journal (the same one
+// visible on their profile), independent of the once-a-day EOD submit — so
+// the note is never lost even if the EOD report itself never gets submitted.
+let _lastSavedNoteValue = {};
+async function autoSaveClientNote(id, clientId, tag) {
+  if (!clientId) return; // no client tied to this row (e.g. a generic KPI line) — nothing to save to
+  const val = (sessionNotes[id] || '').trim();
+  if (!val || val === _lastSavedNoteValue[id]) return; // nothing new to save
+  const statusEl = document.getElementById('note-save-' + id);
+  if (statusEl) statusEl.textContent = 'Saving...';
+  try {
+    const r = await fetch(WORKER + '/coach/note', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, coach_name: 'Ted Scholl', tag, body: val }) });
+    const d = await r.json();
+    if (d.ok !== false && statusEl) {
+      _lastSavedNoteValue[id] = val;
+      statusEl.textContent = '✓ Saved to client profile';
+      setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+    } else if (statusEl) {
+      statusEl.textContent = 'Could not save — will still go in your EOD submit';
+    }
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Could not save — will still go in your EOD submit';
+  }
 }
 
 function toggleInlineNote(id) {
@@ -514,7 +542,7 @@ function renderJeopardy() {
     return;
   }
   el.innerHTML = allJeopardy.map(c => autoRow('⚠️', 'flag-red',
-    name(c), c.last_scheduled ? 'Last scheduled ' + c.last_scheduled : 'Never scheduled a session', 'jeop-' + c.id)).join('');
+    name(c), c.last_scheduled ? 'Last scheduled ' + c.last_scheduled : 'Never scheduled a session', 'jeop-' + c.id, null, c.id, 'EOD - Jeopardy')).join('');
   updateStatus('jeopardy', allJeopardy.length + ' at risk', 'status-red');
 }
 
@@ -533,7 +561,7 @@ function renderConsultations() {
     const flagClass = outcome === 'accepted' ? 'flag-green' : outcome === 'declined' ? 'flag-amber' : 'flag-amber';
     const icon = outcome === 'accepted' ? '✅' : outcome === 'declined' ? '🤔' : '⏳';
     const label = outcome === 'accepted' ? 'Accepted' : outcome === 'declined' ? 'Declined / thinking it over' : 'Outcome pending';
-    return autoRow(icon, flagClass, name(client) || 'Client #' + c.client_id, label + (c.advisor_notes ? ' — ' + c.advisor_notes.split('.')[0] : ''), 'consult-' + c.id);
+    return autoRow(icon, flagClass, name(client) || 'Client #' + c.client_id, label + (c.advisor_notes ? ' — ' + c.advisor_notes.split('.')[0] : ''), 'consult-' + c.id, null, c.client_id, 'EOD - Consultation');
   }).join('');
   updateStatus('consultations', allConsultations.length + ' today', 'status-auto');
 }
@@ -549,7 +577,7 @@ function renderCheckins() {
     const client = clientById(ci.client_id);
     const scores = ['session_score','diet_score','energy_score','sleep_score','stress_score']
       .filter(k => ci[k] != null).map(k => k.replace('_score','') + ': ' + ci[k]).join(' · ');
-    return autoRow('📅', 'flag-green', name(client) || 'Client #' + ci.client_id, scores || 'Completed', 'checkin-' + ci.id);
+    return autoRow('📅', 'flag-green', name(client) || 'Client #' + ci.client_id, scores || 'Completed', 'checkin-' + ci.id, null, ci.client_id, 'EOD - Monthly Check-In');
   }).join('');
   updateStatus('checkins', allCheckins.length + ' completed', 'status-auto');
 }
@@ -565,7 +593,7 @@ function renderSessions() {
   }
   el.innerHTML = active.map(c => autoRow('💪', 'flag-green', name(c),
     `Package: ${c.package||'—'} · Sessions remaining: ${c.sessions_remaining||'?'} · ${c.goal_primary||''}`,
-    'sess-' + c.id)).join('');
+    'sess-' + c.id, null, c.id, 'EOD - Session')).join('');
   updateStatus('sessions', active.length + ' client' + (active.length===1?'':'s'), 'status-auto');
 }
 
@@ -578,7 +606,7 @@ function renderLeads() {
     return;
   }
   el.innerHTML = active.map(l => autoRow('🎯', 'flag-amber', l.business_name || l.first_name || 'Lead',
-    `Status: ${l.status||'new'} · ${l.category||l.lead_type||''}`, 'lead-' + l.id)).join('');
+    `Status: ${l.status||'new'} · ${l.category||l.lead_type||''}`, 'lead-' + l.id)).join('');  // no client_id yet — still a prospect, nothing to save to
   updateStatus('leads', active.length + ' active', 'status-auto');
 }
 
@@ -609,7 +637,8 @@ function renderMonitoring() {
     name(f.c),
     f.days === 999 ? 'No InBody scan on file' : `Last scan: ${latestScans[f.c.id]} (${f.days} days ago)`,
     'mon-' + f.c.id,
-    {flagType: 'monitoring', clientId: f.c.id}
+    {flagType: 'monitoring', clientId: f.c.id},
+    f.c.id, 'EOD - Monitoring'
   )).join('');
   updateStatus('monitoring', flags.length + ' flagged', flags.some(f=>f.flag==='red') ? 'status-partial' : 'status-auto');
 }
@@ -627,7 +656,8 @@ function renderFrozen() {
     c.status === 'past_due' ? 'flag-red' : 'flag-amber',
     name(c),
     `Status: ${c.status} · ${c.package||'—'}`,
-    'frz-' + c.id
+    'frz-' + c.id,
+    null, c.id, 'EOD - Frozen/Past Due'
   )).join('');
   updateStatus('frozen', frozen.length + ' account' + (frozen.length===1?'':'s'), 'status-partial');
 }
@@ -647,7 +677,8 @@ function renderRenewals() {
     name(c),
     `${c.sessions_remaining||0} session${c.sessions_remaining===1?'':'s'} remaining · ${c.package||'—'}`,
     'ren-' + c.id,
-    {flagType: 'renewals', clientId: c.id}
+    {flagType: 'renewals', clientId: c.id},
+    c.id, 'EOD - Renewal'
   )).join('');
   updateStatus('renewals', renewals.length + ' needed', 'status-partial');
 }
