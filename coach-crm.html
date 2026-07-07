@@ -57,9 +57,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   </div>
   <a href="coach-calendar.html" id="calendar-link" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
   <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
+  <button onclick="openAddAppointment()" style="margin-left:12px;background:none;color:#9CA3AF;font-size:12px;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700;cursor:pointer">+ Recurring Session</button>
+  <button onclick="openBookIntake()" style="margin-left:12px;background:var(--red);color:#fff;font-size:12px;border:none;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700;cursor:pointer">+ Book Intake</button>
   <a href="command-center.html" style="margin-left:12px">&larr; Command Center</a>
 </div>
 <div class="wrap">
+  <div id="add-appt-form" style="display:none"></div>
+  <div id="book-intake-form" style="display:none"></div>
   <div id="locked-header" style="display:none;background:var(--ink);color:#fff;border-radius:12px;padding:18px;margin-bottom:16px">
     <div style="font-family:'Oswald';font-size:20px;font-weight:800;text-transform:uppercase" id="locked-name"></div>
     <div style="font-size:12px;color:#9CA3AF;margin-top:2px">Your personal coach portal</div>
@@ -84,8 +88,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   </div>
   <div id="today-schedule"></div>
   <div id="jeopardy-section"></div>
-  <div style="margin-bottom:14px"><button class="card" style="cursor:pointer;border:1.5px dashed var(--line);justify-content:center;color:var(--red);font-weight:700" onclick="openAddAppointment()">+ Add Appointment</button></div>
-  <div id="add-appt-form" style="display:none"></div>
+
 
   <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Start an Intake</div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
@@ -104,12 +107,34 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   </div>
   <div style="font-size:11px;color:var(--muted);margin:-8px 0 14px">Best practice is still to click a client's name from the agenda above, so the right record loads automatically — these are here for a quick manual start.</div>
 
-  <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Industry News &amp; Updates</div>
-  <div id="coach-news-feed"></div>
+  <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Stats at a Glance</div>
+  <div id="coach-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
+
+  <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Today's Trainer Briefing</div>
+  <div id="coach-daily-tip"></div>
 
   <div id="coach-inbox"></div>
   <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:18px 0 10px">My Clients</div>
-  <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
+  <a class="card" onclick="openClientPanel()" style="cursor:pointer">
+    <div class="avatar">👥</div>
+    <div style="flex:1">
+      <div class="name" id="client-count-label">Loading...</div>
+      <div class="sub">Tap to view your full client list</div>
+    </div>
+    <div class="badges"><span class="badge badge-muted">View All &rarr;</span></div>
+  </a>
+</div>
+
+<div id="client-panel-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100" onclick="if(event.target===this) closeClientPanel()">
+  <div style="position:absolute;top:0;right:0;bottom:0;width:min(420px,92vw);background:#F8F9FB;overflow-y:auto;padding:20px;box-shadow:-8px 0 24px rgba(0,0,0,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase">My Clients</div>
+      <button onclick="closeClientPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)">&times;</button>
+    </div>
+    <a href="#" onclick="openQuickAddClient();return false" style="display:block;text-align:center;background:var(--red);color:#fff;text-decoration:none;padding:10px;border-radius:8px;font-weight:700;font-size:13px;margin-bottom:12px">+ Quick Add Client</a>
+    <div id="quick-add-form" style="display:none;margin-bottom:14px"></div>
+    <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
+  </div>
 </div>
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
@@ -351,7 +376,8 @@ function renderClientGraphs(c) {
 async function loadClients(){
   const coach = document.getElementById('coach-select').value;
   const list = document.getElementById('client-list');
-  if (!coach){ list.innerHTML = '<div class="empty">Select your name above to see your clients.</div>'; return; }
+  const countLabel = document.getElementById('client-count-label');
+  if (!coach){ list.innerHTML = '<div class="empty">Select your name above to see your clients.</div>'; if(countLabel) countLabel.textContent = 'No coach selected'; return; }
   localStorage.setItem('coach_crm_name', coach);
   list.innerHTML = '<div class="empty">Loading...</div>';
   try {
@@ -359,6 +385,7 @@ async function loadClients(){
     const d = await r.json();
     const clients = d.clients || [];
     window._loadedClients = clients;
+    if (countLabel) countLabel.textContent = clients.length + ' Client' + (clients.length===1?'':'s');
     if (!clients.length){ list.innerHTML = '<div class="empty">No clients assigned to you yet.</div>'; return; }
     list.innerHTML = clients.map(c => {
       const initials = ((c.first_name||'?')[0] + (c.last_name||'')[0]).toUpperCase();
@@ -381,28 +408,174 @@ async function loadClients(){
   loadTodaySchedule();
   loadInbox();
   loadJeopardy();
-  loadCoachNewsFeed();
+  loadCoachDailyTip();
+  loadCoachStats();
 }
 if (saved || IS_LOCKED) loadClients();
 setInterval(loadBell, 60000);
 
-async function loadCoachNewsFeed(){
-  const el = document.getElementById('coach-news-feed');
-  if (!el) return;
+function openBookIntake(){
+  const clients = window._loadedClients || [];
+  const coach = document.getElementById('coach-select').value;
+  const el = document.getElementById('book-intake-form');
+  document.getElementById('add-appt-form').style.display = 'none';
+  el.style.display = 'block';
+  const today = new Date().toISOString().slice(0,10);
+  el.innerHTML = `<div class="card" style="flex-direction:column;align-items:stretch;cursor:default;background:#EFF6FF;border-color:#2563EB">
+    <div style="font-weight:800;margin-bottom:10px">Book Intake Appointment</div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Appointment Type</label>
+    <select id="intake-type" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <option value="initial_consultation">Initial Consultation</option>
+      <option value="follow_up">6-Week Follow-Up</option>
+      <option value="monthly_checkin">Monthly Check-In</option>
+    </select>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Client</label>
+    <select id="intake-client" onchange="toggleIntakeProspectFields()" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <option value="">-- Not yet in the system (new prospect) --</option>
+      ${clients.map(c => `<option value="${c.id}">${escH(c.first_name)} ${escH(c.last_name)}</option>`).join('')}
+    </select>
+    <div id="intake-prospect-fields">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Prospect Name</label>
+      <input id="intake-prospect-name" placeholder="Full name" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px;width:100%">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <input id="intake-prospect-phone" placeholder="Phone" style="padding:10px;border:1px solid var(--line);border-radius:8px">
+        <input id="intake-prospect-email" placeholder="Email" style="padding:10px;border:1px solid var(--line);border-radius:8px">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Date</label><input type="date" id="intake-date" value="${today}" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Time</label><input type="time" id="intake-time" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:4px"></div>
+    </div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Notes (optional)</label>
+    <textarea id="intake-notes" rows="2" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit"></textarea>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveIntakeAppointment('${escH(coach)}')" style="flex:1;background:#2563EB;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Book Appointment</button>
+      <button onclick="document.getElementById('book-intake-form').style.display='none'" style="background:var(--soft);border:none;border-radius:8px;padding:12px;cursor:pointer">Cancel</button>
+    </div>
+    <div id="intake-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+}
+
+function toggleIntakeProspectFields(){
+  const isExisting = document.getElementById('intake-client').value !== '';
+  document.getElementById('intake-prospect-fields').style.display = isExisting ? 'none' : 'block';
+}
+
+async function saveIntakeAppointment(coach){
+  const status = document.getElementById('intake-status');
+  const type = document.getElementById('intake-type').value;
+  const clientId = document.getElementById('intake-client').value;
+  const date = document.getElementById('intake-date').value;
+  const time = document.getElementById('intake-time').value;
+  const notes = document.getElementById('intake-notes').value.trim();
+  const prospectName = document.getElementById('intake-prospect-name').value.trim();
+  const prospectPhone = document.getElementById('intake-prospect-phone').value.trim();
+  const prospectEmail = document.getElementById('intake-prospect-email').value.trim();
+  if (!date) { status.textContent = 'Date is required.'; return; }
+  if (!clientId && !prospectName) { status.textContent = 'Pick a client or enter a prospect name.'; return; }
+  status.textContent = 'Saving...';
   try {
-    const r = await fetch(WORKER + '/feed/list?limit=8');
+    const body = { appointment_date: date, appointment_time: time || null, appointment_type: type, assigned_coach: coach, notes: notes || null };
+    if (clientId) body.client_id = parseInt(clientId,10);
+    else { body.prospect_name = prospectName; body.prospect_phone = prospectPhone || null; body.prospect_email = prospectEmail || null; }
+    const r = await fetch(WORKER + '/appointments/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const d = await r.json();
-    const posts = (d.posts || []).filter(p => p.category === 'industry_news' || p.category === 'recognition');
-    if (!posts.length) { el.innerHTML = '<div class="card" style="padding:14px;color:var(--muted);font-size:13px">Nothing posted yet.</div>'; return; }
-    const catIcon = { industry_news: '📰', recognition: '🏆' };
-    el.innerHTML = posts.map(p => `
-      <div class="card" style="display:flex;gap:10px;align-items:flex-start">
-        <div style="font-size:18px">${catIcon[p.category]||'📌'}</div>
-        <div style="flex:1">
-          <div class="name" style="font-size:13px">${escH(p.title||'')}</div>
-          ${p.body ? `<div class="sub">${escH(p.body)}</div>` : ''}
-        </div>
+    if (!d.ok) { status.textContent = d.error || 'Could not save.'; return; }
+    status.textContent = 'Booked!';
+    setTimeout(() => { document.getElementById('book-intake-form').style.display = 'none'; loadTodaySchedule(); }, 800);
+  } catch(e) { status.textContent = 'Error: ' + e.message; }
+}
+
+function openQuickAddClient(){
+  const el = document.getElementById('quick-add-form');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
+    <div style="font-weight:800;margin-bottom:10px">Quick Add Client</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <input id="qa-first" placeholder="First name" style="padding:10px;border:1px solid var(--line);border-radius:8px">
+      <input id="qa-last" placeholder="Last name" style="padding:10px;border:1px solid var(--line);border-radius:8px">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <input id="qa-phone" placeholder="Phone" style="padding:10px;border:1px solid var(--line);border-radius:8px">
+      <input id="qa-email" placeholder="Email" style="padding:10px;border:1px solid var(--line);border-radius:8px">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveQuickAddClient()" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save Client</button>
+      <button onclick="document.getElementById('quick-add-form').style.display='none'" style="background:var(--soft);border:none;border-radius:8px;padding:12px;cursor:pointer">Cancel</button>
+    </div>
+    <div id="qa-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+}
+
+async function saveQuickAddClient(){
+  const status = document.getElementById('qa-status');
+  const coach = document.getElementById('coach-select').value;
+  const first = document.getElementById('qa-first').value.trim();
+  const last = document.getElementById('qa-last').value.trim();
+  const phone = document.getElementById('qa-phone').value.trim();
+  const email = document.getElementById('qa-email').value.trim();
+  if (!first && !last) { status.textContent = 'Enter a name.'; return; }
+  status.textContent = 'Saving...';
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'clients', values:{ first_name: first, last_name: last, phone: phone||null, email: email||null, status: 'active_pt', coach: coach||null } }) });
+    const d = await r.json();
+    if (d.ok === false) { status.textContent = d.error || 'Could not save.'; return; }
+    status.textContent = 'Added!';
+    setTimeout(() => { document.getElementById('quick-add-form').style.display = 'none'; loadClients(); }, 800);
+  } catch(e) { status.textContent = 'Error: ' + e.message; }
+}
+
+function openClientPanel(){ document.getElementById('client-panel-overlay').style.display = 'block'; }
+function closeClientPanel(){ document.getElementById('client-panel-overlay').style.display = 'none'; }
+
+async function loadCoachStats(){
+  const coach = document.getElementById('coach-select').value;
+  const el = document.getElementById('coach-stats');
+  if (!el) return;
+  if (!coach) { el.innerHTML = ''; return; }
+  try {
+    const r = await fetch(WORKER + '/coach/stats?coach=' + encodeURIComponent(coach));
+    const d = await r.json();
+    if (!d.ok) { el.innerHTML = ''; return; }
+    const tiles = [
+      { label: 'Revenue (7d)', value: '$' + (d.revenue_this_week||0).toFixed(0) },
+      { label: 'Retention', value: d.retention_pct!=null ? d.retention_pct+'%' : '—' },
+      { label: 'Avg Sessions/Wk', value: d.avg_sessions_per_week!=null ? d.avg_sessions_per_week : '—' },
+      { label: 'Renewals Due', value: String(d.renewals_due||0) },
+      { label: 'Close Rate (30d)', value: d.close_rate_30d!=null ? d.close_rate_30d+'%' : '—' },
+      { label: 'Active Clients', value: String(d.active_clients||0) },
+    ];
+    el.innerHTML = tiles.map(t => `
+      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px">
+        <div style="font-size:18px;font-weight:800;font-family:'Oswald'">${escH(t.value)}</div>
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">${escH(t.label)}</div>
       </div>`).join('');
+  } catch(e) { el.innerHTML = ''; }
+}
+
+async function loadCoachDailyTip(){
+  const el = document.getElementById('coach-daily-tip');
+  if (!el) return;
+  el.innerHTML = '<div class="card" style="padding:14px;color:var(--muted);font-size:13px">Loading today\'s briefing...</div>';
+  try {
+    const r = await fetch(WORKER + '/coach/daily-tip');
+    const d = await r.json();
+    if (!d.ok || !d.tip) { el.innerHTML = ''; return; }
+    const t = d.tip;
+    el.innerHTML = `
+      <div class="card" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px">
+        <div style="font-size:18px">📰</div>
+        <div style="flex:1"><div class="name" style="font-size:12px;color:var(--muted);text-transform:uppercase;font-weight:800">Industry News</div><div class="sub">${escH(t.industry_news||'')}</div></div>
+      </div>
+      <div class="card" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px">
+        <div style="font-size:18px">💪</div>
+        <div style="flex:1"><div class="name" style="font-size:12px;color:var(--muted);text-transform:uppercase;font-weight:800">Coaching Tip</div><div class="sub">${escH(t.coaching_tip||'')}</div></div>
+      </div>
+      <div class="card" style="display:flex;gap:10px;align-items:flex-start">
+        <div style="font-size:18px">🥗</div>
+        <div style="flex:1"><div class="name" style="font-size:12px;color:var(--muted);text-transform:uppercase;font-weight:800">Nutrition Note</div><div class="sub">${escH(t.nutrition_note||'')}</div></div>
+      </div>`;
   } catch(e) { el.innerHTML = ''; }
 }
 

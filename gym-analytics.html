@@ -378,7 +378,7 @@ async function loadData() {
   try {
     const [clientsRes, scansRes, consultRes, salesRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'clients', where:{gym_id: CLUB_GYM_ID}, limit:2000})}),
+        body: JSON.stringify({op:'select', table:'clients', limit:2000})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'inbody_scans', limit:2000})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
@@ -386,7 +386,9 @@ async function loadData() {
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'pt_sales', where:{gym_id: CLUB_GYM_ID}, limit:2000})}).catch(()=>null),
     ]);
-    allClients = (await clientsRes.json()).results || [];
+    // NULL-safe club filter: rows with no gym_id set yet (pre-dating the column,
+    // or before the migration ran) default to Fairless Hills rather than vanishing.
+    allClients = ((await clientsRes.json()).results || []).filter(c => c.gym_id == null || c.gym_id === CLUB_GYM_ID);
     // inbody_scans and consultations only link to a client_id, not a gym_id directly —
     // scope them client-side to this club's clients rather than needing a server-side join.
     const clubClientIds = new Set(allClients.map(c => c.id));

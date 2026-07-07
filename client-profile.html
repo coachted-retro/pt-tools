@@ -260,8 +260,8 @@ async function saveClient(){
 }
 
 async function initSearch(){
-  const d=await db({op:'select',table:'clients',where:{gym_id:CLUB_GYM_ID},orderBy:'updated_at DESC',limit:2000});
-  ALL_CLIENTS=(d.results||[]);
+  const d=await db({op:'select',table:'clients',orderBy:'updated_at DESC',limit:2000});
+  ALL_CLIENTS=(d.results||[]).filter(c => c.gym_id == null || c.gym_id === CLUB_GYM_ID);
   document.getElementById('clientList').innerHTML=ALL_CLIENTS.map(c=>{
     const nm=((c.first_name||'')+' '+(c.last_name||'')).trim()||('Client #'+c.id);
     return '<option value="'+esc(nm)+' #'+c.id+'">';

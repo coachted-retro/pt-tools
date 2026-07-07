@@ -160,11 +160,13 @@ async function loadAll(){
   const addLinkEl = document.getElementById('add-client-link');
   if (addLinkEl) addLinkEl.href = 'client-profile.html?add=1&club=' + encodeURIComponent(CLUB_SLUG);
   const [c, l] = await Promise.all([
-    db({ op:'select', table:'clients', where:{ gym_id: CLUB_GYM_ID }, orderBy:'updated_at DESC', limit:2000 }),
-    db({ op:'select', table:'leads', where:{ gym_id: CLUB_GYM_ID }, orderBy:'created_at DESC', limit:2000 })
+    db({ op:'select', table:'clients', orderBy:'updated_at DESC', limit:2000 }),
+    db({ op:'select', table:'leads', orderBy:'created_at DESC', limit:2000 })
   ]);
-  ALL_CLIENTS = c.results || [];
-  ALL_LEADS = l.results || [];
+  // NULL-safe club filter: rows with no gym_id set yet (pre-dating the column,
+  // or before the migration ran) default to Fairless Hills rather than vanishing.
+  ALL_CLIENTS = (c.results || []).filter(x => x.gym_id == null || x.gym_id === CLUB_GYM_ID);
+  ALL_LEADS = (l.results || []).filter(x => x.gym_id == null || x.gym_id === CLUB_GYM_ID);
   renderRoster();
   renderLeads();
   renderDupeBanner();

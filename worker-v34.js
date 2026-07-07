@@ -97,7 +97,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -1772,6 +1772,115 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           .bind(today, parsed.title||'', parsed.description||'', parsed.prep_time||'', JSON.stringify(parsed.ingredients||[]), JSON.stringify(parsed.instructions||[]), JSON.stringify(parsed.shopping_list||[]), new Date().toISOString()).run();
         const saved = await env.DB.prepare('SELECT * FROM chef_recipes WHERE recipe_date=?').bind(today).first();
         return ok({ recipe: saved }, cors);
+      }
+
+      // ── PT APPOINTMENTS: bookable for existing clients OR brand-new prospects ──
+      if (url.pathname === '/appointments/create' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.appointment_date || !b.appointment_type) return bad('appointment_date and appointment_type required', cors);
+        if (!b.client_id && !b.prospect_name) return bad('client_id or prospect_name required', cors);
+        const now = new Date().toISOString();
+        const res = await env.DB.prepare(
+          `INSERT INTO pt_appointments (appointment_date, appointment_time, appointment_type, prospect_name, prospect_phone, prospect_email, client_id, assigned_coach, status, gym_id, notes, created_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,'scheduled',?,?,?,?)`
+        ).bind(b.appointment_date, b.appointment_time||null, b.appointment_type, b.prospect_name||null, b.prospect_phone||null, b.prospect_email||null,
+               b.client_id||null, b.assigned_coach||null, b.gym_id||1, b.notes||null, now, now).run();
+        return ok({ id: res.meta.last_row_id }, cors);
+      }
+
+      if (url.pathname === '/appointments/day' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const date = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
+        const coach = url.searchParams.get('coach');
+        let query = `SELECT a.*, c.first_name as client_first_name, c.last_name as client_last_name
+                     FROM pt_appointments a LEFT JOIN clients c ON a.client_id = c.id
+                     WHERE a.appointment_date = ?`;
+        const binds = [date];
+        if (coach) { query += ' AND a.assigned_coach = ?'; binds.push(coach); }
+        query += ` ORDER BY a.appointment_time ASC`;
+        const rows = await env.DB.prepare(query).bind(...binds).all();
+        return ok({ appointments: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/appointments/status' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id || !b.status) return bad('id and status required', cors);
+        await env.DB.prepare(`UPDATE pt_appointments SET status=?, updated_at=? WHERE id=?`)
+          .bind(b.status, new Date().toISOString(), b.id).run();
+        return ok({ ok: true }, cors);
+      }
+
+      // ── COACH-SCOPED STATS AT A GLANCE ────────────────────────────
+      if (url.pathname === '/coach/stats' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const coach = url.searchParams.get('coach');
+        if (!coach) return bad('coach required', cors);
+        const weekAgo = "date('now','-7 day')";
+
+        const revenueRow = await env.DB.prepare(
+          `SELECT COALESCE(SUM(amount),0) as total FROM pt_sales WHERE sold_by = ? AND sale_date >= ${weekAgo}`
+        ).bind(coach).first().catch(() => ({ total: 0 }));
+
+        const activeCount = await env.DB.prepare(
+          `SELECT COUNT(*) as n FROM clients WHERE coach = ? AND status = 'active_pt'`
+        ).bind(coach).first().catch(() => ({ n: 0 }));
+        const cancelledCount = await env.DB.prepare(
+          `SELECT COUNT(*) as n FROM clients WHERE coach = ? AND status = 'cancelled'`
+        ).bind(coach).first().catch(() => ({ n: 0 }));
+        const totalEver = (activeCount?.n||0) + (cancelledCount?.n||0);
+        const retentionPct = totalEver > 0 ? Math.round((activeCount.n / totalEver) * 100) : null;
+
+        const avgSessionsRow = await env.DB.prepare(
+          `SELECT AVG(sessions_per_week) as avg FROM clients WHERE coach = ? AND status = 'active_pt' AND sessions_per_week IS NOT NULL`
+        ).bind(coach).first().catch(() => ({ avg: null }));
+
+        const renewalsRow = await env.DB.prepare(
+          `SELECT COUNT(*) as n FROM clients WHERE coach = ? AND status = 'active_pt' AND sessions_remaining <= 2`
+        ).bind(coach).first().catch(() => ({ n: 0 }));
+
+        const consultRows = await env.DB.prepare(
+          `SELECT outcome FROM consultations WHERE advisor = ? AND consult_date >= date('now','-30 day')`
+        ).bind(coach).all().catch(() => ({ results: [] }));
+        const consults = consultRows.results || [];
+        const accepted = consults.filter(c => c.outcome === 'accepted').length;
+        const declined = consults.filter(c => c.outcome === 'declined').length;
+        const closeRate = (accepted + declined) > 0 ? Math.round((accepted/(accepted+declined))*100) : null;
+
+        return ok({
+          revenue_this_week: revenueRow?.total || 0,
+          active_clients: activeCount?.n || 0,
+          retention_pct: retentionPct,
+          avg_sessions_per_week: avgSessionsRow?.avg ? Math.round(avgSessionsRow.avg*10)/10 : null,
+          renewals_due: renewalsRow?.n || 0,
+          close_rate_30d: closeRate,
+          consultations_30d: accepted + declined
+        }, cors);
+      }
+
+      // ── COACH DAILY TIP: rotating AI content, cached once per day ──
+      if (url.pathname === '/coach/daily-tip' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const today = new Date().toISOString().slice(0,10);
+        const existing = await env.DB.prepare('SELECT * FROM coach_daily_tips WHERE tip_date=?').bind(today).first();
+        if (existing) return ok({ tip: existing }, cors);
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+        const sys = 'You are writing a short daily briefing for a personal trainer at a commercial gym. Return ONLY valid JSON, no markdown, with this exact shape: {"industry_news":"one real, current, general fitness-industry trend or note, 20-30 words","coaching_tip":"one practical PT coaching tip, 20-30 words","nutrition_note":"one nutrition science note relevant to general fitness clients, 20-30 words"}. Keep it grounded, no hype, no fake statistics. No commentary outside the JSON.';
+        const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, system: sys, messages: [{ role: 'user', content: 'Give me today\'s trainer briefing.' }] })
+        });
+        const aiData = await aiResp.json();
+        const text = (aiData.content && aiData.content[0] && aiData.content[0].text) || '{}';
+        let parsed;
+        try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+        catch(e) { return bad('AI response could not be parsed as JSON', cors); }
+        await env.DB.prepare('INSERT INTO coach_daily_tips (tip_date,industry_news,coaching_tip,nutrition_note,created_at) VALUES (?,?,?,?,?)')
+          .bind(today, parsed.industry_news||'', parsed.coaching_tip||'', parsed.nutrition_note||'', new Date().toISOString()).run();
+        const saved = await env.DB.prepare('SELECT * FROM coach_daily_tips WHERE tip_date=?').bind(today).first();
+        return ok({ tip: saved }, cors);
       }
 
       if (url.pathname === '/jeopardy/clients' && request.method === 'GET') {
