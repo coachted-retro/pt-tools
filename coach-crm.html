@@ -416,55 +416,155 @@ async function loadTodaySchedule(){
   if (labelEl) labelEl.textContent = dateLabel + (SCHEDULE_DAY_OFFSET===0 ? ' (today)' : '');
   if (!coach) { box.innerHTML = ''; return; }
   try {
-    const [r, r2, clientsRes] = await Promise.all([
+    const [r, r2, r3, clientsRes] = await Promise.all([
       fetch(WORKER + '/coach/today-schedule?coach=' + encodeURIComponent(coach) + '&date=' + dateStr),
       fetch(WORKER + '/schedule/clubos-day?date=' + dateStr),
+      fetch(WORKER + '/appointments/coach-day?coach=' + encodeURIComponent(coach) + '&date=' + dateStr),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'clients', limit:2000})})
     ]);
     const d = await r.json();
     const d2 = await r2.json();
+    const d3 = await r3.json();
     const clients = (await clientsRes.json()).results || [];
     const rows = d.today || [];
     const clubosRows = d2.appointments || [];
+    const apptRows = d3.appointments || [];
+
+    const typeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Wk Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', staff_meeting:'Staff Meeting', other:'Appointment' };
+    const toolFor = { initial_consultation:'fitness-consultation-tool.html', follow_up:'fitness-followup-tool.html', monthly_checkin:'fitness-monthly-checkin.html' };
 
     let html = '';
+
+    // ── Consultations, Check-Ins & Follow-Ups — this is what Keelin needs to see ──
+    if (apptRows.length) {
+      html += `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--red);margin-bottom:6px">Consultations, Check-Ins &amp; Follow-Ups</div>` +
+        apptRows.map(a => {
+          const status = a.status || 'scheduled';
+          const isShowed = status === 'showed';
+          const isNoShow = status === 'no_show';
+          const isCancelled = status === 'cancel';
+          const isRescheduled = status === 'rescheduled';
+          const dimmed = isShowed || isNoShow || isCancelled || isRescheduled;
+          const statusBadge = isShowed ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Showed</span>'
+            : isNoShow ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
+            : isCancelled ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled</span>'
+            : isRescheduled ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled</span>'
+            : '';
+          const clientName = a.first_name ? `${a.first_name} ${a.last_name}` : (a.prospect_name || 'Client');
+          const href = (toolFor[a.appointment_type] || 'client-profile.html') + (a.client_id ? '?client_id='+a.client_id : '');
+          const timeLabel = a.appointment_time ? new Date('2000-01-01T'+a.appointment_time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+          return `<div class="card" style="border-left:4px solid ${dimmed?'#D1D5DB':'var(--red)'};flex-direction:column;align-items:stretch;cursor:default;${dimmed?'opacity:.6':''}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="flex:1">
+                <div class="name" style="${isShowed||isCancelled||isRescheduled?'text-decoration:line-through':''}">${escH(clientName)} — ${escH(typeLabels[a.appointment_type]||a.appointment_type)}</div>
+                <div class="sub">${timeLabel}</div>
+              </div>
+              ${statusBadge}
+            </div>
+            ${!dimmed ? `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <a href="${href}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>
+              <button onclick="setApptStatus(${a.id},'showed')" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Show</button>
+              <button onclick="setApptStatus(${a.id},'no_show')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
+              <button onclick="setApptStatus(${a.id},'cancel')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Cancel</button>
+              <button onclick="setApptStatus(${a.id},'rescheduled')" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
+            </div>` : `<button onclick="setApptStatus(${a.id},'scheduled')" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
+          </div>`;
+        }).join('');
+    }
+
     if (clubosRows.length) {
-      html += `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:#2563EB;margin-bottom:6px">Club OS Bookings</div>` +
+      html += `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:#2563EB;margin:14px 0 6px">Club OS Bookings</div>` +
         clubosRows.map(a => {
           const resolved = resolveClubOsLinkCrm(a.summary, clients);
           const timeLabel = new Date(a.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-          if (resolved) {
-            const href = resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}` : '');
-            return `<a class="card" href="${href}" style="border-left:4px solid #2563EB">
+          const status = a.status || 'scheduled';
+          const isDone = status === 'done';
+          const isRescheduled = status === 'rescheduled';
+          const isNoShow = status === 'no_show';
+          const dimmed = isDone || isRescheduled || isNoShow;
+          const statusBadge = isDone ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
+            : isRescheduled ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled</span>'
+            : isNoShow ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
+            : '';
+          const startHref = resolved ? (resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}` : '')) : null;
+          return `<div class="card" style="border-left:4px solid ${dimmed?'#D1D5DB':'#2563EB'};flex-direction:column;align-items:stretch;cursor:default;${dimmed?'opacity:.6':''}">
+            <div style="display:flex;align-items:center;gap:10px">
               <div style="flex:1">
-                <div class="name">${escH(a.summary||'Booking')}</div>
-                <div class="sub">${timeLabel}${resolved.clientId ? '' : ' · no exact client match, opens blank'}</div>
+                <div class="name" style="${isDone||isRescheduled?'text-decoration:line-through':''}">${escH(a.summary||'Booking')}</div>
+                <div class="sub">${timeLabel}${(!resolved && !dimmed) ? ' · no exact client match' : ''}</div>
               </div>
-              <div class="badges"><span class="badge badge-red">Start &rarr;</span></div>
-            </a>`;
-          }
-          return `<div class="card" style="border-left:4px solid #2563EB">
-            <div style="flex:1"><div class="name">${escH(a.summary||'Booking')}</div><div class="sub">${timeLabel}</div></div>
+              ${statusBadge}
+            </div>
+            ${!dimmed ? `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              ${startHref ? `<a href="${startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''}
+              <button onclick="setClubosStatus(${a.id},'done')" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
+              <button onclick="setClubosStatus(${a.id},'rescheduled')" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
+              <button onclick="setClubosStatus(${a.id},'no_show')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
+            </div>` : `<button onclick="setClubosStatus(${a.id},'scheduled')" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
           </div>`;
-        }).join('') + `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:12px 0 6px">Retro One Schedule</div>`;
-    } else {
-      html += `<div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">${rows.length ? rows.length + ' client' + (rows.length===1?'':'s') + ' scheduled' : ''}</div>`;
+        }).join('');
     }
 
-    if (!rows.length && !clubosRows.length) {
-      html += `<div class="card" style="padding:16px;color:var(--muted);font-size:13px">Nothing scheduled ${SCHEDULE_DAY_OFFSET===0?'today':'this day'}. Build a schedule from any client's profile.</div>`;
-    } else {
-      html += rows.map(s => `<a class="card" href="gym-floor.html?client=${s.client_id}" style="border-left:4px solid var(--red)">
-        <div class="avatar">${((s.first_name||'?')[0]+(s.last_name||'')[0]).toUpperCase()}</div>
-        <div style="flex:1">
-          <div class="name">${escH(s.first_name)} ${escH(s.last_name)}</div>
-          <div class="sub">${escH(s.program_name)}${s.focus_notes ? ' — ' + escH(s.focus_notes) : ''}</div>
-        </div>
-        <div class="badges"><span class="badge badge-red">Start &rarr;</span></div>
-      </a>`).join('');
+    if (rows.length) {
+      html += `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:14px 0 6px">Retro One Schedule</div>` +
+        rows.map(s => {
+          const status = s.status || 'scheduled';
+          const isDone = status === 'done';
+          const isRescheduled = status === 'rescheduled';
+          const isNoShow = status === 'no_show';
+          const dimmed = isDone || isRescheduled || isNoShow;
+          const statusBadge = isDone ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
+            : isRescheduled ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled</span>'
+            : isNoShow ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
+            : '';
+          return `<div class="card" style="border-left:4px solid ${dimmed?'#D1D5DB':'var(--red)'};flex-direction:column;align-items:stretch;cursor:default;${dimmed?'opacity:.6':''}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="avatar">${((s.first_name||'?')[0]+(s.last_name||'')[0]).toUpperCase()}</div>
+              <div style="flex:1">
+                <div class="name" style="${isDone||isRescheduled?'text-decoration:line-through':''}">${escH(s.first_name)} ${escH(s.last_name)}</div>
+                <div class="sub">${escH(s.program_name)}${s.focus_notes ? ' — ' + escH(s.focus_notes) : ''}</div>
+              </div>
+              ${statusBadge}
+            </div>
+            ${!dimmed ? `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <a href="gym-floor.html?client=${s.client_id}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>
+              <button onclick="setSessionStatus(${s.id},'done')" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
+              <button onclick="setSessionStatus(${s.id},'rescheduled')" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
+              <button onclick="setSessionStatus(${s.id},'no_show')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
+            </div>` : `<button onclick="setSessionStatus(${s.id},'scheduled')" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
+          </div>`;
+        }).join('');
+    }
+
+    if (!apptRows.length && !clubosRows.length && !rows.length) {
+      html = `<div class="card" style="padding:16px;color:var(--muted);font-size:13px">Nothing scheduled ${SCHEDULE_DAY_OFFSET===0?'today':'this day'}. Build a schedule from any client's profile.</div>`;
     }
     box.innerHTML = html;
   } catch(e) { box.innerHTML = ''; }
+}
+
+async function setApptStatus(id, status){
+  try {
+    await fetch(WORKER + '/appointments/status', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, status }) });
+    loadTodaySchedule();
+  } catch(e) {}
+}
+
+async function setClubosStatus(id, status){
+  try {
+    await fetch(WORKER + '/schedule/clubos-status', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, status }) });
+    loadTodaySchedule();
+  } catch(e) {}
+}
+
+async function setSessionStatus(id, status){
+  try {
+    await fetch(WORKER + '/schedule/session-status', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, status }) });
+    loadTodaySchedule();
+  } catch(e) {}
 }
 
 function resolveClubOsLinkCrm(summary, clients){

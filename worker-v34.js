@@ -1797,9 +1797,9 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!coach) return bad('coach required', cors);
         const targetDate = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
         const rows = await env.DB.prepare(
-          `SELECT s.id, s.client_id, s.program_name, s.focus_notes, c.first_name, c.last_name
+          `SELECT s.id, s.client_id, s.program_name, s.focus_notes, s.status, c.first_name, c.last_name
            FROM scheduled_sessions s JOIN clients c ON s.client_id = c.id
-           WHERE COALESCE(NULLIF(s.assigned_coach,''), c.coach) = ? AND s.scheduled_date = ? AND s.status = 'scheduled'
+           WHERE COALESCE(NULLIF(s.assigned_coach,''), c.coach) = ? AND s.scheduled_date = ? AND s.status != 'cancelled'
            ORDER BY c.last_name ASC`
         ).bind(coach, targetDate).all();
         return ok({ today: rows.results || [], date: targetDate }, cors);
@@ -1920,6 +1920,36 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         query += ` ORDER BY a.appointment_time ASC`;
         const rows = await env.DB.prepare(query).bind(...binds).all();
         return ok({ appointments: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/appointments/coach-day' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const coach = url.searchParams.get('coach');
+        if (!coach) return bad('coach required', cors);
+        const targetDate = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
+        const rows = await env.DB.prepare(
+          `SELECT a.*, c.first_name, c.last_name FROM pt_appointments a
+           LEFT JOIN clients c ON a.client_id = c.id
+           WHERE a.assigned_coach = ? AND a.appointment_date = ? AND a.status != 'cancelled'
+           ORDER BY a.appointment_time ASC`
+        ).bind(coach, targetDate).all();
+        return ok({ appointments: rows.results || [], date: targetDate }, cors);
+      }
+
+      if (url.pathname === '/schedule/session-status' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id || !b.status) return bad('id and status required', cors);
+        await env.DB.prepare('UPDATE scheduled_sessions SET status=? WHERE id=?').bind(b.status, b.id).run();
+        return ok({ updated: true }, cors);
+      }
+
+      if (url.pathname === '/schedule/clubos-status' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id || !b.status) return bad('id and status required', cors);
+        await env.DB.prepare('UPDATE clubos_appointments SET status=? WHERE id=?').bind(b.status, b.id).run();
+        return ok({ updated: true }, cors);
       }
 
       if (url.pathname === '/appointments/status' && request.method === 'POST') {
