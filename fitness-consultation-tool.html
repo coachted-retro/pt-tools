@@ -3008,6 +3008,18 @@ async function loadExistingClientForConsult(id) {
     var emailEl = document.getElementById('email'); if (emailEl) emailEl.value = c.email || '';
     var phoneEl = document.getElementById('phone'); if (phoneEl) phoneEl.value = c.phone || '';
     var ageEl = document.getElementById('age'); if (ageEl && c.age) ageEl.value = c.age;
+    var dobEl = document.getElementById('dob'); if (dobEl && c.birthday) dobEl.value = c.birthday;
+    if (c.goal_primary) {
+      var goalTokens = c.goal_primary.split(',').map(function(s){ return s.trim(); });
+      var matchedAny = false;
+      document.querySelectorAll('.goal-check').forEach(function(box){
+        if (goalTokens.indexOf(box.value) !== -1) { box.checked = true; matchedAny = true; }
+      });
+      var leftover = goalTokens.filter(function(t){ return !Array.from(document.querySelectorAll('.goal-check')).some(function(box){ return box.value === t; }); });
+      var otherEl = document.getElementById('goals-other');
+      if (otherEl && leftover.length) otherEl.value = leftover.join(', ');
+      if (typeof syncGoalsField === 'function') syncGoalsField();
+    }
     if (c.gender && typeof selectGender === 'function') selectGender(c.gender);
   } catch(e) { console.warn('Could not pre-fill from existing client:', e.message); }
 }
@@ -3084,6 +3096,7 @@ async function finalizeAccept() {
       phone: gv('phone') || null,
       gender: gv('gender') || null,
       age: gv('age') || null,
+      birthday: gv('dob') || null,
       goal_primary: gv('goals') || null,
       package: pkgDbValue(),
       training_start_date: gv('consult-date') || new Date().toISOString().slice(0,10),
@@ -3171,6 +3184,7 @@ async function finalizeDecline() {
       phone: gv('phone') || null,
       gender: gv('gender') || null,
       age: gv('age') || null,
+      birthday: gv('dob') || null,
       goal_primary: gv('goals') || null,
       status: 'prospect',
       coach: advisorName || null,

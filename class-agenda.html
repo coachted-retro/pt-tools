@@ -97,11 +97,51 @@ async function load(){
       cooldown.forEach(c => { html += `<div class="cooldown-item"><span>${esc(c.name)}</span><span class="dur">${esc(c.duration)}</span></div>`; });
     }
 
+    html += `<div class="section-label">📸 Class Photos &amp; Video</div>
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px">For social/marketing use — not tied to a specific member. Photo release already covered by the in-gym sign-off.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <label style="cursor:pointer;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px">📷 Take Photo<input type="file" accept="image/*" capture="environment" style="display:none" onchange="captureClassMedia(event,'photo')"></label>
+          <label style="cursor:pointer;background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px">🎥 Take Video<input type="file" accept="video/*" capture="environment" style="display:none" onchange="captureClassMedia(event,'video')"></label>
+        </div>
+        <div id="class-media-status" style="font-size:12px;color:var(--muted);margin-bottom:8px"></div>
+        <div id="class-media-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px"></div>
+      </div>`;
     html += `<button class="print-btn" onclick="window.print()">Print / Save for Whiteboard</button>`;
     document.getElementById('content').innerHTML = html;
+    loadClassMedia();
   } catch(e) {
     document.getElementById('content').innerHTML = '<div class="empty">Could not connect. Try again.</div>';
   }
+}
+
+async function captureClassMedia(ev, type){
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file || !classId) return;
+  const status = document.getElementById('class-media-status');
+  status.textContent = 'Uploading...';
+  try {
+    const r = await fetch(`${WORKER}/marketing-media/upload?class=${classId}&type=${type}`, { method:'POST', body: file });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not upload.'; return; }
+    status.textContent = 'Saved.';
+    loadClassMedia();
+  } catch(e) { status.textContent = 'Upload failed — try again.'; }
+}
+
+async function loadClassMedia(){
+  const grid = document.getElementById('class-media-grid');
+  if (!grid || !classId) return;
+  try {
+    const r = await fetch(`${WORKER}/marketing-media/list?class=${classId}`);
+    const d = await r.json();
+    const media = d.media || [];
+    grid.innerHTML = media.map(m => m.media_type === 'video'
+      ? `<video src="${WORKER}/marketing-media/get?key=${encodeURIComponent(m.r2_key)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px" muted></video>`
+      : `<img src="${WORKER}/marketing-media/get?key=${encodeURIComponent(m.r2_key)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px" loading="lazy">`
+    ).join('');
+  } catch(e) {}
 }
 
 async function loadClassName(){

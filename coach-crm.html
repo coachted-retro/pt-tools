@@ -476,13 +476,24 @@ function openBookIntake(){
   el.style.display = 'block';
   const today = new Date().toISOString().slice(0,10);
   el.innerHTML = `<div class="card" style="flex-direction:column;align-items:stretch;cursor:default;background:#EFF6FF;border-color:#2563EB">
-    <div style="font-weight:800;margin-bottom:10px">Book Intake Appointment</div>
+    <div style="font-weight:800;margin-bottom:10px">Book Appointment</div>
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Appointment Type</label>
-    <select id="intake-type" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
-      <option value="initial_consultation">Initial Consultation</option>
-      <option value="follow_up">6-Week Follow-Up</option>
-      <option value="monthly_checkin">Monthly Check-In</option>
+    <select id="intake-type" onchange="toggleIntakeTypeFields()" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
+      <optgroup label="Client Intake Steps">
+        <option value="initial_consultation">Initial Consultation</option>
+        <option value="follow_up">6-Week Follow-Up</option>
+        <option value="monthly_checkin">Monthly Check-In</option>
+      </optgroup>
+      <optgroup label="Other Appointment Types">
+        <option value="training_session">Training Session</option>
+        <option value="tour">New Member Tour</option>
+        <option value="staff_meeting">Staff Meeting</option>
+        <option value="other">Other</option>
+      </optgroup>
     </select>
+    <div id="intake-other-label" style="display:none;margin-bottom:10px">
+      <input id="intake-other-text" placeholder="What's this appointment for?" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px">
+    </div>
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Client</label>
     <select id="intake-client" onchange="toggleIntakeProspectFields()" style="margin-bottom:10px;padding:10px;border:1px solid var(--line);border-radius:8px">
       <option value="">-- Not yet in the system (new prospect) --</option>
@@ -515,6 +526,12 @@ function toggleIntakeProspectFields(){
   document.getElementById('intake-prospect-fields').style.display = isExisting ? 'none' : 'block';
 }
 
+function toggleIntakeTypeFields(){
+  const type = document.getElementById('intake-type').value;
+  const otherLabel = document.getElementById('intake-other-label');
+  if (otherLabel) otherLabel.style.display = (type === 'other') ? 'block' : 'none';
+}
+
 async function saveIntakeAppointment(coach){
   const status = document.getElementById('intake-status');
   const type = document.getElementById('intake-type').value;
@@ -525,13 +542,21 @@ async function saveIntakeAppointment(coach){
   const prospectName = document.getElementById('intake-prospect-name').value.trim();
   const prospectPhone = document.getElementById('intake-prospect-phone').value.trim();
   const prospectEmail = document.getElementById('intake-prospect-email').value.trim();
+  const otherText = document.getElementById('intake-other-text') ? document.getElementById('intake-other-text').value.trim() : '';
   if (!date) { status.textContent = 'Date is required.'; return; }
-  if (!clientId && !prospectName) { status.textContent = 'Pick a client or enter a prospect name.'; return; }
+  if (!clientId && !prospectName && type !== 'staff_meeting' && type !== 'other') { status.textContent = 'Pick a client or enter a prospect name.'; return; }
+  if (type === 'other' && !otherText) { status.textContent = 'Say what this appointment is for.'; return; }
+  // Client-side pre-check for instant feedback — the server enforces this too, no exceptions either way.
+  const requested = new Date(date + 'T' + (time || '00:00') + ':00');
+  const minAllowed = new Date(Date.now() + 24*60*60*1000);
+  if (requested < minAllowed) { status.textContent = 'Needs at least 24 hours notice — pick a later time.'; return; }
   status.textContent = 'Saving...';
   try {
-    const body = { appointment_date: date, appointment_time: time || null, appointment_type: type, assigned_coach: coach, notes: notes || null };
+    const finalNotes = type === 'other' ? (otherText + (notes ? ' — ' + notes : '')) : notes;
+    const body = { appointment_date: date, appointment_time: time || null, appointment_type: type, assigned_coach: coach, notes: finalNotes || null };
     if (clientId) body.client_id = parseInt(clientId,10);
-    else { body.prospect_name = prospectName; body.prospect_phone = prospectPhone || null; body.prospect_email = prospectEmail || null; }
+    else if (prospectName) { body.prospect_name = prospectName; body.prospect_phone = prospectPhone || null; body.prospect_email = prospectEmail || null; }
+    else { body.prospect_name = type === 'staff_meeting' ? 'Staff Meeting' : (otherText || 'Appointment'); }
     const r = await fetch(WORKER + '/appointments/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const d = await r.json();
     if (!d.ok) { status.textContent = d.error || 'Could not save.'; return; }
@@ -970,6 +995,9 @@ async function saveAppointment() {
   const notes = document.getElementById('appt-notes').value.trim();
   const weekdays = [0,1,2,3,4,5,6].filter(i => document.getElementById('appt-day-'+i).checked);
   if (!clientId || !start || !weekdays.length) { status.textContent = 'Client, start date, and at least one day are required.'; return; }
+  const startCheck = new Date(start + 'T00:00:00');
+  const minAllowed = new Date(Date.now() + 24*60*60*1000);
+  if (startCheck < minAllowed) { status.textContent = 'Needs at least 24 hours notice — pick a later start date.'; return; }
   const endDateObj = new Date(start + 'T00:00:00');
   endDateObj.setDate(endDateObj.getDate() + (weeks * 7) - 1);
   const end = endDateObj.toISOString().slice(0,10);

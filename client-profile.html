@@ -195,6 +195,79 @@ function genTempPassword(){
   return words[Math.floor(Math.random()*words.length)] + Math.floor(1000+Math.random()*9000);
 }
 
+async function loadUpcomingAppointments(clientId){
+  const body = document.getElementById('upcoming-appts-body');
+  if (!body) return;
+  try {
+    const r = await db({ op:'select', table:'pt_appointments', where:{ client_id: clientId }, orderBy:'appointment_date asc', limit:50 });
+    const today = new Date().toISOString().slice(0,10);
+    const upcoming = (r.results||[]).filter(a => a.appointment_date >= today && a.status !== 'cancelled');
+    if (!upcoming.length) { body.innerHTML = '<div style="font-size:12px;color:var(--muted,#6B7280)">Nothing scheduled — use + Schedule Appointment above.</div>'; return; }
+    const typeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Week Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', staff_meeting:'Staff Meeting', other:'Other' };
+    body.innerHTML = upcoming.map(a => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC)">
+      <div>
+        <div style="font-weight:700;font-size:13px">${esc(typeLabels[a.appointment_type]||a.appointment_type)}</div>
+        <div style="font-size:12px;color:var(--muted,#6B7280)">${esc(fmtDate(a.appointment_date))}${a.appointment_time?' at '+esc(a.appointment_time):''}${a.assigned_coach?' · '+esc(a.assigned_coach):''}</div>
+      </div>
+    </div>`).join('');
+  } catch(e) { body.innerHTML = '<div style="font-size:12px;color:var(--muted,#6B7280)">Could not load appointments.</div>'; }
+}
+
+function openScheduleModal(clientId, clientName){
+  const existing = document.getElementById('schedule-modal-overlay');
+  if (existing) existing.remove();
+  const today = new Date();
+  const minDate = new Date(today.getTime() + 24*60*60*1000).toISOString().slice(0,10);
+  const overlay = document.createElement('div');
+  overlay.id = 'schedule-modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:12px">Schedule Appointment — ${esc(clientName)}</div>
+    <div class="fld"><label>Appointment Type</label>
+      <select id="sm-type">
+        <option value="initial_consultation">Initial Consultation</option>
+        <option value="follow_up">6-Week Follow-Up</option>
+        <option value="monthly_checkin">Monthly Check-In</option>
+        <option value="training_session">Training Session</option>
+        <option value="tour">New Member Tour</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="fld"><label>Date (24 hours notice minimum)</label><input type="date" id="sm-date" min="${minDate}" value="${minDate}"></div>
+    <div class="fld"><label>Time</label><input type="time" id="sm-time" value="09:00"></div>
+    <div class="fld"><label>Coach</label><input type="text" id="sm-coach" placeholder="Who's running this?"></div>
+    <div class="fld"><label>Notes (optional)</label><input type="text" id="sm-notes"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn red" style="flex:1" onclick="saveScheduledAppointment(${clientId})">Book It</button>
+      <button class="btn" onclick="document.getElementById('schedule-modal-overlay').remove()">Cancel</button>
+    </div>
+    <div id="sm-status" style="font-size:12px;color:var(--muted,#6B7280);margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function saveScheduledAppointment(clientId){
+  const status = document.getElementById('sm-status');
+  const type = document.getElementById('sm-type').value;
+  const date = document.getElementById('sm-date').value;
+  const time = document.getElementById('sm-time').value;
+  const coach = document.getElementById('sm-coach').value.trim();
+  const notes = document.getElementById('sm-notes').value.trim();
+  if (!date) { status.textContent = 'Pick a date.'; return; }
+  const requested = new Date(date + 'T' + (time||'00:00') + ':00');
+  const minAllowed = new Date(Date.now() + 24*60*60*1000);
+  if (requested < minAllowed) { status.textContent = 'Needs at least 24 hours notice.'; return; }
+  status.textContent = 'Booking...';
+  try {
+    const r = await fetch(WORKER + '/appointments/create', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ appointment_date: date, appointment_time: time||null, appointment_type: type, client_id: clientId, assigned_coach: coach||null, notes: notes||null }) });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not book.'; return; }
+    status.textContent = 'Booked!';
+    setTimeout(() => { document.getElementById('schedule-modal-overlay').remove(); loadUpcomingAppointments(clientId); }, 700);
+  } catch(e) { status.textContent = 'Error: ' + e.message; }
+}
+
 async function sendClientApp(clientId){
   const status = document.getElementById('app-access-status');
   const email = document.getElementById('app-access-email').value.trim();
@@ -365,6 +438,7 @@ async function loadProfile(clientId){
   }catch(e){ wrap.innerHTML='<div class="empty"><div class="big">Could not load</div>'+esc(e.message)+'</div>'; return; }
   if(!client){ wrap.innerHTML='<div class="empty"><div class="big">Client not found</div></div>'; return; }
   render(client, checkins, consults, meals, measures, sessions, scans, workouts, photos);
+  loadUpcomingAppointments(client.id);
 }
 
 function latestStats(checkins, consults){
@@ -410,8 +484,9 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     (client.package?'<span>Package: <b>'+esc(PKG_LABELS[client.package]||client.package)+'</b></span>':'')+
     (start?'<span>Started: <b>'+esc(fmtDate(start))+'</b> ('+tenure+')</span>':'<span>'+tenure+'</span>')+
     (nextCheckin?'<span>Next Check-In: <b style="color:var(--red,#E0192B)">'+esc(fmtDate(nextCheckin))+'</b></span>':'')+
-    (client.email?'<span>'+esc(client.email)+'</span>':'')+
-    (client.phone?'<span>'+esc(client.phone)+'</span>':'')+
+    '</div><div class="head-meta" style="margin-top:6px">'+
+    (client.email?'<span>Email: <b>'+esc(client.email)+'</b></span>':'')+
+    (client.phone?'<span>Phone: <b>'+esc(client.phone)+'</b></span>':'')+
     '</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'+
     '<div style="display:flex;gap:6px" id="rosterNav"></div>'+
     '<button class="btn" onclick="openEdit()">Edit</button>'+
@@ -426,6 +501,12 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<a class="btn" href="meal-plans.html">Build Meal Plan</a>'+
     '<a class="btn" href="fitness-consultation-tool.html?client_id='+client.id+'">'+(start?'New Consultation':'Start Initial Consultation')+'</a>'+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
+    '<button class="btn" style="border-radius:999px;background:#2563EB;color:#fff;border:none" onclick="openScheduleModal('+client.id+',\''+esc(nm).replace(/'/g,"")+'\')">+ Schedule Appointment</button>'+
+    '</div>';
+
+  html+='<div class="card" style="margin-top:16px" id="upcoming-appts-card">'+
+    '<div style="font-weight:800;margin-bottom:10px">Upcoming Appointments</div>'+
+    '<div id="upcoming-appts-body"><div style="font-size:12px;color:var(--muted,#6B7280)">Loading...</div></div>'+
     '</div>';
 
   html+='<div class="card" style="margin-top:16px">'+

@@ -186,6 +186,38 @@ function switchPane(name){
 }
 
 
+async function captureMarketingMedia(ev, type){
+  const file = ev.target.files[0];
+  ev.target.value = '';
+  if (!file) return;
+  const status = document.getElementById('marketing-media-status');
+  status.textContent = 'Uploading...';
+  try {
+    const coach = new URLSearchParams(location.search).get('coach') || '';
+    const r = await fetch(`${WORKER}/marketing-media/upload?client=${CLIENT_ID}&type=${type}&by=${encodeURIComponent(coach)}`, {
+      method: 'POST', body: file
+    });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not upload.'; return; }
+    status.textContent = 'Saved to their profile.';
+    loadMarketingMedia();
+  } catch(e) { status.textContent = 'Upload failed — try again.'; }
+}
+
+async function loadMarketingMedia(){
+  const grid = document.getElementById('marketing-media-grid');
+  if (!grid) return;
+  try {
+    const r = await fetch(`${WORKER}/marketing-media/list?client=${CLIENT_ID}`);
+    const d = await r.json();
+    const media = d.media || [];
+    grid.innerHTML = media.map(m => m.media_type === 'video'
+      ? `<video src="${WORKER}/marketing-media/get?key=${encodeURIComponent(m.r2_key)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px" muted></video>`
+      : `<img src="${WORKER}/marketing-media/get?key=${encodeURIComponent(m.r2_key)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px" loading="lazy">`
+    ).join('');
+  } catch(e) {}
+}
+
 async function saveRecommendation(){
   const text = document.getElementById('coach-rec-input').value.trim();
   if (!text) return;
@@ -251,6 +283,16 @@ async function load(){
         <span style="font-size:11px;color:var(--muted)">${c.coach_recommendation_date ? 'Last updated ' + fmtDate(c.coach_recommendation_date) : 'Not set yet'}</span>
         <button class="btn" onclick="saveRecommendation()" style="padding:8px 16px;font-size:12px">Save</button>
       </div>
+    </div>
+    <div class="card" style="border-left:3px solid #2563EB;margin-top:14px">
+      <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;margin-bottom:4px">Marketing Photos &amp; Video</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Saved directly to this client's profile for social/marketing use — separate from progress photos and form-check videos. Photo release already covered by the in-gym sign-off.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <label class="btn" style="cursor:pointer;font-size:12px">📷 Take Photo<input type="file" accept="image/*" capture="environment" style="display:none" onchange="captureMarketingMedia(event,'photo')"></label>
+        <label class="btn" style="cursor:pointer;font-size:12px">🎥 Take Video<input type="file" accept="video/*" capture="environment" style="display:none" onchange="captureMarketingMedia(event,'video')"></label>
+      </div>
+      <div id="marketing-media-status" style="font-size:11px;color:var(--muted);margin-top:8px"></div>
+      <div id="marketing-media-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-top:10px"></div>
     </div>`;
 
   const allWorkouts = [
@@ -269,6 +311,7 @@ async function load(){
   renderTouchpoints();
   renderCoachNotes();
   renderChat();
+  loadMarketingMedia();
   loadSchedule();
 }
 

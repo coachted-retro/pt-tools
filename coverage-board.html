@@ -82,6 +82,8 @@ h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:1
         <div id="day-shifts"><div class="empty-state">Pick a day on the calendar.</div></div>
         <div class="sec-label">PT Sessions</div>
         <div id="day-sessions"></div>
+        <div class="sec-label">Appointments &amp; Classes</div>
+        <div id="day-bookings"><div class="empty-state">Pick a day on the calendar.</div></div>
       </div>
 
       <div class="panel">
@@ -177,13 +179,42 @@ async function selectDay(dateStr) {
   document.getElementById('day-panel-title').textContent = label;
   document.getElementById('day-shifts').innerHTML = '<div class="empty-state">Loading...</div>';
   try {
-    const r = await fetch(WORKER + '/shifts/day?date=' + dateStr);
+    const [r, r2, r3] = await Promise.all([
+      fetch(WORKER + '/shifts/day?date=' + dateStr),
+      fetch(WORKER + '/appointments/day?date=' + dateStr),
+      fetch(WORKER + '/classes/upcoming?days=0')
+    ]);
     const d = await r.json();
+    const d2 = await r2.json();
+    const d3 = await r3.json();
     renderDayShifts(d.shifts || []);
     renderDaySessions(d.pt_sessions || []);
+    const classesToday = (d3.occurrences || []).filter(o => o.date === dateStr);
+    renderDayBookings(d2.appointments || [], classesToday);
   } catch(e) {
     document.getElementById('day-shifts').innerHTML = '<div class="empty-state">Could not load.</div>';
   }
+}
+
+function renderDayBookings(appointments, classes) {
+  const el = document.getElementById('day-bookings');
+  if (!el) return;
+  const items = [];
+  appointments.forEach(a => items.push({
+    time: a.appointment_time || '',
+    label: (a.client_first_name ? a.client_first_name+' '+a.client_last_name : a.prospect_name || 'Appointment'),
+    sub: (a.appointment_type||'').replace(/_/g,' ') + (a.assigned_coach ? ' · ' + a.assigned_coach : ''),
+    color: '#2563EB'
+  }));
+  classes.forEach(c => items.push({ time: c.start_time, label: c.name, sub: (c.room||'') + (c.coach ? ' · ' + c.coach : ''), color: '#1E9E5A' }));
+  items.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+  if (!items.length) { el.innerHTML = '<div class="empty-state">No appointments or classes booked.</div>'; return; }
+  el.innerHTML = items.map(i => `<div class="session-row" style="border-left:3px solid ${i.color}">
+    <div style="flex:1">
+      <div style="font-weight:700">${esc(i.label)}${i.time?' — '+esc(i.time):''}</div>
+      <div style="font-size:11px;color:var(--muted)">${esc(i.sub)}</div>
+    </div>
+  </div>`).join('');
 }
 
 function renderDayShifts(shifts) {

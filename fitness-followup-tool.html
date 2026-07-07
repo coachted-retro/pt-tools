@@ -2104,8 +2104,21 @@ async function createClientFolder(name, gKey, content) {
 // ?? Save to PT Member Progress Tracker ??
 async function saveToPTTracker() { /* simplified */ }
 
+// syncGoalToClientRecord: keeps clients.goal_primary current with whatever's
+// on this follow-up, independent of the legacy Sheets save path — so the
+// client-facing/coach-facing name tag always reflects the latest goal.
+async function syncGoalToClientRecord(){
+  const goal = gv('orig-goals');
+  if (!goal || !SELECTED_CLIENT_ID) return;
+  try {
+    await fetch(FFU_WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'clients', values:{ goal_primary: goal }, where:{ id: SELECTED_CLIENT_ID } }) });
+  } catch(e) {}
+}
+
 async function finalizeEnrolled(){
   if(!selectedFreq||!selectedLength){alert('Please select both a training frequency and program length.');return;}
+  syncGoalToClientRecord();
   showLoading('Saving enrollment and creating client folder...');
   
   var memberName = gv('name');
@@ -2173,6 +2186,7 @@ function showLongFollowup() {
 }
 
 async function finalizeLongFollowup() {
+  syncGoalToClientRecord();
   showLoading('Saving long-term follow-up...');
   var fuDate = document.getElementById('long-fu-date').value;
   var months = document.getElementById('long-fu-months').value;
@@ -2200,6 +2214,7 @@ async function finalizeLongFollowup() {
 }
 
 async function finalizeAnotherFollowup(){
+  syncGoalToClientRecord();
   showLoading('Saving follow-up record...');
   const gender=gv('gender');
   const tab=gender==='Female'?'Female Follow-Ups':'Male Follow-Ups';
@@ -2224,6 +2239,7 @@ async function finalizeAnotherFollowup(){
 }
 
 async function finalizeNotReady(){
+  syncGoalToClientRecord();
   showLoading('Closing record...');
   const gender=gv('gender');
   const tab=gender==='Female'?'Female Follow-Ups':'Male Follow-Ups';

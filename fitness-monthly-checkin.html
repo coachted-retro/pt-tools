@@ -393,6 +393,11 @@
             </div>
           </div>
           <div class="grid2">
+            <div class="field" style="grid-column:1/3"><label>Current Goal (update if it's changed)</label>
+              <input type="text" id="client-goal" placeholder="Pulls from their record — edit if their goal has shifted">
+            </div>
+          </div>
+          <div class="grid2">
             <div class="field"><label>Next check-in date</label><input type="date" id="next-checkin" readonly style="background:var(--accent-light);border-color:var(--accent);color:var(--accent);font-weight:600"></div>
             <div class="field"></div>
           </div>
@@ -1706,18 +1711,19 @@ async function _saveCheckinToD1(){
     const email=gv('email'), phone=gv('phone'), name=gv('name');
     const all=await _allClients();
     let c=MATCHED_CLIENT||_matchClient(all,email,phone,name);
-    const start=gv('program-start'), coach=gv('client-coach');
+    const start=gv('program-start'), coach=gv('client-coach'), goal=gv('client-goal');
     let clientId;
     if(c){
       clientId=c.id;
       const uv={updated_at:new Date().toISOString()};
       if(start && c.training_start_date!==start) uv.training_start_date=start;
       if(coach && c.coach!==coach) uv.coach=coach;
+      if(goal && c.goal_primary!==goal) uv.goal_primary=goal;
       if(Object.keys(uv).length>1){ await _db({op:'update',table:'clients',values:uv,where:{id:clientId}}); }
     } else {
       const parts=(name||'').trim().split(' '); const first=parts.shift()||''; const last=parts.join(' ');
       if(!first && !email && !phone) return;
-      const ins=await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,gender:gv('gender'),status:'active_pt',advisor:(gv('advisor-name')||getCfg('advisor')||''),coach:coach||'',training_start_date:start||null}});
+      const ins=await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,gender:gv('gender'),status:'active_pt',advisor:(gv('advisor-name')||getCfg('advisor')||''),coach:coach||'',training_start_date:start||null,goal_primary:goal||null}});
       clientId=ins.id;
     }
     if(!clientId) return;
@@ -1765,7 +1771,7 @@ function _fillFromClient(c){
   if(pl && c.id) pl.href='client-profile.html?client='+c.id;
   const set=(id,v)=>{ const e=document.getElementById(id); if(e&&!e.value&&v) e.value=v; };
   set('name',(((c.first_name||'')+' '+(c.last_name||'')).trim()));
-  set('email',c.email); set('phone',c.phone); set('client-coach',c.coach);
+  set('email',c.email); set('phone',c.phone); set('client-coach',c.coach); set('client-goal',c.goal_primary);
   if(c.training_start_date){ const ps=document.getElementById('program-start'); if(ps&&!ps.value){ ps.value=c.training_start_date; updateDates(); }
     const hint=document.getElementById('start-hint'); if(hint){ hint.style.display='block'; hint.textContent='Start date loaded from record.'; } }
   if(c.id) _fillPrevFromLastCheckin(c.id);

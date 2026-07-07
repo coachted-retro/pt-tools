@@ -97,7 +97,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -292,6 +292,54 @@ export default {
         await env.DB.prepare('INSERT INTO meal_photos (item_name,photo_url,updated_at) VALUES (?,?,?) ON CONFLICT(item_name) DO UPDATE SET photo_url=excluded.photo_url, updated_at=excluded.updated_at')
           .bind(b.item_name, b.photo_url || null, new Date().toISOString()).run();
         return ok({ saved: true }, cors);
+      }
+
+      // ── MARKETING MEDIA: bulk capture during 1:1 sessions or classes, for
+      // social/marketing use — separate from progress photos and form-check
+      // videos, which serve a different purpose. Photo release is already
+      // covered by the in-gym sign-off, so no separate consent flow here.
+      if (url.pathname === '/marketing-media/upload' && request.method === 'POST') {
+        if (!env.PHOTOS) return bad('R2 binding "PHOTOS" not found.', cors);
+        if (!env.DB) return bad('D1 binding "DB" not found.', cors);
+        const p = url.searchParams;
+        const clientId = p.get('client') || null;
+        const classId = p.get('class') || null;
+        const mediaType = p.get('type') === 'video' ? 'video' : 'photo';
+        const capturedBy = p.get('by') || null;
+        const notes = p.get('notes') || null;
+        const gymId = p.get('gym_id') || 1;
+        const ts = Date.now();
+        const folder = clientId ? `marketing/clients/${clientId}` : classId ? `marketing/classes/${classId}` : 'marketing/general';
+        const ext = mediaType === 'video' ? 'mp4' : 'jpg';
+        const key = `${folder}/${ts}.${ext}`;
+        const bytes = await request.arrayBuffer();
+        await env.PHOTOS.put(key, bytes, { httpMetadata: { contentType: mediaType === 'video' ? 'video/mp4' : 'image/jpeg' } });
+        const res = await env.DB.prepare(
+          `INSERT INTO marketing_media (client_id,class_id,media_type,r2_key,captured_at,captured_by,notes,gym_id) VALUES (?,?,?,?,?,?,?,?)`
+        ).bind(clientId, classId, mediaType, key, new Date().toISOString(), capturedBy, notes, gymId).run();
+        return ok({ key, id: res.meta?.last_row_id }, cors);
+      }
+
+      if (url.pathname === '/marketing-media/list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const clientId = url.searchParams.get('client');
+        const classId = url.searchParams.get('class');
+        const gymId = url.searchParams.get('gym_id') || 1;
+        let query, binds;
+        if (clientId) { query = 'SELECT * FROM marketing_media WHERE client_id=? ORDER BY captured_at DESC LIMIT 100'; binds = [clientId]; }
+        else if (classId) { query = 'SELECT * FROM marketing_media WHERE class_id=? ORDER BY captured_at DESC LIMIT 100'; binds = [classId]; }
+        else { query = 'SELECT * FROM marketing_media WHERE gym_id=? AND client_id IS NULL ORDER BY captured_at DESC LIMIT 200'; binds = [gymId]; }
+        const rows = await env.DB.prepare(query).bind(...binds).all();
+        return ok({ media: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/marketing-media/get' && request.method === 'GET') {
+        if (!env.PHOTOS) return bad('R2 binding "PHOTOS" not found.', cors);
+        const key = url.searchParams.get('key');
+        if (!key) return bad('key required', cors);
+        const obj = await env.PHOTOS.get(key);
+        if (!obj) return bad('Not found', cors);
+        return new Response(obj.body, { headers: { 'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream', ...cors } });
       }
 
       if (url.pathname === '/photo/upload' && request.method === 'POST') {
