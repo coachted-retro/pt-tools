@@ -77,7 +77,6 @@ h1,h2,h3,.sec-title { font-family:var(--font-display); }
   <div class="spacer"></div>
   <div class="title">GYM <span>ANALYTICS</span></div>
   <div class="spacer"></div>
-  <div class="sub" id="club-sub"></div>
 </div>
 
 <div class="wrap">
@@ -293,7 +292,6 @@ const CLUB_GYM_ID = {
   'rego-park': 6, 'fairfield': 7, 'tottenville': 8, 'mt-olive': 9, 'whippany': 10
 }[CLUB_SLUG] || 1;
 const CLUB_NAMES = {1:'Fairless Hills',2:'Forest Hills',3:'Glendale',4:'Jersey City',5:'Cedar City',6:'Rego Park',7:'Fairfield',8:'Tottenville',9:'Mt. Olive',10:'Whippany'};
-(function(){ const el = document.getElementById('club-sub'); if (el) el.textContent = 'Retro Fitness ' + (CLUB_NAMES[CLUB_GYM_ID] || 'Fairless Hills'); })();
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function pillClass(c){ return c==='good'?'pill-good':c==='warn'?'pill-warn':c==='none'?'pill-none':'pill-bad'; }
 
