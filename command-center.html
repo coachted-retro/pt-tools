@@ -147,7 +147,7 @@
   <div class="title" id="pageTitle">Command <span>Center</span></div>
   <div class="spacer"></div>
   <div class="search"><input id="q" placeholder="Search clients and leads..." oninput="render()"></div>
-  <button class="btn" onclick="loadAll()">Refresh</button>
+  <button class="btn" id="refresh-btn" onclick="loadAll()">Refresh</button>
 </div>
 
 <div class="wrap">
@@ -546,6 +546,9 @@ let APPT_ERR='';
 let APPT_STATUS_MAP = {};
 function apptStatusKey(date, name){ return date+'|'+(name||'').trim().toLowerCase(); }
 async function loadAll(){
+  const btn = document.getElementById('refresh-btn');
+  const originalLabel = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = 'Refreshing...'; btn.disabled = true; }
   const [c, l, mp, mpl, ast] = await Promise.all([
     db({op:'select', table:'clients', orderBy:'updated_at DESC', limit:1000}),
     db({op:'select', table:'leads',   orderBy:'created_at DESC', limit:2000}),
@@ -562,6 +565,11 @@ async function loadAll(){
     else { const cd=await cr.json(); if(cd&&cd.ok&&cd.events){ APPTS=cd.events; APPT_ERR=''; } else { APPTS=[]; APPT_ERR=(cd&&cd.error)?cd.error:'The calendar feed returned no upcoming events.'; } }
   }catch(e){ APPTS=[]; APPT_ERR='Could not reach the calendar endpoint: '+e.message+'. Deploy the Worker and confirm its URL.'; }
   render();
+  loadWinsFeed();
+  const gymFrame = document.querySelector('.cc-center-frame iframe');
+  if (gymFrame) { try { gymFrame.contentWindow.location.reload(); } catch(e) { gymFrame.src = gymFrame.src.split('?')[0] + '?_r=' + Date.now(); } }
+  if (btn) { btn.textContent = originalLabel; btn.disabled = false; }
+  toast('✓ Refreshed — ' + CLIENTS.length + ' clients, ' + LEADS.length + ' leads loaded');
 }
 
 let apptMenuTarget = null;
