@@ -271,8 +271,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
         <div class="ex-title" id="exTitle">Exercise</div>
         <div class="last-perf" id="lastPerf"></div>
         <div class="last-perf" id="loadSuggest" style="margin-top:4px"></div>
+        <div id="exFormHelp" style="margin-top:6px"></div>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn sm" onclick="openExerciseSwap(EXI)" title="Swap for equivalent exercise" style="border-radius:50%;width:34px;height:34px;padding:0;display:flex;align-items:center;justify-content:center">⇄</button>
         <button class="btn sm" onclick="openTimer()">⏱</button>
         <button class="btn sm" onclick="showQueue()">☰</button>
       </div>
@@ -480,7 +482,17 @@ input,select,textarea{font-family:inherit;font-size:16px;}
   </div>
 </div>
 
+<div class="overlay" id="swapOverlay">
+  <div class="topbar">
+    <div class="title">Swap Exercise</div>
+    <button class="btn sm" onclick="closeExerciseSwap()">✕</button>
+  </div>
+  <div style="padding:12px 16px;font-size:12px;color:var(--text3,#888)" id="swapSubtitle"></div>
+  <div class="scroll" id="swapList" style="padding:0 16px 16px"></div>
+</div>
+
 <script>
+
 /* =====================================================================
    GYM FLOOR — Session 1 core
    Offline-first: every mutation lands in localStorage first, syncs to D1
@@ -656,6 +668,233 @@ function buildExLib(){
   HISTORY.forEach(w=>{try{(JSON.parse(w.exercises_json||'[]')||[]).forEach(x=>{if(x.name)names.add(x.name);});}catch(e){}});
   $('exLib').innerHTML=[...names].sort().map(n=>`<option value="${esc(n)}">`).join('');
 }
+/* ---- Exercise reference library: body_part tags for swap-by-equivalent,
+   YouTube form videos and coaching cues, ported from member-app.html so
+   trainers have the same references live on the gym floor ---- */
+const EXERCISE_DB = [{"name":"90/90 Hip Stretch","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Ab Wheel or Cable Crunch","body_part":"Core","equipment":"Cable","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Arnold Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Assault Bike","body_part":"Cardio","equipment":"Cardio Machine","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Back Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Band Pull-Apart","body_part":"Full Body","equipment":"Band","mechanics":"Isolation","type":"Strength"},{"name":"Barbell Bench Press","body_part":"Chest","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Bench Press (light)","body_part":"Chest","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Curl","body_part":"Biceps","equipment":"Barbell","mechanics":"Isolation","type":"Strength"},{"name":"Barbell Row","body_part":"Back","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Squat","body_part":"Quads","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Squat (explosive)","body_part":"Quads","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Barbell Squat (light)","body_part":"Quads","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Battle Ropes","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Bench Press","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Bicep Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Bird Dog","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Box Jump","body_part":"Full Body","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Broad Jump","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Bulgarian Split Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Cable Chest Press","body_part":"Chest","equipment":"Cable","mechanics":"Compound","type":"Strength"},{"name":"Cable Crunch","body_part":"Core","equipment":"Cable","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Cable Fly","body_part":"Chest","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Cable Lateral Raise","body_part":"Back","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Cable Pull-Through","body_part":"Full Body","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Cable Tricep Pushdown","body_part":"Triceps","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Cable Woodchop","body_part":"Full Body","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Calf Raise","body_part":"Calves","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Calf Raises","body_part":"Calves","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Cat-Cow","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Close-Grip Bench Press","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Concentration Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"DB Shoulder Press","body_part":"Shoulders","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Dead Bug","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Deadlift","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Deadlift (intro)","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Decline Bench Press","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Decline Push-Up","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Dip (superset with Curl)","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Dumbbell Bench Press","body_part":"Chest","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Dumbbell Lateral Raise","body_part":"Back","equipment":"Dumbbell","mechanics":"Isolation","type":"Strength"},{"name":"Dumbbell Press (superset with Row)","body_part":"Back","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Dumbbell Row","body_part":"Back","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Dumbbell Shoulder Press","body_part":"Shoulders","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"EZ Bar Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"EZ Bar Preacher Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Face Pull","body_part":"Shoulders","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Face Pulls","body_part":"Shoulders","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Farmer Carry","body_part":"Full Body","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Farmers Carry","body_part":"Full Body","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Flat Barbell Bench Press","body_part":"Chest","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Flat Bench Press","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Foam Roll \u2014 Lats","body_part":"Back","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Foam Roll \u2014 T-Spine","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Glute Bridge","body_part":"Hamstrings/Glutes","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Glute Bridge Activation","body_part":"Hamstrings/Glutes","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Goblet Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Goblet Squat (superset with RDL)","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Goblet Squat or Safety Bar Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Hammer Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Hamstring Floss (banded or towel)","body_part":"Hamstrings/Glutes","equipment":"Band","mechanics":"Isolation","type":"Mobility"},{"name":"Hip Circle","body_part":"Full Body","equipment":"None / Mobility","mechanics":"Isolation","type":"Strength"},{"name":"Hip Flexor Stretch","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Hip Thrust","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Inchworm","body_part":"Full Body","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Incline DB Press","body_part":"Shoulders","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Incline Dumbbell Curl","body_part":"Biceps","equipment":"Dumbbell","mechanics":"Isolation","type":"Strength"},{"name":"Incline Dumbbell Press","body_part":"Shoulders","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Incline Press (superset with Pull-Up)","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"KB Goblet Squat","body_part":"Quads","equipment":"Kettlebell","mechanics":"Compound","type":"Strength"},{"name":"KB Swing","body_part":"Full Body","equipment":"Kettlebell","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Landmine Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Lat Pulldown","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Strength"},{"name":"Lateral Raise","body_part":"Back","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Lateral Raises","body_part":"Back","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Leg Curl","body_part":"Hamstrings/Glutes","equipment":"Machine","mechanics":"Isolation","type":"Strength"},{"name":"Leg Extension","body_part":"Quads","equipment":"Machine","mechanics":"Isolation","type":"Strength"},{"name":"Leg Press","body_part":"Quads","equipment":"Machine","mechanics":"Compound","type":"Strength"},{"name":"Leg Swing (front-back + lateral)","body_part":"Back","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Light Goblet Squat (warm-up weight)","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Low Cable Fly","body_part":"Chest","equipment":"Cable","mechanics":"Isolation","type":"Strength"},{"name":"Med Ball Slam","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Mountain Climbers","body_part":"Full Body","equipment":"Bodyweight","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Overhead Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Overhead Press (Barbell)","body_part":"Shoulders","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Overhead Tricep Extension","body_part":"Triceps","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Pallof Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Plank","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Plank + Side Plank","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Plank Hold","body_part":"Core","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Plank Row","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"Plank to Push-Up","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Power Clean or Hang Clean","body_part":"Full Body","equipment":"Various","mechanics":"Compound","type":"Strength"},{"name":"Pull-Up","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"Pull-Up or Lat Pulldown","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Strength"},{"name":"Pull-Ups","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"Pull-Ups / Lat Pulldown","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Strength"},{"name":"Push Press (barbell)","body_part":"Shoulders","equipment":"Barbell","mechanics":"Compound","type":"Strength"},{"name":"Push-Up","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Push-Up Burnout","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Push-Up Variations (tempo)","body_part":"Chest","equipment":"Bodyweight","mechanics":"Isolation","type":"Strength"},{"name":"Rear Delt Fly","body_part":"Chest","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Reverse Crunch","body_part":"Core","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Reverse Curl","body_part":"Biceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Romanian Deadlift","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Romanian Deadlift (dumbbell)","body_part":"Hamstrings/Glutes","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Row Machine","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Cardio/Interval"},{"name":"Rowing Machine or Bike","body_part":"Back","equipment":"Machine","mechanics":"Compound","type":"Cardio/Interval"},{"name":"Russian Twist","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Seated Cable Row","body_part":"Back","equipment":"Cable","mechanics":"Compound","type":"Strength"},{"name":"Shoulder CARs (Controlled Articular Rotations)","body_part":"Shoulders","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Shoulder Press","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Shoulder Press (superset with Face Pull)","body_part":"Shoulders","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Shrugs","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Side-Lying Clam Shell","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Single-Arm Dumbbell Row","body_part":"Back","equipment":"Dumbbell","mechanics":"Compound","type":"Strength"},{"name":"Single-Leg Bound","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Single-Leg RDL","body_part":"Full Body","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Skull Crushers","body_part":"Triceps","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Skullcrusher","body_part":"Triceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Sprint (treadmill or turf)","body_part":"Cardio","equipment":"Cardio Machine","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Squat","body_part":"Quads","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Standing Calf Raise","body_part":"Calves","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Step-Up with Dumbbells","body_part":"Quads","equipment":"Dumbbell","mechanics":"Isolation","type":"Strength"},{"name":"Straight-Arm Pulldown","body_part":"Back","equipment":"Various","mechanics":"Compound","type":"Strength"},{"name":"Suitcase Carry","body_part":"Full Body","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"T-Bar Row","body_part":"Back","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Thoracic Rotation (half-kneeling)","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"},{"name":"Trap Bar Deadlift or Kettlebell Swing","body_part":"Hamstrings/Glutes","equipment":"Kettlebell","mechanics":"Compound","type":"Cardio/Interval"},{"name":"Trap Bar Jump Deadlift","body_part":"Hamstrings/Glutes","equipment":"Free Weight (Barbell/DB)","mechanics":"Compound","type":"Strength"},{"name":"Treadmill Run","body_part":"Cardio","equipment":"Cardio Machine","mechanics":"Isolation","type":"Cardio/Interval"},{"name":"Tricep Dips","body_part":"Chest","equipment":"Various","mechanics":"Isolation","type":"Strength"},{"name":"Tricep Pushdown","body_part":"Triceps","equipment":"Free Weight (Barbell/DB)","mechanics":"Isolation","type":"Strength"},{"name":"Walking Lunge","body_part":"Quads","equipment":"Various","mechanics":"Compound","type":"Strength"},{"name":"Walking Lunges","body_part":"Quads","equipment":"Various","mechanics":"Compound","type":"Strength"},{"name":"Wide-Grip Pull-Up","body_part":"Back","equipment":"Bodyweight","mechanics":"Compound","type":"Strength"},{"name":"World's Greatest Stretch","body_part":"Mobility","equipment":"None / Mobility","mechanics":"Isolation","type":"Mobility"}];
+const VIDEO_LINKS = {
+  // Squat pattern
+  'barbell squat': 'https://www.youtube.com/watch?v=1oed-UmAxFs',
+  'barbell squat light': 'https://www.youtube.com/watch?v=1oed-UmAxFs',
+  'barbell squat explosive': 'https://www.youtube.com/watch?v=1oed-UmAxFs',
+  'squat': 'https://www.youtube.com/watch?v=1oed-UmAxFs',
+  'goblet squat': 'https://www.youtube.com/watch?v=MeIiIdhvXT4',
+  'goblet squat superset with rdl': 'https://www.youtube.com/watch?v=MeIiIdhvXT4',
+  'goblet squat or safety bar squat': 'https://www.youtube.com/watch?v=MeIiIdhvXT4',
+  'light goblet squat warm-up weight': 'https://www.youtube.com/watch?v=MeIiIdhvXT4',
+  'bulgarian split squat': 'https://www.youtube.com/watch?v=bwhl_9jN_3o',
+  'leg press': 'https://www.youtube.com/watch?v=p5dCqF7wWUw',
+  'box jump': 'https://www.youtube.com/watch?v=YLPQsdRDmB0',
+  'walking lunges': 'https://www.youtube.com/watch?v=mAgbXQdd4LM',
+  // Hinge pattern
+  'deadlift': 'https://www.youtube.com/watch?v=XxWcirHIwVo',
+  'deadlift intro': 'https://www.youtube.com/watch?v=XxWcirHIwVo',
+  'romanian deadlift': 'https://www.youtube.com/watch?v=5bJEigM5iVg',
+  'romanian deadlift dumbbell': 'https://www.youtube.com/watch?v=5bJEigM5iVg',
+  'trap bar deadlift or kettlebell swing': 'https://www.youtube.com/watch?v=PWJU5grrh4Y',
+  'trap bar jump deadlift': 'https://www.youtube.com/watch?v=PWJU5grrh4Y',
+  'power clean or hang clean': 'https://www.youtube.com/watch?v=lI35socHJ4k',
+  'hip thrust': 'https://www.youtube.com/watch?v=S_uZP4UH6J0',
+  // Horizontal press
+  'barbell bench press': 'https://www.youtube.com/watch?v=4Y2ZdHCOXok',
+  'barbell bench press light': 'https://www.youtube.com/watch?v=4Y2ZdHCOXok',
+  'bench press': 'https://www.youtube.com/watch?v=4Y2ZdHCOXok',
+  'flat barbell bench press': 'https://www.youtube.com/watch?v=4Y2ZdHCOXok',
+  'flat bench press': 'https://www.youtube.com/watch?v=4Y2ZdHCOXok',
+  'dumbbell bench press': 'https://www.youtube.com/watch?v=VmB1G1K7v94',
+  'dumbbell press superset with row': 'https://www.youtube.com/watch?v=VmB1G1K7v94',
+  'incline dumbbell press': 'https://www.youtube.com/watch?v=hChjZQhX1Ls',
+  'incline press superset with pull-up': 'https://www.youtube.com/watch?v=hChjZQhX1Ls',
+  'cable fly': 'https://www.youtube.com/watch?v=Iwe6AmxVf7o',
+  'low cable fly': 'https://www.youtube.com/watch?v=M1N804yWA-8',
+  'decline push-up': 'https://www.youtube.com/watch?v=WDIpL0pjun0',
+  'push-up burnout': 'https://www.youtube.com/watch?v=WDIpL0pjun0',
+  'push-up variations tempo': 'https://www.youtube.com/watch?v=WDIpL0pjun0',
+  // Vertical press
+  'overhead press': 'https://www.youtube.com/watch?v=F3QY5vMz_6I',
+  'overhead press barbell': 'https://www.youtube.com/watch?v=F3QY5vMz_6I',
+  'shoulder press': 'https://www.youtube.com/watch?v=qEwKCR5JCog',
+  'shoulder press superset with face pull': 'https://www.youtube.com/watch?v=qEwKCR5JCog',
+  'dumbbell shoulder press': 'https://www.youtube.com/watch?v=qEwKCR5JCog',
+  'arnold press': 'https://www.youtube.com/watch?v=6Z15_WdXmVw',
+  'lateral raise': 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+  'lateral raises': 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+  'dumbbell lateral raise': 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+  'cable lateral raise': 'https://www.youtube.com/watch?v=3VcKaXpzqRo',
+  'face pull': 'https://www.youtube.com/watch?v=0Po47vvj9g4',
+  'face pulls': 'https://www.youtube.com/watch?v=0Po47vvj9g4',
+  // Pull pattern
+  'barbell row': 'https://www.youtube.com/watch?v=A1tmBJKKfVs',
+  'dumbbell row': 'https://www.youtube.com/watch?v=pYcpY20QaE8',
+  'single-arm dumbbell row': 'https://www.youtube.com/watch?v=pYcpY20QaE8',
+  'seated cable row': 'https://www.youtube.com/watch?v=7o2oolbmzeI',
+  'lat pulldown': 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+  'pull-ups / lat pulldown': 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+  'pull-up or lat pulldown': 'https://www.youtube.com/watch?v=CAwf7n6Luuc',
+  'pull-up': 'https://www.youtube.com/watch?v=6zyx46Vpato',
+  'pull-ups': 'https://www.youtube.com/watch?v=6zyx46Vpato',
+  'wide-grip pull-up': 'https://www.youtube.com/watch?v=6zyx46Vpato',
+  // Arms
+  'barbell curl': 'https://www.youtube.com/watch?v=QZEqB6wUPxQ',
+  'ez bar curl': 'https://www.youtube.com/watch?v=QZEqB6wUPxQ',
+  'hammer curl': 'https://www.youtube.com/watch?v=zC3nLlEvin4',
+  'tricep pushdown': 'https://www.youtube.com/watch?v=vB5OHsJ3EME',
+  'cable tricep pushdown': 'https://www.youtube.com/watch?v=vB5OHsJ3EME',
+  'skull crushers': 'https://www.youtube.com/watch?v=RavQHfFxbdA',
+  'tricep dips': 'https://www.youtube.com/watch?v=T1L4smOP0L8',
+  'dip superset with curl': 'https://www.youtube.com/watch?v=T1L4smOP0L8',
+  // Legs isolation
+  'leg curl': 'https://www.youtube.com/watch?v=hqI59xXChFk',
+  'leg extension': 'https://www.youtube.com/watch?v=4ZDm5EbiFI8',
+  'calf raises': 'https://www.youtube.com/watch?v=YMmgqO8Jo-k',
+  'standing calf raise': 'https://www.youtube.com/watch?v=YMmgqO8Jo-k',
+  // Core
+  'plank': 'https://www.youtube.com/watch?v=mwlp75MS6Rg',
+  'plank hold': 'https://www.youtube.com/watch?v=mwlp75MS6Rg',
+  'plank side plank': 'https://www.youtube.com/watch?v=mwlp75MS6Rg',
+  'cable crunch': 'https://www.youtube.com/watch?v=ToJeyhydUxU',
+  'ab wheel or cable crunch': 'https://www.youtube.com/watch?v=ToJeyhydUxU',
+  'pallof press': 'https://www.youtube.com/watch?v=Te5VAYXy0wQ',
+};
+const FORM_CUES = {
+  // Squat patterns
+  'barbell squat': 'Bar on upper traps, feet shoulder-width, toes slightly out. Brace your core hard before you descend. Hit parallel or below — depth is non-negotiable for full development. Drive your knees out and push the floor apart on the way up.',
+  'barbell squat (light)': 'Same technique as a regular squat — lighter load lets you focus on depth and control. Take 3 seconds down, pause at the bottom, drive up. Learn the pattern before you load it.',
+  'goblet squat': 'Hold the dumbbell at your chest, elbows tucked. Feet slightly wider than shoulder-width. Sit between your heels, not on top of them. Keep your chest tall — the weight should make this natural.',
+  'goblet squat or safety bar squat': 'Focus on a vertical torso and full depth. If using a safety bar, keep your elbows forward to control the camber of the bar. This variation is easier on the shoulders and lower back.',
+  'box jump': 'Stand close to the box. Swing your arms, bend slightly, then explode. Land with both feet flat, soft knees. Step down — never jump down. Full reset between reps.',
+  'leg press': 'Feet shoulder-width, mid-height on the platform. Lower until knees hit 90° — don\'t let your lower back peel off the pad. Push through the whole foot, not just your toes. Never lock out at the top.',
+  'bulgarian split squat': 'Rear foot elevated on bench, laces down. Front foot far enough out that your shin stays close to vertical at the bottom. Lower until your rear knee nearly touches the floor. 90% of your weight stays on the front leg.',
+  'step-up with dumbbells': 'Drive through the heel of the working leg — don\'t push off the back foot. Full hip extension at the top. Control the descent. Use a box height that gets your thigh to parallel.',
+  'single-leg bound': 'Drive the knee up and bound forward. Land on the same foot you jumped from. Absorb the landing with a soft bend. Build distance progressively — this is explosive work.',
+
+  // Hip hinge patterns
+  'deadlift': 'Hinge from the hips to grip the bar — don\'t squat to it. Bar over mid-foot, tight against your shins. Big breath and brace. Drive the floor away. Lock out hips and knees together at the top. Hinge back down, don\'t drop it.',
+  'deadlift (intro)': 'Take your time here — this is the most important lift you\'ll learn. Bar over mid-foot, hip-width stance. Grip just outside your legs. Flat back, chest up, brace hard. Think "push the floor away" not "pull the bar up."',
+  'romanian deadlift': 'Soft bend in the knees — they stay there the whole time. Hinge at the hips and push them back. Feel the hamstrings load as the bar drops below your knees. Stop when your back starts to round. Drive hips forward to return.',
+  'romanian deadlift (dumbbell)': 'Same hip hinge pattern as the barbell version. Hold dumbbells at your thighs and slide them down your legs as you hinge. Squeeze glutes to return. You should feel this in your hamstrings, not your lower back.',
+  'trap bar jump deadlift': 'Set up inside the trap bar. Load is moderate — this is power work, not max effort. Dip slightly, then explode upward through the whole body. Heels may leave the floor. Control the landing. Reset completely between reps.',
+  'trap bar deadlift or kettlebell swing': 'Trap bar: neutral grip, drive through the floor. Kettlebell swing: hike the bell back between your legs then snap your hips forward — it\'s a hinge, not a squat. The bell floats, your arms don\'t pull it.',
+  'hip thrust': 'Shoulders on bench, bar over hips with a pad. Feet flat, knees at 90° at the top. Drive through your heels and squeeze your glutes hard at the top — don\'t hyperextend your lower back. Lower controlled.',
+  'cable pull-through': 'Stand facing away from the cable stack with the rope between your legs. Hinge at the hips, pushing them back. The rope goes between your legs. Drive hips forward to standing — squeeze glutes at the top.',
+  'glute bridge activation': 'Feet flat, knees bent. Press through your heels and drive your hips up. Squeeze glutes hard at the top for a full second. This activates before heavier work — don\'t rush it.',
+
+  // Horizontal push
+  'flat barbell bench press': 'Grip just outside shoulder-width. Arch your upper back slightly — keep your butt on the bench. Lower to your lower chest, elbows at about 45°. Drive the bar up and slightly back toward your face.',
+  'barbell bench press (light)': 'Light load means you can nail the technique. Full range of motion — touch the chest, full lockout. Elbows at 45° from your body, not flared. Feel the pec stretch at the bottom.',
+  'incline dumbbell press': 'Set bench to 30-45°. Dumbbells at chest level with a neutral or pronated grip. Press up and in, let the dumbbells touch lightly at the top. Control the descent — the stretch at the bottom is where the growth happens.',
+  'decline bench press': 'Feet hooked in, head lower than hips. Lower the bar to your lower chest. This hits the lower pec hard — great for fullness and chest thickness.',
+  'push-up variations (tempo)': 'Slow the descent to 3-4 seconds, pause at the bottom, explode up. Hands slightly wider than shoulders. Body is a rigid plank — don\'t let hips sag. If standard push-ups are easy, elevate your feet.',
+  'push-up burnout': 'As many as you can with perfect form. The moment your hips sag or elbows flare wide, stop. Quality reps only — a bad push-up doesn\'t count.',
+  'plank to push-up': 'Start in plank. Press up to push-up position one hand at a time, then lower back down. Keep hips level — they should not rotate. Alternate which arm leads.',
+  'dumbbell press (superset with row)': 'Standard dumbbell bench press. Controlled and full range. Move immediately to the row with minimal rest — this is a superset, keep the pace up.',
+  'cable chest press': 'Stand between the cables, arms forward. Press together and slightly forward, like you\'re hugging a tree. Squeeze the chest at the end range. Great for the inner chest.',
+  'low cable fly': 'Cables set at the lowest position. Arms start below hip level. Sweep upward and together. Slight bend in elbows stays constant — this is not a pressing motion.',
+
+  // Vertical push
+  'overhead press': 'Bar from the front rack or dumbbell version. Core tight, glutes squeezed — don\'t hyperextend. Press straight up, head moves back slightly to let the bar pass. Bar ends directly above your ears at the top.',
+  'dumbbell shoulder press': 'Start at ear level, elbows at 90°. Press up without locking out. Lower controlled. Keep your lower back from arching — brace your core throughout.',
+  'arnold press': 'Start with palms facing you, elbows forward. As you press up, rotate palms out. More total shoulder recruitment than a standard press. Control the rotation — don\'t rush it.',
+  'push press (barbell)': 'This is a power movement. Dip slightly at the knees, then drive up through the legs to launch the bar. Lock out at the top. The leg drive takes the weight through the sticking point. Lower controlled.',
+  'landmine press': 'One hand on the end of a barbell anchored in a corner or landmine attachment. Press up and forward at a 45° angle. Great for shoulder health — this angle is much easier on the rotator cuff than a strict overhead press.',
+
+  // Vertical pull
+  'pull-ups': 'Dead hang start. Drive elbows to your back pockets. Chin clears the bar. Lower all the way — no half reps. If you can\'t do bodyweight, use a band or the assisted machine to build toward it.',
+  'pull-ups / lat pulldown': 'If doing pull-ups: dead hang, full range. If using the lat pulldown: sit tall, lean back slightly, pull to your chin, lead with your elbows. Don\'t let the weight pull you forward.',
+  'wide-grip pull-up': 'Wider grip emphasizes the outer lats — gives you that V-taper. Full dead hang, pull until your chin clears. Lower all the way down. 3 seconds on the way down.',
+  'lat pulldown': 'Sit tall and lean back about 10°. Pull to your chin, not your chest. Elbows drive straight down. The bar should touch your upper chest at the bottom. Stretch fully at the top.',
+  'straight-arm pulldown': 'Stand facing the cable with a bar or rope. Arms nearly straight with a soft elbow bend. Pull straight down by driving your elbows toward your hips. Squeeze the lats hard at the bottom. Controlled return.',
+
+  // Horizontal pull
+  'barbell row': 'Hinge forward to about 45°. Bar hangs from a dead hang. Pull to your belly button — not your chest. Squeeze shoulder blades together at the top. Lower until your arms are fully extended.',
+  't-bar row': 'Chest on the pad, or straddle the bar. Pull the weight to your lower chest. Keep your elbows close to your body. Squeeze hard at the top. This is a mass builder — don\'t use momentum.',
+  'seated cable row': 'Sit tall, slight arch in lower back. Pull the handle to your belly. Squeeze shoulder blades together — hold for a beat. Return slowly and let your shoulder blades protract fully. Don\'t round forward.',
+  'single-arm dumbbell row': 'One hand on the bench for support. Back is flat and parallel to the floor. Pull the dumbbell to your hip — not your shoulder. Feel the full stretch at the bottom. No rotation.',
+  'dumbbell row': 'Hand on bench, back flat. Pull to your hip. Full stretch at the bottom — that\'s where you build the thickness.',
+  'barbell row': 'Bent over at 45°. Overhand grip. Pull the bar to your lower abs. Squeeze the lats and rhomboids at the top. This is a foundational back builder — earn your weight here.',
+  'plank row': 'In a push-up position holding dumbbells. Row one arm while keeping your hips level — don\'t rotate. The anti-rotation challenge is the whole point. Keep your core locked.',
+
+  // Shoulders / accessories
+  'dumbbell lateral raise': 'Arms slightly in front of your body, not directly out to the side. Lead with your pinkies — think "pouring a pitcher." Stop at shoulder height. Control the descent — the eccentric builds the muscle.',
+  'cable lateral raise': 'Cable at hip height, stand sideways. Pull across your body and up to shoulder height. More constant tension than dumbbells. Lean slightly away from the cable to increase the range of motion.',
+  'rear delt fly': 'Bent forward or on a reverse fly machine. Arms go wide to the sides. Squeeze the rear delts — not your traps. These are small muscles, so go lighter than you think.',
+  'face pull': 'Cable at face height, rope attachment. Pull to your forehead, elbows high and wide. External rotation at the end — this protects your rotator cuff and fixes your posture. Do more of these than you think you need.',
+  'band pull-apart': 'Hold a band at shoulder width, arms straight in front. Pull the band apart until it touches your chest. Squeeze shoulder blades together. This warms up the rear delts and rotator cuff. Do it before every upper body session.',
+  'shrugs': 'Barbell or dumbbell. Straight up — don\'t roll your shoulders. Hold at the top for a beat. Lower slowly. Heavy weight, controlled movement.',
+
+  // Arms
+  'ez bar curl': 'Elbows pinned at your sides. The EZ bar angle is easier on the wrists than a straight bar. Full range — all the way down, all the way up. Don\'t swing.',
+  'ez bar preacher curl': 'Chest against the pad, elbows on the arm rest. Full extension at the bottom — don\'t let the tension go. Curl to the top without letting your elbows leave the pad.',
+  'barbell curl': 'Elbows at your sides, don\'t let them drift forward as you curl. Full range of motion both directions. The lowering is as important as the lifting.',
+  'incline dumbbell curl': 'Set bench at 45-60°. Arms hang straight down. Curl from a dead stretch — this maximizes the peak contraction. Don\'t swing the dumbbells.',
+  'concentration curl': 'Seated, elbow on the inside of your thigh. Curl slowly, squeeze hard at the top. No momentum. This isolates the bicep completely — go lighter than you think.',
+  'hammer curl': 'Neutral grip — thumbs up throughout. Hits the brachialis and brachioradialis alongside the bicep. Gives you thickness in the arm. Control both directions.',
+  'reverse curl': 'Overhand grip — palms down. This hits your brachioradialis and forearms. Harder than it looks. Keep elbows pinned and control the movement.',
+  'skull crushers': 'Lie on bench, barbell or EZ bar. Lower to your forehead or just behind your head. Elbows stay pointed at the ceiling — don\'t let them flare. Press back up without locking out.',
+  'cable tricep pushdown': 'Elbows pinned at your sides. Press straight down until arms are fully extended. Squeeze the triceps hard at the bottom. Don\'t let your elbows drift forward on the way down.',
+  'overhead tricep extension': 'Arms overhead, elbows by your ears. Lower the weight behind your head. Full stretch at the bottom. Press back up. This hits the long head of the tricep — the biggest portion.',
+  'close-grip bench press': 'Grip slightly narrower than shoulder-width. Same bench press technique, but you\'ll feel this in your triceps instead of your chest. Don\'t go too narrow — it stresses the wrists.',
+  'tricep dips': 'Chest slightly forward, elbows back. Lower until upper arms are parallel. Press back up. The more you lean forward, the more chest. Upright = more tricep.',
+
+  // Core
+  'plank': 'Forearms on the floor, toes on floor. Straight line from head to heels. Squeeze everything — abs, glutes, quads. Breathe steadily. The second your hips sag, the set is over.',
+  'plank hold': 'Same as a plank — perfecting the tension. Don\'t just endure it. Actively squeeze every muscle. This is full body isometric work.',
+  'side plank': 'One forearm, feet stacked or staggered. Body is a straight line. Don\'t let your hip drop. If you want harder, raise your top arm or leg.',
+  'plank + side plank': 'Hold the front plank, then rotate to each side for the full sequence. Core stability from every angle. Don\'t rush the transitions.',
+  'cable crunch': 'Kneel at the cable. Rope behind your head. Crunch your elbows toward your knees — this is a spinal flexion movement, not a hip flexion movement. Don\'t pull with your arms.',
+  'ab wheel or cable crunch': 'Ab wheel: kneel, roll out until back is flat, pull back. It\'s harder than it looks — don\'t go too far until you can control it. Cable crunch: elbows toward knees, round the spine.',
+  'russian twist': 'Lean back 45°, feet off the floor. Rotate a weight side to side, touching it to the floor each time. The rotation comes from your torso, not your arms. Keep your spine long.',
+  'mountain climbers': 'Push-up position. Drive one knee to your chest, switch fast. Keep your hips low — in line with your body, not raised. The faster you go, the more cardio benefit.',
+  'dead bug': 'Lie on your back, arms straight up, knees at 90°. Lower one arm and the opposite leg simultaneously. Lower back stays pressed into the floor the entire time. Return and switch. Breathe out on the way down.',
+  'cable crunch': 'Kneel at the cable. Rope behind your head. Round your spine to crunch your elbows toward your knees. Controlled return. Feel the abs working, not the hip flexors.',
+  'reverse crunch': 'Lie on your back, hands by your sides. Lift your knees to your chest, then raise your hips off the floor. Lower controlled. The movement is posterior pelvic tilt — your lower back presses into the floor throughout.',
+  'pallof press': 'Stand sideways to the cable. Press straight out in front of you — resist the rotation. The cable pulls you to the side and your core fights it. Hold 1-2 seconds. This is anti-rotation core work.',
+  'ab wheel': 'Kneel on the floor. Roll out slowly until your body is parallel to the floor. Pull back with your core, not your arms. Don\'t let your lower back collapse on the way out.',
+
+  // Power
+  'power clean or hang clean': 'This is a technical lift. Start from the hang position above the knees. Extend explosively through hips and knees, then pull yourself under the bar and catch it in the front rack. Land with soft knees. If you\'re new to this, ask Coach Ted for a demonstration.',
+  'broad jump': 'Stand with feet hip-width. Swing arms back, bend knees, then explode forward and up. Land with soft knees and controlled balance. Measure your distance — this is a power output test.',
+  'med ball slam': 'Hold the ball overhead. Brace hard, then slam it into the floor with maximum force. Absorb the bounce or let it bounce back. This is pure explosive power — don\'t hold back.',
+  'battle ropes': 'Both hands, alternating waves. Drive from your hips and core, not just your arms. Keep the waves going all the way to the anchor. 20 seconds all-out means all-out.',
+  'sprint (treadmill or turf)': '10 seconds of maximum effort. This is not a jog. Pump your arms, drive your knees, go as fast as you can maintain. 50 seconds of full rest before the next one.',
+
+  // Mobility
+  'foam roll — t-spine': 'Place the roller perpendicular to your spine between your shoulder blades. Support your head with your hands. Extend gently over the roller. Move slowly up your thoracic spine. When you hit a tight spot, stay there and breathe.',
+  'foam roll — lats': 'Lie on your side with the roller under your armpit. Arm extended overhead. Roll slowly from armpit down toward mid-back. The lats are large — take your time.',
+  '90/90 hip stretch': 'Both legs bent at 90°, one in front and one to the side. Sit tall and breathe. You\'re stretching both internal and external hip rotation simultaneously. Switch sides slowly — don\'t rush.',
+  "world\'s greatest stretch": 'Step into a lunge, drop back knee to the floor. Place same-side hand on the floor inside your front foot. Rotate the opposite arm overhead. This hits hip flexors, thoracic spine, and hamstrings in one movement.',
+  'cat-cow': 'On all fours. Cat: round your spine up toward the ceiling, tuck your chin and pelvis. Cow: let your spine sag, lift your chin and tailbone. Move through the full range slowly and breathe through both positions.',
+  'thoracic rotation (half-kneeling)': 'One knee down, opposite foot forward. Hands behind your head. Rotate toward the forward leg as far as you can without your hips moving. The rotation comes from your mid-back only.',
+  'hip flexor stretch': 'Kneel on one knee, other foot forward. Drive your hips forward gently while staying tall. Now squeeze the glute of the back leg — this unlocks extra range. Hold and breathe.',
+  'shoulder cars (controlled articular rotations)': 'Full circles of the shoulder joint in both directions — slow and controlled. The goal is to explore your full range of motion under muscular control. Don\'t let your shoulder blade or ribcage compensate.',
+  'hamstring floss (banded or towel)': 'On your back, towel around your foot. Leg straight, pull gently toward you. Flex and point your foot 5 times. Then do small circles. Breathe into the stretch — you\'re not fighting it.',
+  'hip circle': 'Standing, hands on hips. Large circles with your hips in both directions. Controlled and deliberate. Warms up the hip joint through its full range before lower body work.',
+  'band pull-apart': 'Arms straight in front of you. Pull the band apart and touch your chest. Squeeze shoulder blades together. Do this before every upper body session — it\'s your shoulder health insurance.',
+  'leg swing (front-back + lateral)': 'Stand on one leg, hold a wall if needed. Swing the free leg forward and back from the hip — not the knee. Then side to side. 10 each direction. This primes the hip for squats, deadlifts, and lunges.',
+  'light goblet squat (warm-up weight)': 'Same goblet squat technique but with a weight that feels easy. The purpose here is joint preparation and movement rehearsal. Take 3 seconds down, pause, drive up. This is not a workout set.',
+  'inchworm': 'Stand tall, bend and walk your hands out to a push-up position. Do one push-up optional. Walk your feet back in. Stand and repeat. This warms up your hamstrings, shoulders, and core simultaneously.',
+};
+function exDbLookup(name){
+  if(!name) return null;
+  return EXERCISE_DB.find(e => e.name.toLowerCase() === name.toLowerCase()) || null;
+}
+function exVideoLink(name){
+  const key = (name||'').toLowerCase().replace(/\s*\([^)]*\)/g,'').trim();
+  return VIDEO_LINKS[(name||'').toLowerCase()] || VIDEO_LINKS[key] || null;
+}
+function exFormCue(name){
+  const key = (name||'').toLowerCase().replace(/\s*\([^)]*\)/g,'').trim();
+  return FORM_CUES[(name||'').toLowerCase()] || FORM_CUES[key] || null;
+}
+// exercisesForBodyPart: everything sharing a body_part with the given exercise,
+// for one-tap swap-to-equivalent. Falls back to same equipment/type if the
+// exercise isn't in EXERCISE_DB (custom/typed-in names).
+function exercisesForBodyPart(name){
+  const cur = exDbLookup(name);
+  if(!cur) return [];
+  return EXERCISE_DB.filter(e => e.body_part === cur.body_part && e.name.toLowerCase() !== name.toLowerCase());
+}
+
 const ROUTINE_LIBRARY = [
   {id:"upper_lower", icon:"\ud83d\udd01", name:"Upper / Lower Split", routines:[{label:"Day A \u2014 Upper Body Push", exercises:["Barbell Bench Press", "Incline Dumbbell Press", "Overhead Press", "Lateral Raises", "Tricep Pushdown"]}, {label:"Day B \u2014 Lower Body", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Calf Raises"]}, {label:"Day C \u2014 Upper Body Pull", exercises:["Pull-Ups / Lat Pulldown", "Seated Cable Row", "Face Pulls", "Barbell Curl", "Hammer Curl"]}, {label:"Day D \u2014 Lower Body + Core", exercises:["Deadlift", "Bulgarian Split Squat", "Hip Thrust", "Plank", "Cable Crunch"]}]},
   {id:"push_pull_legs", icon:"\ud83d\udd3a", name:"Push / Pull / Legs", routines:[{label:"Push \u2014 Chest, Shoulders, Triceps", exercises:["Flat Bench Press", "Incline Dumbbell Press", "Shoulder Press", "Cable Fly", "Lateral Raise", "Tricep Dips"]}, {label:"Pull \u2014 Back, Biceps", exercises:["Deadlift", "Pull-Ups", "Barbell Row", "Lat Pulldown", "Face Pulls", "EZ Bar Curl"]}, {label:"Legs \u2014 Quads, Hamstrings, Glutes, Calves", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Walking Lunges", "Leg Curl", "Standing Calf Raise"]}]},
@@ -954,6 +1193,7 @@ function renderQueue(){
         <div class="nm">${esc(e.name)}${e.group?' <span style="font-size:10px;color:'+gc+';font-weight:800">SS'+e.group+'</span>':''}</div>
         <div class="meta">${agendaLine}</div>
       </div>
+      <button class="x" onclick="event.stopPropagation();openExerciseSwap(${i})" title="Swap for equivalent exercise" style="border-radius:50%">⇄</button>
       <button class="x" onclick="removeExercise(${i})">✕</button>
     </div>`;
     if(i<SESSION.exercises.length-1){
@@ -1005,7 +1245,15 @@ function openLogging(){
   if(sugEl) sugEl.innerHTML = sug ? `<span style="color:var(--green);font-weight:700">&#9650; Suggested: ${esc(sug.text)}</span><div style="font-size:11px;color:var(--text3,#888);margin-top:2px">${esc(sug.reason)}</div>` : '';
   const seed=seedNumbers(ex);curW=seed.w;curR=seed.r;paintSteppers();
   $('exNote').value=ex.note||'';
+  renderFormHelp(ex.name);
   renderSets();show('scr-log');
+}
+function renderFormHelp(name){
+  const el=$('exFormHelp'); if(!el) return;
+  const vid=exVideoLink(name), cue=exFormCue(name);
+  if(!vid && !cue){ el.innerHTML=''; return; }
+  el.innerHTML=(vid?`<a href="${vid}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--red);text-decoration:none;margin-bottom:4px">▶ Watch Form Video</a>`:'')+
+    (cue?`<div style="font-size:11.5px;color:var(--text3,#888);line-height:1.5">${esc(cue)}</div>`:'');
 }
 // classifyGoalRepRange: rep range target depends on the client's actual goal,
 // not one-size-fits-all — standard strength/hypertrophy/endurance training zones.
@@ -1290,6 +1538,43 @@ let emMin=1,emRounds=10,emRound=1,emLeft=60;
 
 function openTimer(){$('timerOverlay').classList.add('active');paintTimerCfg();paintClock();}
 function closeTimer(){$('timerOverlay').classList.remove('active');}
+
+/* ---- Exercise swap: one-tap replace with an equivalent (same body_part) ---- */
+let SWAP_IDX=null;
+function openExerciseSwap(idx){
+  const ex=SESSION.exercises[idx]; if(!ex) return;
+  SWAP_IDX=idx;
+  const options=exercisesForBodyPart(ex.name);
+  const sub=$('swapSubtitle');
+  const list=$('swapList');
+  const known=exDbLookup(ex.name);
+  if(!known){
+    sub.textContent=`"${ex.name}" isn't in the reference library, so there's nothing to auto-match — type a replacement below.`;
+  } else if(!options.length){
+    sub.textContent=`No other ${known.body_part} exercises in the library to swap in.`;
+  } else {
+    sub.textContent=`Swapping "${ex.name}" — ${known.body_part} exercises with the same target:`;
+  }
+  list.innerHTML=(options.map(o=>`
+    <div class="ex-row" onclick="swapExerciseTo('${o.name.replace(/'/g,"\\'")}')" style="cursor:pointer">
+      <div style="flex:1">
+        <div class="nm">${esc(o.name)}</div>
+        <div class="meta">${esc(o.equipment||'')}${o.mechanics?' · '+esc(o.mechanics):''}</div>
+      </div>
+    </div>`).join(''))+
+    `<div style="margin-top:10px"><input type="text" id="swapCustomName" placeholder="Or type a different exercise..." style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);font-size:13px;box-sizing:border-box">
+     <button class="btn red" style="width:100%;margin-top:8px" onclick="swapExerciseTo(($('swapCustomName').value||'').trim())">Use This</button></div>`;
+  $('swapOverlay').classList.add('active');
+}
+function closeExerciseSwap(){$('swapOverlay').classList.remove('active');SWAP_IDX=null;}
+function swapExerciseTo(newName){
+  if(!newName || SWAP_IDX==null) return;
+  const ex=SESSION.exercises[SWAP_IDX]; if(!ex) return;
+  ex.name=newName; ex.sets=[]; ex.note='';
+  persistActive();
+  closeExerciseSwap();
+  if(EXI===SWAP_IDX){ openLogging(); } else { renderQueue(); }
+}
 function setTimerMode(m){
   if(tRunning)timerToggle();
   tMode=m;
