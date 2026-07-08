@@ -1948,7 +1948,12 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
         if (!b.id || !b.status) return bad('id and status required', cors);
-        await env.DB.prepare('UPDATE clubos_appointments SET status=? WHERE id=?').bind(b.status, b.id).run();
+        await env.DB.prepare(
+          'UPDATE clubos_appointments SET status=?, notes=?, reschedule_date=?, reschedule_time=?, reschedule_tbd=? WHERE id=?'
+        ).bind(
+          b.status, b.notes||null, b.reschedule_date||null, b.reschedule_time||null,
+          b.reschedule_tbd?1:0, b.id
+        ).run();
         return ok({ updated: true }, cors);
       }
 

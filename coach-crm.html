@@ -7,7 +7,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px"><div><h2 style="font-family:Oswald,sans-serif;color:#E0192B">Not Authorized</h2><p style="color:#6B7280;max-width:320px;margin:0 auto">This page is for coaches and management. <a href="staff-login.html" style="color:#E0192B;font-weight:700">Sign in</a> with an authorized account, or head back to <a href="command-center.html" style="color:#E0192B;font-weight:700">Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for coaches and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -485,24 +485,27 @@ async function loadTodaySchedule(){
           const isRescheduled = status === 'rescheduled';
           const isNoShow = status === 'no_show';
           const dimmed = isDone || isRescheduled || isNoShow;
+          const rescheduleNote = isRescheduled ? (a.reschedule_tbd ? 'To be determined' : (a.reschedule_date ? 'to ' + fmtApptDate(a.reschedule_date) + (a.reschedule_time ? ' ' + a.reschedule_time : '') : '')) : '';
           const statusBadge = isDone ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
-            : isRescheduled ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled</span>'
+            : isRescheduled ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
             : isNoShow ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
             : '';
           const startHref = resolved ? (resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}` : '')) : null;
+          const summaryEsc = escH(a.summary||'Booking').replace(/'/g,"");
           return `<div class="card" style="border-left:4px solid ${dimmed?'#D1D5DB':'#2563EB'};flex-direction:column;align-items:stretch;cursor:default;${dimmed?'opacity:.6':''}">
             <div style="display:flex;align-items:center;gap:10px">
               <div style="flex:1">
                 <div class="name" style="${isDone||isRescheduled?'text-decoration:line-through':''}">${escH(a.summary||'Booking')}</div>
                 <div class="sub">${timeLabel}${(!resolved && !dimmed) ? ' · no exact client match' : ''}</div>
+                ${a.notes ? `<div class="sub" style="margin-top:2px;font-style:italic">${escH(a.notes)}</div>` : ''}
               </div>
               ${statusBadge}
             </div>
             ${!dimmed ? `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
               ${startHref ? `<a href="${startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''}
-              <button onclick="setClubosStatus(${a.id},'done')" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
-              <button onclick="setClubosStatus(${a.id},'rescheduled')" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
-              <button onclick="setClubosStatus(${a.id},'no_show')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
+              <button onclick="openClubosDoneModal(${a.id},'${summaryEsc}')" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
+              <button onclick="openClubosRescheduleModal(${a.id},'${summaryEsc}')" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
+              <button onclick="openClubosNoShowModal(${a.id},'${summaryEsc}')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
             </div>` : `<button onclick="setClubosStatus(${a.id},'scheduled')" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
           </div>`;
         }).join('');
@@ -685,12 +688,86 @@ async function setApptStatus(id, status){
   } catch(e) {}
 }
 
-async function setClubosStatus(id, status){
+async function setClubosStatus(id, status, extra){
+  extra = extra || {};
   try {
-    await fetch(WORKER + '/schedule/clubos-status', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ id, status }) });
+    const res = await fetch(WORKER + '/schedule/clubos-status', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, status, notes: extra.notes||null, reschedule_date: extra.reschedule_date||null, reschedule_time: extra.reschedule_time||null, reschedule_tbd: extra.reschedule_tbd||false }) });
+    const d = await res.json();
+    if (d.ok === false) { alert('Could not save: ' + (d.error||'unknown error') + ' — check the console.'); console.warn('clubos-status failed:', d); return; }
     loadTodaySchedule();
-  } catch(e) {}
+  } catch(e) { console.warn('clubos-status request failed', e); alert('Could not save — connection error, check the console.'); }
+}
+
+function openClubosDoneModal(apptId, summary){
+  const overlay = document.createElement('div');
+  overlay.id = 'clubos-done-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:12px">Mark Done — ${escH(summary)}</div>
+    <textarea id="clubos-done-note" rows="2" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="Any notes on how it went (optional)"></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="saveClubosDone(${apptId})" style="flex:1;background:#1E9E5A;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="document.getElementById('clubos-done-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function saveClubosDone(apptId){
+  const notes = document.getElementById('clubos-done-note').value.trim();
+  await setClubosStatus(apptId, 'done', { notes });
+  const o = document.getElementById('clubos-done-overlay'); if (o) o.remove();
+}
+
+function openClubosNoShowModal(apptId, summary){
+  const overlay = document.createElement('div');
+  overlay.id = 'clubos-noshow-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:12px">No Show — ${escH(summary)}</div>
+    <textarea id="clubos-noshow-note" rows="2" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="Any context (optional)"></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="saveClubosNoShow(${apptId})" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="document.getElementById('clubos-noshow-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function saveClubosNoShow(apptId){
+  const notes = document.getElementById('clubos-noshow-note').value.trim();
+  await setClubosStatus(apptId, 'no_show', { notes });
+  const o = document.getElementById('clubos-noshow-overlay'); if (o) o.remove();
+}
+
+function openClubosRescheduleModal(apptId, summary){
+  const overlay = document.createElement('div');
+  overlay.id = 'clubos-resched-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:12px">Reschedule — ${escH(summary)}</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="date" id="clubos-resched-date" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 12px">
+      <input type="time" id="clubos-resched-time" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 12px">
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:12px;cursor:pointer">
+      <input type="checkbox" id="clubos-resched-tbd" onchange="document.getElementById('clubos-resched-date').disabled=this.checked;document.getElementById('clubos-resched-time').disabled=this.checked"> To be determined — no exact date yet
+    </label>
+    <textarea id="clubos-resched-note" rows="2" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="Optional note — why it's moving, what to remember..."></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="saveClubosReschedule(${apptId})" style="flex:1;background:#D98A0B;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="document.getElementById('clubos-resched-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function saveClubosReschedule(apptId){
+  const tbd = document.getElementById('clubos-resched-tbd').checked;
+  const date = document.getElementById('clubos-resched-date').value;
+  const time = document.getElementById('clubos-resched-time').value;
+  const notes = document.getElementById('clubos-resched-note').value.trim();
+  if (!tbd && !date) { alert('Pick a date, or check "To be determined."'); return; }
+  await setClubosStatus(apptId, 'rescheduled', { notes, reschedule_date: tbd?null:date, reschedule_time: tbd?null:time, reschedule_tbd: tbd });
+  const o = document.getElementById('clubos-resched-overlay'); if (o) o.remove();
 }
 
 async function setSessionStatus(id, status){
