@@ -1100,11 +1100,14 @@ async function syncFromSheet() {
     // Read from D1 leads table
     const pResp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:500})
+      body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:3000})
     });
     const pData = await pResp.json();
     if (pData.results && Array.isArray(pData.results)) {
-      const d1Prospects = pData.results.map(r => {
+      const BIZ_LEAD_TYPES = ['referral_partner', 'corporate'];
+      const d1Prospects = pData.results
+        .filter(r => !BIZ_LEAD_TYPES.includes(r.lead_type))
+        .map(r => {
         const key = (String(r.business_name||r.first_name||'') + String(r.phone||'')).toLowerCase().replace(/\D/g,'');
         const existing = prospects.find(p => (p.name + p.phone).toLowerCase().replace(/\D/g,'') === key);
         if (existing) return existing;
