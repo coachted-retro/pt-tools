@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+(function(){
+  var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager"];
+  var session = null;
+  try { session = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
+  if (!session || ALLOWED.indexOf(session.role) === -1) {
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    throw new Error("unauthorized access blocked");
+  }
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -144,6 +155,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <body>
 
 <div class="topbar">
+  <a href="keelin-dashboard.html" class="nav-btn">↑ Regional</a>
   <a href="command-center.html" class="nav-btn">← Command Center</a>
   <div class="page-tag">Director</div>
   <div class="spacer"></div>
@@ -155,7 +167,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <div class="wrap">
 
   <!-- QUICK NAV -->
-  <div class="quick-nav">
+  <div class="quick-nav" id="quick-nav">
     <a href="command-center.html" class="qn-btn">🏠 Command Center</a>
     <a href="gym-floor.html" class="qn-btn">💪 Gym Floor</a>
     <a href="client-profile.html" class="qn-btn">👤 Client Profiles</a>
@@ -302,7 +314,25 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
 const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
-const GYM_ID = 1;
+const GYM_ID = parseInt(new URLSearchParams(location.search).get('gym_id')) || 1;
+
+// Some directors also coach (Danielle does, at Fairless Hills) -- this just
+// shows up for whoever's logged in rather than needing to be configured
+// per club. If a director doesn't personally coach, it's simply unused.
+(function(){
+  let sess = null;
+  try { sess = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
+  if (sess && sess.name) {
+    const nav = document.getElementById('quick-nav');
+    if (nav) {
+      const a = document.createElement('a');
+      a.href = 'coach-crm.html?coach=' + encodeURIComponent(sess.name) + '&locked=1';
+      a.className = 'qn-btn';
+      a.textContent = '🏋️ My Coaching';
+      nav.insertBefore(a, nav.firstChild);
+    }
+  }
+})();
 function fmtM(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function escR(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 

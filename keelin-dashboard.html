@@ -276,7 +276,7 @@ function withDemo(url) {
 }
 function goToGym(gymId) {
   if (gymId == null) return;
-  location.href = withDemo('gym-profile.html?gym_id=' + gymId + '&month=' + OVERVIEW_MONTH);
+  location.href = withDemo('director-dashboard.html?gym_id=' + gymId + '&month=' + OVERVIEW_MONTH);
 }
 if (DEMO_VIEW) { const rl = document.getElementById('reports-link'); if (rl) rl.href = 'reports-portal.html?demo=1'; }
 let eodDateStr = new Date().toISOString().slice(0,10);
@@ -368,7 +368,7 @@ async function loadBoard(){
     const color = pct>=90?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
     return `<tr>
       <td style="font-family:'Oswald';font-weight:800;color:var(--muted)">${i+1}</td>
-      <td><a href="gym-profile.html?gym_id=${g.gym_id}&month=${OVERVIEW_MONTH}${DEMO_Q}" style="text-decoration:none;color:inherit"><div class="gym-name" style="text-decoration:underline dotted">${escH(g.name)}</div><div class="gym-manager">${escH(g.director||'')}</div></a></td>
+      <td><a href="director-dashboard.html?gym_id=${g.gym_id}&month=${OVERVIEW_MONTH}${DEMO_Q}" style="text-decoration:none;color:inherit"><div class="gym-name" style="text-decoration:underline dotted">${escH(g.name)}</div><div class="gym-manager">${escH(g.director||'')}</div></a></td>
       <td><span style="cursor:pointer;border-bottom:1px dashed var(--muted)" onclick="editGoal(${g.gym_id},${g.goal})">${fmtMoney(g.goal)}</span></td>
       <td style="font-family:'Oswald';font-weight:700">${fmtMoney(g.actual)}</td>
       <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div></td>
