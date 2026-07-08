@@ -76,9 +76,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <a href="coach-calendar.html" id="calendar-link" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
   <a href="client-management.html" id="all-clients-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">All Clients</a>
   <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
-  <button onclick="openAddAppointment()" style="margin-left:12px;background:none;color:#9CA3AF;font-size:12px;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700;cursor:pointer">+ Recurring Session</button>
-  <button onclick="openBookIntake()" style="margin-left:12px;background:var(--red);color:#fff;font-size:12px;border:none;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700;cursor:pointer">+ Book Intake</button>
-  <a href="command-center.html" style="margin-left:12px">&larr; Command Center</a>
+  <a href="command-center.html" id="command-center-link" style="display:none;margin-left:12px">&larr; Command Center</a>
 </div>
 <div class="wrap">
   <div id="add-appt-form" style="display:none"></div>
@@ -149,6 +147,14 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 
 function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+const COMMAND_CENTER_ALLOWED = ["Ted Scholl","Danielle Pellegrini","Bill Zolnowski","Sarah Aldrich"];
+(function(){
+  var s = null;
+  try { s = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
+  var ccLink = document.getElementById('command-center-link');
+  if (ccLink && s && COMMAND_CENTER_ALLOWED.indexOf(s.name) !== -1) ccLink.style.display = 'inline-block';
+})();
 
 const saved = localStorage.getItem('coach_crm_name');
 const urlParams = new URLSearchParams(location.search);
