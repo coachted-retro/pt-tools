@@ -533,11 +533,11 @@ async function renderIntakeLog(clientId) {
         </div>
         ${items.length ? `<div style="font-size:12px;color:var(--muted,#6B7280);margin-top:2px">${esc(items.join(', '))}</div>` : ''}
         <div style="margin-top:4px">
-          <span onclick="openIntakeNote(${clientId},${m.id})" style="cursor:pointer;font-size:11px;font-weight:700;color:#2563EB">+ Coach on this</span>
+          <span onclick="openIntakeNote(${clientId},${m.id})" style="cursor:pointer;font-size:11px;font-weight:700;color:#2563EB">+ Message client about this</span>
           <span id="intake-note-status-${m.id}" style="font-size:11px;color:var(--muted,#6B7280);margin-left:8px"></span>
         </div>
         <div id="intake-note-input-${m.id}" style="display:none;margin-top:6px">
-          <input type="text" id="intake-note-text-${m.id}" placeholder="e.g. Great protein choice, add a veggie next time" style="width:100%;padding:6px 10px;border:1px solid var(--line,#E4E7EC);border-radius:6px;font-size:12px" onkeydown="if(event.key==='Enter') saveIntakeNote(${clientId},${m.id})">
+          <input type="text" id="intake-note-text-${m.id}" placeholder="e.g. Great protein choice, add a veggie next time" style="width:100%;padding:6px 10px;border:1px solid var(--line,#E4E7EC);border-radius:6px;font-size:12px" onkeydown="if(event.key==='Enter') saveIntakeNote(${clientId},${m.id},'${esc(typeLabels[m.meal_type]||m.meal_type||'meal').replace(/'/g,"\\'")}')">
         </div>
       </div>`;
     }).join('');
@@ -549,17 +549,27 @@ function openIntakeNote(clientId, mealId) {
   if (box) { box.style.display = 'block'; document.getElementById('intake-note-text-'+mealId).focus(); }
 }
 
-async function saveIntakeNote(clientId, mealId) {
+async function saveIntakeNote(clientId, mealId, mealLabel) {
   const input = document.getElementById('intake-note-text-'+mealId);
   const statusEl = document.getElementById('intake-note-status-'+mealId);
   const body = input ? input.value.trim() : '';
   if (!body) return;
   let session = null;
   try { session = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
+  const coachName = (session&&session.name)||'Coach';
+  const clientBody = 'Re: your ' + (mealLabel||'meal').toLowerCase() + ' — ' + body;
   try {
-    await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ client_id: clientId, coach_name: (session&&session.name)||'Coach', type: 'note', body: '[Nutrition] ' + body }) });
-    if (statusEl) statusEl.textContent = 'Sent ✓';
+    await Promise.all([
+      // Internal transparency log — shows on this admin page's touchpoints feed
+      fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ client_id: clientId, coach_name: coachName, type: 'note', body: '[Nutrition] ' + body }) }),
+      // Real client-facing message — lands in the same chat thread as Coach View,
+      // so the client actually sees it and can reply. Without this, "+ Coach on
+      // this" was internal-only and the client never knew a note was left.
+      fetch(WORKER + '/portal/messages/send', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ client_id: clientId, sender: 'coach', coach_name: coachName, body: clientBody }) })
+    ]);
+    if (statusEl) statusEl.textContent = 'Sent to client ✓';
     if (input) { input.value = ''; document.getElementById('intake-note-input-'+mealId).style.display = 'none'; }
   } catch(e) { if (statusEl) statusEl.textContent = 'Could not send.'; }
 }
@@ -725,18 +735,8 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<div style="font-weight:800;margin-bottom:10px">Client App Access</div>'+
     '<a href="portal-admin.html?client_id='+client.id+'" style="flex-shrink:0;font-size:12px;font-weight:700;color:#2563EB;text-decoration:none;white-space:nowrap">Portal Access Manager &rarr;</a>'+
     '</div>'+
-    '<div style="font-size:12px;color:var(--muted,#6B7280);margin-bottom:10px">Gives this client their own login for self-guided workout logging, history, goals, and progress. Internal — clients never see this control. <b>For the premium Member Portal (Coach\'s Edge, Monthly Challenge) instead, use Portal Access Manager above.</b></div>'+
-    '<label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:10px;cursor:pointer">'+
-    '<input type="checkbox" id="app-access-check" onchange="toggleAppAccessFields()"> Grant self-guided workout app access</label>'+
-    '<div id="app-access-fields" style="display:none">'+
-    '<div class="fld"><label>Client Email</label><input id="app-access-email" value="'+esc(client.email||'')+'" placeholder="client@email.com"></div>'+
-    '<div class="fld"><label>Granted By</label><select id="app-access-granter"><option value="">Loading...</option></select></div>'+
-    '<div style="display:flex;gap:8px;margin-top:8px">'+
-    '<button class="btn red" style="border-radius:999px;padding:10px 24px" onclick="sendClientApp('+client.id+')">Send App</button>'+
-    '<button class="btn" style="border-radius:999px;padding:10px 24px" onclick="shareAppLink()">Share Link</button>'+
-    '</div>'+
-    '<div id="app-access-status" style="font-size:12px;color:var(--muted,#6B7280);margin-top:8px"></div>'+
-    '</div></div>';
+    '<div style="font-size:12px;color:var(--muted,#6B7280)">For the premium Member Portal (Coach\'s Edge, Monthly Challenge), use Portal Access Manager above.</div>'+
+    '</div>';
 
   // stat tiles
   html+='<div class="stats">'+
