@@ -89,7 +89,7 @@ const ALLOWED_TABLES = new Set([
   'lead_sources','leads','touchpoints','outreach_log',
   'progress_photos','measurements','eod_reports','appointment_status',
   'meal_profiles','meal_plans','meals','recipes','pantry_items','meal_photos',
-  'inbody_scans','workouts',
+  'inbody_scans','workouts','inbody_webhook_log',
   'client_auth','challenges','challenge_entries','daily_logs','self_workouts','staff_auth','staff_shifts','punch_list_items','win_reactions','presence_checkins','member_groups','group_members','buddy_optins','feed_posts','class_rsvps','coach_profiles',
   'daily_content','client_wins','gym_events','gym_calendar_events',
   'gyms','pt_reps','pt_sales','gym_quotas',
@@ -1942,6 +1942,71 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!b.id || !b.status) return bad('id and status required', cors);
         await env.DB.prepare('UPDATE scheduled_sessions SET status=? WHERE id=?').bind(b.status, b.id).run();
         return ok({ updated: true }, cors);
+      }
+
+      // ── INBODY WEBAPI WEBHOOK ───────────────────────────────────────
+      // InBody pushes each scan result here the moment it's taken (no
+      // pull/poll needed). We don't yet have their official field-name
+      // docs confirmed (account is stuck behind a login loop on their
+      // Documentation tab), so this always logs the full raw payload
+      // FIRST — nothing is ever lost regardless of what the real field
+      // names turn out to be — then makes a best-effort match to a
+      // client by phone and a best-effort field parse using several
+      // likely candidate key names. Once InBody support confirms the
+      // real schema, tighten pick() below to the exact keys and re-run
+      // a one-time backfill from inbody_webhook_log.raw_json for any
+      // rows that came in before the parser was corrected.
+      if (url.pathname === '/inbody/webhook' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        let body;
+        try { body = await request.json(); } catch(e) { return new Response(JSON.stringify({ success:false, error:'invalid JSON' }), { status:200, headers:cors }); }
+        const rawJson = JSON.stringify(body);
+        const pick = (obj, keys) => { for (const k of keys) { if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k]; } return null; };
+
+        const rawPhone = pick(body, ['UserToken','Phone','PhoneNumber','Tel','UserPhone','phone']);
+        const normPhone = rawPhone ? String(rawPhone).replace(/\D/g,'') : null;
+
+        let matchedClientId = null;
+        if (normPhone) {
+          const allClients = await env.DB.prepare('SELECT id, phone FROM clients WHERE phone IS NOT NULL').all();
+          const match = (allClients.results||[]).find(c => String(c.phone||'').replace(/\D/g,'') === normPhone);
+          if (match) matchedClientId = match.id;
+        }
+
+        const logRes = await env.DB.prepare(
+          'INSERT INTO inbody_webhook_log (raw_json, matched_client_id, matched) VALUES (?,?,?)'
+        ).bind(rawJson, matchedClientId, matchedClientId ? 1 : 0).run();
+        const logId = logRes.meta?.last_row_id;
+
+        if (!matchedClientId) {
+          // Still respond success -- the webhook itself worked, we just
+          // couldn't identify the member yet. Visible in inbody_webhook_log
+          // for manual reconciliation.
+          return new Response(JSON.stringify({ success:true, matched:false, log_id:logId }), { status:200, headers:cors });
+        }
+
+        const weight = pick(body, ['Weight','WT','BodyWeight']);
+        const pbf = pick(body, ['PBF','PercentBodyFat','BodyFatPercentage','BodyFatPct']);
+        const smm = pick(body, ['SMM','SkeletalMuscleMass']);
+        const bmi = pick(body, ['BMI']);
+        const testDate = pick(body, ['TestDate','TSTDATE','Date','TestDateTime']);
+
+        const scanRes = await env.DB.prepare(
+          'INSERT INTO inbody_scans (client_id, scan_date, weight, body_fat_pct, skeletal_muscle, bmi, source) VALUES (?,?,?,?,?,?,?)'
+        ).bind(
+          matchedClientId,
+          testDate ? String(testDate).slice(0,10) : new Date().toISOString().slice(0,10),
+          weight != null ? Number(weight) : null,
+          pbf != null ? Number(pbf) : null,
+          smm != null ? Number(smm) : null,
+          bmi != null ? Number(bmi) : null,
+          'inbody_api'
+        ).run();
+        const scanId = scanRes.meta?.last_row_id;
+
+        await env.DB.prepare('UPDATE inbody_webhook_log SET parsed_into_scan=1, scan_id=? WHERE id=?').bind(scanId, logId).run();
+
+        return new Response(JSON.stringify({ success:true, matched:true, client_id:matchedClientId, scan_id:scanId }), { status:200, headers:cors });
       }
 
       if (url.pathname === '/schedule/clubos-status' && request.method === 'POST') {
