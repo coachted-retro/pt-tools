@@ -92,7 +92,7 @@ async function doLogin() {
       btn.disabled = false; btn.textContent = 'Sign In';
       return;
     }
-    const session = { staff_id: d.staff_id, token: d.token, email, name: d.name, role: d.role };
+    const session = { staff_id: d.staff_id, token: d.token, email, name: d.name, role: d.role, sees_all_clients: !!d.sees_all_clients };
     localStorage.setItem('staff_session', JSON.stringify(session));
     location.href = 'member-app.html';
   } catch(e) {

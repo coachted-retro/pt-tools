@@ -258,7 +258,7 @@ function openScheduleModal(clientId, clientName, editId){
     </div>
     <div class="fld"><label>Date</label><input type="date" id="sm-date" value="${editing ? editing.appointment_date : minDate}"></div>
     <div class="fld"><label>Time (Eastern)</label><input type="time" id="sm-time" value="${editing ? (editing.appointment_time||'09:00') : '09:00'}"></div>
-    <div class="fld"><label>Coach</label><select id="sm-coach"><option value="">Loading...</option></select></div>
+    <div class="fld"><label>Advisor <span style="font-weight:400;color:var(--muted,#6B7280)">(who's meeting the client — coach gets assigned later, once they commit to PT)</span></label><select id="sm-advisor"><option value="">Loading...</option></select></div>
     <div class="fld"><label>Booked By <span style="font-weight:400;color:var(--muted,#6B7280)">(you — waives the 24hr rule if this is your own schedule)</span></label><input type="text" id="sm-booked-by" placeholder="Your name"></div>
     <div class="fld"><label>Notes (optional)</label><input type="text" id="sm-notes" value="${esc(editing ? (editing.notes||'') : '')}"></div>
     <div style="display:flex;gap:8px;margin-top:14px">
@@ -269,18 +269,22 @@ function openScheduleModal(clientId, clientName, editId){
   </div>`;
   document.body.appendChild(overlay);
   if (editing) document.getElementById('sm-type').value = editing.appointment_type;
-  populateCoachDropdown(editing ? editing.assigned_coach : null);
+  populateAdvisorDropdown(editing ? editing.advisor : null);
 }
 
-async function populateCoachDropdown(preselect){
-  const sel = document.getElementById('sm-coach');
+async function populateAdvisorDropdown(preselect){
+  const sel = document.getElementById('sm-advisor');
   if (!sel) return;
+  let session = null;
+  try { session = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
+  const defaultAdvisor = preselect || (CURRENT && CURRENT.advisor) || (session && session.name) || '';
   try {
     const r = await db({ op:'select', table:'staff_roster', where:{ active: 1 }, limit:100 });
-    const staff = (r.results||[]).filter(s => s.role === 'PT Coach' || s.role === "Men's Training Lead");
-    sel.innerHTML = '<option value="">Select a coach...</option>' + staff.map(s =>
-      `<option value="${esc(s.name)}" ${preselect===s.name?'selected':''}>${esc(s.name)}</option>`).join('');
-  } catch(e) { sel.innerHTML = '<option value="">Could not load coaches</option>'; }
+    const ADVISOR_ROLES = ["Men's Training Lead","Director of Fitness","General Manager","Franchise Owner"];
+    const staff = (r.results||[]).filter(s => ADVISOR_ROLES.includes(s.role));
+    sel.innerHTML = '<option value="">Select an advisor...</option>' + staff.map(s =>
+      `<option value="${esc(s.name)}" ${defaultAdvisor===s.name?'selected':''}>${esc(s.name)}</option>`).join('');
+  } catch(e) { sel.innerHTML = '<option value="">Could not load advisors</option>'; }
 }
 
 async function saveScheduledAppointment(clientId, editId){
@@ -288,7 +292,7 @@ async function saveScheduledAppointment(clientId, editId){
   const type = document.getElementById('sm-type').value;
   const date = document.getElementById('sm-date').value;
   const time = document.getElementById('sm-time').value;
-  const coach = document.getElementById('sm-coach').value.trim();
+  const advisor = document.getElementById('sm-advisor').value.trim();
   const bookedBy = document.getElementById('sm-booked-by').value.trim();
   const notes = document.getElementById('sm-notes').value.trim();
   if (!date) { status.textContent = 'Pick a date.'; return; }
@@ -296,8 +300,8 @@ async function saveScheduledAppointment(clientId, editId){
   try {
     const url = editId ? WORKER + '/appointments/update' : WORKER + '/appointments/create';
     const payload = editId
-      ? { id: editId, appointment_date: date, appointment_time: time||null, appointment_type: type, assigned_coach: coach||null, notes: notes||null, booked_by: bookedBy||null }
-      : { appointment_date: date, appointment_time: time||null, appointment_type: type, client_id: clientId, assigned_coach: coach||null, notes: notes||null, booked_by: bookedBy||null };
+      ? { id: editId, appointment_date: date, appointment_time: time||null, appointment_type: type, advisor: advisor||null, notes: notes||null, booked_by: bookedBy||null }
+      : { appointment_date: date, appointment_time: time||null, appointment_type: type, client_id: clientId, advisor: advisor||null, notes: notes||null, booked_by: bookedBy||null };
     const r = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     const d = await r.json();
     if (!d.ok) { status.textContent = d.error || 'Could not save.'; return; }

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>
+(function(){
+  var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead"];
+  var session = null;
+  try { session = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
+  if (!session || ALLOWED.indexOf(session.role) === -1) {
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    throw new Error("unauthorized access blocked");
+  }
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily New Members Import — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--lgreen:#E3F5EC;--lamber:#FBEFD9;--lred:#FDEAEC;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:18px;color:#fff;text-transform:uppercase}
+.topbar .logo span{color:var(--red)}
+.topbar a{margin-left:auto;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 20px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+.card h2{font-family:'Oswald';font-size:15px;text-transform:uppercase;margin-bottom:10px}
+.hint{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+textarea{width:100%;min-height:180px;border:1px solid var(--line);border-radius:8px;padding:12px;font-family:ui-monospace,monospace;font-size:12px;resize:vertical}
+.btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:11px 20px;border-radius:10px;border:none;cursor:pointer;margin-top:12px}
+.btn-red{background:var(--red);color:#fff}
+.btn-outline{background:#fff;border:1.5px solid var(--line);color:var(--ink)}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:16px}
+th{background:#F8F9FB;text-align:left;padding:10px 12px;font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line)}
+td{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px}
+.badge-new{background:var(--lgreen);color:var(--green)}
+.badge-dupe{background:#F0F1F3;color:var(--muted)}
+.status-msg{font-size:12px;color:var(--muted);margin-top:10px}
+.unparsed{background:var(--lred);border-radius:8px;padding:10px 12px;font-size:12px;margin-top:12px;font-family:ui-monospace,monospace;white-space:pre-wrap}
+.empty{text-align:center;color:var(--muted);padding:30px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">Daily <span>New Members</span></div>
+  <a href="command-center.html">&larr; Command Center</a>
+</div>
+<div class="wrap">
+  <div class="card">
+    <h2>Paste the "Members By Join Date" Report</h2>
+    <div class="hint">Open the daily PDF, select all the text, and paste it below — no need to clean it up first. Rows already in the system (matched by Agreement #) get skipped automatically. This creates a starter profile (name, phone, membership tier, join date) for each new member so any InBody scan or consultation appointment synced from Club OS has something to match against.</div>
+    <textarea id="paste-area" placeholder="Paste the full report text here..."></textarea>
+    <button class="btn btn-red" onclick="parseReport()">Parse Report</button>
+  </div>
+
+  <div class="card" id="preview-card" style="display:none">
+    <h2>Preview</h2>
+    <div id="summary" style="margin-bottom:10px;font-size:13px"></div>
+    <table>
+      <thead><tr><th></th><th>Name</th><th>Phone</th><th>Tier</th><th>Join Date</th><th>Agreement #</th><th></th></tr></thead>
+      <tbody id="preview-body"></tbody>
+    </table>
+    <div id="unparsed-box"></div>
+    <button class="btn btn-red" onclick="importSelected()">Import Selected</button>
+    <div class="status-msg" id="import-status"></div>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+let PARSED_ROWS = [];
+
+// Report rows look like:
+//   894014516 3993588 07/07/2026 RILEY, KEVIN Ok ULTIMATE (267) 880-9134
+// Barcode can be alphanumeric (MHSTWONDQBOOE9C) as well as numeric, and the
+// name sometimes has a stray leading initial ("A Kaschak, Bryan") -- we keep
+// whatever's directly before the comma as the last name and everything
+// after as first name, which handles the clean cases and flags the odd
+// ones for a quick human glance rather than silently guessing wrong.
+function parseReport(){
+  const text = document.getElementById('paste-area').value;
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const rowRe = /^(\S+)\s+(\S+)\s+(\d{2}\/\d{2}\/\d{4})\s+(.+?),\s*(.+?)\s+\w+\s+([A-Z]+)\s+\((\d{3})\)\s*(\d{3})-(\d{4})$/;
+  PARSED_ROWS = [];
+  const unparsed = [];
+  lines.forEach(line => {
+    const m = line.match(rowRe);
+    if (!m) {
+      if (/Club Name|Agreement #|Members By Join Date|Page \d|^\d+$|Retro Fitness/i.test(line)) return;
+      unparsed.push(line);
+      return;
+    }
+    const [, agreementNum, barcode, joinDateRaw, lastName, firstName, tier, area, prefix, line4] = m;
+    const [mo, da, yr] = joinDateRaw.split('/');
+    PARSED_ROWS.push({
+      agreement_number: agreementNum,
+      barcode,
+      join_date: `${yr}-${mo}-${da}`,
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      tier: tier.charAt(0) + tier.slice(1).toLowerCase(),
+      phone: area + prefix + line4,
+      selected: true,
+      status: 'checking...'
+    });
+  });
+  renderUnparsed(unparsed);
+  if (PARSED_ROWS.length) checkDupesAndRender();
+  else { document.getElementById('preview-card').style.display = PARSED_ROWS.length || unparsed.length ? 'block' : 'none'; }
+}
+
+function renderUnparsed(unparsed){
+  const box = document.getElementById('unparsed-box');
+  if (!unparsed.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="unparsed"><b>Could not parse these lines — check them manually:</b>\n' + unparsed.map(esc).join('\n') + '</div>';
+}
+
+async function checkDupesAndRender(){
+  document.getElementById('preview-card').style.display = 'block';
+  document.getElementById('summary').textContent = 'Checking for existing members...';
+  try {
+    const res = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'clients', limit:5000 }) });
+    const d = await res.json();
+    const existing = new Set((d.results||[]).map(c => c.agreement_number).filter(Boolean));
+    PARSED_ROWS.forEach(r => { r.isDupe = existing.has(r.agreement_number); r.selected = !r.isDupe; });
+  } catch(e) {
+    PARSED_ROWS.forEach(r => r.isDupe = false);
+  }
+  renderPreview();
+}
+
+function renderPreview(){
+  const newCount = PARSED_ROWS.filter(r => !r.isDupe).length;
+  const dupeCount = PARSED_ROWS.filter(r => r.isDupe).length;
+  document.getElementById('summary').textContent = `${PARSED_ROWS.length} row(s) parsed — ${newCount} new, ${dupeCount} already in the system.`;
+  document.getElementById('preview-body').innerHTML = PARSED_ROWS.map((r, i) => `
+    <tr>
+      <td><input type="checkbox" ${r.selected?'checked':''} onchange="PARSED_ROWS[${i}].selected=this.checked"></td>
+      <td>${esc(r.first_name)} ${esc(r.last_name)}</td>
+      <td>${esc(r.phone)}</td>
+      <td>${esc(r.tier)}</td>
+      <td>${esc(r.join_date)}</td>
+      <td>${esc(r.agreement_number)}</td>
+      <td>${r.isDupe ? '<span class="badge badge-dupe">Already exists</span>' : '<span class="badge badge-new">New</span>'}</td>
+    </tr>`).join('');
+}
+
+async function importSelected(){
+  const statusEl = document.getElementById('import-status');
+  const toImport = PARSED_ROWS.filter(r => r.selected);
+  if (!toImport.length) { statusEl.textContent = 'Nothing selected.'; return; }
+  statusEl.textContent = 'Importing...';
+  let ok = 0, fail = 0;
+  for (const r of toImport) {
+    try {
+      const res = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ op:'insert', table:'clients', values:{
+          first_name: r.first_name, last_name: r.last_name, phone: r.phone,
+          status: 'active_member', membership_tier: r.tier, training_start_date: r.join_date,
+          agreement_number: r.agreement_number, barcode: r.barcode, gym_id: 1
+        }})});
+      const d = await res.json();
+      if (d.ok === false) { fail++; } else { ok++; }
+    } catch(e) { fail++; }
+  }
+  statusEl.textContent = `Done — ${ok} imported${fail ? ', ' + fail + ' failed (check console)' : ''}.`;
+}
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

@@ -74,6 +74,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <div id="bell-drop" style="display:none;position:absolute;top:36px;right:0;width:300px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2);z-index:50;color:var(--ink)"></div>
   </div>
   <a href="coach-calendar.html" id="calendar-link" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
+  <a href="client-management.html" id="all-clients-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">All Clients</a>
   <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
   <button onclick="openAddAppointment()" style="margin-left:12px;background:none;color:#9CA3AF;font-size:12px;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700;cursor:pointer">+ Recurring Session</button>
   <button onclick="openBookIntake()" style="margin-left:12px;background:var(--red);color:#fff;font-size:12px;border:none;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700;cursor:pointer">+ Book Intake</button>
@@ -182,6 +183,18 @@ if (IS_LOCKED) {
 } else if (saved) {
   document.getElementById('coach-select').value = saved;
 }
+
+// All Clients is only for people who manage everyone's monthly check-ins
+// (Ted, Danielle, Roman) or leadership roles -- a regular coach should only
+// work their own assigned clients, not browse the full roster.
+(function(){
+  let sess = null;
+  try { sess = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
+  if (sess && sess.sees_all_clients) {
+    const link = document.getElementById('all-clients-link');
+    if (link) link.style.display = '';
+  }
+})();
 
 async function loadActiveCoverage(){
   try {
@@ -433,134 +446,175 @@ async function loadTodaySchedule(){
     const typeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Wk Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', staff_meeting:'Staff Meeting', other:'Appointment' };
     const toolFor = { initial_consultation:'fitness-consultation-tool.html', follow_up:'fitness-followup-tool.html', monthly_checkin:'fitness-monthly-checkin.html' };
 
-    let html = '';
+    // Build one normalized list across all three sources (pt_appointments,
+    // Club OS, Retro One Schedule) instead of three separate sections --
+    // this is everything on the calendar for the day, one agenda, sorted
+    // by time. Items with no specific time (Retro One Schedule sessions)
+    // sort to the end.
+    const items = [];
 
-    // ── Consultations, Check-Ins & Follow-Ups — this is what Keelin needs to see ──
-    if (apptRows.length) {
-      html += `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--red);margin-bottom:6px">Consultations, Check-Ins &amp; Follow-Ups</div>` +
-        apptRows.map(a => {
-          const status = a.status || 'scheduled';
-          const isShowed = status === 'showed';
-          const isNoShow = status === 'no_show';
-          const isCancelled = status === 'cancel';
-          const isRescheduled = status === 'rescheduled';
-          const dimmed = isShowed || isNoShow || isCancelled || isRescheduled;
-          const rescheduleNote = isRescheduled ? (a.reschedule_tbd ? 'To be determined' : (a.reschedule_date ? 'to ' + fmtApptDate(a.reschedule_date) + (a.reschedule_time ? ' ' + a.reschedule_time : '') : '')) : '';
-          const statusBadge = isShowed ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Completed</span>'
-            : isNoShow ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
-            : isCancelled ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled</span>'
-            : isRescheduled ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
-            : '';
-          const clientName = a.first_name ? `${a.first_name} ${a.last_name}` : (a.prospect_name || 'Client');
-          // appt=ID rides along so the intake tool itself can mark this done the
-          // moment the coach finishes the consultation/check-in/follow-up —
-          // completing the actual work is the completion signal, no separate click.
-          const href = (toolFor[a.appointment_type] || 'client-profile.html') + (a.client_id ? '?client_id='+a.client_id : '') + (a.client_id?'&':'?') + 'appt=' + a.id;
-          const timeLabel = a.appointment_time ? new Date('2000-01-01T'+a.appointment_time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
-          return `<div class="card" style="border-left:4px solid ${dimmed?'#D1D5DB':'var(--red)'};flex-direction:column;align-items:stretch;cursor:default;${dimmed?'opacity:.6':''}">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="flex:1">
-                <div class="name" style="${isShowed||isCancelled||isRescheduled?'text-decoration:line-through':''}">${escH(clientName)} — ${escH(typeLabels[a.appointment_type]||a.appointment_type)}</div>
-                <div class="sub">${timeLabel}</div>
-              </div>
-              ${statusBadge}
-            </div>
-            ${!dimmed ? `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-              <a href="${href}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>
-              <button onclick="openNoShowModal(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','${escH(typeLabels[a.appointment_type]||a.appointment_type)}')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
-              <button onclick="openApptNoteAction(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','cancel')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Cancel</button>
-              <button onclick="openRescheduleModal(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}')" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
-            </div>` : `<button onclick="setApptStatus(${a.id},'scheduled')" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
-          </div>`;
-        }).join('');
-    }
+    apptRows.forEach(a => {
+      const status = a.status || 'scheduled';
+      const dimmed = ['showed','no_show','cancel','rescheduled'].includes(status);
+      const clientName = a.first_name ? `${a.first_name} ${a.last_name}` : (a.prospect_name || 'Client');
+      const routable = !!toolFor[a.appointment_type];
+      const rescheduleNote = status==='rescheduled' ? (a.reschedule_tbd ? 'To be determined' : (a.reschedule_date ? 'to ' + fmtApptDate(a.reschedule_date) + (a.reschedule_time ? ' ' + a.reschedule_time : '') : '')) : '';
+      const statusBadge = status==='showed' ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Completed</span>'
+        : status==='no_show' ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
+        : status==='cancel' ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled</span>'
+        : status==='rescheduled' ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
+        : '';
+      items.push({
+        uid: 'pt' + a.id, timeSort: a.appointment_time || '99:99',
+        timeLabel: a.appointment_time ? new Date('2000-01-01T'+a.appointment_time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '',
+        name: clientName, typeLabel: typeLabels[a.appointment_type]||a.appointment_type,
+        dimmed, statusBadge, clientId: a.client_id||null, accent: 'var(--red)',
+        startHref: routable ? (toolFor[a.appointment_type] + (a.client_id?'?client_id='+a.client_id:'') + (a.client_id?'&':'?') + 'appt=' + a.id) : null,
+        doneBtn: `openApptNoteAction(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','showed')`,
+        noShowBtn: `openNoShowModal(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','${escH(typeLabels[a.appointment_type]||a.appointment_type)}')`,
+        rescheduleBtn: `openRescheduleModal(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}')`,
+        cancelBtn: `openApptNoteAction(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','cancel')`,
+        undoBtn: `setApptStatus(${a.id},'scheduled')`,
+        noteFallback: { source_table:'leads_or_appt', endpoint:'/appointments/status', idField:'id', idValue:a.id }
+      });
+    });
 
-    if (clubosRows.length) {
-      html += `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:#2563EB;margin:14px 0 6px">Club OS Bookings</div>` +
-        clubosRows.map(a => {
-          const resolved = resolveClubOsLinkCrm(a.summary, clients);
-          const timeLabel = new Date(a.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-          const status = a.status || 'scheduled';
-          const isDone = status === 'done';
-          const isRescheduled = status === 'rescheduled';
-          const isNoShow = status === 'no_show';
-          const dimmed = isDone || isRescheduled || isNoShow;
-          const rescheduleNote = isRescheduled ? (a.reschedule_tbd ? 'To be determined' : (a.reschedule_date ? 'to ' + fmtApptDate(a.reschedule_date) + (a.reschedule_time ? ' ' + a.reschedule_time : '') : '')) : '';
-          const statusBadge = isDone ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
-            : isRescheduled ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
-            : isNoShow ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
-            : '';
-          const startHref = resolved ? (resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}` : '')) : null;
-          const summaryEsc = escH(a.summary||'Booking').replace(/'/g,"");
-          return `<div class="card" style="border-left:4px solid ${dimmed?'#D1D5DB':'#2563EB'};flex-direction:column;align-items:stretch;cursor:default;${dimmed?'opacity:.6':''}">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="flex:1">
-                <div class="name" style="${isDone||isRescheduled?'text-decoration:line-through':''}">${escH(a.summary||'Booking')}</div>
-                <div class="sub">${timeLabel}${(!resolved && !dimmed) ? ' · no exact client match' : ''}</div>
-                ${a.notes ? `<div class="sub" style="margin-top:2px;font-style:italic">${escH(a.notes)}</div>` : ''}
-              </div>
-              ${statusBadge}
-            </div>
-            ${!dimmed ? `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-              ${startHref ? `<a href="${startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''}
-              <button onclick="openClubosDoneModal(${a.id},'${summaryEsc}')" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
-              <button onclick="openClubosRescheduleModal(${a.id},'${summaryEsc}')" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
-              <button onclick="openClubosNoShowModal(${a.id},'${summaryEsc}')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
-            </div>` : `<button onclick="setClubosStatus(${a.id},'scheduled')" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
-          </div>`;
-        }).join('');
-    }
+    clubosRows.forEach(a => {
+      const resolved = resolveClubOsLinkCrm(a.summary, clients);
+      const status = a.status || 'scheduled';
+      const dimmed = ['done','rescheduled','no_show','cancel'].includes(status);
+      const rescheduleNote = status==='rescheduled' ? (a.reschedule_tbd ? 'To be determined' : (a.reschedule_date ? 'to ' + fmtApptDate(a.reschedule_date) + (a.reschedule_time ? ' ' + a.reschedule_time : '') : '')) : '';
+      const statusBadge = status==='done' ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
+        : status==='rescheduled' ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
+        : status==='no_show' ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
+        : status==='cancel' ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled — following up</span>'
+        : '';
+      const summaryEsc = escH(a.summary||'Booking').replace(/'/g,"");
+      const dt = new Date(a.start_datetime);
+      items.push({
+        uid: 'cb' + a.id, timeSort: dt.toTimeString().slice(0,5),
+        timeLabel: dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + (!resolved && !dimmed ? ' · no exact client match' : ''),
+        name: a.summary || 'Booking', typeLabel: '',
+        dimmed, statusBadge, clientId: resolved ? resolved.clientId : null, accent: '#2563EB',
+        note: a.notes || null,
+        startHref: resolved ? (resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}&clubos_appt=${a.id}` : `?clubos_appt=${a.id}`)) : null,
+        doneBtn: `openClubosDoneModal(${a.id},'${summaryEsc}')`,
+        noShowBtn: `openClubosNoShowModal(${a.id},'${summaryEsc}')`,
+        rescheduleBtn: `openClubosRescheduleModal(${a.id},'${summaryEsc}')`,
+        cancelBtn: `openClubosCancelModal(${a.id},'${summaryEsc}')`,
+        undoBtn: `setClubosStatus(${a.id},'scheduled')`,
+        noteFallback: { endpoint:'/schedule/clubos-status', idValue:a.id }
+      });
+    });
 
-    if (rows.length) {
-      html += `<div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:14px 0 6px">Retro One Schedule</div>` +
-        rows.map(s => {
-          const status = s.status || 'scheduled';
-          const isDone = status === 'done';
-          const isRescheduled = status === 'rescheduled';
-          const isNoShow = status === 'no_show';
-          const dimmed = isDone || isRescheduled || isNoShow;
-          const statusBadge = isDone ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
-            : isRescheduled ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled</span>'
-            : isNoShow ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
-            : '';
-          return `<div class="card" style="border-left:4px solid ${dimmed?'#D1D5DB':'var(--red)'};flex-direction:column;align-items:stretch;cursor:default;${dimmed?'opacity:.6':''}">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="avatar">${((s.first_name||'?')[0]+(s.last_name||'')[0]).toUpperCase()}</div>
-              <div style="flex:1">
-                <div class="name" style="${isDone||isRescheduled?'text-decoration:line-through':''}">${escH(s.first_name)} ${escH(s.last_name)}</div>
-                <div class="sub">${escH(s.program_name)}${s.focus_notes ? ' — ' + escH(s.focus_notes) : ''}</div>
-              </div>
-              ${statusBadge}
-            </div>
-            ${!dimmed ? `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-              <a href="gym-floor.html?client=${s.client_id}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>
-              <button onclick="setSessionStatus(${s.id},'done')" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
-              <button onclick="setSessionStatus(${s.id},'rescheduled')" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
-              <button onclick="setSessionStatus(${s.id},'no_show')" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
-            </div>` : `<button onclick="setSessionStatus(${s.id},'scheduled')" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
-          </div>`;
-        }).join('');
-    }
+    rows.forEach(s => {
+      const status = s.status || 'scheduled';
+      const dimmed = ['done','rescheduled','no_show','cancel'].includes(status);
+      const clientName = `${s.first_name||''} ${s.last_name||''}`.trim();
+      const statusBadge = status==='done' ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
+        : status==='rescheduled' ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled</span>'
+        : status==='no_show' ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
+        : status==='cancel' ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled — following up</span>'
+        : '';
+      items.push({
+        uid: 'rs' + s.id, timeSort: '99:99',
+        timeLabel: s.program_name || '',
+        name: clientName, typeLabel: s.focus_notes || 'Training Session',
+        dimmed, statusBadge, clientId: s.client_id||null, accent: 'var(--muted)',
+        startHref: null,
+        doneBtn: `openSessionActionModal(${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','done')`,
+        noShowBtn: `openSessionActionModal(${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','no_show')`,
+        rescheduleBtn: `openSessionActionModal(${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','rescheduled')`,
+        cancelBtn: `openSessionActionModal(${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','cancel')`,
+        undoBtn: `setSessionStatus(${s.id},'scheduled')`,
+        noteFallback: null
+      });
+    });
 
-    if (!apptRows.length && !clubosRows.length && !rows.length) {
+    items.sort((a,b) => a.timeSort.localeCompare(b.timeSort));
+
+    let html = items.map(it => `
+      <div class="card" style="border-left:4px solid ${it.dimmed?'#D1D5DB':it.accent};flex-direction:column;align-items:stretch;cursor:default;${it.dimmed?'opacity:.6':''}">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="flex:1">
+            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${escH(it.name)}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
+            <div class="sub">${it.timeLabel}</div>
+            ${it.note ? `<div class="sub" style="margin-top:2px;font-style:italic">${escH(it.note)}</div>` : ''}
+          </div>
+          ${it.statusBadge}
+        </div>
+        ${!it.dimmed ? `
+          <textarea id="note-${it.uid}" rows="2" placeholder="Notes — saved permanently to ${it.clientId?'their':'the'} profile" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+            <button onclick='saveInlineNote(${JSON.stringify(it.uid)},${it.clientId||'null'},${JSON.stringify(it.noteFallback)})' style="background:var(--ink);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">Save Note</button>
+            <span id="note-status-${it.uid}" style="font-size:11px;color:var(--green,#1E9E5A);font-weight:700"></span>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            ${it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''}
+            <button onclick="${it.doneBtn}" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
+            <button onclick="${it.rescheduleBtn}" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
+            <button onclick="${it.noShowBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
+            <button onclick="${it.cancelBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Cancel</button>
+          </div>
+        ` : `<button onclick="${it.undoBtn}" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
+      </div>`).join('');
+
+    if (!items.length) {
       html = `<div class="card" style="padding:16px;color:var(--muted);font-size:13px">Nothing scheduled ${SCHEDULE_DAY_OFFSET===0?'today':'this day'}. Build a schedule from any client's profile.</div>`;
     }
     box.innerHTML = html;
   } catch(e) { box.innerHTML = ''; }
 }
 
+// Inline notes box on every agenda card -- always available regardless of
+// appointment type, saved immediately as its own action, independent from
+// Mark Done/Reschedule/No Show (which still capture their own closing note
+// via their existing modals). This is for quick in-the-moment notes that
+// need to land on the client's permanent profile without having to close
+// the appointment out first.
+async function saveInlineNote(uid, clientId, noteFallback){
+  const ta = document.getElementById('note-' + uid);
+  const statusEl = document.getElementById('note-status-' + uid);
+  const body = ta ? ta.value.trim() : '';
+  if (!body) { statusEl.textContent = 'Write something first.'; statusEl.style.color = 'var(--red)'; return; }
+  statusEl.textContent = 'Saving...'; statusEl.style.color = 'var(--muted)';
+  try {
+    if (clientId) {
+      const coach = document.getElementById('coach-select').value;
+      const res = await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ client_id: clientId, coach_name: coach, type: 'note', body }) });
+      const d = await res.json();
+      if (d.ok === false) throw new Error(d.error||'save failed');
+      statusEl.textContent = 'Saved to their profile ✓'; statusEl.style.color = 'var(--green,#1E9E5A)';
+    } else if (noteFallback) {
+      const res = await fetch(WORKER + noteFallback.endpoint, { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id: noteFallback.idValue, notes: body }) });
+      const d = await res.json();
+      if (d.ok === false) throw new Error(d.error||'save failed');
+      statusEl.textContent = 'Saved ✓ (no client on file yet — kept with the appointment)'; statusEl.style.color = 'var(--green,#1E9E5A)';
+    } else {
+      throw new Error('nowhere to save this yet');
+    }
+    if (ta) ta.value = '';
+  } catch(e) {
+    statusEl.textContent = 'Could not save — try again.'; statusEl.style.color = 'var(--red)';
+  }
+}
+
 function fmtApptDate(d){ if(!d) return ''; return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 
 // Cancel — status changes with a note that gets saved as a permanent
 // touchpoint on the client's own profile, not just left on today's agenda.
+const APPT_ACTION_LABELS = { showed:'Mark Done', cancel:'Cancel', no_show:'No Show' };
 function openApptNoteAction(apptId, clientId, clientName, status){
+  const label = APPT_ACTION_LABELS[status] || status;
   const overlay = document.createElement('div');
   overlay.id = 'appt-note-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
   overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:420px;width:100%">
-    <div style="font-weight:800;font-size:16px;margin-bottom:4px">Cancel — ${escH(clientName)}</div>
+    <div style="font-weight:800;font-size:16px;margin-bottom:4px">${label} — ${escH(clientName)}</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">This note gets saved to their profile permanently — what happened, and what's next.</div>
-    <textarea id="appt-note-body" rows="3" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="e.g. Called to cancel, said they will reach back out when ready."></textarea>
+    <textarea id="appt-note-body" rows="3" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="What happened, and what's next?"></textarea>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button onclick="saveApptNoteAction(${apptId},${clientId||'null'},'${status}')" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
       <button onclick="document.getElementById('appt-note-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
@@ -573,14 +627,20 @@ function openApptNoteAction(apptId, clientId, clientName, status){
 async function saveApptNoteAction(apptId, clientId, status){
   const body = document.getElementById('appt-note-body').value.trim();
   const statusEl = document.getElementById('appt-note-status');
+  if (!body) { statusEl.textContent = 'A note is required before this can be saved.'; statusEl.style.color = 'var(--red)'; return; }
   statusEl.textContent = 'Saving...';
   try {
-    await fetch(WORKER + '/appointments/status', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ id: apptId, status }) });
-    if (body && clientId) {
+    if (clientId) {
+      await fetch(WORKER + '/appointments/status', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id: apptId, status }) });
       const coach = document.getElementById('coach-select').value;
       await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ client_id: clientId, coach_name: coach, type: 'note', body }) });
+    } else {
+      // No client record yet -- keep the note with the appointment itself
+      // rather than losing it.
+      await fetch(WORKER + '/appointments/status', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id: apptId, status, notes: body }) });
     }
     document.getElementById('appt-note-overlay').remove();
     loadTodaySchedule();
@@ -622,7 +682,7 @@ async function saveNoShow(apptId, clientId, apptTypeLabel){
   const body = 'No show for ' + apptTypeLabel + '. Member alert placed in ABC — front desk to remind them to reschedule next visit.' + (extra ? ' ' + extra : '');
   try {
     await fetch(WORKER + '/appointments/status', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ id: apptId, status: 'no_show' }) });
+      body: JSON.stringify({ id: apptId, status: 'no_show', notes: clientId?undefined:body }) });
     if (clientId) {
       const coach = document.getElementById('coach-select').value;
       await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
@@ -667,13 +727,14 @@ async function saveReschedule(apptId, clientId, clientName){
   if (!tbd && !date) { statusEl.textContent = 'Pick a date, or check "To be determined".'; return; }
   statusEl.textContent = 'Saving...';
   try {
-    await fetch(WORKER + '/appointments/reschedule', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ id: apptId, tbd, date: tbd?null:date, time: tbd?null:(time||null) }) });
     const noteBody = tbd ? 'Rescheduled — to be determined.' : `Rescheduled to ${date}${time?' '+time:''}.`;
+    const fullNote = noteBody + (note ? ' ' + note : '');
+    await fetch(WORKER + '/appointments/reschedule', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id: apptId, tbd, date: tbd?null:date, time: tbd?null:(time||null), notes: clientId?undefined:fullNote }) });
     const coach = document.getElementById('coach-select').value;
     if (clientId) {
       await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ client_id: clientId, coach_name: coach, type: 'note', body: noteBody + (note ? ' ' + note : '') }) });
+        body: JSON.stringify({ client_id: clientId, coach_name: coach, type: 'note', body: fullNote }) });
     }
     document.getElementById('reschedule-overlay').remove();
     loadTodaySchedule();
@@ -739,6 +800,33 @@ async function saveClubosNoShow(apptId){
   const o = document.getElementById('clubos-noshow-overlay'); if (o) o.remove();
 }
 
+// Cancel here means: not currently scheduled, no exact date yet, but
+// flagged to follow up -- different from Reschedule, which implies an
+// active TBD date is already being tracked.
+function openClubosCancelModal(apptId, summary){
+  const overlay = document.createElement('div');
+  overlay.id = 'clubos-cancel-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:4px">Cancel — ${escH(summary)}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">No firm date yet — this note is what to follow up on.</div>
+    <textarea id="clubos-cancel-note" rows="2" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="What happened, and what's the plan to follow up?"></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="saveClubosCancel(${apptId})" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="document.getElementById('clubos-cancel-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Never Mind</button>
+    </div>
+    <div id="clubos-cancel-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function saveClubosCancel(apptId){
+  const notes = document.getElementById('clubos-cancel-note').value.trim();
+  const statusEl = document.getElementById('clubos-cancel-status');
+  if (!notes) { statusEl.textContent = 'A note is required.'; statusEl.style.color = 'var(--red)'; return; }
+  await setClubosStatus(apptId, 'cancel', { notes });
+  const o = document.getElementById('clubos-cancel-overlay'); if (o) o.remove();
+}
+
 function openClubosRescheduleModal(apptId, summary){
   const overlay = document.createElement('div');
   overlay.id = 'clubos-resched-overlay';
@@ -776,6 +864,42 @@ async function setSessionStatus(id, status){
       body: JSON.stringify({ id, status }) });
     loadTodaySchedule();
   } catch(e) {}
+}
+
+const SESSION_ACTION_LABELS = { done:'Mark Done', rescheduled:'Reschedule', no_show:'No Show', cancel:'Cancel' };
+function openSessionActionModal(sessionId, clientId, clientName, status){
+  const label = SESSION_ACTION_LABELS[status] || status;
+  const overlay = document.createElement('div');
+  overlay.id = 'session-action-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:4px">${label} — ${escH(clientName)}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">This note gets saved to their profile permanently.</div>
+    <textarea id="session-action-note" rows="3" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="What happened, and what's next?"></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button onclick="saveSessionAction(${sessionId},${clientId||'null'},'${status}')" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="document.getElementById('session-action-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
+    </div>
+    <div id="session-action-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function saveSessionAction(sessionId, clientId, status){
+  const body = document.getElementById('session-action-note').value.trim();
+  const statusEl = document.getElementById('session-action-status');
+  if (!body) { statusEl.textContent = 'A note is required.'; statusEl.style.color = 'var(--red)'; return; }
+  statusEl.textContent = 'Saving...';
+  try {
+    await fetch(WORKER + '/schedule/session-status', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id: sessionId, status }) });
+    if (clientId) {
+      const coach = document.getElementById('coach-select').value;
+      await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ client_id: clientId, coach_name: coach, type: 'note', body }) });
+    }
+    document.getElementById('session-action-overlay').remove();
+    loadTodaySchedule();
+  } catch(e) { statusEl.textContent = 'Could not save — try again.'; }
 }
 
 function resolveClubOsLinkCrm(summary, clients){

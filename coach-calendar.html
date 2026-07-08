@@ -302,6 +302,13 @@ async function renderCalendar(){
     (d2.days||[]).forEach(row => CLUBOS_DAYS[row.d] = row.n);
   } catch(e) {}
 
+  let APPT_DAYS = {};
+  try {
+    const r3 = await fetch(WORKER + `/appointments/month?month=${monthStr}` + (c?`&coach=${encodeURIComponent(c)}`:''));
+    const d3 = await r3.json();
+    (d3.days||[]).forEach(row => APPT_DAYS[row.d] = row.n);
+  } catch(e) {}
+
   const firstDow = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m+1, 0).getDate();
   const todayStr = new Date().toISOString().slice(0,10);
@@ -311,7 +318,8 @@ async function renderCalendar(){
     const dateStr = monthStr + '-' + String(day).padStart(2,'0');
     const n = MONTH_DAYS[dateStr] || 0;
     const nClubOS = CLUBOS_DAYS[dateStr] || 0;
-    const total = n + nClubOS;
+    const nAppt = APPT_DAYS[dateStr] || 0;
+    const total = n + nClubOS + nAppt;
     cells += `<div class="day ${dateStr===todayStr?'today':''}" onclick="openDay('${dateStr}')">
       <div class="n">${day}</div>
       ${total ? `<div class="count-badge" style="font-size:10px;font-weight:700;margin-top:2px;color:${n?'var(--red)':'#2563EB'}">${total}</div>` : ''}
@@ -324,16 +332,39 @@ async function openDay(dateStr){
   const c = coach();
   const panel = document.getElementById('day-panel');
   panel.innerHTML = '<div class="empty-state">Loading...</div>';
-  const [r, r2, clients] = await Promise.all([
+  const [r, r2, clients, r3] = await Promise.all([
     fetch(WORKER + `/schedule/day?date=${dateStr}` + (c?`&coach=${encodeURIComponent(c)}`:'')),
     fetch(WORKER + `/schedule/clubos-day?date=${dateStr}`),
-    getClientsCached2()
+    getClientsCached2(),
+    fetch(WORKER + `/appointments/day?date=${dateStr}` + (c?`&coach=${encodeURIComponent(c)}`:''))
   ]);
   const d = await r.json();
   const d2 = await r2.json();
+  const d3 = await r3.json();
   const rows = d.sessions || [];
   const clubosRows = d2.appointments || [];
   let html = `<h3>${new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</h3>`;
+
+  const apptTypeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Wk Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', staff_meeting:'Staff Meeting', other:'Appointment' };
+  const apptToolFor = { initial_consultation:'fitness-consultation-tool.html', follow_up:'fitness-followup-tool.html', monthly_checkin:'fitness-monthly-checkin.html' };
+  const apptRows = d3.appointments || [];
+
+  if (apptRows.length) {
+    html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--red);margin:10px 0 4px">Consultations &amp; Follow-Ups</div>` +
+      apptRows.map(a => {
+        const clientName = a.client_first_name ? `${a.client_first_name} ${a.client_last_name}` : (a.prospect_name || 'Client');
+        const timeLabel = a.appointment_time ? new Date('2000-01-01T'+a.appointment_time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+        const inner = `<div class="name">${esc(clientName)} — ${esc(apptTypeLabels[a.appointment_type]||a.appointment_type)}</div><div class="prog">${timeLabel}</div>`;
+        const tool = apptToolFor[a.appointment_type];
+        if (tool) {
+          const href = tool + (a.client_id ? `?client_id=${a.client_id}&appt=${a.id}` : `?appt=${a.id}`);
+          return `<a href="${href}" style="color:inherit;text-decoration:none">
+            <div class="sess-item" style="border-left:3px solid var(--red);padding-left:10px;cursor:pointer">${inner}</div>
+          </a>`;
+        }
+        return `<div class="sess-item" style="border-left:3px solid var(--red);padding-left:10px">${inner}</div>`;
+      }).join('');
+  }
 
   if (clubosRows.length) {
     html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#2563EB;margin:10px 0 4px">Club OS Bookings</div>` +
@@ -342,7 +373,7 @@ async function openDay(dateStr){
         const timeLabel = new Date(a.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+(a.location ? ' \u00B7 ' + esc(a.location) : '');
         const inner = `<div class="name">${esc(a.summary||'Booking')}</div><div class="prog">${timeLabel}</div>`;
         if (resolved) {
-          const href = resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}` : '');
+          const href = resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}&clubos_appt=${a.id}` : `?clubos_appt=${a.id}`);
           const hint = resolved.clientId ? '' : `<div class="prog" style="color:#D97706">No exact client match — opens the intake blank, name it manually.</div>`;
           return `<a href="${href}" style="color:inherit;text-decoration:none">
             <div class="sess-item" style="border-left:3px solid #2563EB;padding-left:10px;cursor:pointer">${inner}${hint}</div>
@@ -352,8 +383,9 @@ async function openDay(dateStr){
       }).join('');
   }
 
-  html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:10px 0 4px">${clubosRows.length ? 'Retro One Schedule' : ''}</div>`;
-  html += rows.length ? rows.map(s => `
+  if (rows.length) {
+    html += `<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:10px 0 4px">Retro One Schedule</div>` +
+      rows.map(s => `
       <div class="sess-item">
         <div class="top">
           <div>
@@ -365,7 +397,12 @@ async function openDay(dateStr){
           </div>
           <button class="edit-btn" onclick='openEdit(${JSON.stringify(s).replace(/'/g,"&apos;")})'>Edit</button>
         </div>
-      </div>`).join('') : (clubosRows.length ? '' : '<div class="empty-state">Nothing scheduled this day.</div>');
+      </div>`).join('');
+  }
+
+  if (!apptRows.length && !clubosRows.length && !rows.length) {
+    html += '<div class="empty-state">Nothing scheduled this day.</div>';
+  }
 
   html += `<button onclick="openAddEvent('${dateStr}')" style="width:100%;margin-top:12px;background:var(--card);border:1px dashed var(--line);color:var(--red);border-radius:8px;padding:12px;font-weight:700;cursor:pointer">+ Add Event to This Day</button>`;
   panel.innerHTML = html;

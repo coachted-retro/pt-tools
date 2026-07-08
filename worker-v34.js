@@ -567,7 +567,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!staff) return ok({ ok: false, error: 'Staff record not found or inactive' }, cors);
         await env.DB.prepare('UPDATE staff_auth SET last_login=? WHERE id=?').bind(new Date().toISOString(), row.id).run();
         const token = await makeToken(row.staff_id, email, env.JWT_SECRET || 'bs-secret-2024');
-        return ok({ token, staff_id: row.staff_id, name: staff.name, role: staff.role, must_change: row.must_change_pin }, cors);
+        return ok({ token, staff_id: row.staff_id, name: staff.name, role: staff.role, sees_all_clients: !!staff.sees_all_clients, must_change: row.must_change_pin }, cors);
       }
 
       if (url.pathname === '/staff/change-pin' && request.method === 'POST') {
@@ -1871,15 +1871,15 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const b = await request.json();
         if (!b.appointment_date || !b.appointment_type) return bad('appointment_date and appointment_type required', cors);
         if (!b.client_id && !b.prospect_name) return bad('client_id or prospect_name required', cors);
-        if (!hasEnoughNotice(b.appointment_date, b.appointment_time, b.booked_by, b.assigned_coach)) {
-          return bad('Appointments booked for another coach need at least 24 hours notice. Pick a later time.', cors);
+        if (!hasEnoughNotice(b.appointment_date, b.appointment_time, b.booked_by, b.advisor)) {
+          return bad('Appointments booked for another advisor need at least 24 hours notice. Pick a later time.', cors);
         }
         const now = new Date().toISOString();
         const res = await env.DB.prepare(
-          `INSERT INTO pt_appointments (appointment_date, appointment_time, appointment_type, prospect_name, prospect_phone, prospect_email, client_id, assigned_coach, status, gym_id, notes, created_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,'scheduled',?,?,?,?)`
+          `INSERT INTO pt_appointments (appointment_date, appointment_time, appointment_type, prospect_name, prospect_phone, prospect_email, client_id, assigned_coach, advisor, status, gym_id, notes, created_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,'scheduled',?,?,?,?)`
         ).bind(b.appointment_date, b.appointment_time||null, b.appointment_type, b.prospect_name||null, b.prospect_phone||null, b.prospect_email||null,
-               b.client_id||null, b.assigned_coach||null, b.gym_id||1, b.notes||null, now, now).run();
+               b.client_id||null, b.assigned_coach||null, b.advisor||null, b.gym_id||1, b.notes||null, now, now).run();
         return ok({ id: res.meta.last_row_id }, cors);
       }
 
@@ -1891,15 +1891,15 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!existing) return bad('Appointment not found', cors);
         const newDate = b.appointment_date || existing.appointment_date;
         const newTime = b.appointment_time !== undefined ? b.appointment_time : existing.appointment_time;
-        const newCoach = b.assigned_coach !== undefined ? b.assigned_coach : existing.assigned_coach;
+        const newAdvisor = b.advisor !== undefined ? b.advisor : existing.advisor;
         // Editing your own appointment is always allowed regardless of notice window —
         // the 24-hour rule is about outside bookings landing unexpectedly, not about
-        // a coach cleaning up their own calendar.
-        if (!hasEnoughNotice(newDate, newTime, b.booked_by, newCoach)) {
-          return bad("Moving this to another coach's calendar needs at least 24 hours notice.", cors);
+        // an advisor cleaning up their own calendar.
+        if (!hasEnoughNotice(newDate, newTime, b.booked_by, newAdvisor)) {
+          return bad("Moving this to another advisor's calendar needs at least 24 hours notice.", cors);
         }
         const fields = [], binds = [];
-        ['appointment_date','appointment_time','appointment_type','assigned_coach','notes','status'].forEach(k => {
+        ['appointment_date','appointment_time','appointment_type','assigned_coach','advisor','notes','status'].forEach(k => {
           if (b[k] !== undefined) { fields.push(k+'=?'); binds.push(b[k]); }
         });
         fields.push('updated_at=?'); binds.push(new Date().toISOString());
@@ -1916,7 +1916,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
                      FROM pt_appointments a LEFT JOIN clients c ON a.client_id = c.id
                      WHERE a.appointment_date = ?`;
         const binds = [date];
-        if (coach) { query += ' AND a.assigned_coach = ?'; binds.push(coach); }
+        if (coach) { query += ' AND (a.assigned_coach = ? OR a.advisor = ?)'; binds.push(coach, coach); }
         query += ` ORDER BY a.appointment_time ASC`;
         const rows = await env.DB.prepare(query).bind(...binds).all();
         return ok({ appointments: rows.results || [] }, cors);
@@ -1930,9 +1930,9 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const rows = await env.DB.prepare(
           `SELECT a.*, c.first_name, c.last_name FROM pt_appointments a
            LEFT JOIN clients c ON a.client_id = c.id
-           WHERE a.assigned_coach = ? AND a.appointment_date = ? AND a.status != 'cancelled'
+           WHERE (a.assigned_coach = ? OR a.advisor = ?) AND a.appointment_date = ? AND a.status != 'cancelled'
            ORDER BY a.appointment_time ASC`
-        ).bind(coach, targetDate).all();
+        ).bind(coach, coach, targetDate).all();
         return ok({ appointments: rows.results || [], date: targetDate }, cors);
       }
 
@@ -1944,18 +1944,37 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok({ updated: true }, cors);
       }
 
+      // Diagnostic only: what outbound IP is this Worker using right now?
+      // Needed because InBody's IP whitelist step turned out to be required
+      // to save (not optional, as first assumed) -- and Cloudflare Workers
+      // don't have one single fixed egress IP the way a normal server does,
+      // so there's no way to just look this up statically.
+      if (url.pathname === '/inbody/my-ip' && request.method === 'GET') {
+        try {
+          const r = await fetch('https://api.ipify.org?format=json');
+          const d = await r.json();
+          return new Response(JSON.stringify({ outbound_ip: d.ip, note: 'This can change between requests on Cloudflare Workers -- if InBody keeps rejecting calls intermittently, that instability is why.' }), { status:200, headers:cors });
+        } catch(e) {
+          return new Response(JSON.stringify({ error: 'Could not determine outbound IP' }), { status:200, headers:cors });
+        }
+      }
+
       // ── INBODY WEBAPI WEBHOOK ───────────────────────────────────────
-      // InBody pushes each scan result here the moment it's taken (no
-      // pull/poll needed). We don't yet have their official field-name
-      // docs confirmed (account is stuck behind a login loop on their
-      // Documentation tab), so this always logs the full raw payload
-      // FIRST — nothing is ever lost regardless of what the real field
-      // names turn out to be — then makes a best-effort match to a
-      // client by phone and a best-effort field parse using several
-      // likely candidate key names. Once InBody support confirms the
-      // real schema, tighten pick() below to the exact keys and re-run
-      // a one-time backfill from inbody_webhook_log.raw_json for any
-      // rows that came in before the parser was corrected.
+      // Confirmed real payload shape from InBody's own "Sample Webhook"
+      // (their docs, 2026-07-08):
+      //   {"EquipSerial":"...", "TelHP":"...", "UserID":"...",
+      //    "TestDatetimes":"YYYYMMDDHHMMSS", "Account":"...",
+      //    "Equip":"...", "Type":"InBody", "IsTempData":"true"|"false"}
+      // IMPORTANT: this webhook is only a NOTIFICATION that a test
+      // happened -- it carries no body-composition numbers at all
+      // (no weight/PBF/SMM/BMI). The actual results require a SEPARATE
+      // "Get InBody Data" API call using UserID + TestDatetimes, which
+      // we don't have the endpoint for yet (still blocked on InBody's
+      // Documentation tab / support). TelHP is their UserToken (mobile
+      // number) -- the right field to match against clients.phone.
+      // IsTempData:"true" means the test hasn't been reviewed at
+      // InBody's end yet; fetching it early would 401, so those are
+      // logged but not queued for a results fetch.
       if (url.pathname === '/inbody/webhook' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         let body;
@@ -1963,8 +1982,16 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const rawJson = JSON.stringify(body);
         const pick = (obj, keys) => { for (const k of keys) { if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k]; } return null; };
 
-        const rawPhone = pick(body, ['UserToken','Phone','PhoneNumber','Tel','UserPhone','phone']);
+        const rawPhone = pick(body, ['TelHP','UserToken','Phone','PhoneNumber','Tel','UserPhone','phone']);
         const normPhone = rawPhone ? String(rawPhone).replace(/\D/g,'') : null;
+        const userId = pick(body, ['UserID','UserId']);
+        const testDatetimes = pick(body, ['TestDatetimes','TestDate','TSTDATE']);
+        const isTempData = String(pick(body, ['IsTempData']) || 'false').toLowerCase() === 'true';
+        let scanDate = null;
+        if (testDatetimes && /^\d{14}$/.test(String(testDatetimes))) {
+          const s = String(testDatetimes);
+          scanDate = `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+        }
 
         let matchedClientId = null;
         if (normPhone) {
@@ -1973,61 +2000,64 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           if (match) matchedClientId = match.id;
         }
 
+        const note = isTempData
+          ? 'IsTempData=true — not yet reviewed at InBody, results not fetchable yet.'
+          : 'Webhook received. Results fetch endpoint not yet wired up (still waiting on InBody Documentation access) — no body-composition numbers pulled yet. UserID: ' + (userId||'?') + ', TestDatetimes: ' + (testDatetimes||'?');
+
         const logRes = await env.DB.prepare(
-          'INSERT INTO inbody_webhook_log (raw_json, matched_client_id, matched) VALUES (?,?,?)'
-        ).bind(rawJson, matchedClientId, matchedClientId ? 1 : 0).run();
+          'INSERT INTO inbody_webhook_log (raw_json, matched_client_id, matched, note) VALUES (?,?,?,?)'
+        ).bind(rawJson, matchedClientId, matchedClientId ? 1 : 0, note).run();
         const logId = logRes.meta?.last_row_id;
 
-        if (!matchedClientId) {
-          // Still respond success -- the webhook itself worked, we just
-          // couldn't identify the member yet. Visible in inbody_webhook_log
-          // for manual reconciliation.
-          return new Response(JSON.stringify({ success:true, matched:false, log_id:logId }), { status:200, headers:cors });
-        }
-
-        const weight = pick(body, ['Weight','WT','BodyWeight']);
-        const pbf = pick(body, ['PBF','PercentBodyFat','BodyFatPercentage','BodyFatPct']);
-        const smm = pick(body, ['SMM','SkeletalMuscleMass']);
-        const bmi = pick(body, ['BMI']);
-        const testDate = pick(body, ['TestDate','TSTDATE','Date','TestDateTime']);
-
-        const scanRes = await env.DB.prepare(
-          'INSERT INTO inbody_scans (client_id, scan_date, weight, body_fat_pct, skeletal_muscle, bmi, source) VALUES (?,?,?,?,?,?,?)'
-        ).bind(
-          matchedClientId,
-          testDate ? String(testDate).slice(0,10) : new Date().toISOString().slice(0,10),
-          weight != null ? Number(weight) : null,
-          pbf != null ? Number(pbf) : null,
-          smm != null ? Number(smm) : null,
-          bmi != null ? Number(bmi) : null,
-          'inbody_api'
-        ).run();
-        const scanId = scanRes.meta?.last_row_id;
-
-        await env.DB.prepare('UPDATE inbody_webhook_log SET parsed_into_scan=1, scan_id=? WHERE id=?').bind(scanId, logId).run();
-
-        return new Response(JSON.stringify({ success:true, matched:true, client_id:matchedClientId, scan_id:scanId }), { status:200, headers:cors });
+        return new Response(JSON.stringify({ success:true, matched: !!matchedClientId, log_id: logId, scan_date: scanDate }), { status:200, headers:cors });
       }
 
       if (url.pathname === '/schedule/clubos-status' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
-        if (!b.id || !b.status) return bad('id and status required', cors);
-        await env.DB.prepare(
-          'UPDATE clubos_appointments SET status=?, notes=?, reschedule_date=?, reschedule_time=?, reschedule_tbd=? WHERE id=?'
-        ).bind(
-          b.status, b.notes||null, b.reschedule_date||null, b.reschedule_time||null,
-          b.reschedule_tbd?1:0, b.id
-        ).run();
+        if (!b.id) return bad('id required', cors);
+        if (!b.status && b.notes === undefined) return bad('status or notes required', cors);
+        if (b.status) {
+          await env.DB.prepare(
+            'UPDATE clubos_appointments SET status=?, notes=?, reschedule_date=?, reschedule_time=?, reschedule_tbd=? WHERE id=?'
+          ).bind(
+            b.status, b.notes||null, b.reschedule_date||null, b.reschedule_time||null,
+            b.reschedule_tbd?1:0, b.id
+          ).run();
+        } else {
+          await env.DB.prepare('UPDATE clubos_appointments SET notes=? WHERE id=?').bind(b.notes, b.id).run();
+        }
         return ok({ updated: true }, cors);
+      }
+
+      if (url.pathname === '/appointments/reschedule' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        await env.DB.prepare(
+          'UPDATE pt_appointments SET status=?, reschedule_date=?, reschedule_time=?, reschedule_tbd=?, notes=?, updated_at=? WHERE id=?'
+        ).bind(
+          'rescheduled', b.tbd?null:(b.date||null), b.tbd?null:(b.time||null), b.tbd?1:0,
+          b.notes!==undefined?b.notes:null, new Date().toISOString(), b.id
+        ).run();
+        return ok({ ok: true }, cors);
       }
 
       if (url.pathname === '/appointments/status' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
-        if (!b.id || !b.status) return bad('id and status required', cors);
-        await env.DB.prepare(`UPDATE pt_appointments SET status=?, updated_at=? WHERE id=?`)
-          .bind(b.status, new Date().toISOString(), b.id).run();
+        if (!b.id) return bad('id required', cors);
+        if (!b.status && b.notes === undefined) return bad('status or notes required', cors);
+        if (b.status && b.notes !== undefined) {
+          await env.DB.prepare(`UPDATE pt_appointments SET status=?, notes=?, updated_at=? WHERE id=?`)
+            .bind(b.status, b.notes, new Date().toISOString(), b.id).run();
+        } else if (b.status) {
+          await env.DB.prepare(`UPDATE pt_appointments SET status=?, updated_at=? WHERE id=?`)
+            .bind(b.status, new Date().toISOString(), b.id).run();
+        } else {
+          await env.DB.prepare(`UPDATE pt_appointments SET notes=?, updated_at=? WHERE id=?`)
+            .bind(b.notes, new Date().toISOString(), b.id).run();
+        }
         return ok({ ok: true }, cors);
       }
 
@@ -2413,6 +2443,20 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         q += ' ORDER BY c.last_name ASC';
         const rows = await env.DB.prepare(q).bind(...binds).all();
         return ok({ sessions: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/appointments/month' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const month = url.searchParams.get('month');
+        const coach = url.searchParams.get('coach');
+        if (!month) return bad('month (YYYY-MM) required', cors);
+        let q = `SELECT a.appointment_date AS d, COUNT(*) n FROM pt_appointments a
+                 WHERE substr(a.appointment_date,1,7) = ? AND a.status NOT IN ('cancelled')`;
+        const binds = [month];
+        if (coach) { q += ' AND (a.assigned_coach = ? OR a.advisor = ?)'; binds.push(coach, coach); }
+        q += ' GROUP BY a.appointment_date';
+        const rows = await env.DB.prepare(q).bind(...binds).all();
+        return ok({ days: rows.results || [] }, cors);
       }
 
       if (url.pathname === '/schedule/month' && request.method === 'GET') {
