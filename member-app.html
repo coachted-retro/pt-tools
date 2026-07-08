@@ -2633,6 +2633,10 @@ function toggleChefDetail() {
   const d = document.getElementById('chef-detail');
   if (d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
 }
+function toggleMealRecipe(id) {
+  const d = document.getElementById(id);
+  if (d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
 
 async function shareContent(title, text) {
   const shareData = { title: title, text: text, url: window.location.href };
@@ -3872,14 +3876,27 @@ function renderWeekPlan(mp) {
       const supplementBadge = (base && base.supplement)
         ? `<a href="${FPLINK_URL}" target="_blank" class="wp-supp-badge" onclick="event.stopPropagation()">Shop 1st Phorm</a>`
         : '';
-      return `<div class="wp-meal-row">
-        ${thumb}
-        <div class="wp-meal-main">
-          <div class="wp-meal-slot">${slot}</div>
-          <div class="wp-meal-name">${esc(m.item)}${supplementBadge}</div>
-          <div class="wp-meal-macros">${macros.calories} kcal &middot; ${macros.protein_g}g protein &middot; ${macros.carbs_g}g carbs &middot; ${macros.fat_g}g fat</div>
+      const recipeId = 'mr-' + dayIdx + '-' + slot;
+      const recipeBtn = (base && base.recipe) ? `<button class="wp-swap-btn" onclick="toggleMealRecipe('${recipeId}')">Recipe</button>` : '';
+      const recipeDetail = (base && base.recipe) ? `
+        <div id="${recipeId}" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+          <div style="font-weight:700;font-size:12.5px;margin-bottom:4px">Ingredients</div>
+          <ul style="padding-left:18px;font-size:12.5px;margin-bottom:8px">${(base.recipe.ingredients||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul>
+          <div style="font-weight:700;font-size:12.5px;margin-bottom:4px">Instructions</div>
+          <ol style="padding-left:18px;font-size:12.5px">${(base.recipe.steps||[]).map(i=>`<li style="margin-bottom:3px">${esc(i)}</li>`).join('')}</ol>
+        </div>` : '';
+      return `<div class="wp-meal-row" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;gap:10px;align-items:center">
+          ${thumb}
+          <div class="wp-meal-main">
+            <div class="wp-meal-slot">${slot}</div>
+            <div class="wp-meal-name">${esc(m.item)}${supplementBadge}</div>
+            <div class="wp-meal-macros">${macros.calories} kcal &middot; ${macros.protein_g}g protein &middot; ${macros.carbs_g}g carbs &middot; ${macros.fat_g}g fat</div>
+          </div>
+          ${recipeBtn}
+          <button class="wp-swap-btn" onclick="openSwapPicker(${dayIdx},'${slot}')">Swap</button>
         </div>
-        <button class="wp-swap-btn" onclick="openSwapPicker(${dayIdx},'${slot}')">Swap</button>
+        ${recipeDetail}
       </div>`;
     }).join('');
     return `<div class="wp-day-card"><div class="wp-day-label">${esc(day.label||'Day '+(dayIdx+1))}</div>${rows}</div>`;
