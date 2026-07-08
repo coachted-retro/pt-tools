@@ -1070,7 +1070,7 @@ async function saveLeadToD1(prospect){
     const names = (prospect.name||'').trim().split(' ');
     const first = names.shift() || '';
     const last = names.join(' ');
-    await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ op:'insert', table:'leads', values:{
         business_name: prospect.name, first_name: first, last_name: last,
@@ -1080,6 +1080,9 @@ async function saveLeadToD1(prospect){
         created_at: new Date().toISOString()
       }})
     });
+    const d = await res.json();
+    if (d.ok === false) { console.warn('D1 lead insert rejected:', d.error); return false; }
+    if (d.id) prospect._d1_id = d.id;
     return true;
   } catch(e) { console.warn('D1 lead save failed', e); return false; }
 }
@@ -1449,18 +1452,19 @@ async function checkMemberMatch() {
 async function updateProspectMemberFields(p, clientId) {
   const table = p._d1_id ? 'leads' : (p._prospect_log_id ? 'prospect_log' : null);
   const id = p._d1_id || p._prospect_log_id;
-  if (!table || !id) return false;
+  if (!table || !id) return { ok:false, error:'This prospect has no linked D1 record (no _d1_id or _prospect_log_id) — cannot save.' };
   const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ op:'update', table, values:{ is_member: 1, member_client_id: clientId }, where:{ id } })
   });
   const d = await res.json();
-  return d.ok !== false;
+  console.log('updateProspectMemberFields result:', table, id, d);
+  return { ok: d.ok !== false, error: d.error || null };
 }
 
 async function linkExistingClient(p, clientId) {
-  const ok = await updateProspectMemberFields(p, clientId);
-  if (!ok) { alert('Could not save the link — check the console.'); return; }
+  const result = await updateProspectMemberFields(p, clientId);
+  if (!result.ok) { alert('Could not save the link' + (result.error ? ':\n\n' + result.error : ' — check the console.')); return; }
   p.isMember = true;
   p.memberClientId = clientId;
   saveLocal();
