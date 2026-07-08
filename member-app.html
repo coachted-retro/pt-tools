@@ -28,7 +28,12 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
+html{background:#1B1D21}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;display:flex;flex-direction:column}
+@media (min-width:560px){
+  body{max-width:480px;margin:0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 30px 80px rgba(0,0,0,.35);}
+  #live-log-screen,#ll-rest-overlay,#chat-panel,.meal-modal,.modal-bg,.finish-screen{max-width:480px;margin:0 auto;left:0;right:0;}
+}
 
 /* ── TOPBAR ─────────────────────────────────────────────────── */
 .topbar{background:var(--card);border-bottom:1px solid var(--line);padding:0 16px;height:56px;display:flex;align-items:center;gap:12px;flex-shrink:0;box-shadow:var(--shadow)}
@@ -2656,14 +2661,19 @@ async function loadCelebrations() {
   try {
     const r = await fetch(WORKER + '/engagement/celebrations?days=7');
     const d = await r.json();
-    const bdays = d.birthdays || [];
-    const annivs = d.anniversaries || [];
-    if (!bdays.length && !annivs.length) { el.innerHTML = ''; return; }
-    let html = `<div class="sec-label">This Week</div><div class="card"><div class="card-body">`;
-    bdays.forEach(b => { html += `<div style="padding:6px 0;font-size:13px">🎂 <b>${esc(b.first_name)} ${esc(b.last_name)}</b> has a birthday coming up!</div>`; });
-    annivs.forEach(a => { html += `<div style="padding:6px 0;font-size:13px">🎉 <b>${esc(a.first_name)} ${esc(a.last_name)}</b> has a member anniversary this week!</div>`; });
-    html += `</div></div>`;
-    el.innerHTML = html;
+    const bdays = (d.birthdays||[]).map(b => ({...b, emoji:'🎂', label:'Birthday'}));
+    const annivs = (d.anniversaries||[]).map(a => ({...a, emoji:'🎉', label:'Anniversary'}));
+    const people = [...bdays, ...annivs];
+    if (!people.length) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="sec-label">This Week</div>
+      <div style="display:flex;gap:12px;overflow-x:auto;padding:2px 2px 6px;-webkit-overflow-scrolling:touch">
+        ${people.map(p => `
+          <div style="flex-shrink:0;width:84px;text-align:center">
+            <div style="width:64px;height:64px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:26px;background:linear-gradient(135deg,var(--red),#FF6B7A);box-shadow:0 4px 10px rgba(224,25,43,.3)">${p.emoji}</div>
+            <div style="font-weight:700;font-size:11.5px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.first_name)}</div>
+            <div style="font-size:9.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.3px;font-weight:700;margin-top:1px">${p.label}</div>
+          </div>`).join('')}
+      </div>`;
   } catch(e) { el.innerHTML = ''; }
 }
 
@@ -2677,17 +2687,26 @@ async function loadHereNow() {
     if (!here.length && IS_DEMO) here = [{first_name:'Marin',client_id:'demo1'},{first_name:'James',client_id:'demo2'},{first_name:'Roman',client_id:'demo3'}];
     const canCheckIn = !!(SESSION && SESSION.client_id) && !GUEST_MODE;
     const alreadyIn = here.some(h => SESSION && String(h.client_id) === String(SESSION.client_id));
-    let html = `<div class="sec-label">Who's Here Now</div><div class="card"><div class="card-body">`;
+    let html = `<div class="sec-label">Who's Here Now</div>`;
     if (!here.length) {
-      html += `<div class="empty-state">Nobody's checked in yet — be the first.</div>`;
+      html += `<div class="card"><div class="card-body"><div class="empty-state">Nobody's checked in yet — be the first.</div>${canCheckIn ? `<button class="action-btn" style="margin-top:10px" onclick="checkInHere()">I'm Here</button>` : ''}</div></div>`;
     } else {
-      html += here.slice(0,8).map(h => `<span class="wp-supp-tag" style="background:var(--soft);color:var(--ink);margin:0 4px 4px 0">${esc((h.first_name||'').trim())}</span>`).join('');
-      if (here.length > 8) html += `<span style="font-size:11px;color:var(--ink3)"> +${here.length-8} more</span>`;
+      const shown = here.slice(0,8);
+      html += `<div style="display:flex;gap:12px;overflow-x:auto;padding:2px 2px 6px;-webkit-overflow-scrolling:touch">
+        ${shown.map(h => {
+          const nm = (h.first_name||'').trim();
+          return `<div style="flex-shrink:0;width:64px;text-align:center">
+            <div style="width:52px;height:52px;border-radius:50%;margin:0 auto 5px;display:flex;align-items:center;justify-content:center;font-family:'Oswald',sans-serif;font-weight:800;font-size:17px;color:#fff;background:linear-gradient(135deg,#1E9E5A,#5FD68F);box-shadow:0 4px 10px rgba(30,158,90,.3);position:relative">
+              ${esc((nm[0]||'?').toUpperCase())}
+              <span style="position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:#1E9E5A;border:2px solid #fff"></span>
+            </div>
+            <div style="font-weight:700;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(nm)}</div>
+          </div>`;
+        }).join('')}
+        ${here.length > 8 ? `<div style="flex-shrink:0;width:64px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--ink3);font-weight:700">+${here.length-8}</div>` : ''}
+      </div>`;
+      if (canCheckIn) html += `<button class="action-btn secondary" style="margin-top:4px" onclick="checkInHere()" ${alreadyIn?'disabled':''}>${alreadyIn ? "You're checked in" : "I'm Here"}</button>`;
     }
-    if (canCheckIn) {
-      html += `<button class="action-btn secondary" style="margin-top:10px" onclick="checkInHere()" ${alreadyIn?'disabled':''}>${alreadyIn ? "You're checked in" : "I'm Here"}</button>`;
-    }
-    html += `</div></div>`;
     el.innerHTML = html;
   } catch(e) { el.innerHTML = ''; }
 }
