@@ -123,24 +123,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div id="today-schedule"></div>
   <div id="jeopardy-section"></div>
 
-
-  <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Start an Intake</div>
-  <div class="intake-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-    <a href="fitness-consultation-tool.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;display:block">
-      <div style="font-size:10px;font-weight:800;color:var(--red);text-transform:uppercase">Step 1 · New Member</div>
-      <div style="font-weight:700;font-size:13px;margin-top:2px">Initial Consultation</div>
-    </a>
-    <a href="fitness-followup-tool.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;display:block">
-      <div style="font-size:10px;font-weight:800;color:#2563EB;text-transform:uppercase">Step 2 · Declined</div>
-      <div style="font-weight:700;font-size:13px;margin-top:2px">6-Week Follow-Up</div>
-    </a>
-    <a href="fitness-monthly-checkin.html" style="text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;display:block">
-      <div style="font-size:10px;font-weight:800;color:#1E9E5A;text-transform:uppercase">Step 3 · Active</div>
-      <div style="font-weight:700;font-size:13px;margin-top:2px">Monthly Check-In</div>
-    </a>
-  </div>
-  <div style="font-size:11px;color:var(--muted);margin:-8px 0 14px">Best practice is still to click a client's name from the agenda above, so the right record loads automatically — these are here for a quick manual start.</div>
-
   <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Stats at a Glance</div>
   <div id="coach-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
 
@@ -426,14 +408,22 @@ async function loadTodaySchedule(){
   if (labelEl) labelEl.textContent = dateLabel + (SCHEDULE_DAY_OFFSET===0 ? ' (today)' : '');
   if (!coach) { box.innerHTML = ''; return; }
   try {
-    const [r, r2, r3, clientsRes] = await Promise.all([
+    const [r, roleRes, r3, clientsRes] = await Promise.all([
       fetch(WORKER + '/coach/today-schedule?coach=' + encodeURIComponent(coach) + '&date=' + dateStr),
-      fetch(WORKER + '/schedule/clubos-day?date=' + dateStr),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'staff_roster', where:{name:coach}, limit:1})}),
       fetch(WORKER + '/appointments/coach-day?coach=' + encodeURIComponent(coach) + '&date=' + dateStr),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'clients', limit:2000})})
     ]);
     const d = await r.json();
-    const d2 = await r2.json();
+    const roleRow = ((await roleRes.json()).results || [])[0];
+    // ClubOS bookings (new-member InBody scans, intake-type appointments) carry
+    // no per-coach assignment in that table at all, so they used to show up
+    // identically on every single coach's agenda regardless of who was logged
+    // in. Only the Training Lead runs intake-type work company-wide - matches
+    // the same gate already used correctly on coach-profile.html - so only
+    // they get this source; everyone else's agenda is strictly their own.
+    const isTrainingLead = roleRow && roleRow.role === "Men's Training Lead";
+    const d2 = isTrainingLead ? await (await fetch(WORKER + '/schedule/clubos-day?date=' + dateStr)).json() : { appointments: [] };
     const d3 = await r3.json();
     const clients = (await clientsRes.json()).results || [];
     const rows = d.today || [];
