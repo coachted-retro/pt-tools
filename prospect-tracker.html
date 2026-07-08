@@ -427,7 +427,7 @@
           </div>
         </div>
         <div class="search-bar">
-          <input id="search-input" placeholder="Search by name, phone, or notes..." oninput="filterProspects()">
+          <input id="search-input" placeholder="Search by name, phone, email, gender, type, notes..." oninput="filterProspects()">
         </div>
         <div class="prospect-list" id="prospect-list">
           <div class="empty-state"><div class="empty-icon">👥</div><div>No prospects yet</div></div>
@@ -462,11 +462,50 @@
           <div class="info-item"><label>Added By</label><div class="info-value" id="d-advisor"></div></div>
           <div class="info-item"><label>Next Follow-Up</label><input type="date" id="d-followup" onchange="saveFollowUp()" style="font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px"></div>
         </div>
+        <div id="member-status-section" style="padding:0 20px 20px;border-bottom:1px solid var(--border)"></div>
+        <div id="member-create-form" style="display:none;padding:0 20px 20px;border-bottom:1px solid var(--border)">
+          <div style="background:#F5F6F8;border-radius:10px;padding:16px">
+            <div style="font-weight:700;font-size:13px;margin-bottom:10px">Add as Member (pull details from ClubOS)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label style="font-size:10px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.5px">First Name</label><input id="mc-first" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px"></div>
+              <div><label style="font-size:10px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.5px">Last Name</label><input id="mc-last" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px"></div>
+              <div><label style="font-size:10px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.5px">Phone</label><input id="mc-phone" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px"></div>
+              <div><label style="font-size:10px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.5px">Email</label><input id="mc-email" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px"></div>
+              <div><label style="font-size:10px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.5px">Membership Tier</label>
+                <select id="mc-tier" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px">
+                  <option value="">Select tier...</option>
+                  <option>Ultimate</option><option>Flex</option><option>Core</option><option>Limited</option><option>Optum</option><option>Actfit</option><option>Team</option><option>Peerfit</option><option>Zeamo</option>
+                </select>
+              </div>
+              <div><label style="font-size:10px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.5px">Join Date</label><input type="date" id="mc-joindate" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px"></div>
+              <div><label style="font-size:10px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.5px">Gender</label>
+                <select id="mc-gender" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid var(--line,#E4E7EC);border-radius:6px">
+                  <option value="">Not specified</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn-primary" onclick="submitQuickCreateMember()" style="padding:6px 14px;font-size:13px">Save as Member</button>
+              <button class="btn-danger" onclick="cancelQuickCreateMember()" style="padding:6px 14px;font-size:13px">Cancel</button>
+            </div>
+          </div>
+        </div>
         <div class="touchpoint-section">
           <h3>Touchpoint Log</h3>
           <div class="add-touchpoint">
             <div class="tp-row">
               <div><label>Date</label><input type="date" id="tp-date"></div>
+              <div>
+                <label>Channel</label>
+                <select id="tp-channel">
+                  <option value="call">Phone Call</option>
+                  <option value="text">Text Message</option>
+                  <option value="email">Email</option>
+                  <option value="in_person">In Person</option>
+                </select>
+              </div>
               <div>
                 <label>Outcome</label>
                 <select id="tp-outcome">
@@ -482,7 +521,7 @@
             <div class="form-row">
               <div><label>Your Name</label><input id="tp-advisor" placeholder="Advisor name"></div>
             </div>
-            <div><label>Notes</label><textarea id="tp-notes" placeholder="What happened? What did they say?" rows="2"></textarea></div>
+            <div><label>Notes</label><textarea id="tp-notes" placeholder="What happened? What did they say? What's the next step?" rows="2"></textarea></div>
             <div class="status-msg" id="tp-status"></div>
           </div>
           <div class="tp-history" id="tp-history"></div>
@@ -1081,6 +1120,8 @@ async function syncFromSheet() {
           advisor: String(r.assigned_to||''),
           notes: String(r.notes||''),
           date: r.created_at ? r.created_at.slice(0,10) : new Date().toLocaleDateString('en-US'),
+          isMember: !!r.is_member,
+          memberClientId: r.member_client_id || null,
           _d1_id: r.id
         };
       });
@@ -1118,6 +1159,8 @@ async function syncFromSheet() {
             notes: (r.touchpoint_count ? r.touchpoint_count + ' past touchpoint(s) on file. ' : '') + (r.campaign_tag ? 'Campaign: ' + r.campaign_tag : ''),
             date: r.created_at ? r.created_at.slice(0,10) : new Date().toLocaleDateString('en-US'),
             lastContactHint: r.last_contact_date || null,
+            isMember: !!r.is_member,
+            memberClientId: r.member_client_id || null,
             _prospect_log_id: r.id
           };
         })
@@ -1125,9 +1168,64 @@ async function syncFromSheet() {
       prospects = [...prospects, ...plProspects];
     }
     
-    // Touchpoints loaded from localStorage (D1 migration pending)
+    // --- Dedupe against active PT clients + hydrate gender for search ---
+    // Anyone already status='active_pt' in clients gets pulled out of the
+    // People pipeline entirely — this list is for outreach to people who
+    // are NOT currently training, so we never want to call an active client.
+    try {
+      const clients = await fetchAllClients();
+      const activePtKeys = new Set();
+      clients.filter(c => c.status === 'active_pt').forEach(c => {
+        if (c.phone) activePtKeys.add(normPhone(c.phone));
+        const nm = ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase();
+        if (nm) activePtKeys.add(nm);
+      });
+      const clientsById = {};
+      clients.forEach(c => { clientsById[c.id] = c; });
+      prospects = prospects.filter(p => {
+        const phoneKey = normPhone(p.phone);
+        const nameKey = (p.name||'').trim().toLowerCase();
+        if (phoneKey && activePtKeys.has(phoneKey)) return false;
+        if (nameKey && activePtKeys.has(nameKey)) return false;
+        return true;
+      });
+      prospects.forEach(p => {
+        if (p.isMember && p.memberClientId && clientsById[p.memberClientId]) {
+          p.gender = clientsById[p.memberClientId].gender || '';
+        }
+      });
+    } catch(e) { console.warn('PT dedupe / gender hydration failed', e); }
 
-    // Booked consultations from D1 appointment_status (pending)
+    // --- Touchpoints now persisted in D1 (was localStorage-only) ---
+    try {
+      const leadIdSet = new Set(prospects.filter(p=>p._d1_id).map(p=>p._d1_id));
+      const plIdSet = new Set(prospects.filter(p=>p._prospect_log_id).map(p=>p._prospect_log_id));
+      const tpResp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({op:'select', table:'touchpoints', orderBy:'contact_date desc', limit:2000})
+      });
+      const tpData = await tpResp.json();
+      if (tpData.results && Array.isArray(tpData.results)) {
+        const d1Touchpoints = tpData.results
+          .filter(r => {
+            const src = r.source_table || 'leads';
+            return (src === 'leads' && leadIdSet.has(r.lead_id)) || (src === 'prospect_log' && plIdSet.has(r.lead_id));
+          })
+          .map(r => ({
+            id: 't' + r.id,
+            prospectId: (r.source_table === 'prospect_log' ? 'pl_' + r.lead_id : String(r.lead_id)),
+            date: (r.contact_date||'').slice(0,10),
+            loggedAt: r.contact_date,
+            outcome: r.outcome || channelLabel(r.channel) || 'Other',
+            notes: r.summary || '',
+            advisor: r.advisor || '',
+            channel: r.channel || ''
+          }));
+        const localOnlyTps = touchpoints.filter(t => !String(t.id).match(/^t\d+$/));
+        touchpoints = [...d1Touchpoints, ...localOnlyTps];
+        saveLocal();
+      }
+    } catch(e) { console.warn('Touchpoint hydration failed', e); }
 
     renderList(document.getElementById('search-input') ? document.getElementById('search-input').value : '');
     updateStats();
@@ -1167,13 +1265,19 @@ function updateTabCounts() {
 // ══════════════════════════════════════════════════
 // PROSPECTS TAB (existing logic, preserved exactly)
 // ══════════════════════════════════════════════════
+function searchBlob(p) {
+  let g = '';
+  const genderVal = (p.gender||'').toLowerCase();
+  if (genderVal.startsWith('m')) g = 'male m';
+  else if (genderVal.startsWith('f')) g = 'female f';
+  return [p.name, p.phone, p.email, p.notes, p.type, p.referred, p.advisor, p.timeframe, g]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+
 function renderList(filter='') {
   const el = document.getElementById('prospect-list');
-  const fl = filter.toLowerCase();
-  const filtered = prospects.filter(p =>
-    !fl || p.name.toLowerCase().includes(fl) || p.phone.includes(fl) ||
-    (p.notes||'').toLowerCase().includes(fl)
-  );
+  const fl = filter.toLowerCase().trim();
+  const filtered = prospects.filter(p => !fl || searchBlob(p).includes(fl));
   document.getElementById('list-count').textContent = filtered.length + ' prospect' + (filtered.length!==1?'s':'');
   if (!filtered.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div>No matches</div></div>';
@@ -1194,7 +1298,9 @@ function renderList(filter='') {
         (last ? '<div class="last-touch">Last: ' + last.date + ' — ' + last.outcome + '</div>' : '') +
         (overdue ? '<div style="font-size:11px;font-weight:700;color:var(--red,#E0192B);margin-top:3px">' + (dueToday?'Follow up today':'Follow-up overdue since ' + p.followUpDate) + '</div>' : '') +
       '</div>' +
-      '<div><span class="interest-badge ' + badgeClass + '">' + p.interest + '</span></div>' +
+      '<div><span class="interest-badge ' + badgeClass + '">' + p.interest + '</span>' +
+        (p.isMember ? '<span class="interest-badge" style="background:#EFF6FF;color:#2563EB;margin-left:4px">MEMBER</span>' : '') +
+      '</div>' +
     '</div>';
   }).join('');
 }
@@ -1218,6 +1324,8 @@ function selectProspect(id) {
   badge.className = 'interest-badge badge-' + p.interest.toLowerCase();
   document.getElementById('tp-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('d-followup').value = p.followUpDate || '';
+  renderMemberStatus(p);
+  document.getElementById('member-create-form').style.display = 'none';
   renderTouchpoints(id);
   renderList(document.getElementById('search-input').value);
 }
@@ -1231,6 +1339,10 @@ function saveFollowUp() {
   renderList(document.getElementById('search-input').value);
 }
 
+function channelLabel(c) {
+  return { call:'Phone Call', text:'Text Message', email:'Email', in_person:'In Person' }[c] || '';
+}
+
 function renderTouchpoints(id) {
   const tps = touchpoints.filter(t => t.prospectId === id);
   const el = document.getElementById('tp-history');
@@ -1238,10 +1350,12 @@ function renderTouchpoints(id) {
   el.innerHTML = tps.map(t => {
     const cls = 'outcome-' + t.outcome.replace(/\s+/g,'').toLowerCase();
     const timeStr = t.loggedAt ? new Date(t.loggedAt).toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}) : '';
+    const chLabel = channelLabel(t.channel);
     return '<div class="tp-entry">' +
       '<div class="tp-meta">' +
         '<span class="tp-date">' + t.date + (timeStr ? ' at ' + timeStr : '') + '</span>' +
         '<div style="display:flex;gap:8px;align-items:center">' +
+          (chLabel ? '<span style="font-size:10px;font-weight:700;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.5px">' + chLabel + '</span>' : '') +
           '<span class="tp-outcome ' + cls + '">' + t.outcome + '</span>' +
           '<span class="tp-advisor">' + (t.advisor||'') + '</span>' +
         '</div>' +
@@ -1250,6 +1364,152 @@ function renderTouchpoints(id) {
     '</div>';
   }).join('');
 }
+
+// ══════════════════════════════════════════════════
+// EXISTING-MEMBER LINKING
+// Lets Ted flag a prospect who's already a paying member so
+// outreach can be a warm touch-base instead of a cold pitch.
+// Prospect stays in the People pipeline either way; linking just
+// attaches real membership context and (if needed) creates the
+// missing clients record so they show up on the member side too.
+// ══════════════════════════════════════════════════
+function normPhone(s) { return String(s||'').replace(/\D/g,''); }
+
+function renderMemberStatus(p) {
+  const el = document.getElementById('member-status-section');
+  if (p.isMember && p.memberClientId) {
+    el.innerHTML =
+      '<div style="background:#EFF6FF;border-radius:10px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center">' +
+        '<div>' +
+          '<div style="font-weight:700;font-size:13px;color:#2563EB">✓ Existing Member</div>' +
+          '<div style="font-size:12px;color:var(--muted,#6B7280);margin-top:2px">Linked to client record #' + p.memberClientId + '. Reach out as a warm check-in, not a cold prospect.</div>' +
+        '</div>' +
+        '<a href="client-profile.html?id=' + p.memberClientId + '" target="_blank" style="font-size:12px;font-weight:700;color:#2563EB;white-space:nowrap;margin-left:12px">View Profile →</a>' +
+      '</div>';
+  } else {
+    el.innerHTML =
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<button class="btn-primary" onclick="checkMemberMatch()" style="padding:6px 14px;font-size:13px" id="member-check-btn">Check / Mark as Existing Member</button>' +
+        '<span id="member-check-status" style="font-size:12px;color:var(--muted,#6B7280)"></span>' +
+      '</div>';
+  }
+}
+
+async function fetchAllClients() {
+  const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ op:'select', table:'clients', limit:3000 })
+  });
+  const d = await res.json();
+  return (d.results && Array.isArray(d.results)) ? d.results : [];
+}
+
+async function checkMemberMatch() {
+  const p = prospects.find(x => x.id === selectedId);
+  if (!p) return;
+  const statusEl = document.getElementById('member-check-status');
+  const btn = document.getElementById('member-check-btn');
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = 'Checking clients...';
+  try {
+    const clients = await fetchAllClients();
+    const targetPhone = normPhone(p.phone);
+    const targetName = (p.name||'').trim().toLowerCase();
+    let match = null;
+    if (targetPhone) {
+      match = clients.find(c => normPhone(c.phone) === targetPhone);
+    }
+    if (!match && targetName) {
+      match = clients.find(c => ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase() === targetName);
+    }
+    if (match) {
+      const tier = match.membership_tier || 'no tier on file';
+      const started = match.training_start_date || match.join_date || 'unknown date';
+      const ok = confirm('Found a matching member: ' + (match.first_name||'') + ' ' + (match.last_name||'') + ' — ' + tier + ', on file since ' + started + '.\n\nLink this prospect to that member record?');
+      if (ok) { p.gender = match.gender || ''; await linkExistingClient(p, match.id); }
+      else if (statusEl) statusEl.textContent = '';
+    } else {
+      if (statusEl) statusEl.textContent = '';
+      openQuickCreateMember(p);
+    }
+  } catch(e) {
+    console.warn('Member match check failed', e);
+    if (statusEl) statusEl.textContent = 'Check failed — try again.';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function updateProspectMemberFields(p, clientId) {
+  const table = p._d1_id ? 'leads' : (p._prospect_log_id ? 'prospect_log' : null);
+  const id = p._d1_id || p._prospect_log_id;
+  if (!table || !id) return false;
+  const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ op:'update', table, values:{ is_member: 1, member_client_id: clientId }, where:{ id } })
+  });
+  const d = await res.json();
+  return d.ok !== false;
+}
+
+async function linkExistingClient(p, clientId) {
+  const ok = await updateProspectMemberFields(p, clientId);
+  if (!ok) { alert('Could not save the link — check the console.'); return; }
+  p.isMember = true;
+  p.memberClientId = clientId;
+  saveLocal();
+  renderMemberStatus(p);
+  renderList(document.getElementById('search-input').value);
+}
+
+function openQuickCreateMember(p) {
+  const names = (p.name||'').trim().split(' ');
+  document.getElementById('mc-first').value = names.shift() || '';
+  document.getElementById('mc-last').value = names.join(' ');
+  document.getElementById('mc-phone').value = p.phone || '';
+  document.getElementById('mc-email').value = p.email || '';
+  document.getElementById('mc-tier').value = '';
+  document.getElementById('mc-joindate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('mc-gender').value = '';
+  document.getElementById('member-create-form').style.display = 'block';
+}
+
+function cancelQuickCreateMember() {
+  document.getElementById('member-create-form').style.display = 'none';
+}
+
+async function submitQuickCreateMember() {
+  const p = prospects.find(x => x.id === selectedId);
+  if (!p) return;
+  const first = document.getElementById('mc-first').value.trim();
+  const last = document.getElementById('mc-last').value.trim();
+  const phone = document.getElementById('mc-phone').value.trim();
+  const email = document.getElementById('mc-email').value.trim();
+  const tier = document.getElementById('mc-tier').value;
+  const joinDate = document.getElementById('mc-joindate').value;
+  const gender = document.getElementById('mc-gender').value;
+  if (!first) { alert('First name is required.'); return; }
+  try {
+    const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ op:'insert', table:'clients', values:{
+        first_name: first, last_name: last, phone: phone||null, email: email||null,
+        status: 'active_member', membership_tier: tier||null, training_start_date: joinDate||null,
+        gender: gender||null
+      }})
+    });
+    const d = await res.json();
+    const newId = d.id || (d.result && d.result.id);
+    if (!d.ok || !newId) { alert('Could not create the client record — check the console.'); console.warn(d); return; }
+    p.gender = gender;
+    await linkExistingClient(p, newId);
+    cancelQuickCreateMember();
+  } catch(e) {
+    console.warn('Quick-create member failed', e);
+    alert('Could not create the client record — check the console.');
+  }
+}
+
 
 function updateStats() {
   document.getElementById('stat-total').textContent = prospects.length;
@@ -1312,16 +1572,30 @@ function clearForm() {
 async function addTouchpoint() {
   if (!selectedId) return;
   const date = gv('tp-date') || new Date().toISOString().split('T')[0];
-  const notes = gv('tp-notes'), outcome = gv('tp-outcome'), advisor = gv('tp-advisor');
+  const notes = gv('tp-notes'), outcome = gv('tp-outcome'), advisor = gv('tp-advisor'), channel = gv('tp-channel');
   if (!notes) { setStatus('tp-status','error','Please add notes.'); return; }
+  const p = prospects.find(x => x.id === selectedId);
+  const sourceTable = p && p._d1_id ? 'leads' : (p && p._prospect_log_id ? 'prospect_log' : null);
+  const leadId = p ? (p._d1_id || p._prospect_log_id) : null;
   const loggedAt = new Date().toISOString();
-  const tp = { id: genId(), prospectId: selectedId, date, loggedAt, outcome, notes, advisor };
+  const tp = { id: genId(), prospectId: selectedId, date, loggedAt, outcome, notes, advisor, channel };
   touchpoints.unshift(tp);
   saveLocal();
-  const p = prospects.find(x => x.id === selectedId);
-  const row = [date, p ? p.name : selectedId, outcome, notes, advisor];
-  const ok = await writeToSheet(TOUCHPOINT_TAB, row);
-  setStatus('tp-status', ok ? 'success' : 'error', ok ? 'Touchpoint logged!' : 'Saved locally. Sheet write failed.');
+  let ok = true;
+  if (sourceTable && leadId) {
+    try {
+      const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ op:'insert', table:'touchpoints', values:{
+          lead_id: leadId, source_table: sourceTable, contact_date: loggedAt,
+          channel, direction:'outbound', summary: notes, outcome, advisor
+        }})
+      });
+      const d = await res.json();
+      ok = d.ok !== false;
+    } catch(e) { console.warn('D1 touchpoint save failed', e); ok = false; }
+  } else { ok = false; }
+  setStatus('tp-status', ok ? 'success' : 'error', ok ? 'Touchpoint logged!' : 'Saved locally only — D1 write failed, check console.');
   document.getElementById('tp-notes').value = '';
   renderTouchpoints(selectedId);
 }
@@ -2025,7 +2299,16 @@ async function openBizLead(id) {
     </div>
     <div>
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280);margin-bottom:6px">Log a Note</div>
-      <div class="field"><label>Channel</label><select id="biz-tch"><option>call</option><option>email</option><option>in_person</option><option>text</option></select></div>
+      <div class="field"><label>Channel</label><select id="biz-tch"><option value="call">call</option><option value="email">email</option><option value="in_person">in_person</option><option value="text">text</option></select></div>
+      <div class="field"><label>Outcome</label><select id="biz-outcome">
+        <option value="Interested">Interested</option>
+        <option value="MeetingSet">Meeting Set</option>
+        <option value="Callback">Callback Requested</option>
+        <option value="LeftMessage">Left Message</option>
+        <option value="NotInterested">Not Interested</option>
+        <option value="Other">Other</option>
+      </select></div>
+      <div class="field"><label>Your Name</label><input id="biz-advisor" placeholder="Advisor name"></div>
       <div class="field"><label>Note</label><textarea id="biz-tsum" placeholder="What happened?"></textarea></div>
       <button class="btn-outline" onclick="logBizTouch(${id})">Add Note</button>
       ${tps.length ? '<div style="margin-top:14px">' + tps.map(t => {
@@ -2033,7 +2316,7 @@ async function openBizLead(id) {
         const dtStr = dt && !isNaN(dt) ? dt.toLocaleDateString('en-US') + ' at ' + dt.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'}) : (t.contact_date||'');
         return `
         <div style="padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC)">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280)">${escBiz(t.channel||'')} &middot; ${escBiz(dtStr)}</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280)">${escBiz(t.channel||'')}${t.outcome ? ' &middot; ' + escBiz(t.outcome) : ''} &middot; ${escBiz(dtStr)}${t.advisor ? ' &middot; ' + escBiz(t.advisor) : ''}</div>
           <div style="font-size:13px;margin-top:2px">${escBiz(t.summary||'')}</div>
         </div>`;
       }).join('') + '</div>' : ''}
@@ -2051,12 +2334,14 @@ async function saveBizLead(id) {
 
 async function logBizTouch(id) {
   const channel = document.getElementById('biz-tch').value;
+  const outcome = document.getElementById('biz-outcome').value;
+  const advisor = document.getElementById('biz-advisor').value;
   const summary = document.getElementById('biz-tsum').value;
   if (!summary.trim()) return;
   // Store the full ISO timestamp (not just the date) so notes are
   // genuinely time-stamped without assuming a column that may not
   // exist in the live touchpoints table.
-  await bizDb({ op:'insert', table:'touchpoints', values:{ lead_id:id, contact_date:new Date().toISOString(), channel, direction:'outbound', summary } });
+  await bizDb({ op:'insert', table:'touchpoints', values:{ lead_id:id, source_table:'leads', contact_date:new Date().toISOString(), channel, direction:'outbound', summary, outcome, advisor } });
   openBizLead(id);
 }
 
