@@ -1049,7 +1049,7 @@ function openCheckinRecall(checkinId){
 }
 function renderSessions(sessions){
   const el=document.getElementById('sessionList');
-  if(!sessions.length){ el.innerHTML='<div class="empty">No sessions logged yet. Log Session writes here and builds the training record.</div>'; return; }
+  if(!sessions.length){ el.innerHTML='<div class="empty">No sessions logged yet. Sessions logged from the gym floor tool build the training record here.</div>'; return; }
   el.innerHTML=sessions.map(s=>{
     const isT=s.entry_type==='touchpoint';
     const title=s.focus_areas||s.workout_name||(isT?'Touchpoint':'Training session');
@@ -1220,7 +1220,6 @@ function buildWorkoutPanel(workouts){
       '<button class="wo-view-tab '+(woView==='calendar'?'active':'')+'" onclick="setWoView(\'calendar\')">Calendar</button>'+
       '<button class="wo-view-tab '+(woView==='list'?'active':'')+'" onclick="setWoView(\'list\')">Log</button>'+
     '</div>'+
-    '<button class="btn red" onclick="openSessionLogger(null)">+ Log Session</button>'+
     '<label class="btn" style="cursor:pointer">📷 Upload Screenshot / PDF<input type="file" accept="image/*,.pdf,application/pdf" style="display:none" onchange="uploadWorkout(event)"></label>'+
     '<label class="btn" style="cursor:pointer">📄 Import CSV<input type="file" accept=".csv,text/csv" style="display:none" onchange="importCSV(event)"></label>'+
     '<span class="wo-status" id="woStatus"></span>'+
@@ -1276,7 +1275,7 @@ function renderWoCal(workouts){
 }
 
 function renderWoList(workouts){
-  if(!workouts.length) return '<div class="empty"><div class="big">No sessions logged yet</div>Tap + Log Session or import a Trainerize CSV to get started.</div>';
+  if(!workouts.length) return '<div class="empty"><div class="big">No sessions logged yet</div>Import a Trainerize CSV, upload a screenshot/PDF, or log from the gym floor tool to get started.</div>';
   const sorted=[...workouts].sort((a,b)=>(b.workout_date||'').localeCompare(a.workout_date||''));
   return '<div class="wo-list-view">'+sorted.map(w=>{
     let ex=[]; try{ ex=JSON.parse(w.exercises_json||'[]'); }catch(e){}
@@ -1315,7 +1314,6 @@ function calDayClick(dateStr){
   }
   const ws=woAllWorkouts.filter(w=>w.workout_date&&w.workout_date.slice(0,10)===dateStr);
   if(ws.length) openSessionLogger(dateStr,ws[0]);
-  else openSessionLogger(dateStr);
 }
 
 async function deleteWorkout(id){
