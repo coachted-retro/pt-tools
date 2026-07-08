@@ -1635,7 +1635,7 @@ function doStaffLogout() {
 function startStaffApp() {
   const role = (STAFF_SESSION.role || '').toLowerCase();
   if ((role === 'pt coach' || role === "men's training lead") && !window._skipProfileRedirect) {
-    location.href = 'coach-profile.html?staff_id=' + STAFF_SESSION.staff_id;
+    location.href = 'coach-crm.html?coach=' + encodeURIComponent(STAFF_SESSION.name) + '&locked=1';
     return;
   }
   document.getElementById('login-screen').style.display = 'none';
