@@ -1,7 +1,7 @@
 {
   "name": "Coach Portal",
   "short_name": "Coach CRM",
-  "description": "Retro Fitness of Fairless Hills \u2014 coach's client list, schedule, and notes",
+  "description": "Retro Fitness of Fairless Hills — coach's client list, schedule, and notes",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
@@ -9,23 +9,8 @@
   "background_color": "#F0F2F5",
   "theme_color": "#15171A",
   "icons": [
-    {
-      "src": "icons-strong/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons-strong/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons-strong/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "icons-strong/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons-strong/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons-strong/maskable-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
