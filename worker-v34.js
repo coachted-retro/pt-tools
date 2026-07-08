@@ -3093,10 +3093,29 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const authorRole = body.author_role || 'staff';
         const gymId = body.gym_id || 1;
 
+        // Pull the real client notes for today directly from the source of
+        // truth (coach_notes + coach_touchpoints) rather than trusting
+        // whatever the frontend happened to send — this is what actually
+        // reaches Keelin, permanently baked into the submitted record.
+        const [notesRes, touchRes] = await Promise.all([
+          env.DB.prepare(
+            `SELECT n.client_id, n.tag, n.body, n.created_at, c.first_name, c.last_name FROM coach_notes n
+             LEFT JOIN clients c ON n.client_id = c.id
+             WHERE n.coach_name = ? AND date(n.created_at) = date(?)`
+          ).bind(authorName, logDate).all(),
+          env.DB.prepare(
+            `SELECT t.client_id, t.type as tag, t.body, t.created_at, c.first_name, c.last_name FROM coach_touchpoints t
+             LEFT JOIN clients c ON t.client_id = c.id
+             WHERE t.coach_name = ? AND date(t.created_at) = date(?)`
+          ).bind(authorName, logDate).all()
+        ]);
+        const clientNotesSnapshot = [...(notesRes.results||[]), ...(touchRes.results||[])]
+          .sort((a,b) => (a.created_at||'').localeCompare(b.created_at||''));
+
         // Insert main submission record
         const subRes = await env.DB.prepare(
-          `INSERT INTO eod_submissions (gym_id,author_name,author_role,log_date,notable_wins,areas_improvement,game_plan,additional_notes,priority_flags_json,status,submitted_at,ww_json,sales_json,reflect_positive,reflect_improve,ask_keelin)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+          `INSERT INTO eod_submissions (gym_id,author_name,author_role,log_date,notable_wins,areas_improvement,game_plan,additional_notes,priority_flags_json,status,submitted_at,ww_json,sales_json,reflect_positive,reflect_improve,ask_keelin,client_notes_json)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
         ).bind(
           gymId, authorName, authorRole, logDate,
           body.notable_wins||null, body.reflect_improve||body.areas_improvement||null,
@@ -3105,7 +3124,8 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           'submitted', new Date().toISOString(),
           body.ww ? JSON.stringify(body.ww) : null,
           body.sales ? JSON.stringify(body.sales) : null,
-          body.reflect_positive||null, body.reflect_improve||null, body.ask_keelin||null
+          body.reflect_positive||null, body.reflect_improve||null, body.ask_keelin||null,
+          JSON.stringify(clientNotesSnapshot)
         ).run();
         const subId = subRes.meta?.last_row_id;
 

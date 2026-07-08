@@ -2057,6 +2057,38 @@ async function syncGoalToClientRecord(){
   } catch(e) {}
 }
 
+// Finishing this follow-up IS the completion signal for whatever agenda item
+// brought the coach here. If a specific appointment rode along in the URL
+// (?appt=ID), mark it done and prompt for a quick outcome note that lands
+// permanently on the client's own profile — this is what feeds Keelin's report.
+function completeLinkedApptWithNote(defaultSummary){
+  const apptId = new URLSearchParams(location.search).get('appt');
+  if (!apptId) return;
+  fetch(getApiUrl().replace(/\/$/,'') + '/appointments/status', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id: apptId, status: 'showed' }) }).catch(function(){});
+  const bar = document.createElement('div');
+  bar.id = 'appt-complete-note-bar';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #c0392b;box-shadow:0 -4px 16px rgba(0,0,0,.12);padding:14px 20px;z-index:500;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+  bar.innerHTML = '<div style="font-weight:700;font-size:13px;flex-shrink:0">Outcome note for their profile:</div>' +
+    '<input id="appt-complete-note-input" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px" value="' + (defaultSummary||'').replace(/"/g,'&quot;') + '">' +
+    '<button onclick="submitLinkedApptNote(' + JSON.stringify(apptId) + ')" style="background:#c0392b;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer">Save Note</button>' +
+    '<button onclick="document.getElementById(\'appt-complete-note-bar\').remove()" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer">Skip</button>';
+  document.body.appendChild(bar);
+}
+
+async function submitLinkedApptNote(apptId){
+  const inputEl = document.getElementById('appt-complete-note-input');
+  const body = inputEl ? inputEl.value.trim() : '';
+  const clientId = SELECTED_CLIENT_ID;
+  const bar = document.getElementById('appt-complete-note-bar');
+  if (!body || !clientId) { if (bar) bar.remove(); return; }
+  try {
+    await fetch(getApiUrl().replace(/\/$/,'') + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, coach_name: getCfg('advisor')||'Coach Ted', type: 'note', body }) });
+  } catch(e) {}
+  if (bar) bar.remove();
+}
+
 async function saveFollowupToD1(outcome, freq, length){
   try {
     const fullIntake = {
@@ -2118,6 +2150,7 @@ async function finalizeEnrolled(){
 
   // 3. Save to D1
   await saveFollowupToD1('enrolled', selectedFreq, selectedLength);
+  completeLinkedApptWithNote('Re-enrolled — ' + selectedFreq + ', ' + selectedLength);
 
   // 4. Send email
   await sendEmail('ENROLLED');
@@ -2162,6 +2195,7 @@ async function finalizeLongFollowup() {
   var notes = document.getElementById('long-fu-notes').value;
   var gender = gv('gender');
   await saveFollowupToD1('long_followup: ' + months + ' months (' + fuDate + ')', '', '');
+  completeLinkedApptWithNote('Not ready yet — long-term follow-up in ' + months + ' months.');
   await sendEmail('LONG-TERM FOLLOW-UP');
   hideLoading();
 
@@ -2185,6 +2219,7 @@ async function finalizeAnotherFollowup(){
   showLoading('Saving follow-up record...');
   const gender=gv('gender');
   await saveFollowupToD1('another_followup: ' + gv('next-fu-date'), '', '');
+  completeLinkedApptWithNote('Still deciding — another follow-up set for ' + gv('next-fu-date') + '.');
   await sendEmail('ANOTHER FOLLOW-UP: '+gv('next-fu-date'),'','');
   hideLoading();
   document.getElementById('confirm-another-fu').classList.add('show');
@@ -2208,6 +2243,7 @@ async function finalizeNotReady(){
   showLoading('Closing record...');
   const gender=gv('gender');
   await saveFollowupToD1('not_ready: ' + gv('close-reason'), '', '');
+  completeLinkedApptWithNote('Closed out — ' + gv('close-reason') + '.');
   await sendEmail('CLOSED - NOT INTERESTED: '+gv('close-reason'),'','');
   hideLoading();
   document.getElementById('confirm-not-ready').classList.add('show');

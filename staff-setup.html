@@ -238,17 +238,17 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
       </div>
       <div class="field">
         <label>Phone</label>
-        <input type="tel" id="fPhone" placeholder="(555) 000-0000">
+        <input type="tel" id="fPhone" placeholder="(555) 000-0000" oninput="autoGeneratePin()">
       </div>
     </div>
     <div class="field-row" style="background:#F0F7F0;border-radius:10px;padding:10px;margin:0 0 12px">
       <div class="field">
         <label>Work Email (myretrostrong.com)</label>
-        <input type="email" id="fWorkEmail" placeholder="tscholl@myretrostrong.com" oninput="_workEmailManuallyEdited=true">
+        <input type="email" id="fWorkEmail" placeholder="firstinitiallastname@myretrostrong.com" oninput="_workEmailManuallyEdited=true">
       </div>
       <div class="field">
         <label>Login PIN (4 digits)</label>
-        <input type="text" id="fWorkPin" inputmode="numeric" maxlength="6" placeholder="e.g. last 4 of phone">
+        <input type="text" id="fWorkPin" inputmode="numeric" maxlength="6" placeholder="Auto-fills from phone number" oninput="_workPinManuallyEdited=true">
       </div>
     </div>
     <div class="field">
@@ -306,6 +306,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 const ADMIN_KEY = 'retro-admin-2024';
 let roster = [];
+let authStatusMap = {};
 
 function coachOptionsHtml(){
   const coaches = roster.filter(e => e.role === 'PT Coach' || e.role === "Men's Training Lead");
@@ -404,13 +405,14 @@ const ROLE_DEFAULT_EOD = {
 
 async function loadRoster() {
   try {
-    const r = await fetch(WORKER + '/db', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({op:'select', table:'staff_roster', orderBy:'name asc', limit:200})
-    });
+    const [r, ar] = await Promise.all([
+      fetch(WORKER + '/db', { method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'staff_roster', orderBy:'name asc', limit:200}) }),
+      fetch(WORKER + '/staff/auth-status')
+    ]);
     const d = await r.json();
     roster = d.results || [];
+    try { const ad = await ar.json(); authStatusMap = ad.map || {}; } catch(e) { authStatusMap = {}; }
     renderRoster();
   } catch(e) {
     showToast('Could not load roster');
@@ -490,9 +492,24 @@ function openModal(id) {
     document.getElementById('fPhone').value = emp.phone || '';
     document.getElementById('fHireDate').value = emp.hire_date || '';
     document.getElementById('fNotes').value = emp.notes || '';
-    document.getElementById('fWorkEmail').value = '';
+    const existingWorkEmail = authStatusMap[emp.id];
+    const hasRealWorkEmail = existingWorkEmail && existingWorkEmail.endsWith('@myretrostrong.com');
+    if (hasRealWorkEmail) {
+      // Already has a real work login — don't touch it, just show what it is
+      document.getElementById('fWorkEmail').value = '';
+      document.getElementById('fWorkEmail').placeholder = 'Already set: ' + existingWorkEmail;
+      _workEmailManuallyEdited = true;
+    } else {
+      // No proper work login yet (missing entirely, or still using a personal
+      // email from before this feature existed) — suggest one instead of
+      // leaving it blank, so there's actually something to just confirm and save.
+      document.getElementById('fWorkEmail').placeholder = 'firstinitiallastname@myretrostrong.com';
+      _workEmailManuallyEdited = false;
+      autoGenerateWorkEmail();
+    }
     document.getElementById('fWorkPin').value = '';
-    _workEmailManuallyEdited = true; // editing an existing employee — don't auto-overwrite if they type a name change
+    _workPinManuallyEdited = hasRealWorkEmail; // same logic for the PIN suggestion
+    if (!hasRealWorkEmail) autoGeneratePin();
     document.getElementById('fEOD').checked = !!emp.eod_required;
     document.getElementById('fCanGrantAppAccess').checked = !!emp.can_grant_app_access;
     document.getElementById('fActive').checked = !!emp.active;
@@ -543,6 +560,14 @@ function updateEODTemplate() {
 }
 
 let _workEmailManuallyEdited = false;
+let _workPinManuallyEdited = false;
+function autoGeneratePin(){
+  if (_workPinManuallyEdited) return;
+  const phone = document.getElementById('fPhone').value;
+  const digits = phone.replace(/\D/g,'');
+  if (digits.length < 4) return;
+  document.getElementById('fWorkPin').value = digits.slice(-4);
+}
 function autoGenerateWorkEmail(){
   if (_workEmailManuallyEdited) return;
   const name = document.getElementById('fName').value.trim();

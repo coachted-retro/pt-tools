@@ -3146,6 +3146,7 @@ async function finalizeAccept() {
     hideLoading();
     showPostEnrollConfirmation(clientName);
     setTimeout(function() { sendNotificationEmail('ACCEPTED'); }, 500);
+    completeLinkedApptWithNote('Accepted — enrolled in ' + freqLabel);
   } catch(e) {
     hideLoading();
     alert('Error saving: ' + e.message);
@@ -3240,6 +3241,39 @@ async function finalizeDecline() {
   confirm.innerHTML = '✅ Saved to database. Follow-up scheduled for ' + followDateStr + '. Email sent.';
   confirm.scrollIntoView({ behavior:'smooth' });
   generateThankYouEmail();
+  completeLinkedApptWithNote('Declined — ' + reason);
+}
+
+// Finishing this consultation IS the completion signal for whatever agenda
+// item brought the coach here — no separate "Mark Done" click needed. If a
+// specific appointment rode along in the URL (?appt=ID), mark it done and
+// immediately prompt for a quick outcome note that lands permanently on the
+// client's own profile, not just today's agenda.
+function completeLinkedApptWithNote(defaultSummary){
+  const apptId = new URLSearchParams(location.search).get('appt');
+  if (!apptId) return;
+  fetch(getApiUrl().replace(/\/$/,'') + '/appointments/status', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id: apptId, status: 'showed' }) }).catch(function(){});
+  const bar = document.createElement('div');
+  bar.id = 'appt-complete-note-bar';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--accent,#E0192B);box-shadow:0 -4px 16px rgba(0,0,0,.12);padding:14px 20px;z-index:500;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+  bar.innerHTML = '<div style="font-weight:700;font-size:13px;flex-shrink:0">Outcome note for their profile:</div>' +
+    '<input id="appt-complete-note-input" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border2,#ddd);border-radius:8px;font-size:13px" value="' + (defaultSummary||'').replace(/"/g,'&quot;') + '">' +
+    '<button onclick="submitLinkedApptNote(' + JSON.stringify(apptId) + ')" style="background:var(--accent,#E0192B);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer">Save Note</button>' +
+    '<button onclick="document.getElementById(\'appt-complete-note-bar\').remove()" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer">Skip</button>';
+  document.body.appendChild(bar);
+}
+
+async function submitLinkedApptNote(apptId){
+  const body = (document.getElementById('appt-complete-note-input')||{}).value?.trim();
+  const clientId = window.EXISTING_CLIENT_ID;
+  const bar = document.getElementById('appt-complete-note-bar');
+  if (!body || !clientId) { if (bar) bar.remove(); return; }
+  try {
+    await fetch(getApiUrl().replace(/\/$/,'') + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, coach_name: getCfg('advisor')||'Coach Ted', type: 'note', body }) });
+  } catch(e) {}
+  if (bar) bar.remove();
 }
 
 // ===========================================

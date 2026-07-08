@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EOD History — Retro Strong</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F5F6F8;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:14px 20px}
+.topbar a{color:#9CA3AF;text-decoration:none;font-size:12px;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700}
+.topbar .title{color:#fff;font-family:'Oswald';font-weight:800;font-size:16px;text-transform:uppercase;margin-left:8px}
+.wrap{max-width:900px;margin:0 auto;padding:24px 20px 60px;display:grid;grid-template-columns:280px 1fr;gap:20px}
+@media(max-width:760px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.day-btn{display:block;width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);padding:10px 6px;cursor:pointer;font-family:inherit}
+.day-btn:hover{background:var(--bg)}
+.day-btn.active{background:#FEE2E2;font-weight:700}
+.day-date{font-weight:700;font-size:13px}
+.day-wins{font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sec-label{font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+.sec-label:first-child{margin-top:0}
+.field-block{padding:10px 0;border-bottom:1px solid var(--line)}
+.field-block .lbl{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)}
+.field-block .val{font-size:14px;margin-top:2px;white-space:pre-wrap}
+.note-item{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.note-item .who{font-weight:700}
+.note-item .tag{font-size:10px;color:var(--red);font-weight:700;text-transform:uppercase;margin-left:6px}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="#" onclick="history.back();return false">← Back</a>
+  <div class="title">EOD History — <span id="coach-label"></span></div>
+</div>
+<div class="wrap">
+  <div class="card">
+    <div class="sec-label">Past Reports</div>
+    <div id="day-list"><div class="empty">Loading...</div></div>
+  </div>
+  <div class="card" id="detail-panel">
+    <div class="empty">Pick a day on the left to see everything that happened — the full report plus every client outcome note, permanently as it was submitted.</div>
+  </div>
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const params = new URLSearchParams(location.search);
+const COACH = params.get('coach') || 'Ted Scholl';
+document.getElementById('coach-label').textContent = COACH;
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtDate(d){ if(!d) return ''; const dt=new Date(d+'T00:00:00'); return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}); }
+
+let HISTORY = [];
+
+async function loadHistory(){
+  const el = document.getElementById('day-list');
+  try {
+    const r = await fetch(WORKER + '/eod/history?author=' + encodeURIComponent(COACH));
+    const d = await r.json();
+    HISTORY = d.history || [];
+    if (!HISTORY.length) { el.innerHTML = '<div class="empty">No submitted reports yet.</div>'; return; }
+    el.innerHTML = HISTORY.map(h => `<button class="day-btn" id="day-${h.id}" onclick="selectDay(${h.id},'${h.log_date}')">
+      <div class="day-date">${esc(fmtDate(h.log_date))}</div>
+      <div class="day-wins">${esc((h.notable_wins||'No wins logged').slice(0,50))}</div>
+    </button>`).join('');
+  } catch(e) { el.innerHTML = '<div class="empty">Could not load history.</div>'; }
+}
+
+async function selectDay(id, date){
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('day-'+id);
+  if (btn) btn.classList.add('active');
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = '<div class="empty">Loading...</div>';
+  try {
+    const subRes = await fetch(WORKER + '/eod/detail?id=' + id);
+    const subData = await subRes.json();
+    const s = subData.submission || {};
+
+    // Prefer the permanent snapshot baked into this exact submission — it's
+    // what actually got sent, not a live query that could drift from it.
+    // Older submissions from before this existed fall back to a live pull.
+    let notes = [];
+    try { notes = JSON.parse(s.client_notes_json || '[]'); } catch(e) {}
+    if (!notes.length) {
+      try {
+        const notesRes = await fetch(WORKER + '/coach/notes-today?coach=' + encodeURIComponent(COACH) + '&date=' + date);
+        const notesData = await notesRes.json();
+        notes = notesData.notes || [];
+      } catch(e) {}
+    }
+
+    let html = `<div class="sec-label">${esc(fmtDate(date))}</div>`;
+    const field = (label, val) => val ? `<div class="field-block"><div class="lbl">${esc(label)}</div><div class="val">${esc(val)}</div></div>` : '';
+    html += field('Notable Wins', s.notable_wins);
+    html += field('Game Plan', s.game_plan);
+    html += field('What Went Well', s.reflect_positive);
+    html += field('What Could Improve', s.reflect_improve);
+    html += field('Flagged for Keelin', s.ask_keelin);
+    html += field('Additional Notes', s.additional_notes);
+    if (!s.notable_wins && !s.game_plan && !s.reflect_positive && !s.reflect_improve && !s.ask_keelin && !s.additional_notes) {
+      html += '<div class="empty">No written summary for this day.</div>';
+    }
+
+    html += `<div class="sec-label">Client Outcomes That Day (${notes.length})</div>`;
+    if (!notes.length) {
+      html += '<div class="empty">No client notes saved this day.</div>';
+    } else {
+      html += notes.map(n => {
+        const clientName = (n.first_name||n.last_name) ? (n.first_name+' '+n.last_name).trim() : 'Client #'+n.client_id;
+        return `<div class="note-item"><span class="who">${esc(clientName)}</span><span class="tag">${esc((n.tag||'').replace('EOD - ',''))}</span><div style="margin-top:2px">${esc(n.body)}</div></div>`;
+      }).join('');
+    }
+    panel.innerHTML = html;
+  } catch(e) { panel.innerHTML = '<div class="empty">Could not load this day.</div>'; }
+}
+
+loadHistory();
+</script>
+</body>
+</html>
