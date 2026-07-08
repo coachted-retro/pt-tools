@@ -1129,7 +1129,10 @@ async function syncFromSheet() {
         };
       });
       const d1Keys = d1Prospects.map(p => (p.name + p.phone).toLowerCase().replace(/\D/g,''));
-      const localOnly = prospects.filter(p => !d1Keys.includes((p.name + p.phone).toLowerCase().replace(/\D/g,'')));
+      const localOnly = prospects.filter(p =>
+        !d1Keys.includes((p.name + p.phone).toLowerCase().replace(/\D/g,'')) &&
+        !BIZ_LEAD_TYPES.includes(p.type)
+      );
       prospects = [...d1Prospects, ...localOnly];
     }
 
