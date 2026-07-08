@@ -94,6 +94,8 @@
     <a href="client-profile.html?add=1" id="add-client-link" style="flex-shrink:0;background:var(--red,#E0192B);color:#fff;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:10px;font-size:13px;white-space:nowrap">+ Add Client</a>
   </div>
 
+  <input id="rosterSearch" type="text" placeholder="Search by name, phone, email, advisor, or agreement #..." oninput="renderRoster();renderLeads()" style="width:100%;margin:14px 0;padding:11px 14px;border:1px solid var(--line,#E4E7EC);border-radius:10px;font-size:14px;font-family:inherit">
+
   <div id="dupeBanner" class="dupe-banner">Checking for duplicates...</div>
 
   <div class="tabs">
@@ -238,9 +240,18 @@ function renderRoster(){
   dupes.forEach(g => g.forEach(c => dupeIds.add(c.id)));
 
   const el = document.getElementById('rosterRows');
-  if (!ALL_CLIENTS.length) { el.innerHTML = '<tr><td colspan="6" class="empty">No clients yet.</td></tr>'; return; }
+  const searchInput = document.getElementById('rosterSearch');
+  const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const filtered = !q ? ALL_CLIENTS : ALL_CLIENTS.filter(c => {
+    const blob = [c.first_name, c.last_name, c.phone, c.email, c.advisor, c.coach, c.agreement_number, c.membership_tier, c.status]
+      .filter(Boolean).join(' ').toLowerCase();
+    return blob.includes(q);
+  });
 
-  el.innerHTML = ALL_CLIENTS.map(c => {
+  if (!ALL_CLIENTS.length) { el.innerHTML = '<tr><td colspan="6" class="empty">No clients yet.</td></tr>'; return; }
+  if (!filtered.length) { el.innerHTML = '<tr><td colspan="6" class="empty">No clients match "'+esc(q)+'".</td></tr>'; return; }
+
+  el.innerHTML = filtered.map(c => {
     const name = ((c.first_name||'')+' '+(c.last_name||'')).trim() || '(no name)';
     const statusClass = ['active_pt','prospect','not_interested'].includes(c.status) ? c.status : 'default';
     const isDupe = dupeIds.has(c.id);
@@ -254,7 +265,8 @@ function renderRoster(){
     '</tr>';
   }).join('');
 
-  // Add merge buttons under confirmed dupe groups
+  // Merge buttons only make sense against the full duplicate set, not the
+  // filtered view, so they stay based on `dupes` regardless of search text.
   let existing = document.getElementById('mergeBtnsRow');
   if (existing) existing.remove();
 
@@ -276,8 +288,15 @@ function renderRoster(){
 
 function renderLeads(){
   const el = document.getElementById('leadRows');
+  const searchInput = document.getElementById('rosterSearch');
+  const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const filtered = !q ? ALL_LEADS : ALL_LEADS.filter(l => {
+    const blob = [l.business_name, l.phone, l.email, l.lead_type, l.category, l.status].filter(Boolean).join(' ').toLowerCase();
+    return blob.includes(q);
+  });
   if (!ALL_LEADS.length) { el.innerHTML = '<tr><td colspan="5" class="empty">No leads yet.</td></tr>'; return; }
-  el.innerHTML = ALL_LEADS.map(l => {
+  if (!filtered.length) { el.innerHTML = '<tr><td colspan="5" class="empty">No leads match "'+esc(q)+'".</td></tr>'; return; }
+  el.innerHTML = filtered.map(l => {
     const contact = [l.phone, l.email].filter(Boolean).join(' · ') || '—';
     return '<tr>'+
       '<td style="font-weight:600">'+esc(l.business_name||'—')+'</td>'+

@@ -1388,6 +1388,37 @@
           </div>
         </div>
 
+        <div class="card">
+          <div class="card-title"><span class="dot"></span> Eating out & spending habits</div>
+          <p style="font-size:12px;color:var(--text2);margin:-4px 0 12px">This isn't about judging their diet — it's real information for the investment conversation later. Someone spending $60/week on takeout and coffee has more flexibility than they might realize.</p>
+          <div class="grid2">
+            <div class="field">
+              <label>How often do they eat out (lunch, dinner, or weekends)?</label>
+              <select id="dine-out-frequency">
+                <option value="">Select...</option>
+                <option>Rarely — mostly cooks at home</option>
+                <option>1-2x per week</option>
+                <option>3-4x per week</option>
+                <option>Almost every day</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Coffee / café spending</label>
+              <select id="coffee-habit">
+                <option value="">Select...</option>
+                <option>Rarely buys coffee out</option>
+                <option>A few times a week</option>
+                <option>Daily</option>
+                <option>Multiple times a day</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Notes on their spending / what they mentioned</label>
+            <textarea id="spending-notes" rows="2" placeholder="Anything specific they said — e.g. 'orders DoorDash most weeknights,' 'admitted their coffee habit adds up'"></textarea>
+          </div>
+        </div>
+
         <div class="nav-row">
           <button class="btn btn-ghost" onclick="goPage(2)">← Back</button>
           <button class="btn btn-primary" onclick="goPage(4)">Next: InBody scan →</button>
@@ -1634,6 +1665,39 @@
                 <div style="font-weight:700;font-size:14px">Weekly Chef-Crafted Meal Plan</div>
                 <div style="font-size:12px;color:var(--text2);margin-top:2px">Nutrition assessed from your InBody scan and answers given during this consultation — emailed every Saturday.</div>
               </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:16px">
+            <div class="card-title"><span class="dot"></span> Investment Conversation</div>
+            <p style="font-size:12px;color:var(--text2);margin:-4px 0 12px">What are they comfortable investing weekly in their health and fitness? Ask this before showing pricing — it tells you which options to lead with, and it's exactly the conversation Keelin wants documented.</p>
+            <div class="grid2">
+              <div class="field">
+                <label>Weekly investment range they named</label>
+                <select id="weekly-budget-range">
+                  <option value="">Select...</option>
+                  <option>$50-$75/week</option>
+                  <option>$75-$100/week</option>
+                  <option>$100-$150/week</option>
+                  <option>$150-$200/week</option>
+                  <option>$200+/week</option>
+                  <option>Didn't want to commit to a range</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Where things landed</label>
+                <select id="investment-outcome">
+                  <option value="">Select...</option>
+                  <option>Committed today</option>
+                  <option>Wants to think it over</option>
+                  <option>Financial hesitation — discussed options</option>
+                  <option>Not ready right now</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Conversation notes — what was actually discussed</label>
+              <textarea id="advisor-conversation-notes" rows="4" placeholder="What you covered in person: their spending habits, options and timeframes you presented, objections raised, how you worked toward a resolution, what's next if they didn't commit today..."></textarea>
             </div>
           </div>
 
@@ -3113,6 +3177,24 @@ async function finalizeAccept() {
 
     // 2. Save consultation record to D1
     if (window._enrolledClientId) {
+      var dietHabitsSummary = [gv('breakfast'), gv('lunch'), gv('dinner')].filter(Boolean).join('; ');
+      var spendingSummary = [
+        gv('dine-out-frequency') ? 'Eats out: ' + gv('dine-out-frequency') : '',
+        gv('coffee-habit') ? 'Coffee: ' + gv('coffee-habit') : '',
+        gv('spending-notes')
+      ].filter(Boolean).join(' — ');
+      var investmentSummary = [
+        gv('weekly-budget-range') ? 'Weekly range discussed: ' + gv('weekly-budget-range') : '',
+        gv('investment-outcome') ? 'Outcome: ' + gv('investment-outcome') : ''
+      ].filter(Boolean).join('. ');
+      var conversationNotes = gv('advisor-conversation-notes');
+      // Lead with the real in-person conversation, not just the order-entry
+      // mechanics -- Keelin should be able to see that the financial
+      // discovery actually happened, not just which package got picked.
+      var notesParts = [];
+      if (investmentSummary) notesParts.push(investmentSummary);
+      if (conversationNotes) notesParts.push(conversationNotes);
+      notesParts.push('Package: ' + pkgDisplayName() + '. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : ''));
       var consultPayload = {
         client_id: window._enrolledClientId,
         consult_date: gv('consult-date') || new Date().toISOString().slice(0,10),
@@ -3124,9 +3206,9 @@ async function finalizeAccept() {
         bmi: gv('bmi') || null,
         goals: gv('goals') || null,
         medical_notes: gv('medical') || null,
-        diet_habits: gv('typical-diet') || null,
+        diet_habits: [dietHabitsSummary, spendingSummary].filter(Boolean).join(' | ') || null,
         assessment_summary: assessmentText || null,
-        advisor_notes: 'Package: ' + pkgDisplayName() + '. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : ''),
+        advisor_notes: notesParts.join(' | '),
         outcome: 'accepted'
       };
       Object.keys(consultPayload).forEach(function(k){ if(consultPayload[k]==null) delete consultPayload[k]; });
@@ -3193,6 +3275,22 @@ async function finalizeDecline() {
       var clientId = d.id;
       if (clientId) {
         saveInBodyScan(clientId, 'consultation_decline');
+        var declineDietSummary = [gv('breakfast'), gv('lunch'), gv('dinner')].filter(Boolean).join('; ');
+        var declineSpendingSummary = [
+          gv('dine-out-frequency') ? 'Eats out: ' + gv('dine-out-frequency') : '',
+          gv('coffee-habit') ? 'Coffee: ' + gv('coffee-habit') : '',
+          gv('spending-notes')
+        ].filter(Boolean).join(' — ');
+        var declineInvestmentSummary = [
+          gv('weekly-budget-range') ? 'Weekly range discussed: ' + gv('weekly-budget-range') : '',
+          gv('investment-outcome') ? 'Outcome: ' + gv('investment-outcome') : ''
+        ].filter(Boolean).join('. ');
+        var declineConvoNotes = document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '';
+        var declineAdvisorConvoNotes = gv('advisor-conversation-notes');
+        var declineNotesParts = ['Declined. Reason: ' + reason];
+        if (declineInvestmentSummary) declineNotesParts.push(declineInvestmentSummary);
+        if (declineAdvisorConvoNotes) declineNotesParts.push(declineAdvisorConvoNotes);
+        if (declineConvoNotes) declineNotesParts.push(declineConvoNotes);
         dbCall({ op:'insert', table:'consultations', values: {
           client_id: clientId,
           consult_date: gv('consult-date') || new Date().toISOString().slice(0,10),
@@ -3204,9 +3302,9 @@ async function finalizeDecline() {
           bmi: gv('bmi') || null,
           goals: gv('goals') || null,
           medical_notes: gv('medical') || null,
-          diet_habits: gv('typical-diet') || null,
+          diet_habits: [declineDietSummary, declineSpendingSummary].filter(Boolean).join(' | ') || null,
           assessment_summary: assessmentText || null,
-          advisor_notes: 'Declined. Reason: ' + reason,
+          advisor_notes: declineNotesParts.join(' | '),
           outcome: 'declined'
         }}).catch(function(){});
         dbCall({ op:'insert', table:'followups', values: { client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' } }).catch(function(){});

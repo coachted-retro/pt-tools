@@ -111,6 +111,11 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
 .note-del{background:none;border:none;cursor:pointer;opacity:.5;font-size:12px}
 
 .kpi-hint{font-size:11px;color:var(--blue);background:var(--lblue);border:1px solid #BFDBFE;border-radius:6px;padding:8px 12px;margin-bottom:12px}
+.auto-list{display:flex;flex-direction:column;gap:6px}
+.auto-row{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.ar-name{font-size:13px;font-weight:600;color:var(--ink)}
+.ar-note{font-size:11px;color:var(--muted);margin-top:2px}
+.empty-auto{font-size:12px;color:var(--muted);padding:12px;text-align:center}
 
 .submit-panel{background:var(--ink);border-radius:14px;padding:20px;margin-top:20px;text-align:center}
 .submit-panel h3{font-family:'Oswald';font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:6px}
@@ -207,10 +212,24 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
     </div>
   </div>
 
-  <!-- SECTION 4: WELCOME WORKOUTS -->
+  <!-- SECTION 04: MY CONSULTATIONS & CHECK-INS (Danielle also coaches) -->
+  <div class="section collapsed" id="sec-consults">
+    <div class="section-header" onclick="toggleSection('sec-consults')">
+      <span class="section-num">04</span>
+      <span class="section-title">My Consultations &amp; Check-Ins</span>
+      <span class="section-status status-auto" id="status-consults">Loading...</span>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Auto-pulled from the intake tools — whatever you enter there (including financial discovery notes) shows up here automatically, no retyping.</div>
+      <div class="auto-list" id="consultations-list"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 05: WELCOME WORKOUTS -->
   <div class="section collapsed" id="sec-ww">
     <div class="section-header" onclick="toggleSection('sec-ww')">
-      <span class="section-num">04</span>
+      <span class="section-num">05</span>
       <span class="section-title">Welcome Workouts</span>
       <span class="section-status status-empty" id="status-ww">Empty</span>
       <span class="chevron">▾</span>
@@ -229,7 +248,7 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
   <!-- SECTION 5: GROUP FITNESS -->
   <div class="section collapsed" id="sec-gf">
     <div class="section-header" onclick="toggleSection('sec-gf')">
-      <span class="section-num">05</span>
+      <span class="section-num">06</span>
       <span class="section-title">Group Fitness Attendance</span>
       <span class="section-status status-empty" id="status-gf">Empty</span>
       <span class="chevron">▾</span>
@@ -248,7 +267,7 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
   <!-- SECTION 6: COACH PROGRESS MONITORING TABLE -->
   <div class="section collapsed" id="sec-coaches">
     <div class="section-header" onclick="toggleSection('sec-coaches')">
-      <span class="section-num">06</span>
+      <span class="section-num">07</span>
       <span class="section-title">Coach Progress Monitoring</span>
       <span class="section-status status-empty" id="status-coaches">Empty</span>
       <span class="chevron">▾</span>
@@ -267,7 +286,7 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
   <!-- SECTION 7: WINS + IMPROVEMENT -->
   <div class="section collapsed" id="sec-wins">
     <div class="section-header" onclick="toggleSection('sec-wins')">
-      <span class="section-num">07</span>
+      <span class="section-num">08</span>
       <span class="section-title">Notable Wins & Areas of Improvement</span>
       <span class="section-status status-empty" id="status-wins">Empty</span>
       <span class="chevron">▾</span>
@@ -285,7 +304,7 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
   <!-- SECTION 8: GAME PLAN -->
   <div class="section collapsed" id="sec-plan">
     <div class="section-header" onclick="toggleSection('sec-plan')">
-      <span class="section-num">08</span>
+      <span class="section-num">09</span>
       <span class="section-title">Game Plan for Tomorrow</span>
       <span class="section-status status-empty" id="status-plan">Empty</span>
       <span class="chevron">▾</span>
@@ -303,7 +322,7 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
   <!-- SECTION 9: PRIORITY FLAGS -->
   <div class="section collapsed" id="sec-notes">
     <div class="section-header" onclick="toggleSection('sec-notes')">
-      <span class="section-num">09</span>
+      <span class="section-num">10</span>
       <span class="section-title">Additional Notes & Priority Flags</span>
       <span class="section-status status-empty" id="status-notes">Empty</span>
       <span class="chevron">▾</span>
@@ -390,16 +409,58 @@ function parseBill() {
 // LOAD DATA
 async function loadData() {
   try {
-    const [clientsRes, feedRes] = await Promise.all([
+    const [clientsRes, feedRes, consultRes, checkinRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:300})}),
-      fetch(WORKER + `/eod/feed?date=${TODAY}`)
+      fetch(WORKER + `/eod/feed?date=${TODAY}`),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'consultations', where:{consult_date: TODAY}, limit:100})}).catch(function(){return null;}),
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({op:'select', table:'checkins', where:{checkin_date: TODAY}, limit:100})}).catch(function(){return null;})
     ]);
     allClients = (await clientsRes.json()).results || [];
     const feedData = await feedRes.json();
     renderPTSection();
     renderFeed(feedData.submissions||[], feedData.action_items||[]);
+    const allConsults = consultRes ? ((await consultRes.json()).results || []) : [];
+    const allCheckins = checkinRes ? ((await checkinRes.json()).results || []) : [];
+    // Danielle also coaches, unlike a pure director role -- filter to just
+    // her own consultations/check-ins so this section is her actual work,
+    // not everyone's.
+    renderMyConsultations(
+      allConsults.filter(c => (c.advisor||'').includes('Danielle')),
+      allCheckins.filter(c => (c.advisor||'').includes('Danielle'))
+    );
   } catch(e) { showToast('Error loading data'); }
+}
+
+function renderMyConsultations(consults, checkins) {
+  const el = document.getElementById('consultations-list');
+  const statusEl = document.getElementById('status-consults');
+  const combined = [
+    ...consults.map(c => ({...c, kind:'consult'})),
+    ...checkins.map(c => ({...c, kind:'checkin'}))
+  ];
+  if (!combined.length) {
+    el.innerHTML = '<div class="empty-auto">No consultations or check-ins recorded today yet</div>';
+    if (statusEl) { statusEl.textContent = 'None yet'; statusEl.className = 'section-status status-empty'; }
+    return;
+  }
+  el.innerHTML = combined.map(c => {
+    const client = allClients.find(cl => cl.id === c.client_id) || {};
+    const clientName = client.first_name ? `${client.first_name} ${client.last_name||''}`.trim() : 'Client #' + c.client_id;
+    if (c.kind === 'consult') {
+      const outcome = c.outcome || 'pending';
+      const label = outcome === 'accepted' ? '✅ Accepted' : outcome === 'declined' ? '🤔 Declined / thinking it over' : '⏳ Outcome pending';
+      const fullNote = c.advisor_notes ? c.advisor_notes.split(' | ').join('  •  ') : '';
+      return `<div class="auto-row"><div class="ar-info"><div class="ar-name">${esc(clientName)} — Initial Consultation</div><div class="ar-note">${esc(label + (fullNote ? ' — ' + fullNote : ''))}</div></div></div>`;
+    } else {
+      const scores = ['session_score','diet_score','energy_score','sleep_score','stress_score']
+        .filter(k => c[k] != null).map(k => k.replace('_score','') + ': ' + c[k]).join(' · ');
+      return `<div class="auto-row"><div class="ar-info"><div class="ar-name">${esc(clientName)} — Monthly Check-In</div><div class="ar-note">${esc(scores || 'Completed')}</div></div></div>`;
+    }
+  }).join('');
+  if (statusEl) { statusEl.textContent = combined.length + ' today'; statusEl.className = 'section-status status-auto'; }
 }
 
 function renderPTSection() {

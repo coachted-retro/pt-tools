@@ -540,7 +540,12 @@ function renderConsultations() {
     const flagClass = outcome === 'accepted' ? 'flag-green' : outcome === 'declined' ? 'flag-amber' : 'flag-amber';
     const icon = outcome === 'accepted' ? '✅' : outcome === 'declined' ? '🤔' : '⏳';
     const label = outcome === 'accepted' ? 'Accepted' : outcome === 'declined' ? 'Declined / thinking it over' : 'Outcome pending';
-    return autoRow(icon, flagClass, name(client) || 'Client #' + c.client_id, label + (c.advisor_notes ? ' — ' + c.advisor_notes.split('.')[0] : ''), 'consult-' + c.id, null, c.client_id, 'EOD - Consultation');
+    // advisor_notes is pipe-separated (investment discussion | conversation
+    // notes | package mechanics) -- show the full thing, not just the first
+    // sentence. This is exactly what was getting lost before: the real
+    // financial-discovery conversation was there, just invisible in the report.
+    const fullNote = c.advisor_notes ? c.advisor_notes.split(' | ').join('  •  ') : '';
+    return autoRow(icon, flagClass, name(client) || 'Client #' + c.client_id, label + (fullNote ? ' — ' + fullNote : ''), 'consult-' + c.id, null, c.client_id, 'EOD - Consultation');
   }).join('');
   updateStatus('consultations', allConsultations.length + ' today', 'status-auto');
 }
