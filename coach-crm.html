@@ -153,11 +153,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <div id="client-panel-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100" onclick="if(event.target===this) closeClientPanel()">
   <div style="position:absolute;top:0;right:0;bottom:0;width:min(420px,92vw);background:#F8F9FB;overflow-y:auto;padding:20px;box-shadow:-8px 0 24px rgba(0,0,0,.2)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div style="font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase">My Clients</div>
+      <div style="font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase" id="client-panel-title">My Clients</div>
       <button onclick="closeClientPanel()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)">&times;</button>
     </div>
     <a href="#" onclick="openQuickAddClient();return false" style="display:block;text-align:center;background:var(--red);color:#fff;text-decoration:none;padding:10px;border-radius:8px;font-weight:700;font-size:13px;margin-bottom:12px">+ Quick Add Client</a>
     <div id="quick-add-form" style="display:none;margin-bottom:14px"></div>
+    <input id="client-search" placeholder="Search by name, phone, or tag..." oninput="filterClientPanel()" style="width:100%;margin-bottom:10px;padding:9px 12px;border:1px solid var(--line,#E4E7EC);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+    <div id="tag-filter-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
   </div>
 </div>
@@ -186,15 +188,10 @@ if (IS_LOCKED) {
 
 // All Clients is only for people who manage everyone's monthly check-ins
 // (Ted, Danielle, Roman) or leadership roles -- a regular coach should only
-// work their own assigned clients, not browse the full roster.
-(function(){
-  let sess = null;
-  try { sess = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
-  if (sess && sess.sees_all_clients) {
-    const link = document.getElementById('all-clients-link');
-    if (link) link.style.display = '';
-  }
-})();
+// work their own assigned clients, not browse the full roster. Visibility
+// is set from the live server response in loadClients(), not a cached
+// session value, so it doesn't depend on someone having logged back in
+// since this feature shipped.
 
 async function loadActiveCoverage(){
   try {
@@ -986,28 +983,17 @@ async function loadClients(){
   localStorage.setItem('coach_crm_name', coach);
   list.innerHTML = '<div class="empty">Loading...</div>';
   try {
-    const r = await fetch(WORKER + '/coach/clients?coach=' + encodeURIComponent(coach));
+    const r = await fetch(WORKER + '/coach/clients?coach=' + encodeURIComponent(coach) + '&all=1');
     const d = await r.json();
     const clients = d.clients || [];
     window._loadedClients = clients;
-    if (countLabel) countLabel.textContent = clients.length + ' Client' + (clients.length===1?'':'s');
-    if (!clients.length){ list.innerHTML = '<div class="empty">No clients assigned to you yet.</div>'; return; }
-    list.innerHTML = clients.map(c => {
-      const initials = ((c.first_name||'?')[0] + (c.last_name||'')[0]).toUpperCase();
-      const daysSince = c.last_touchpoint ? Math.floor((Date.now() - new Date(c.last_touchpoint+'Z')) / 86400000) : null;
-      const stale = daysSince === null || daysSince > 14;
-      return `<a class="card" href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(coach)}">
-        <div class="avatar">${escH(initials)}</div>
-        <div style="flex:1">
-          <div class="name">${escH(c.first_name)} ${escH(c.last_name)}</div>
-          ${renderClientGraphs(c)}
-        </div>
-        <div class="badges">
-          ${c.unread_messages > 0 ? `<span class="badge badge-red">${c.unread_messages} new msg</span>` : ''}
-          ${stale ? `<span class="badge badge-red">Touch base</span>` : `<span class="badge badge-muted">${daysSince}d ago</span>`}
-        </div>
-      </a>`;
-    }).join('');
+    const titleEl = document.getElementById('client-panel-title');
+    if (titleEl) titleEl.textContent = d.showing_all ? 'All Clients' : 'My Clients';
+    const navLink = document.getElementById('all-clients-link');
+    if (navLink) navLink.style.display = d.showing_all ? '' : 'none';
+    if (countLabel) countLabel.textContent = clients.length + ' Client' + (clients.length===1?'':'s') + (d.showing_all ? ' (all)' : '');
+    renderTagFilterChips(clients);
+    renderClientPanel(clients, coach);
   } catch(e) { list.innerHTML = '<div class="empty">Could not load clients.</div>'; }
   loadBell();
   loadTodaySchedule();
@@ -1015,6 +1001,59 @@ async function loadClients(){
   loadJeopardy();
   loadCoachDailyTip();
   loadCoachStats();
+}
+
+let ACTIVE_TAG_FILTER = null;
+function renderTagFilterChips(clients) {
+  const el = document.getElementById('tag-filter-chips');
+  if (!el) return;
+  const tagCounts = {};
+  clients.forEach(c => (c.tags||'').split(',').map(t=>t.trim()).filter(Boolean).forEach(t => { tagCounts[t] = (tagCounts[t]||0)+1; }));
+  const tags = Object.keys(tagCounts).sort((a,b) => tagCounts[b]-tagCounts[a]).slice(0, 10);
+  if (!tags.length) { el.innerHTML = ''; return; }
+  el.innerHTML = tags.map(t => {
+    const active = ACTIVE_TAG_FILTER === t;
+    return `<span onclick="toggleTagFilter('${escH(t).replace(/'/g,"")}')" style="cursor:pointer;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:${active?'#2563EB':'#EFF6FF'};color:${active?'#fff':'#2563EB'}">${escH(t)} (${tagCounts[t]})</span>`;
+  }).join('');
+}
+function toggleTagFilter(tag) {
+  ACTIVE_TAG_FILTER = ACTIVE_TAG_FILTER === tag ? null : tag;
+  renderTagFilterChips(window._loadedClients||[]);
+  filterClientPanel();
+}
+function filterClientPanel() {
+  const q = (document.getElementById('client-search')||{}).value?.trim().toLowerCase() || '';
+  const coach = document.getElementById('coach-select').value;
+  let clients = window._loadedClients || [];
+  if (ACTIVE_TAG_FILTER) clients = clients.filter(c => (c.tags||'').split(',').map(t=>t.trim()).includes(ACTIVE_TAG_FILTER));
+  if (q) clients = clients.filter(c => {
+    const blob = [c.first_name, c.last_name, c.phone, c.email, c.tags].filter(Boolean).join(' ').toLowerCase();
+    return blob.includes(q);
+  });
+  renderClientPanel(clients, coach, true);
+}
+function renderClientPanel(clients, coach, isFiltered) {
+  const list = document.getElementById('client-list');
+  if (!clients.length){ list.innerHTML = `<div class="empty">${isFiltered ? 'No clients match.' : 'No clients assigned to you yet.'}</div>`; return; }
+  list.innerHTML = clients.map(c => {
+    const initials = ((c.first_name||'?')[0] + (c.last_name||'')[0]).toUpperCase();
+    const daysSince = c.last_touchpoint ? Math.floor((Date.now() - new Date(c.last_touchpoint+'Z')) / 86400000) : null;
+    const stale = daysSince === null || daysSince > 14;
+    const tagChips = (c.tags||'').split(',').map(t=>t.trim()).filter(Boolean).slice(0,3)
+      .map(t => `<span style="font-size:9px;font-weight:700;color:#2563EB;background:#EFF6FF;padding:2px 6px;border-radius:999px">${escH(t)}</span>`).join(' ');
+    return `<a class="card" href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(c.coach||coach)}">
+      <div class="avatar">${escH(initials)}</div>
+      <div style="flex:1">
+        <div class="name">${escH(c.first_name)} ${escH(c.last_name)}</div>
+        ${renderClientGraphs(c)}
+        ${tagChips ? `<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${tagChips}</div>` : ''}
+      </div>
+      <div class="badges">
+        ${c.unread_messages > 0 ? `<span class="badge badge-red">${c.unread_messages} new msg</span>` : ''}
+        ${stale ? `<span class="badge badge-red">Touch base</span>` : `<span class="badge badge-muted">${daysSince}d ago</span>`}
+      </div>
+    </a>`;
+  }).join('');
 }
 if (saved || IS_LOCKED) loadClients();
 setInterval(loadBell, 60000);

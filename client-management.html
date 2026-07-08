@@ -243,7 +243,7 @@ function renderRoster(){
   const searchInput = document.getElementById('rosterSearch');
   const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
   const filtered = !q ? ALL_CLIENTS : ALL_CLIENTS.filter(c => {
-    const blob = [c.first_name, c.last_name, c.phone, c.email, c.advisor, c.coach, c.agreement_number, c.membership_tier, c.status]
+    const blob = [c.first_name, c.last_name, c.phone, c.email, c.advisor, c.coach, c.agreement_number, c.membership_tier, c.status, c.tags]
       .filter(Boolean).join(' ').toLowerCase();
     return blob.includes(q);
   });

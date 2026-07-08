@@ -1975,6 +1975,39 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       // IsTempData:"true" means the test hasn't been reviewed at
       // InBody's end yet; fetching it early would 401, so those are
       // logged but not queued for a results fetch.
+      // ── CLIENT TAGS ──────────────────────────────────────────────
+      // Danielle's request: custom, freeform tags per client, searchable,
+      // and the system should learn which tags get used most so they can
+      // be suggested instead of retyped every time.
+      if (url.pathname === '/clients/tags' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id || !Array.isArray(b.tags)) return bad('client_id and tags array required', cors);
+        const cleanTags = [...new Set(b.tags.map(t => String(t).trim()).filter(Boolean))];
+        await env.DB.prepare('UPDATE clients SET tags=? WHERE id=?').bind(cleanTags.join(','), b.client_id).run();
+        // Track usage so common tags rise to the top as suggestions --
+        // only counts tags that are new additions this save, not every tag
+        // every time the client's profile is touched.
+        if (Array.isArray(b.newly_added) && b.newly_added.length) {
+          for (const tag of b.newly_added) {
+            const clean = String(tag).trim();
+            if (!clean) continue;
+            await env.DB.prepare(
+              `INSERT INTO tag_usage (tag, use_count, last_used) VALUES (?,1,?)
+               ON CONFLICT(tag) DO UPDATE SET use_count = use_count + 1, last_used = excluded.last_used`
+            ).bind(clean, new Date().toISOString()).run();
+          }
+        }
+        return ok({ tags: cleanTags }, cors);
+      }
+
+      if (url.pathname === '/clients/common-tags' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const limit = parseInt(url.searchParams.get('limit')) || 15;
+        const rows = await env.DB.prepare('SELECT tag, use_count FROM tag_usage ORDER BY use_count DESC, last_used DESC LIMIT ?').bind(limit).all();
+        return ok({ tags: rows.results || [] }, cors);
+      }
+
       if (url.pathname === '/inbody/webhook' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         let body;
@@ -2736,14 +2769,19 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const coach = url.searchParams.get('coach');
         if (!coach) return bad('coach required', cors);
+        let showAll = false;
+        if (url.searchParams.get('all') === '1') {
+          const staffRow = await env.DB.prepare('SELECT sees_all_clients FROM staff_roster WHERE name = ?').bind(coach).first();
+          showAll = !!(staffRow && staffRow.sees_all_clients);
+        }
         const rows = await env.DB.prepare(
-          `SELECT c.id, c.first_name, c.last_name, c.phone, c.email, c.status, c.goal_primary,
+          `SELECT c.id, c.first_name, c.last_name, c.phone, c.email, c.status, c.goal_primary, c.tags, c.coach,
                   c.sessions_remaining, c.sessions_total, c.package_end_date,
                   (SELECT COUNT(*) FROM coach_touchpoints t WHERE t.client_id=c.id) AS touchpoint_count,
                   (SELECT MAX(created_at) FROM coach_touchpoints t WHERE t.client_id=c.id) AS last_touchpoint,
                   (SELECT COUNT(*) FROM portal_messages m WHERE m.client_id=c.id AND m.sender='client' AND m.read=0) AS unread_messages
-           FROM clients c WHERE c.coach = ? ORDER BY c.last_name ASC`
-        ).bind(coach).all();
+           FROM clients c ${showAll ? '' : 'WHERE c.coach = ?'} ORDER BY c.last_name ASC`
+        ).bind(...(showAll ? [] : [coach])).all();
         const clients = rows.results || [];
 
         const now = new Date();
@@ -2805,7 +2843,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           c.macro_series = macroSeries;
         }
 
-        return ok({ clients }, cors);
+        return ok({ clients, showing_all: showAll }, cors);
       }
 
       if (url.pathname === '/coach/client-detail' && request.method === 'GET') {

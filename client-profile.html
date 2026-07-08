@@ -446,6 +446,71 @@ function sortedRosterIds(){
     .map(c=>c.id);
 }
 
+let COMMON_TAGS_CACHE = null;
+async function getCommonTags() {
+  if (COMMON_TAGS_CACHE) return COMMON_TAGS_CACHE;
+  try {
+    const r = await fetch(WORKER + '/clients/common-tags?limit=12');
+    const d = await r.json();
+    COMMON_TAGS_CACHE = (d.tags || []).map(t => t.tag);
+  } catch(e) { COMMON_TAGS_CACHE = []; }
+  return COMMON_TAGS_CACHE;
+}
+
+async function renderTagsRow(client) {
+  const el = document.getElementById('tags-row');
+  if (!el) return;
+  const currentTags = (client.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+  const chips = currentTags.map(t =>
+    `<span style="background:#EFF6FF;color:#2563EB;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:6px">${esc(t)}<span onclick="removeTag(${client.id},'${esc(t).replace(/'/g,"")}')" style="cursor:pointer;color:#93C5FD">&times;</span></span>`
+  ).join('');
+  el.innerHTML = chips +
+    `<span onclick="openAddTag(${client.id})" id="add-tag-btn" style="cursor:pointer;background:var(--soft,#F5F6F8);color:var(--muted,#6B7280);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px">+ Tag</span>` +
+    `<span id="tag-input-wrap" style="display:none;position:relative"></span>`;
+}
+
+async function openAddTag(clientId) {
+  const wrap = document.getElementById('tag-input-wrap');
+  const btn = document.getElementById('add-tag-btn');
+  if (btn) btn.style.display = 'none';
+  const common = await getCommonTags();
+  wrap.style.display = 'inline-block';
+  wrap.innerHTML = `<input id="new-tag-input" list="common-tags-list" placeholder="Type or pick a tag..." style="font-size:12px;padding:4px 10px;border:1px solid var(--line,#E4E7EC);border-radius:999px;width:160px" onkeydown="if(event.key==='Enter') saveNewTag(${clientId})">
+    <datalist id="common-tags-list">${common.map(t => `<option value="${esc(t)}">`).join('')}</datalist>`;
+  document.getElementById('new-tag-input').focus();
+}
+
+async function saveNewTag(clientId) {
+  const input = document.getElementById('new-tag-input');
+  const newTag = input ? input.value.trim() : '';
+  if (!newTag) return;
+  const client = ALL_CLIENTS.find(c => c.id === clientId) || CURRENT;
+  const currentTags = ((client.tags || '').split(',').map(t => t.trim()).filter(Boolean));
+  if (currentTags.some(t => t.toLowerCase() === newTag.toLowerCase())) { input.value = ''; return; }
+  const updatedTags = [...currentTags, newTag];
+  try {
+    await fetch(WORKER + '/clients/tags', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, tags: updatedTags, newly_added: [newTag] }) });
+    client.tags = updatedTags.join(',');
+    if (CURRENT && CURRENT.id === clientId) CURRENT.tags = client.tags;
+    COMMON_TAGS_CACHE = null;
+    renderTagsRow(client);
+  } catch(e) { alert('Could not save tag — check connection.'); }
+}
+
+async function removeTag(clientId, tag) {
+  const client = ALL_CLIENTS.find(c => c.id === clientId) || CURRENT;
+  const currentTags = (client.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+  const updatedTags = currentTags.filter(t => t !== tag);
+  try {
+    await fetch(WORKER + '/clients/tags', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, tags: updatedTags, newly_added: [] }) });
+    client.tags = updatedTags.join(',');
+    if (CURRENT && CURRENT.id === clientId) CURRENT.tags = client.tags;
+    renderTagsRow(client);
+  } catch(e) { alert('Could not remove tag — check connection.'); }
+}
+
 function renderRosterNav(currentId){
   const el=document.getElementById('rosterNav');
   if(!el || !ALL_CLIENTS.length) return;
@@ -543,7 +608,9 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '</div><div class="head-meta" style="margin-top:6px">'+
     (client.email?'<span>Email: <b>'+esc(client.email)+'</b></span>':'')+
     (client.phone?'<span>Phone: <b>'+esc(client.phone)+'</b></span>':'')+
-    '</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'+
+    '</div>'+
+    '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap" id="tags-row"></div>'+
+    '</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">'+
     '<div style="display:flex;gap:6px" id="rosterNav"></div>'+
     '<button class="btn" onclick="openEdit()">Edit</button>'+
     '<a href="coach-client-profile.html?client='+client.id+'" class="btn" style="text-decoration:none;display:inline-block">Coach View</a>'+
@@ -674,6 +741,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
 
   document.getElementById('wrap').innerHTML=html;
   renderRosterNav(client.id);
+  renderTagsRow(client);
 
   // build chart series from consultation (start) + checkins
   const pts=[];
