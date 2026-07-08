@@ -77,6 +77,17 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 
 /* ---------- session setup ---------- */
 .opt-tile{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 16px;margin-bottom:12px;}
+.fb-section{margin-bottom:18px;}
+.fb-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink2);margin-bottom:8px;}
+.fb-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.fb-chip{font-size:13px;font-weight:600;padding:8px 14px;border-radius:99px;background:var(--panel);border:1.5px solid var(--line);color:var(--ink2);cursor:pointer;}
+.fb-chip.on{background:var(--red);border-color:var(--red);color:#fff;}
+.fb-count{font-size:12px;color:var(--ink3);margin:2px 0 12px;}
+.fb-ex-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);}
+.fb-ex-row .nm{font-weight:700;font-size:13.5px;}
+.fb-ex-row .meta{font-size:11px;color:var(--ink3);}
+.fb-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;}
+.fb-check.on{background:var(--red);border-color:var(--red);}
 .opt-tile .ic{font-size:26px;}
 .opt-tile .t{font-weight:800;font-size:16px;}
 .opt-tile .d{font-size:12px;color:var(--ink2);margin-top:2px;}
@@ -212,6 +223,10 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     <button class="opt-tile" onclick="startFresh()">
       <span class="ic">✚</span>
       <span><span class="t">Fresh Session</span><br><span class="d">Build the exercise list as you go</span></span>
+    </button>
+    <button class="opt-tile" onclick="openFilterBuilder()">
+      <span class="ic">🎯</span>
+      <span><span class="t">Build by Filter</span><br><span class="d">Pick body parts, equipment, duration & intensity — get a matching exercise list</span></span>
     </button>
     <button class="opt-tile" onclick="openBuilder()">
       <span class="ic">🤖</span>
@@ -396,6 +411,47 @@ input,select,textarea{font-family:inherit;font-size:16px;}
   </div>
   <div class="bottombar">
     <button class="btn red" id="bGen" onclick="generateProgram()">Generate Program</button>
+  </div>
+</div>
+
+<!-- ============ SCREEN: BUILD BY FILTER ============ -->
+<div class="screen" id="scr-filter-builder">
+  <div class="topbar">
+    <div><div class="title">Build by Filter</div></div>
+    <button class="btn sm" onclick="show('scr-setup')">✕</button>
+  </div>
+  <div class="scroll" id="fbBody">
+    <div class="fb-section">
+      <div class="fb-label">Body Part</div>
+      <div class="fb-chips" id="fbBodyPart"></div>
+    </div>
+    <div class="fb-section">
+      <div class="fb-label">Equipment</div>
+      <div class="fb-chips" id="fbEquipment"></div>
+    </div>
+    <div class="fb-section">
+      <div class="fb-label">Type</div>
+      <div class="fb-chips" id="fbType"></div>
+    </div>
+    <div class="fb-section">
+      <div class="fb-label">Duration</div>
+      <div class="fb-chips" id="fbDuration"></div>
+    </div>
+    <div class="fb-section">
+      <div class="fb-label">Intensity</div>
+      <div class="fb-chips" id="fbIntensity"></div>
+    </div>
+    <div class="fb-section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="fb-label" style="margin-bottom:0">Matching Exercises</div>
+        <button class="btn sm" onclick="fbSelectAllVisible()" id="fbSelectAllBtn">Select All</button>
+      </div>
+      <div class="fb-count" id="fbCount"></div>
+      <div id="fbExList"></div>
+    </div>
+  </div>
+  <div class="bottombar">
+    <button class="btn red" id="fbBuildBtn" onclick="fbBuildSession()">Build Session (0)</button>
   </div>
 </div>
 
@@ -1835,6 +1891,84 @@ const SPECS=['30-Min Core','KB/DB Leg Day','Hotel Circuit','Senior-Safe Strength
 const EQUIP=['Full Gym','Dumbbells Only','KB+DB+Bodyweight','Bands','Hotel Room'];
 let bStyle='Push/Pull/Legs',bSpec=null,bEquip='Full Gym',bDaysN=3,CLIENT_CTX=null;
 
+/* =====================================================================
+   BUILD BY FILTER — pick body part(s), equipment, type, duration,
+   intensity, get a live-matching exercise list to hand-pick or bulk-add
+   ===================================================================== */
+const FB_BODY_PARTS=['Chest','Back','Shoulders','Biceps','Triceps','Quads','Hamstrings/Glutes','Calves','Core','Full Body','Cardio','Mobility'];
+const FB_EQUIPMENT=['Barbell','Dumbbell','Cable','Machine','Bodyweight','Band','Kettlebell','Cardio Machine','Various','None / Mobility','Free Weight (Barbell/DB)'];
+const FB_TYPES=['Strength','Cardio/Interval','Mobility'];
+const FB_DURATIONS=[{id:'quick',label:'Quick (3-4 ex)',count:4},{id:'standard',label:'Standard (5-6 ex)',count:6},{id:'extended',label:'Extended (7-8 ex)',count:8}];
+const FB_INTENSITIES=[{id:'light',label:'Light (12-20 reps)',reps:'12-20 reps'},{id:'moderate',label:'Moderate (8-12 reps)',reps:'8-12 reps'},{id:'heavy',label:'Heavy (4-6 reps)',reps:'4-6 reps'}];
+let FB_STATE={bodyParts:new Set(),equipment:new Set(),types:new Set(),duration:'standard',intensity:'moderate',selected:new Set()};
+function openFilterBuilder(){
+  FB_STATE={bodyParts:new Set(),equipment:new Set(),types:new Set(),duration:'standard',intensity:'moderate',selected:new Set()};
+  paintFbChips();
+  fbRenderList();
+  show('scr-filter-builder');
+}
+function paintFbChips(){
+  $('fbBodyPart').innerHTML=FB_BODY_PARTS.map(b=>`<button class="fb-chip ${FB_STATE.bodyParts.has(b)?'on':''}" onclick="fbToggle('bodyParts','${b}')">${b}</button>`).join('');
+  $('fbEquipment').innerHTML=FB_EQUIPMENT.map(e=>`<button class="fb-chip ${FB_STATE.equipment.has(e)?'on':''}" onclick="fbToggle('equipment','${e.replace(/'/g,"\\'")}')">${e}</button>`).join('');
+  $('fbType').innerHTML=FB_TYPES.map(t=>`<button class="fb-chip ${FB_STATE.types.has(t)?'on':''}" onclick="fbToggle('types','${t.replace(/'/g,"\\'")}')">${t}</button>`).join('');
+  $('fbDuration').innerHTML=FB_DURATIONS.map(d=>`<button class="fb-chip ${FB_STATE.duration===d.id?'on':''}" onclick="FB_STATE.duration='${d.id}';paintFbChips()">${d.label}</button>`).join('');
+  $('fbIntensity').innerHTML=FB_INTENSITIES.map(i=>`<button class="fb-chip ${FB_STATE.intensity===i.id?'on':''}" onclick="FB_STATE.intensity='${i.id}';paintFbChips()">${i.label}</button>`).join('');
+}
+function fbToggle(dim,val){
+  const s=FB_STATE[dim];
+  if(s.has(val))s.delete(val);else s.add(val);
+  paintFbChips();fbRenderList();
+}
+function fbMatches(){
+  return EXERCISE_DB.filter(e=>{
+    if(FB_STATE.bodyParts.size && !FB_STATE.bodyParts.has(e.body_part))return false;
+    if(FB_STATE.equipment.size && !FB_STATE.equipment.has(e.equipment))return false;
+    if(FB_STATE.types.size && !FB_STATE.types.has(e.type))return false;
+    return true;
+  });
+}
+function fbRenderList(){
+  const matches=fbMatches();
+  $('fbCount').textContent=matches.length+' exercise'+(matches.length===1?'':'s')+' match'+(matches.length===1?'es':'')+(FB_STATE.bodyParts.size||FB_STATE.equipment.size||FB_STATE.types.size?'':' — pick a filter above, or scroll all exercises below');
+  $('fbExList').innerHTML=matches.map(e=>{
+    const on=FB_STATE.selected.has(e.name);
+    return `<div class="fb-ex-row" onclick="fbToggleSelect('${e.name.replace(/'/g,"\\'")}')" style="cursor:pointer">
+      <div class="fb-check ${on?'on':''}">${on?'✓':''}</div>
+      <div style="flex:1">
+        <div class="nm">${esc(e.name)}</div>
+        <div class="meta">${esc(e.body_part)} &middot; ${esc(e.equipment)} &middot; ${esc(e.mechanics)}</div>
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty">No exercises match this combination — try loosening a filter.</div>';
+  fbUpdateBuildBtn();
+}
+function fbToggleSelect(name){
+  if(FB_STATE.selected.has(name))FB_STATE.selected.delete(name);else FB_STATE.selected.add(name);
+  fbRenderList();
+}
+function fbSelectAllVisible(){
+  const matches=fbMatches();
+  const durCfg=FB_DURATIONS.find(d=>d.id===FB_STATE.duration)||FB_DURATIONS[1];
+  const allOn=matches.length && matches.every(e=>FB_STATE.selected.has(e.name));
+  if(allOn){ matches.forEach(e=>FB_STATE.selected.delete(e.name)); }
+  else { matches.slice(0,durCfg.count).forEach(e=>FB_STATE.selected.add(e.name)); }
+  fbRenderList();
+}
+function fbUpdateBuildBtn(){
+  const n=FB_STATE.selected.size;
+  $('fbBuildBtn').textContent='Build Session ('+n+')';
+  $('fbBuildBtn').disabled=!n;
+  $('fbSelectAllBtn').textContent=(fbMatches().length && fbMatches().every(e=>FB_STATE.selected.has(e.name)))?'Deselect All':'Select All';
+}
+function fbBuildSession(){
+  if(!FB_STATE.selected.size)return;
+  const intCfg=FB_INTENSITIES.find(i=>i.id===FB_STATE.intensity)||FB_INTENSITIES[1];
+  const names=[...FB_STATE.selected];
+  newSession(names,'Custom: '+names.length+' exercises');
+  SESSION.exercises.forEach(e=>{ e.note='Target: '+intCfg.reps; });
+  persistActive();
+  showQueue();
+}
 function openBuilder(){
   $('bName').textContent=((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim();
   paintBuilderChips();$('bResult').innerHTML='';
