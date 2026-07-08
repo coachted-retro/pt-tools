@@ -1855,52 +1855,6 @@
           </button>
         </div>
 
-        <!-- PROGRESS PHOTOS PANEL — now post-enrollment only, hidden from pre-accept flow -->
-        <div class="terms-panel" id="photos-panel" style="display:none !important">
-          <div class="terms-title">📸 Baseline Progress Photos</div>
-          <p style="font-size:12px;color:var(--text2);margin-bottom:16px;">Upload 3 photos — front, side, and back. These are the baseline all future check-ins will compare against. Date and time stamped automatically.</p>
-
-          <div class="photo-prompt-dark">
-            <div class="photo-prompt-title">Upload Baseline Photos</div>
-            <div class="photo-prompt-sub">Select photos from your device. All 3 required before proceeding.</div>
-            <div class="photo-grid-3">
-              <div class="photo-slot-dark" id="slot-front" onclick="document.getElementById('upload-front').click()">
-                <input type="file" id="upload-front" accept="image/*" style="display:none" onchange="handlePhotoUpload('front',this)">
-                <div class="photo-slot-icon" id="icon-front">📁</div>
-                <div class="photo-slot-label">Front</div>
-                <div class="photo-slot-status" id="status-front">Click to upload</div>
-              </div>
-              <div class="photo-slot-dark" id="slot-side" onclick="document.getElementById('upload-side').click()">
-                <input type="file" id="upload-side" accept="image/*" style="display:none" onchange="handlePhotoUpload('side',this)">
-                <div class="photo-slot-icon" id="icon-side">📁</div>
-                <div class="photo-slot-label">Side</div>
-                <div class="photo-slot-status" id="status-side">Click to upload</div>
-              </div>
-              <div class="photo-slot-dark" id="slot-back" onclick="document.getElementById('upload-back').click()">
-                <input type="file" id="upload-back" accept="image/*" style="display:none" onchange="handlePhotoUpload('back',this)">
-                <div class="photo-slot-icon" id="icon-back">📁</div>
-                <div class="photo-slot-label">Back</div>
-                <div class="photo-slot-status" id="status-back">Click to upload</div>
-              </div>
-            </div>
-            <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:12px;" id="photo-timestamp-display"></div>
-          </div>
-
-          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;">
-            <ul style="font-size:12px;color:var(--text2);padding-left:16px;line-height:2.1;margin:0;">
-              <li>Stand against a plain wall or neutral background</li>
-              <li>Wear fitted clothing so body composition is visible</li>
-              <li>Arms slightly away from body for front and back shots</li>
-              <li>Photos stored securely in the client's Drive folder</li>
-              <li>Used for progress comparison only — never shared without consent</li>
-            </ul>
-          </div>
-
-          <button class="btn btn-primary btn-full" id="photos-to-enrollment-btn" onclick="showEnrollmentTerms()" disabled style="opacity:.4;cursor:not-allowed;">
-            Next: Finalize Enrollment →
-          </button>
-        </div>
-
         <!-- ENROLLMENT / TERMS PANEL -->
         <div class="terms-panel" id="terms-panel" style="display:none">
 
@@ -4086,30 +4040,38 @@ function showEnrollmentTerms() {
   tp.scrollIntoView({ behavior:'smooth' });
 }
 
-function handlePhotoUpload(type, input) {
+async function handlePhotoUpload(type, input) {
   if (!input.files || !input.files[0]) return;
   var file = input.files[0];
+  var slot = document.getElementById('slot-' + type);
+  var icon = document.getElementById('icon-' + type);
+  var status = document.getElementById('status-' + type);
+  var clientId = window._enrolledClientId || window.EXISTING_CLIENT_ID;
+  if (!clientId) { status.textContent = 'No client yet — save enrollment first'; return; }
+
+  // instant local preview while it uploads
   var reader = new FileReader();
   reader.onload = function(e) {
-    var slot = document.getElementById('slot-' + type);
-    var icon = document.getElementById('icon-' + type);
-    var status = document.getElementById('status-' + type);
-    slot.classList.add('uploaded');
     icon.innerHTML = '<img src="' + e.target.result + '" style="width:56px;height:56px;object-fit:cover;border-radius:6px;">';
-    var now = new Date();
-    status.textContent = now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    // Check all 3
-    var front = document.getElementById('slot-front').classList.contains('uploaded');
-    var side  = document.getElementById('slot-side').classList.contains('uploaded');
-    var back  = document.getElementById('slot-back').classList.contains('uploaded');
-    if (front && side && back) {
-      var btn = document.getElementById('photos-to-enrollment-btn');
-      btn.disabled = false;
-      btn.style.opacity = '1';
-      btn.style.cursor = 'pointer';
-    }
   };
   reader.readAsDataURL(file);
+  status.textContent = 'Uploading...';
+
+  try {
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var buf = await file.arrayBuffer();
+    var r = await fetch(getApiUrl() + '/file/upload?client=' + clientId + '&kind=photo_' + type + '&ext=' + ext + '&ct=' + encodeURIComponent(file.type || 'image/jpeg'), { method: 'POST', body: buf });
+    var d = await r.json();
+    if (!d.key) throw new Error(d.error || 'Upload failed');
+    var row = { client_id: clientId, captured_at: new Date().toISOString().slice(0,10), pose: type, r2_key: d.key, source: 'consultation' };
+    var ins = await dbCall({ op: 'insert', table: 'progress_photos', values: row });
+    if (ins && ins.error) throw new Error(ins.error);
+    slot.classList.add('uploaded');
+    var now = new Date();
+    status.textContent = 'Saved ' + now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  } catch (e) {
+    status.textContent = 'Failed: ' + e.message;
+  }
 }
 
 function pickLengthEnroll(el, months) {

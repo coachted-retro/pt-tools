@@ -759,6 +759,30 @@
       <div class="page" id="page-6">
         <div class="page-header"><h2>Assessment & save</h2><p>Generate the AI-powered monthly assessment, then save everything to the progress tracker.</p></div>
         <div class="card">
+          <div class="card-title"><span class="dot"></span> Progress photos</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Front, side and back. These land in the same photo timeline as the initial consultation shots — one unified gallery per client.</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div class="mc-photo-slot" id="mc-slot-front" onclick="document.getElementById('mc-upload-front').click()" style="cursor:pointer;border:1px dashed var(--border2);border-radius:10px;padding:14px 8px;text-align:center;background:var(--surface2)">
+              <input type="file" id="mc-upload-front" accept="image/*" style="display:none" onchange="handleCheckinPhotoUpload('front',this)">
+              <div id="mc-icon-front" style="font-size:22px">📁</div>
+              <div style="font-size:11px;font-weight:600;margin-top:4px">Front</div>
+              <div id="mc-status-front" style="font-size:10px;color:var(--text2);margin-top:2px">Tap to upload</div>
+            </div>
+            <div class="mc-photo-slot" id="mc-slot-side" onclick="document.getElementById('mc-upload-side').click()" style="cursor:pointer;border:1px dashed var(--border2);border-radius:10px;padding:14px 8px;text-align:center;background:var(--surface2)">
+              <input type="file" id="mc-upload-side" accept="image/*" style="display:none" onchange="handleCheckinPhotoUpload('side',this)">
+              <div id="mc-icon-side" style="font-size:22px">📁</div>
+              <div style="font-size:11px;font-weight:600;margin-top:4px">Side</div>
+              <div id="mc-status-side" style="font-size:10px;color:var(--text2);margin-top:2px">Tap to upload</div>
+            </div>
+            <div class="mc-photo-slot" id="mc-slot-back" onclick="document.getElementById('mc-upload-back').click()" style="cursor:pointer;border:1px dashed var(--border2);border-radius:10px;padding:14px 8px;text-align:center;background:var(--surface2)">
+              <input type="file" id="mc-upload-back" accept="image/*" style="display:none" onchange="handleCheckinPhotoUpload('back',this)">
+              <div id="mc-icon-back" style="font-size:22px">📁</div>
+              <div style="font-size:11px;font-weight:600;margin-top:4px">Back</div>
+              <div id="mc-status-back" style="font-size:10px;color:var(--text2);margin-top:2px">Tap to upload</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-title"><span class="dot"></span> Generate monthly assessment</div>
           <button class="btn btn-primary btn-lg btn-full" id="gen-btn" onclick="generateAssessment()">✨ Generate monthly assessment</button>
           <div id="assess-status" class="status-bar" style="margin-top:12px"></div>
@@ -1666,6 +1690,33 @@ let MATCHED_CLIENT=null;
 async function _db(body){
   const r=await fetch(getApiUrl()+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
   return r.json();
+}
+async function handleCheckinPhotoUpload(type, input){
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const slot = document.getElementById('mc-slot-'+type);
+  const icon = document.getElementById('mc-icon-'+type);
+  const status = document.getElementById('mc-status-'+type);
+  const clientId = MATCHED_CLIENT ? MATCHED_CLIENT.id : null;
+  if (!clientId) { status.textContent = 'Fill in Member details first'; return; }
+
+  const reader = new FileReader();
+  reader.onload = e => { icon.innerHTML = '<img src="'+e.target.result+'" style="width:40px;height:40px;object-fit:cover;border-radius:6px">'; };
+  reader.readAsDataURL(file);
+  status.textContent = 'Uploading...';
+
+  try{
+    const ext = (file.name.split('.').pop()||'jpg').toLowerCase();
+    const buf = await file.arrayBuffer();
+    const r = await fetch(getApiUrl()+'/file/upload?client='+clientId+'&kind=photo_'+type+'&ext='+ext+'&ct='+encodeURIComponent(file.type||'image/jpeg'), {method:'POST', body:buf});
+    const d = await r.json();
+    if (!d.key) throw new Error(d.error||'Upload failed');
+    const row = { client_id:clientId, captured_at:new Date().toISOString().slice(0,10), pose:type, r2_key:d.key, source:'monthly_checkin' };
+    const ins = await _db({op:'insert', table:'progress_photos', values:row});
+    if (ins && ins.error) throw new Error(ins.error);
+    slot.style.borderColor = '#4caf7d'; slot.style.borderStyle = 'solid';
+    status.textContent = 'Saved ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  }catch(e){ status.textContent = 'Failed: '+e.message; }
 }
 function _digits(x){ return (x||'').replace(/\D/g,''); }
 async function _allClients(){

@@ -696,10 +696,8 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   const q='?client='+encodeURIComponent(nm);
   const hasNutritionPkg = client.package === 'complete' || client.package === 'complete_plus';
   html+='<div class="actions">'+
-    '<a class="btn" href="gym-floor.html?client='+client.id+'">Log Session</a>'+
     (hasNutritionPkg ? '<a class="btn" href="meal-plans.html">Build Meal Plan</a>' : '')+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
-    '<button class="btn" style="border-radius:999px;background:#2563EB;color:#fff;border:none" onclick="openScheduleModal('+client.id+',\''+esc(nm).replace(/'/g,"")+'\')">+ Schedule Appointment</button>'+
     '</div>';
 
   html+='<div class="card" style="margin-top:16px;border-left:4px solid #2563EB" id="touchpoints-card">'+
