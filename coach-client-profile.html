@@ -561,6 +561,23 @@ async function loadSchedule() {
         </div>
 
         <textarea id="sc-notes" rows="2" placeholder="Focus notes (optional)" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:10px"></textarea>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Exercise Variation</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer"><input type="radio" name="sc-variation" value="fixed" checked onchange="scToggleRotationInput()"> Same exercises the whole time — swap manually as needed</label>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+          <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer"><input type="radio" name="sc-variation" value="rotate" onchange="scToggleRotationInput()"> Auto-rotate exercises every</label>
+          <input type="number" id="sc-rotate-weeks" value="2" min="1" max="12" disabled style="width:52px;border:1px solid var(--line);border-radius:8px;padding:9px 6px;text-align:center;font-size:13px"> <span style="font-size:12px;color:var(--muted)">weeks</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Rotation swaps roughly half the exercises for an equivalent (same body part) each cycle — the rest stay put so week-over-week progress stays trackable.</div>
+
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Progressive Overload</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer"><input type="radio" name="sc-overload" value="progressive" checked> Suggest weight increases automatically</label>
+          <label style="flex:1;display:flex;align-items:center;gap:6px;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;cursor:pointer"><input type="radio" name="sc-overload" value="standard"> Standard — coach calls it, no auto-suggestions</label>
+        </div>
+
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Repeat on</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d,i)=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer"><input type="checkbox" class="sc-day" value="${i}"> ${d}</label>`).join('')}
@@ -741,9 +758,20 @@ function openScheduleModal(){
   document.getElementById('schedule-modal').style.display='flex';
   SC_SELECTED = [];
   SC_MODE = 'routine';
-  setTimeout(() => { scSwitchMode('routine'); scRenderSelected(); }, 0);
+  setTimeout(() => {
+    scSwitchMode('routine'); scRenderSelected();
+    const fixedRadio = document.querySelector('input[name="sc-variation"][value="fixed"]'); if (fixedRadio) fixedRadio.checked = true;
+    const progRadio = document.querySelector('input[name="sc-overload"][value="progressive"]'); if (progRadio) progRadio.checked = true;
+    document.getElementById('sc-rotate-weeks').value = 2;
+    scToggleRotationInput();
+  }, 0);
 }
 function closeScheduleModal(){ document.getElementById('schedule-modal').style.display='none'; }
+
+function scToggleRotationInput(){
+  const on = document.querySelector('input[name="sc-variation"]:checked').value === 'rotate';
+  document.getElementById('sc-rotate-weeks').disabled = !on;
+}
 
 async function saveSchedule(){
   const program = document.getElementById('sc-program').value.trim();
@@ -765,12 +793,68 @@ async function saveSchedule(){
     exercises = SC_SELECTED.map(item => ({name: item.name, prescription: scPrescriptionText(item)}));
   }
 
+  const variation = document.querySelector('input[name="sc-variation"]:checked').value;
+  const overloadMode = document.querySelector('input[name="sc-overload"]:checked').value;
+  const rotateWeeks = variation === 'rotate' ? Math.max(1, parseInt(document.getElementById('sc-rotate-weeks').value,10) || 2) : 0;
+
   msg.textContent = 'Building schedule...';
-  const r = await fetch(WORKER + '/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({client_id: CLIENT_ID, program_name: program, focus_notes: notes, weekdays, start_date: start, end_date: end, coach_name: COACH_NAME, exercises})});
-  const d = await r.json();
-  if (d.created_count != null) { closeScheduleModal(); load(); }
-  else { msg.textContent = d.error || 'Something went wrong.'; }
+  try {
+    let totalCreated = 0;
+    if (rotateWeeks === 0) {
+      const r = await fetch(WORKER + '/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({client_id: CLIENT_ID, program_name: program, focus_notes: notes, weekdays, start_date: start, end_date: end, coach_name: COACH_NAME, exercises, overload_mode: overloadMode, rotation_weeks: 0})});
+      const d = await r.json();
+      if (d.created_count == null) throw new Error(d.error || 'Something went wrong.');
+      totalCreated = d.created_count;
+    } else {
+      // Split the full range into rotateWeeks-sized chunks. Each chunk after the
+      // first swaps roughly half the exercises for an equivalent (same body_part)
+      // from the reference library, alternating which half so it doesn't drift
+      // back to the same list every other cycle, and never reusing an exercise
+      // already present in that chunk's list.
+      const chunks = scChunkDateRange(start, end, rotateWeeks);
+      for (let i = 0; i < chunks.length; i++) {
+        const chunkExercises = scRotateExercises(exercises, i);
+        const r = await fetch(WORKER + '/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({client_id: CLIENT_ID, program_name: program, focus_notes: notes, weekdays, start_date: chunks[i].start, end_date: chunks[i].end, coach_name: COACH_NAME, exercises: chunkExercises, overload_mode: overloadMode, rotation_weeks: rotateWeeks})});
+        const d = await r.json();
+        if (d.created_count == null) throw new Error(d.error || ('Something went wrong on week block ' + (i+1) + '.'));
+        totalCreated += d.created_count;
+      }
+    }
+    closeScheduleModal(); load();
+  } catch(e) { msg.textContent = e.message; }
+}
+
+function scChunkDateRange(start, end, weeks){
+  const chunks = [];
+  let cur = new Date(start + 'T00:00:00');
+  const endDate = new Date(end + 'T00:00:00');
+  while (cur <= endDate) {
+    const chunkStart = new Date(cur);
+    const chunkEnd = new Date(cur); chunkEnd.setDate(chunkEnd.getDate() + weeks*7 - 1);
+    if (chunkEnd > endDate) chunkEnd.setTime(endDate.getTime());
+    chunks.push({ start: chunkStart.toISOString().slice(0,10), end: chunkEnd.toISOString().slice(0,10) });
+    cur.setDate(cur.getDate() + weeks*7);
+  }
+  return chunks;
+}
+
+function scRotateExercises(baseList, chunkIndex){
+  if (chunkIndex === 0) return baseList;
+  return baseList.map((item, idx) => {
+    // Only rotate roughly half the slots each cycle, alternating which half by
+    // chunk parity, so progressive overload still has continuity on the rest.
+    const rotateThis = (idx % 2) === (chunkIndex % 2);
+    if (!rotateThis) return item;
+    const base = EXERCISE_DB.find(e => e.name.toLowerCase() === item.name.toLowerCase());
+    if (!base) return item;
+    const candidates = EXERCISE_DB.filter(e => e.body_part === base.body_part && e.name.toLowerCase() !== base.name.toLowerCase()
+      && !baseList.some(b => b.name.toLowerCase() === e.name.toLowerCase()));
+    if (!candidates.length) return item;
+    const pick = candidates[chunkIndex % candidates.length];
+    return { name: pick.name, prescription: item.prescription || '' };
+  });
 }
 
 async function editScheduleItem(s){

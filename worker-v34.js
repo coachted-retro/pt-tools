@@ -2446,6 +2446,8 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           return bad('Sessions booked for another coach need at least 24 hours notice. Pick a later start date.', cors);
         }
         const fallbackExercisesJson = Array.isArray(b.exercises) ? JSON.stringify(b.exercises) : null;
+        const overloadMode = b.overload_mode === 'standard' ? 'standard' : 'progressive';
+        const rotationWeeks = parseInt(b.rotation_weeks,10) || 0;
         const created = [];
         for (let d = new Date(start); d <= end; d.setDate(d.getDate()+1)) {
           const dow = d.getDay();
@@ -2455,8 +2457,8 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
             const programName = dayRoutine?.program_name || b.program_name || 'Training Session';
             const exercisesJson = dayRoutine?.exercises ? JSON.stringify(dayRoutine.exercises) : fallbackExercisesJson;
             const ins = await env.DB.prepare(
-              'INSERT INTO scheduled_sessions (client_id,scheduled_date,program_name,focus_notes,status,created_by,assigned_coach,exercises_json) VALUES (?,?,?,?,?,?,?,?)'
-            ).bind(b.client_id, dateStr, programName, b.focus_notes||'', 'scheduled', b.coach_name||'', assignedCoach, exercisesJson).run();
+              'INSERT INTO scheduled_sessions (client_id,scheduled_date,program_name,focus_notes,status,created_by,assigned_coach,exercises_json,overload_mode,rotation_weeks) VALUES (?,?,?,?,?,?,?,?,?,?)'
+            ).bind(b.client_id, dateStr, programName, b.focus_notes||'', 'scheduled', b.coach_name||'', assignedCoach, exercisesJson, overloadMode, rotationWeeks).run();
             created.push({ date: dateStr, id: ins.meta?.last_row_id, program_name: programName });
           }
         }

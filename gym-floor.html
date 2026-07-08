@@ -708,6 +708,7 @@ function startScheduledProgram(){
     if (prescription && SESSION.exercises[i]) SESSION.exercises[i].note = prescription;
   });
   if (TODAYS_SCHEDULED.focus_notes) { SESSION.workoutNote = TODAYS_SCHEDULED.focus_notes; }
+  SESSION.overloadMode = TODAYS_SCHEDULED.overload_mode === 'standard' ? 'standard' : 'progressive';
   persistActive();
 }
 function goToClientProfile(){
@@ -1296,9 +1297,10 @@ function openLogging(){
   $('progFill').style.width=Math.round((SESSION.exercises.filter(e=>e.sets.length).length/Math.max(1,SESSION.exercises.length))*100)+'%';
   const lp=lastPerf(ex.name);
   $('lastPerf').innerHTML=lp?('Last: <b>'+esc(lp)+'</b>'):'No history for this exercise';
-  const sug=suggestedLoad(ex);
+  const standardMode = SESSION.overloadMode === 'standard';
+  const sug=standardMode?null:suggestedLoad(ex);
   const sugEl=$('loadSuggest');
-  if(sugEl) sugEl.innerHTML = sug ? `<span style="color:var(--green);font-weight:700">&#9650; Suggested: ${esc(sug.text)}</span><div style="font-size:11px;color:var(--text3,#888);margin-top:2px">${esc(sug.reason)}</div>` : '';
+  if(sugEl) sugEl.innerHTML = sug ? `<span style="color:var(--green);font-weight:700">&#9650; Suggested: ${esc(sug.text)}</span><div style="font-size:11px;color:var(--text3,#888);margin-top:2px">${esc(sug.reason)}</div>` : (standardMode&&lp ? '<div style="font-size:11px;color:var(--text3,#888)">Standard mode — you\'re calling the weight today.</div>' : '');
   const seed=seedNumbers(ex);curW=seed.w;curR=seed.r;paintSteppers();
   $('exNote').value=ex.note||'';
   renderFormHelp(ex.name);
