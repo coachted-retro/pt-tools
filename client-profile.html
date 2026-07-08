@@ -511,6 +511,81 @@ async function removeTag(clientId, tag) {
   } catch(e) { alert('Could not remove tag — check connection.'); }
 }
 
+async function renderIntakeLog(clientId) {
+  const el = document.getElementById('intake-log-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'meals', where:{ client_id: clientId }, orderBy:'logged_at desc', limit:20 }) });
+    const d = await r.json();
+    const meals = d.results || [];
+    if (!meals.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted,#6B7280)">Nothing logged yet — will appear here the moment they log a meal.</div>'; return; }
+    const typeLabels = { breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner', snack:'Snack' };
+    el.innerHTML = meals.map(m => {
+      const when = m.logged_at ? new Date(m.logged_at) : null;
+      const timeLabel = when ? when.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' at ' + when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : (m.meal_date||'');
+      let items = [];
+      try { items = JSON.parse(m.items_json||'[]').map(i => i.name||i).filter(Boolean); } catch(e){}
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div style="font-weight:700;font-size:13px">${esc(typeLabels[m.meal_type]||m.meal_type||'Meal')} — ${esc(timeLabel)}</div>
+          <div style="font-size:11px;color:var(--muted,#6B7280)">${m.calories||0} cal &middot; P${m.protein_g||0} C${m.carbs_g||0} F${m.fat_g||0}</div>
+        </div>
+        ${items.length ? `<div style="font-size:12px;color:var(--muted,#6B7280);margin-top:2px">${esc(items.join(', '))}</div>` : ''}
+        <div style="margin-top:4px">
+          <span onclick="openIntakeNote(${clientId},${m.id})" style="cursor:pointer;font-size:11px;font-weight:700;color:#2563EB">+ Coach on this</span>
+          <span id="intake-note-status-${m.id}" style="font-size:11px;color:var(--muted,#6B7280);margin-left:8px"></span>
+        </div>
+        <div id="intake-note-input-${m.id}" style="display:none;margin-top:6px">
+          <input type="text" id="intake-note-text-${m.id}" placeholder="e.g. Great protein choice, add a veggie next time" style="width:100%;padding:6px 10px;border:1px solid var(--line,#E4E7EC);border-radius:6px;font-size:12px" onkeydown="if(event.key==='Enter') saveIntakeNote(${clientId},${m.id})">
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { el.innerHTML = '<div style="font-size:12px;color:var(--red,#E0192B)">Could not load — check connection.</div>'; }
+}
+
+function openIntakeNote(clientId, mealId) {
+  const box = document.getElementById('intake-note-input-'+mealId);
+  if (box) { box.style.display = 'block'; document.getElementById('intake-note-text-'+mealId).focus(); }
+}
+
+async function saveIntakeNote(clientId, mealId) {
+  const input = document.getElementById('intake-note-text-'+mealId);
+  const statusEl = document.getElementById('intake-note-status-'+mealId);
+  const body = input ? input.value.trim() : '';
+  if (!body) return;
+  let session = null;
+  try { session = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
+  try {
+    await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, coach_name: (session&&session.name)||'Coach', type: 'note', body: '[Nutrition] ' + body }) });
+    if (statusEl) statusEl.textContent = 'Sent ✓';
+    if (input) { input.value = ''; document.getElementById('intake-note-input-'+mealId).style.display = 'none'; }
+  } catch(e) { if (statusEl) statusEl.textContent = 'Could not send.'; }
+}
+
+function renderTouchpoints(touchpoints){
+  const el = document.getElementById('touchpoints-body');
+  if (!el) return;
+  if (!touchpoints || !touchpoints.length) {
+    el.innerHTML = '<div class="empty">No touchpoints logged yet — anything a coach adds from their app shows up here automatically.</div>';
+    return;
+  }
+  const typeLabels = { note:'Note', text:'Text', call:'Call', email:'Email' };
+  const typeColors = { note:'#6B7280', text:'#2563EB', call:'#1E9E5A', email:'#D98A0B' };
+  el.innerHTML = touchpoints.map(t => {
+    const when = t.created_at ? new Date(t.created_at) : null;
+    const timeLabel = when ? when.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' at ' + when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:${typeColors[t.type]||'#6B7280'}">${esc(typeLabels[t.type]||t.type||'Note')}${t.coach_name?' &middot; '+esc(t.coach_name):''}</div>
+        <div style="font-size:11px;color:var(--muted,#6B7280);white-space:nowrap">${esc(timeLabel)}</div>
+      </div>
+      <div style="font-size:13px;margin-top:2px">${esc(t.body||'')}</div>
+    </div>`;
+  }).join('');
+}
+
 function renderRosterNav(currentId){
   const el=document.getElementById('rosterNav');
   if(!el || !ALL_CLIENTS.length) return;
@@ -528,9 +603,9 @@ function renderRosterNav(currentId){
 async function loadProfile(clientId){
   const wrap=document.getElementById('wrap');
   wrap.innerHTML='<div class="empty">Loading profile...</div>';
-  let client, checkins=[], consults=[], meals=[], measures=[], sessions=[], scans=[], workouts=[], photos=[];
+  let client, checkins=[], consults=[], meals=[], measures=[], sessions=[], scans=[], workouts=[], photos=[], touchpoints=[];
   try{
-    const [c,ch,co,mp,ms,ts,sc,wk,ph]=await Promise.all([
+    const [c,ch,co,mp,ms,ts,sc,wk,ph,tp]=await Promise.all([
       db({op:'select',table:'clients',where:{id:clientId},limit:1}),
       db({op:'select',table:'checkins',where:{client_id:clientId},orderBy:'checkin_date ASC',limit:200}),
       db({op:'select',table:'consultations',where:{client_id:clientId},orderBy:'consult_date ASC',limit:50}),
@@ -539,12 +614,13 @@ async function loadProfile(clientId){
       db({op:'select',table:'training_sessions',where:{client_id:clientId},orderBy:'session_date DESC',limit:100}),
       db({op:'select',table:'inbody_scans',where:{client_id:clientId},orderBy:'scan_date ASC',limit:200}),
       db({op:'select',table:'workouts',where:{client_id:clientId},orderBy:'workout_date DESC',limit:200}),
-      db({op:'select',table:'progress_photos',where:{client_id:clientId},orderBy:'captured_at DESC',limit:300})
+      db({op:'select',table:'progress_photos',where:{client_id:clientId},orderBy:'captured_at DESC',limit:300}),
+      db({op:'select',table:'coach_touchpoints',where:{client_id:clientId},orderBy:'created_at DESC',limit:100})
     ]);
-    client=(c.results||[])[0]; checkins=ch.results||[]; consults=co.results||[]; meals=mp.results||[]; measures=ms.results||[]; sessions=ts.results||[]; scans=sc.results||[]; workouts=wk.results||[]; photos=ph.results||[];
+    client=(c.results||[])[0]; checkins=ch.results||[]; consults=co.results||[]; meals=mp.results||[]; measures=ms.results||[]; sessions=ts.results||[]; scans=sc.results||[]; workouts=wk.results||[]; photos=ph.results||[]; touchpoints=tp.results||[];
   }catch(e){ wrap.innerHTML='<div class="empty"><div class="big">Could not load</div>'+esc(e.message)+'</div>'; return; }
   if(!client){ wrap.innerHTML='<div class="empty"><div class="big">Client not found</div></div>'; return; }
-  render(client, checkins, consults, meals, measures, sessions, scans, workouts, photos);
+  render(client, checkins, consults, meals, measures, sessions, scans, workouts, photos, touchpoints);
   loadUpcomingAppointments(client.id);
   loadAllApptsForCalendar(client.id);
 }
@@ -571,7 +647,7 @@ function deltaHtml(now, first, lowerBetter){
   return '<div class="delta '+(good?'up':'down')+'">'+arrow+' '+Math.abs(diff)+' since start</div>';
 }
 
-function render(client, checkins, consults, meals, measures, sessions, scans, workouts, photos){
+function render(client, checkins, consults, meals, measures, sessions, scans, workouts, photos, touchpoints){
   CURRENT=client;
   const nm=((client.first_name||'')+' '+(client.last_name||'')).trim()||('Client #'+client.id);
   const initials=((client.first_name||' ')[0]+(client.last_name||' ')[0]).toUpperCase();
@@ -620,11 +696,25 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   const q='?client='+encodeURIComponent(nm);
   const hasNutritionPkg = client.package === 'complete' || client.package === 'complete_plus';
   html+='<div class="actions">'+
-    '<a class="btn red" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Start Check-In</a>'+
     '<a class="btn" href="gym-floor.html?client='+client.id+'">Log Session</a>'+
     (hasNutritionPkg ? '<a class="btn" href="meal-plans.html">Build Meal Plan</a>' : '')+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
     '<button class="btn" style="border-radius:999px;background:#2563EB;color:#fff;border:none" onclick="openScheduleModal('+client.id+',\''+esc(nm).replace(/'/g,"")+'\')">+ Schedule Appointment</button>'+
+    '</div>';
+
+  html+='<div class="card" style="margin-top:16px;border-left:4px solid #2563EB" id="touchpoints-card">'+
+    '<div style="font-weight:800;margin-bottom:6px">Coach Touchpoints &amp; Activity</div>'+
+    '<div style="font-size:12px;color:var(--muted,#6B7280);margin-bottom:10px">Everything a coach logs — calls, texts, emails, and notes — from anywhere in the system, all in one place. Full transparency, no separate check-in required.</div>'+
+    '<div id="touchpoints-body"></div>'+
+    '</div>';
+
+  html+='<div class="card" style="margin-top:16px;border-left:4px solid #1E9E5A" id="intake-log-card">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+    '<div style="font-weight:800">Daily Intake — Running Log</div>'+
+    '<span style="font-size:10px;color:#1E9E5A;font-weight:700;text-transform:uppercase">&#9679; Live</span>'+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--muted,#6B7280);margin-bottom:10px">Every meal the client logs from their phone shows up here as they enter it — coach on it in real time.</div>'+
+    '<div id="intake-log-body"><div style="font-size:12px;color:var(--muted,#6B7280)">Loading...</div></div>'+
     '</div>';
 
   html+='<div class="card" style="margin-top:16px" id="upcoming-appts-card">'+
@@ -633,8 +723,11 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '</div>';
 
   html+='<div class="card" style="margin-top:16px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'+
     '<div style="font-weight:800;margin-bottom:10px">Client App Access</div>'+
-    '<div style="font-size:12px;color:var(--muted,#6B7280);margin-bottom:10px">Gives this client their own login for self-guided workout logging, history, goals, and progress. Internal — clients never see this control.</div>'+
+    '<a href="portal-admin.html?client_id='+client.id+'" style="flex-shrink:0;font-size:12px;font-weight:700;color:#2563EB;text-decoration:none;white-space:nowrap">Portal Access Manager &rarr;</a>'+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--muted,#6B7280);margin-bottom:10px">Gives this client their own login for self-guided workout logging, history, goals, and progress. Internal — clients never see this control. <b>For the premium Member Portal (Coach\'s Edge, Monthly Challenge) instead, use Portal Access Manager above.</b></div>'+
     '<label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:10px;cursor:pointer">'+
     '<input type="checkbox" id="app-access-check" onchange="toggleAppAccessFields()"> Grant self-guided workout app access</label>'+
     '<div id="app-access-fields" style="display:none">'+
@@ -742,6 +835,9 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   document.getElementById('wrap').innerHTML=html;
   renderRosterNav(client.id);
   renderTagsRow(client);
+  renderIntakeLog(client.id);
+  if (window._intakeLogInterval) clearInterval(window._intakeLogInterval);
+  window._intakeLogInterval = setInterval(() => renderIntakeLog(client.id), 30000);
 
   // build chart series from consultation (start) + checkins
   const pts=[];
@@ -756,6 +852,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   renderCheckins(checkins);
   loadEmailHistory(client.id);
   renderSessions(sessions);
+  renderTouchpoints(touchpoints);
   renderMeals(meals);
   renderMeasures(measures);
   renderScans(scans||[]);

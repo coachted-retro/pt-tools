@@ -76,7 +76,7 @@ tr:last-child td{border-bottom:none}
 <div class="topbar">
   <div class="logo">Coach <span>CRM</span></div>
   <span style="background:var(--red);color:#fff;font-family:'Oswald';font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:6px;margin-left:10px">🏋 Coach View</span>
-  <a href="coach-crm.html">&larr; My Clients</a>
+  <a href="coach-crm.html" id="back-to-agenda-link" style="background:var(--red);color:#fff;font-weight:700;padding:6px 14px;border-radius:8px">&larr; Back to My Agenda</a>
   <a href="client-profile.html" style="color:#9CA3AF;border:1px solid #374151" id="full-profile-link">Full Profile (Edit) &rarr;</a>
 </div>
 <div class="wrap">
@@ -87,13 +87,16 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="sess-pill"><div class="n" id="c-sessions">—</div><div class="l">Sessions Left</div></div>
     <a href="gym-floor.html?client=" id="start-workout-btn" style="background:var(--red);color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;white-space:nowrap">Build / Log Workout &rarr;</a>
+    <button id="schedule-appt-btn" onclick="openApptScheduleModal()" style="background:#2563EB;color:#fff;border:none;padding:12px 20px;border-radius:8px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;white-space:nowrap;cursor:pointer">+ Schedule Appointment</button>
     <button onclick="openEmailModal()" style="background:#fff;color:var(--ink);border:1.5px solid var(--line);padding:12px 20px;border-radius:8px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;white-space:nowrap;cursor:pointer">✉ Email Client</button>
+    <a href="meal-plans.html" style="background:#fff;color:var(--ink);border:1.5px solid var(--line);text-decoration:none;padding:12px 20px;border-radius:8px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:13px;white-space:nowrap">🥗 Meal Plans</a>
     <div style="width:100%;font-size:11px;color:var(--muted);margin-top:4px">Exercise library, routine bundles, AI Program Builder, and HERO WOD all live here</div>
   </div>
 
   <div class="tabs">
     <button class="tab active" data-p="overview" onclick="switchPane('overview')">Overview</button>
     <button class="tab" data-p="workouts" onclick="switchPane('workouts')">Workout History</button>
+    <button class="tab" data-p="medical" onclick="switchPane('medical')">Medical History</button>
     <button class="tab" data-p="photos" onclick="switchPane('photos')">Photos</button>
     <button class="tab" data-p="touch" onclick="switchPane('touch')">Touchpoints</button>
     <button class="tab" data-p="notes" onclick="switchPane('notes')">Coach Notes</button>
@@ -102,11 +105,30 @@ tr:last-child td{border-bottom:none}
 
   <div class="pane active" id="pane-overview">
     <div class="card" id="overview-stats"></div>
+    <div class="card" style="margin-top:14px;border-left:3px solid #2563EB">
+      <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;margin-bottom:8px">Upcoming Coaching Sessions</div>
+      <div id="upcoming-sessions-list"><div style="font-size:12px;color:var(--muted)">Loading...</div></div>
+    </div>
     <div id="overview-extra"></div>
   </div>
 
   <div class="pane" id="pane-workouts">
     <div class="card"><table><thead><tr><th>Date</th><th>Session</th><th>Notes</th></tr></thead><tbody id="workouts-body"></tbody></table></div>
+  </div>
+
+  <div class="pane" id="pane-medical">
+    <div class="card">
+      <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;margin-bottom:8px">Medical Notes on File</div>
+      <div id="medical-notes-box" style="font-size:13px;color:var(--ink)">—</div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;margin-bottom:8px">InBody &amp; Progress History</div>
+      <table><thead><tr><th>Date</th><th>Weight</th><th>Body Fat</th><th>Lean Mass</th><th>BMI</th></tr></thead><tbody id="scan-history-body"></tbody></table>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;margin-bottom:8px">Consultations &amp; Monthly Check-Ins</div>
+      <div id="consult-checkin-list"><div style="font-size:12px;color:var(--muted)">Loading...</div></div>
+    </div>
   </div>
 
   <div class="pane" id="pane-photos">
@@ -178,13 +200,145 @@ const CLIENT_ID = params.get('client');
 const COACH_NAME = params.get('coach') || localStorage.getItem('coach_crm_name') || 'Coach';
 let DATA = null;
 
+(function(){
+  const link = document.getElementById('back-to-agenda-link');
+  if (link && COACH_NAME && COACH_NAME !== 'Coach') {
+    link.href = 'coach-crm.html?coach=' + encodeURIComponent(COACH_NAME) + '&locked=1';
+  }
+})();
+
 function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function fmtDate(s){ return s ? new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; }
+
+function renderUpcomingSessions(){
+  const el = document.getElementById('upcoming-sessions-list');
+  if (!el) return;
+  const typeLabels = { initial_consultation:'Initial Consultation', follow_up:'6-Wk Follow-Up', monthly_checkin:'Monthly Check-In', training_session:'Training Session', tour:'New Member Tour', other:'Appointment' };
+  const appts = (DATA.upcomingAppts||[]).map(a => ({
+    date: a.appointment_date, time: a.appointment_time, label: typeLabels[a.appointment_type]||a.appointment_type
+  }));
+  const sessions = (DATA.upcomingSessions||[]).map(s => ({
+    date: s.scheduled_date, time: null, label: s.program_name || 'Training Session'
+  }));
+  const combined = [...appts, ...sessions].sort((a,b) => (a.date+((a.time)||'')).localeCompare(b.date+((b.time)||'')));
+  if (!combined.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted)">Nothing scheduled yet — use + Schedule Appointment above.</div>'; return; }
+  el.innerHTML = combined.map(s => {
+    const timeLabel = s.time ? new Date('2000-01-01T'+s.time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div style="font-weight:700;font-size:13px">${fmtDate(s.date)}${timeLabel?' at '+timeLabel:''}</div>
+      <div style="font-size:12px;color:var(--muted)">${escH(s.label)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderMedicalHistory(client){
+  const notesBox = document.getElementById('medical-notes-box');
+  if (notesBox) {
+    const medNotes = client.medical_notes || (DATA.consultations||[]).map(c=>c.medical_notes).find(Boolean);
+    notesBox.textContent = medNotes || 'No medical notes on file.';
+  }
+  const scanBody = document.getElementById('scan-history-body');
+  if (scanBody) {
+    const scans = DATA.scans || [];
+    scanBody.innerHTML = scans.length ? scans.map(s =>
+      `<tr><td>${fmtDate(s.scan_date)}</td><td>${s.weight??'—'}</td><td>${s.body_fat_pct??'—'}${s.body_fat_pct?'%':''}</td><td>${s.lean_mass??'—'}</td><td>${s.bmi??'—'}</td></tr>`
+    ).join('') : '<tr><td colspan="5" class="empty">No InBody scans on file yet.</td></tr>';
+  }
+  const listEl = document.getElementById('consult-checkin-list');
+  if (listEl) {
+    const combined = [
+      ...(DATA.consultations||[]).map(c => ({date:c.consult_date, kind:'Initial Consultation', detail:(c.outcome||'')+(c.advisor_notes?' — '+c.advisor_notes.split(' | ').join('  •  '):'')})),
+      ...(DATA.checkins||[]).map(c => ({date:c.checkin_date, kind:'Monthly Check-In', detail:['session_score','diet_score','energy_score','sleep_score','stress_score'].filter(k=>c[k]!=null).map(k=>k.replace('_score','')+': '+c[k]).join(' · ') || 'Completed'}))
+    ].sort((a,b) => new Date(b.date) - new Date(a.date));
+    listEl.innerHTML = combined.length ? combined.map(c => `
+      <div style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <div style="font-weight:700;font-size:13px">${fmtDate(c.date)} — ${escH(c.kind)}</div>
+        <div style="font-size:12px;color:var(--muted)">${escH(c.detail)}</div>
+      </div>`).join('') : '<div style="font-size:12px;color:var(--muted)">No consultations or check-ins on file yet.</div>';
+  }
+}
 
 function switchPane(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.p===name));
   document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active', p.id==='pane-'+name));
   if (name==='chat') markMessagesRead();
+}
+
+// Ported from client-profile.html's Schedule Appointment modal (pt_appointments
+// -- Initial Consultation/Follow-Up/Monthly Check-In/Training Session, distinct
+// from the "Build Schedule" recurring-routine modal already in this file, which
+// is why this uses different function names throughout).
+function openApptScheduleModal(){
+  const existing = document.getElementById('appt-schedule-overlay');
+  if (existing) existing.remove();
+  const client = (DATA && DATA.client) || {};
+  const clientName = ((client.first_name||'')+' '+(client.last_name||'')).trim();
+  const today = new Date();
+  const minDate = new Date(today.getTime() + 24*60*60*1000).toISOString().slice(0,10);
+  const overlay = document.createElement('div');
+  overlay.id = 'appt-schedule-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:20px;max-width:420px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:12px">Schedule Appointment${clientName?' — '+escH(clientName):''}</div>
+    <div class="fld" style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Appointment Type</label>
+      <select id="asm-type" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px">
+        <option value="initial_consultation">Initial Consultation</option>
+        <option value="follow_up">6-Week Follow-Up</option>
+        <option value="monthly_checkin">Monthly Check-In</option>
+        <option value="training_session" selected>Training Session</option>
+        <option value="tour">New Member Tour</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="fld" style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Date</label><input type="date" id="asm-date" value="${minDate}" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    <div class="fld" style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Time (Eastern)</label><input type="time" id="asm-time" value="09:00" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    <div class="fld" style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Advisor</label><select id="asm-advisor" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"><option value="">Loading...</option></select></div>
+    <div class="fld" style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Booked By <span style="font-weight:400;text-transform:none">(you — waives the 24hr rule if this is your own schedule)</span></label><input type="text" id="asm-booked-by" placeholder="Your name" value="${escH(COACH_NAME)}" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    <div class="fld" style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Notes (optional)</label><input type="text" id="asm-notes" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn red" style="flex:1" onclick="saveApptSchedule()">Book It</button>
+      <button class="btn" onclick="document.getElementById('appt-schedule-overlay').remove()">Cancel</button>
+    </div>
+    <div id="asm-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  populateApptAdvisorDropdown();
+}
+
+async function populateApptAdvisorDropdown(){
+  const sel = document.getElementById('asm-advisor');
+  if (!sel) return;
+  const client = (DATA && DATA.client) || {};
+  const defaultAdvisor = client.advisor || COACH_NAME || '';
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'staff_roster', where:{ active: 1 }, limit:100 }) });
+    const d = await r.json();
+    const ADVISOR_ROLES = ["Men's Training Lead","Director of Fitness","General Manager","Franchise Owner"];
+    const staff = (d.results||[]).filter(s => ADVISOR_ROLES.includes(s.role));
+    sel.innerHTML = '<option value="">Select an advisor...</option>' + staff.map(s =>
+      `<option value="${escH(s.name)}" ${defaultAdvisor===s.name?'selected':''}>${escH(s.name)}</option>`).join('');
+  } catch(e) { sel.innerHTML = '<option value="">Could not load advisors</option>'; }
+}
+
+async function saveApptSchedule(){
+  const status = document.getElementById('asm-status');
+  const type = document.getElementById('asm-type').value;
+  const date = document.getElementById('asm-date').value;
+  const time = document.getElementById('asm-time').value;
+  const advisor = document.getElementById('asm-advisor').value.trim();
+  const bookedBy = document.getElementById('asm-booked-by').value.trim();
+  const notes = document.getElementById('asm-notes').value.trim();
+  if (!date) { status.textContent = 'Pick a date.'; return; }
+  status.textContent = 'Booking...';
+  try {
+    const payload = { appointment_date: date, appointment_time: time||null, appointment_type: type, client_id: CLIENT_ID, advisor: advisor||null, notes: notes||null, booked_by: bookedBy||null };
+    const r = await fetch(WORKER + '/appointments/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (!d.ok) { status.textContent = d.error || 'Could not save.'; return; }
+    status.textContent = 'Booked!';
+    setTimeout(() => { const o = document.getElementById('appt-schedule-overlay'); if (o) o.remove(); load(); }, 700);
+  } catch(e) { status.textContent = 'Error: ' + e.message; }
 }
 
 
@@ -304,6 +458,9 @@ async function load(){
   document.getElementById('workouts-body').innerHTML = allWorkouts.length ? allWorkouts.map(w =>
     `<tr><td data-label="Date">${fmtDate(w.date)}</td><td data-label="Session">${escH(w.label)}</td><td data-label="Notes" style="color:var(--muted)">${escH(w.notes)}</td></tr>`
   ).join('') : '<tr><td colspan="3" class="empty">No workouts logged yet.</td></tr>';
+
+  renderUpcomingSessions();
+  renderMedicalHistory(c);
 
   const photos = DATA.photos || [];
   document.getElementById('photo-grid').innerHTML = photos.length ? photos.map(p =>

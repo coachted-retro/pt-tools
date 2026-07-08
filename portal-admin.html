@@ -197,11 +197,14 @@ async function loadClients(){
   const d=await db({op:'select',table:'clients',orderBy:'first_name ASC',limit:2000});
   const sel=document.getElementById('ga-client');
   sel.innerHTML=(d.results||[]).map(c=>`<option value="${c.id}" data-email="${c.email||''}">${c.first_name||''} ${c.last_name||''}</option>`).join('');
+  const preselectId = new URLSearchParams(location.search).get('client_id');
+  if (preselectId) sel.value = preselectId;
   sel.addEventListener('change',()=>{
     const opt=sel.options[sel.selectedIndex];
     const em=opt.getAttribute('data-email');
     if(em) document.getElementById('ga-email').value=em;
   });
+  if (preselectId) sel.dispatchEvent(new Event('change'));
   const cwSel=document.getElementById('cw-client');
   if(cwSel){ cwSel.innerHTML='<option value="">No specific member</option>'+(d.results||[]).map(c=>`<option value="${c.id}">${c.first_name||''} ${c.last_name||''}</option>`).join(''); }
 }

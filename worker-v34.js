@@ -2851,7 +2851,8 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const clientId = url.searchParams.get('client_id');
         if (!clientId) return bad('client_id required', cors);
         try {
-          const [client, scans, sessions, selfWorkouts, photos, touchpoints, messages, notes, intake] = await Promise.all([
+          const today = new Date().toISOString().slice(0,10);
+          const [client, scans, sessions, selfWorkouts, photos, touchpoints, messages, notes, intake, consultations, checkins, upcomingAppts, upcomingSessions] = await Promise.all([
             env.DB.prepare('SELECT * FROM clients WHERE id=?').bind(clientId).first(),
             env.DB.prepare('SELECT * FROM inbody_scans WHERE client_id=? ORDER BY scan_date DESC LIMIT 24').bind(clientId).all(),
             env.DB.prepare('SELECT * FROM workouts WHERE client_id=? ORDER BY workout_date DESC LIMIT 30').bind(clientId).all(),
@@ -2860,12 +2861,17 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
             env.DB.prepare('SELECT * FROM coach_touchpoints WHERE client_id=? ORDER BY created_at DESC LIMIT 50').bind(clientId).all(),
             env.DB.prepare('SELECT * FROM portal_messages WHERE client_id=? ORDER BY created_at ASC LIMIT 100').bind(clientId).all(),
             env.DB.prepare('SELECT * FROM coach_notes WHERE client_id=? ORDER BY created_at DESC LIMIT 100').bind(clientId).all().catch(() => ({results:[]})),
-            env.DB.prepare('SELECT * FROM daily_intake_logs WHERE client_id=? ORDER BY created_at DESC LIMIT 100').bind(clientId).all().catch(() => ({results:[]}))
+            env.DB.prepare('SELECT * FROM daily_intake_logs WHERE client_id=? ORDER BY created_at DESC LIMIT 100').bind(clientId).all().catch(() => ({results:[]})),
+            env.DB.prepare('SELECT * FROM consultations WHERE client_id=? ORDER BY consult_date DESC LIMIT 20').bind(clientId).all().catch(() => ({results:[]})),
+            env.DB.prepare('SELECT * FROM checkins WHERE client_id=? ORDER BY checkin_date DESC LIMIT 20').bind(clientId).all().catch(() => ({results:[]})),
+            env.DB.prepare("SELECT * FROM pt_appointments WHERE client_id=? AND appointment_date>=? AND status NOT IN ('cancelled','showed','no_show') ORDER BY appointment_date ASC, appointment_time ASC LIMIT 20").bind(clientId, today).all().catch(() => ({results:[]})),
+            env.DB.prepare("SELECT * FROM scheduled_sessions WHERE client_id=? AND scheduled_date>=? AND status='scheduled' ORDER BY scheduled_date ASC LIMIT 20").bind(clientId, today).all().catch(() => ({results:[]}))
           ]);
           if (!client) return bad('No client found with id ' + clientId, cors);
           return ok({ client, scans: scans.results||[], sessions: sessions.results||[], selfWorkouts: selfWorkouts.results||[],
             photos: photos.results||[], touchpoints: touchpoints.results||[], messages: messages.results||[], notes: (notes&&notes.results)||[],
-            intake: (intake&&intake.results)||[] }, cors);
+            intake: (intake&&intake.results)||[], consultations: (consultations&&consultations.results)||[], checkins: (checkins&&checkins.results)||[],
+            upcomingAppts: (upcomingAppts&&upcomingAppts.results)||[], upcomingSessions: (upcomingSessions&&upcomingSessions.results)||[] }, cors);
         } catch (e) {
           return bad('client-detail query failed: ' + e.message, cors);
         }
