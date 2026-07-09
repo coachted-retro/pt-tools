@@ -2884,10 +2884,7 @@ function startGuestMode() {
   document.getElementById('g-name').textContent = 'Retro Fitness';
   document.getElementById('g-sub').textContent = 'Fairless Hills';
   const avatar = document.getElementById('g-avatar');
-  avatar.textContent = 'Sign In';
-  avatar.title = 'Log In';
-  avatar.style.cssText = 'background:none;color:var(--ink3,#6B7280);width:auto;height:auto;border-radius:6px;padding:6px 10px;font-family:Inter,sans-serif;font-size:11px;font-weight:600;border:1px solid var(--line,#E4E7EC)';
-  avatar.onclick = showLoginFromGuest;
+  avatar.style.display = 'none';
   renderHomeExtras();
   loadPublicHomeContent();
   renderClasses();
