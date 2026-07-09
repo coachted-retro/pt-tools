@@ -1221,7 +1221,7 @@ function buildWorkoutPanel(workouts){
       '<button class="wo-view-tab '+(woView==='calendar'?'active':'')+'" onclick="setWoView(\'calendar\')">Calendar</button>'+
       '<button class="wo-view-tab '+(woView==='list'?'active':'')+'" onclick="setWoView(\'list\')">Log</button>'+
     '</div>'+
-    '<label class="btn" style="cursor:pointer">📷 Upload Screenshot / PDF<input type="file" accept="image/*,.pdf,application/pdf" style="display:none" onchange="uploadWorkout(event)"></label>'+
+    '<label class="btn" style="cursor:pointer">📷 Upload Screenshot / PDF (multiple OK)<input type="file" accept="image/*,.pdf,application/pdf" multiple style="display:none" onchange="uploadWorkout(event)"></label>'+
     '<label class="btn" style="cursor:pointer">📄 Import CSV<input type="file" accept=".csv,text/csv" style="display:none" onchange="importCSV(event)"></label>'+
     '<span class="wo-status" id="woStatus"></span>'+
   '</div>'+
@@ -1493,19 +1493,26 @@ setTimeout(setupDropZone,400);
 // ── EXISTING IMAGE UPLOAD (kept, now secondary) ──
 const WO_PROMPT='You are reading a workout log screenshot (such as Trainerize). Return ONLY JSON, no prose, no fences. Shape: {"workout_date":"YYYY-MM-DD" or null,"title":"short name or null","exercises":[{"name":"...","sets":number,"reps":"as written","weight":"as written"}]}. Pull every exercise visible.';
 async function uploadWorkout(ev){
-  const file=ev.target.files[0]; ev.target.value=''; if(!file||!CURRENT) return;
-  const st=document.getElementById('woStatus'); st.textContent='Reading workout screenshot...';
-  try{
-    const b64=await fileToB64(file);
-    const key=await uploadFile(file,'workout');
-    const j=await aiExtract(file,b64,WO_PROMPT);
-    let vol=0; (j.exercises||[]).forEach(x=>{ const s=parseFloat(x.sets),rp=parseFloat(x.reps),w=parseFloat(x.weight); if(!isNaN(s)&&!isNaN(rp)&&!isNaN(w)) vol+=s*rp*w; });
-    const row={client_id:CURRENT.id,workout_date:j.workout_date||new Date().toISOString().slice(0,10),title:j.title||'Workout',file_url:key,exercises_json:JSON.stringify(j.exercises||[]),total_volume:vol||null,source:'trainerize_screenshot'};
-    Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; }); row.client_id=CURRENT.id;
-    const ins=await db({op:'insert',table:'workouts',values:row});
-    if(ins&&ins.error) throw new Error(ins.error);
-    st.textContent='Saved. Reloading...'; loadProfile(CURRENT.id);
-  }catch(e){ st.textContent='Failed: '+e.message; }
+  const files=Array.from(ev.target.files||[]); ev.target.value=''; if(!files.length||!CURRENT) return;
+  const st=document.getElementById('woStatus');
+  let okCount=0, failCount=0;
+  for (let i=0; i<files.length; i++){
+    const file=files[i];
+    st.textContent=`Reading workout ${i+1} of ${files.length}: "${file.name}"...`;
+    try{
+      const b64=await fileToB64(file);
+      const key=await uploadFile(file,'workout');
+      const j=await aiExtract(file,b64,WO_PROMPT);
+      let vol=0; (j.exercises||[]).forEach(x=>{ const s=parseFloat(x.sets),rp=parseFloat(x.reps),w=parseFloat(x.weight); if(!isNaN(s)&&!isNaN(rp)&&!isNaN(w)) vol+=s*rp*w; });
+      const row={client_id:CURRENT.id,workout_date:j.workout_date||new Date().toISOString().slice(0,10),title:j.title||'Workout',file_url:key,exercises_json:JSON.stringify(j.exercises||[]),total_volume:vol||null,source:'trainerize_screenshot'};
+      Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; }); row.client_id=CURRENT.id;
+      const ins=await db({op:'insert',table:'workouts',values:row});
+      if(ins&&ins.error) throw new Error(ins.error);
+      okCount++;
+    }catch(e){ failCount++; console.error('Workout upload failed for '+file.name+':', e.message); }
+  }
+  st.textContent = failCount ? `Saved ${okCount} of ${files.length} — ${failCount} failed (see console). Reloading...` : `Saved all ${okCount} workouts. Reloading...`;
+  loadProfile(CURRENT.id);
 }
 function renderWorkouts(){}
 function renderScanTrendChart(scans){
