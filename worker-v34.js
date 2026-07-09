@@ -1623,7 +1623,8 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const summary = (url.searchParams.get('summary') || '').toLowerCase();
         if (!summary) return bad('summary required', cors);
         const rows = await env.DB.prepare('SELECT * FROM group_classes WHERE active=1').all();
-        const match = (rows.results || []).find(c => summary.includes((c.name||'').toLowerCase()));
+        const normalize = s => (s||'').toLowerCase().replace(/\s+/g,'');
+        const match = (rows.results || []).find(c => normalize(summary).includes(normalize(c.name)));
         return ok({ match: match || null }, cors);
       }
 

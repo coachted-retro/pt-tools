@@ -490,7 +490,27 @@ async function load(){
   renderChat();
   loadMarketingMedia();
   loadSchedule();
+  renderRecentNotesPreview();
   loadFormVideos();
+}
+
+function renderRecentNotesPreview(){
+  const tps = (DATA.touchpoints || []).slice(0, 3);
+  const existing = document.getElementById('recent-notes-card');
+  if (existing) existing.remove();
+  const html = `<div class="card" id="recent-notes-card">
+    <div style="display:flex;align-items:center;margin-bottom:10px">
+      <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase">Recent Notes &amp; Touchpoints</div>
+      <button class="btn" style="margin-left:auto;padding:8px 14px;font-size:12px" onclick="switchPane('touch')">View All &rarr;</button>
+    </div>
+    ${tps.length ? tps.map(t => `
+      <div style="padding:8px 0;border-bottom:1px solid var(--line,#E4E7EC);font-size:13px">
+        <span style="text-transform:uppercase;font-size:10px;font-weight:800;color:var(--muted,#6B7280)">${escH(t.type)}</span>
+        <div>${escH(t.body)}</div>
+        <div style="font-size:11px;color:var(--muted,#6B7280);margin-top:2px">${escH(t.coach_name)} &middot; ${fmtDate(t.created_at)}</div>
+      </div>`).join('') : '<div class="empty">No notes logged yet — anything saved from the agenda or here shows up in this spot.</div>'}
+  </div>`;
+  document.getElementById('overview-extra').insertAdjacentHTML('afterbegin', html);
 }
 
 async function loadFormVideos() {

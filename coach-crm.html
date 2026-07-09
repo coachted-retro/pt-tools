@@ -508,7 +508,8 @@ async function loadTodaySchedule(){
 
     clubosRows.forEach(a => {
       const summaryLower = (a.summary||'').toLowerCase();
-      const matchedClass = knownClassRoutines.find(c => summaryLower.includes((c.name||'').toLowerCase()));
+      const normalize = s => (s||'').toLowerCase().replace(/\s+/g,'');
+      const matchedClass = knownClassRoutines.find(c => normalize(summaryLower).includes(normalize(c.name)));
       const isClass = !!matchedClass || summaryLower.includes('class') || summaryLower.includes('bootcamp') || summaryLower.includes('boot camp');
       const status = a.status || 'scheduled';
       const dimmed = ['done','rescheduled','no_show','cancel'].includes(status);
@@ -608,7 +609,12 @@ async function loadTodaySchedule(){
           </div>
           ${it.statusBadge}
         </div>
-        ${!it.dimmed ? `
+        ${!it.dimmed ? (it.isClass ? `
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button onclick="${it.doneBtn}" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
+            <button onclick="${it.cancelBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Cancel</button>
+          </div>
+        ` : `
           <textarea id="note-${it.uid}" rows="2" placeholder="Notes — saved permanently to ${it.clientId?'their':'the'} profile" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
             <button onclick='saveInlineNote(${JSON.stringify(it.uid)},${it.clientId||'null'},${JSON.stringify(it.noteFallback)})' style="background:var(--ink);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">Save Note</button>
@@ -621,7 +627,7 @@ async function loadTodaySchedule(){
             <button onclick="${it.noShowBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
             <button onclick="${it.cancelBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Cancel</button>
           </div>
-        ` : `<button onclick="${it.undoBtn}" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
+        `) : `<button onclick="${it.undoBtn}" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
       </div>`).join('');
 
     if (!items.length) {
@@ -650,7 +656,9 @@ async function saveInlineNote(uid, clientId, noteFallback){
         body: JSON.stringify({ client_id: clientId, coach_name: coach, type: 'note', body }) });
       const d = await res.json();
       if (d.ok === false) throw new Error(d.error||'save failed');
-      statusEl.textContent = 'Saved to their profile ✓'; statusEl.style.color = 'var(--green,#1E9E5A)';
+      const coachParam = encodeURIComponent(document.getElementById('coach-select').value);
+      statusEl.innerHTML = 'Saved to their profile ✓ — <a href="coach-client-profile.html?client=' + clientId + '&coach=' + coachParam + '" style="color:var(--green,#1E9E5A);font-weight:700">view it here</a>';
+      statusEl.style.color = 'var(--green,#1E9E5A)';
     } else if (noteFallback) {
       const res = await fetch(WORKER + noteFallback.endpoint, { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ id: noteFallback.idValue, notes: body }) });
