@@ -3491,6 +3491,7 @@ async function renderClassList() {
         <a href="#" onclick="claimClassGuestPass('${esc(cls.name).replace(/'/g,"\\'")}','${classDate}');return false;" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--red);text-decoration:none;background:var(--red-lt);padding:4px 10px;border-radius:10px">🎟️ New here? Free guest pass</a>
       </div>
       <button class="going-btn not-going" id="btn-${esc(cls.name).replace(/\s+/g,'-')}" onclick="toggleGoing('${esc(cls.name).replace(/'/g,"\\'")}','${classDate}','${cls.time}', this)">I'm Going</button>
+      <a href="#" id="share-${esc(cls.name).replace(/\s+/g,'-')}" onclick="shareClass('${esc(cls.name).replace(/'/g,"\\'")}','${classDate}');return false;" style="display:none;font-size:11px;font-weight:700;color:var(--red);text-decoration:none;margin-top:6px;text-align:center">📣 Invite a friend</a>
     </div>`).join('');
 
   if (SESSION && SESSION.client_id) {
@@ -3523,8 +3524,17 @@ async function toggleGoing(className, classDate, classTime, btn) {
     btn.className = d.going ? 'going-btn going' : 'going-btn not-going';
     btn.textContent = d.going ? '✓ Going' : "I'm Going";
     loadClassSocialProof(className, classDate);
+    const shareLink = document.getElementById('share-' + className.replace(/\s+/g,'-'));
+    if (shareLink) shareLink.style.display = d.going ? 'inline-block' : 'none';
   } catch(e) {}
   btn.disabled = false;
+}
+
+function shareClass(className, classDate) {
+  const dateLabel = fmtShortDate(classDate);
+  const shareData = { title: 'Retro Fitness Fairless Hills', text: `I'm going to ${className} ${dateLabel} at Retro Fitness Fairless Hills — come join me! 💪`, url: 'https://myretrostrong.com/member-app.html' };
+  if (navigator.share) { navigator.share(shareData).catch(()=>{}); }
+  else { navigator.clipboard?.writeText(shareData.text + ' ' + shareData.url); alert('Copied to clipboard!'); }
 }
 
 // ── PROGRESS ─────────────────────────────────────────────────
@@ -4351,7 +4361,26 @@ function renderPhotoSlider() {
       '<div class="pc-handle-dot">&#8596;</div>'+
     '</div>'+
     '<input type="range" class="pc-slider-range" min="0" max="100" value="50" oninput="movePcSlider(this.value)">'+
-    '<div class="pc-labels"><span>'+(first.captured_at||'').slice(0,10)+'</span><span>'+(last.captured_at||'').slice(0,10)+'</span></div>';
+    '<div class="pc-labels"><span>'+(first.captured_at||'').slice(0,10)+'</span><span>'+(last.captured_at||'').slice(0,10)+'</span></div>'+
+    '<button class="action-btn secondary" style="margin-top:10px" onclick="shareProgressPhoto()">&#8599; Share This Progress</button>';
+}
+
+async function shareProgressPhoto() {
+  const list = PC_PHOTOS[PC_POSE] || [];
+  const latest = list[list.length-1];
+  if (!latest) return;
+  const text = "Check out my progress at Retro Fitness Fairless Hills! \uD83D\uDCAA #RetroFitness #Progress";
+  try {
+    const resp = await fetch(WORKER+'/photo/get?key='+encodeURIComponent(latest.r2_key));
+    const blob = await resp.blob();
+    const file = new File([blob], 'progress.jpg', { type: blob.type || 'image/jpeg' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Retro Fitness Fairless Hills', text });
+      return;
+    }
+  } catch(e) {}
+  if (navigator.share) { navigator.share({ title: 'Retro Fitness Fairless Hills', text, url: 'https://myretrostrong.com/member-app.html' }).catch(()=>{}); }
+  else { navigator.clipboard?.writeText(text); alert('Copied to clipboard!'); }
 }
 
 function movePcSlider(val) {
