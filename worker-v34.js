@@ -615,7 +615,14 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!staff_id || !email || !pin) return bad('staff_id, email, pin required', cors);
         if (!/^\d{4,6}$/.test(pin)) return bad('PIN must be 4-6 digits', cors);
         const hash = await sha256(pin);
-        await env.DB.prepare('INSERT OR REPLACE INTO staff_auth (staff_id,email,pin_hash,must_change_pin,active) VALUES (?,?,?,1,1)')
+        // staff_id has no unique constraint in this table (only email does),
+        // so re-provisioning with even a slightly different email string used
+        // to leave the old row behind instead of replacing it - two active
+        // logins for the same person, whichever one you actually know the PIN
+        // for might not be the one your email string matches. Delete every
+        // existing row for this staff_id first so there's only ever one.
+        await env.DB.prepare('DELETE FROM staff_auth WHERE staff_id=?').bind(staff_id).run();
+        await env.DB.prepare('INSERT INTO staff_auth (staff_id,email,pin_hash,must_change_pin,active) VALUES (?,?,?,1,1)')
           .bind(staff_id, email.toLowerCase().trim(), hash).run();
         return ok({ provisioned: true }, cors);
       }
