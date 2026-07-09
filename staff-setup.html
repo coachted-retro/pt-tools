@@ -251,6 +251,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <input type="text" id="fWorkPin" inputmode="numeric" maxlength="6" placeholder="Auto-fills from phone number" oninput="_workPinManuallyEdited=true">
       </div>
     </div>
+    <div id="shareAppRow" style="display:none;margin:-4px 0 12px">
+      <button type="button" class="action-btn" style="width:100%;background:#2563EB;color:#fff" onclick="shareAppAccess()">📱 Share the App — send login link by email</button>
+      <div id="shareAppStatus" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+    </div>
     <div class="field">
       <label>Hire Date</label>
       <input type="date" id="fHireDate">
@@ -467,6 +471,8 @@ function renderRoster() {
 function openModal(id) {
   document.getElementById('modalTitle').textContent = id ? 'Edit Employee' : 'Add Employee';
   document.getElementById('editId').value = id || '';
+  document.getElementById('shareAppRow').style.display = id ? 'block' : 'none';
+  document.getElementById('shareAppStatus').textContent = '';
   if (!id) {
     document.getElementById('fName').value = '';
     document.getElementById('fRole').value = '';
@@ -631,6 +637,52 @@ async function saveEmployee() {
     closeModal();
     await loadRoster();
   } catch(e) { showToast('Connection error: ' + e.message); }
+}
+
+async function shareAppAccess(){
+  const id = document.getElementById('editId').value;
+  if (!id) { showToast('Save the employee first.'); return; }
+  const emp = roster.find(e => e.id === parseInt(id));
+  if (!emp) return;
+  const statusEl = document.getElementById('shareAppStatus');
+  const existingWorkEmail = authStatusMap[emp.id];
+  const workEmail = (existingWorkEmail && existingWorkEmail.endsWith('@myretrostrong.com'))
+    ? existingWorkEmail : document.getElementById('fWorkEmail').value.trim();
+  if (!workEmail) { statusEl.textContent = 'Set a work email above first (or save once with one filled in).'; return; }
+  const personalEmail = document.getElementById('fEmail').value.trim();
+  if (!personalEmail) { statusEl.textContent = 'Add a personal email above to send the invite to.'; return; }
+  if (!confirm('This resets ' + emp.name + '\'s login PIN and emails a new one to ' + personalEmail + '. Continue?')) return;
+
+  statusEl.textContent = 'Setting up login...';
+  const newPin = String(Math.floor(1000 + Math.random()*9000));
+  try {
+    const pr = await fetch(WORKER + '/staff/provision', {
+      method:'POST', headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},
+      body: JSON.stringify({ staff_id: emp.id, email: workEmail, pin: newPin })
+    });
+    const pd = await pr.json();
+    if (!pd.ok && !pd.provisioned) { statusEl.textContent = 'Could not set up login: ' + (pd.error||'unknown'); return; }
+
+    const isCoach = (emp.role === 'PT Coach' || emp.role === "Men's Training Lead");
+    const appUrl = isCoach
+      ? 'https://myretrostrong.com/coach-crm.html?coach=' + encodeURIComponent(emp.name) + '&locked=1'
+      : 'https://myretrostrong.com';
+    statusEl.textContent = 'Login set. Sending email...';
+    const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+      <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Retro Strong app is ready, ${esc(emp.name.split(' ')[0])}</h2>
+      <p>${isCoach ? "Here's your direct link — it opens straight to your agenda, no need to pick your name each time." : "Here's your link to sign in to the staff app."}</p>
+      <p><a href="${appUrl}" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open the App &rarr;</a></p>
+      <p style="font-size:13px;color:#6B7280">Tip: open that link on your phone, then use your browser's "Add to Home Screen" option so it works like a real app icon.</p>
+      <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Work email</td><td><b>${esc(workEmail)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary PIN</td><td><b>${esc(newPin)}</b></td></tr></table>
+      <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own PIN the first time you sign in.</p>
+      </div>`;
+    const er = await fetch(WORKER + '/reports/email', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ to: personalEmail, subject: 'Your Retro Strong app is ready', html, context: 'Staff app access shared' })
+    });
+    const ed = await er.json();
+    statusEl.textContent = ed.sent ? ('Emailed ' + personalEmail + '.') : ('Login set, but email did not send (' + (ed.reason||ed.error||'unknown') + '). Share it manually — PIN: ' + newPin);
+  } catch(e) { statusEl.textContent = 'Something went wrong: ' + e.message; }
 }
 
 async function toggleActive(id, newVal) {
