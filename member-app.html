@@ -2419,6 +2419,15 @@ async function sendClientChat(){
 // ── APP INIT ─────────────────────────────────────────────────
 async function startApp() {
   GUEST_MODE = false;
+  // Restore any gated tab that a guest-mode visit may have overwritten
+  // with the "Log in to view this" prompt, so the real training/
+  // nutrition/progress/profile markup exists again before we render
+  // into it below. Fixes the in-session login transition (previously
+  // required a full app close/reopen to look right).
+  GATED_TABS.forEach(t => {
+    const el = document.getElementById('scr-' + t);
+    if (el && GATED_TAB_HTML_CACHE[t] !== undefined) el.innerHTML = GATED_TAB_HTML_CACHE[t];
+  });
   document.getElementById('login-screen').style.display = 'none';
   if (IS_DEMO) {
     const banner = document.createElement('div');
@@ -3058,6 +3067,17 @@ function shareWin(headline) {
 // ── GUEST MODE (no login required to browse) ──────────────────
 let GUEST_MODE = false;
 const GATED_TABS = ['training','nutrition','progress','profile'];
+// Cache the real tab markup BEFORE renderGatedTabPrompt() ever has a
+// chance to overwrite it. Without this, a guest who taps a locked tab
+// then logs in (without a full page reload) sees a broken/blank tab —
+// startApp()'s render functions try to populate elements that got
+// wiped out by the gated prompt's innerHTML replacement. Restoring
+// from this cache in startApp() fixes the in-session login transition.
+const GATED_TAB_HTML_CACHE = {};
+GATED_TABS.forEach(t => {
+  const el = document.getElementById('scr-' + t);
+  if (el) GATED_TAB_HTML_CACHE[t] = el.innerHTML;
+});
 
 function startGuestMode() {
   GUEST_MODE = true;
