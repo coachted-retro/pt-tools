@@ -214,12 +214,24 @@ async function loadBell(){
   const coach = document.getElementById('coach-select').value;
   if (!coach) return;
   try {
-    const r = await fetch(WORKER + '/coach/notifications?coach=' + encodeURIComponent(coach));
+    const [r, ir] = await Promise.all([
+      fetch(WORKER + '/coach/notifications?coach=' + encodeURIComponent(coach)),
+      fetch(WORKER + '/coach/inbox?coach=' + encodeURIComponent(coach))
+    ]);
     const d = await r.json();
+    const idata = await ir.json();
+    const unreadThreads = (idata.threads || []).filter(t => t.unread_count > 0);
+    const msgUnread = unreadThreads.reduce((sum, t) => sum + t.unread_count, 0);
+    const totalUnread = (d.unread||0) + msgUnread;
     const badge = document.getElementById('bell-badge');
-    if (d.unread>0){ badge.style.display='block'; badge.textContent=d.unread; } else badge.style.display='none';
+    if (totalUnread>0){ badge.style.display='block'; badge.textContent=totalUnread; } else badge.style.display='none';
     const drop = document.getElementById('bell-drop');
-    drop.innerHTML = (d.notifications||[]).map(n=>{
+    const msgHtml = unreadThreads.map(t => `
+      <a href="coach-client-profile.html?client=${t.client_id}&coach=${encodeURIComponent(coach)}&tab=chat" style="display:block;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--lred);text-decoration:none;color:inherit">
+        <div style="font-size:12px;font-weight:700">\uD83D\uDCAC ${escH(t.name)} sent a message</div>
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(t.last_body)}</div>
+      </a>`).join('');
+    const notifHtml = (d.notifications||[]).map(n=>{
       let p={}; try{p=JSON.parse(n.payload_json||'{}')}catch(e){}
       if (n.type==='self_workout') {
         return `<div style="padding:12px 14px;border-bottom:1px solid var(--line);${n.read?'':'background:var(--lred)'};cursor:pointer" onclick="bellTap(${n.id},${p.client_id},'${escH(p.client_name)}','${escH(p.title)}')">
@@ -229,7 +241,8 @@ async function loadBell(){
         </div>`;
       }
       return '';
-    }).join('') || '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No notifications</div>';
+    }).join('');
+    drop.innerHTML = (msgHtml + notifHtml) || '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No notifications</div>';
   } catch(e){}
 }
 
@@ -484,13 +497,16 @@ async function loadTodaySchedule(){
         : '';
       const summaryEsc = escH(a.summary||'Booking').replace(/'/g,"");
       const dt = new Date(a.start_datetime);
+      const noClientMatch = resolved && !resolved.clientId;
       items.push({
         uid: 'cb' + a.id, timeSort: dt.toTimeString().slice(0,5),
-        timeLabel: dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + (!resolved && !dimmed ? ' · no exact client match' : ''),
+        timeLabel: dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ((!resolved || noClientMatch) && !dimmed ? ' · no exact client match' : ''),
         name: a.summary || 'Booking', typeLabel: '',
         dimmed, statusBadge, clientId: resolved ? resolved.clientId : null, accent: '#2563EB',
         note: a.notes || null,
-        startHref: resolved ? (resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}&clubos_appt=${a.id}` : `?clubos_appt=${a.id}`)) : null,
+        startHref: !resolved ? null : (resolved.tool === 'gym-floor.html'
+          ? 'gym-floor.html' + (resolved.clientId ? `?client=${resolved.clientId}` : '')
+          : resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}&clubos_appt=${a.id}` : `?clubos_appt=${a.id}`)),
         doneBtn: `openClubosDoneModal(${a.id},'${summaryEsc}')`,
         noShowBtn: `openClubosNoShowModal(${a.id},'${summaryEsc}')`,
         rescheduleBtn: `openClubosRescheduleModal(${a.id},'${summaryEsc}')`,
@@ -530,7 +546,7 @@ async function loadTodaySchedule(){
       <div class="card" style="border-left:4px solid ${it.dimmed?'#D1D5DB':it.accent};flex-direction:column;align-items:stretch;cursor:default;${it.dimmed?'opacity:.6':''}">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="flex:1">
-            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name)}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
+            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.startHref ? `<a href="${it.startHref}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name))}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
             <div class="sub">${it.timeLabel}</div>
             ${it.note ? `<div class="sub" style="margin-top:2px;font-style:italic">${escH(it.note)}</div>` : ''}
           </div>
@@ -901,6 +917,7 @@ function resolveClubOsLinkCrm(summary, clients){
   if (s.includes('new member') && s.includes('inbody')) tool = 'fitness-consultation-tool.html';
   else if (s.includes('monthly') && (s.includes('progress') || s.includes('check'))) tool = 'fitness-monthly-checkin.html';
   else if (s.includes('follow') || s.includes('re-engagement') || s.includes('6 week') || s.includes('6-week')) tool = 'fitness-followup-tool.html';
+  else if (s.includes('training') || s.includes('session') || s.includes('pt appt') || s.includes('personal training')) tool = 'gym-floor.html';
   if (!tool) return null;
   const namePart = (summary||'').split(/[-–]/)[0].trim();
   if (!namePart) return { tool, clientId: null };

@@ -69,9 +69,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
 
 .roster-card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:10px}
-.roster-header{display:grid;grid-template-columns:2fr 1.8fr 1fr 1fr 90px;gap:8px;padding:10px 16px;background:var(--soft);border-bottom:1px solid var(--line)}
+.roster-header{display:grid;grid-template-columns:2fr 1.4fr .8fr 1fr 1fr 90px;gap:8px;padding:10px 16px;background:var(--soft);border-bottom:1px solid var(--line)}
 .roster-header span{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted)}
-.roster-row{display:grid;grid-template-columns:2fr 1.8fr 1fr 1fr 90px;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:center}
+.roster-row{display:grid;grid-template-columns:2fr 1.4fr .8fr 1fr 1fr 90px;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:center}
 .roster-row:last-child{border-bottom:none}
 .roster-row:hover{background:var(--soft)}
 .r-name{font-weight:600;font-size:13px;color:var(--ink)}
@@ -105,9 +105,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
 
 @media(max-width:600px){
-  .roster-header,.roster-row{grid-template-columns:1fr 1fr;gap:6px}
-  .roster-header span:nth-child(3),.roster-header span:nth-child(4),
-  .roster-row>div:nth-child(3),.roster-row>div:nth-child(4){display:none}
+  .roster-header,.roster-row{grid-template-columns:1.4fr 1fr .7fr 1fr;gap:6px}
+  .roster-header span:nth-child(4),.roster-header span:nth-child(5),
+  .roster-row>div:nth-child(4),.roster-row>div:nth-child(5){display:none}
 }
 </style>
 </head>
@@ -140,7 +140,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="section-label">Directors & Management</div>
   <div class="roster-card" id="roster-mgmt">
     <div class="roster-header">
-      <span>Name</span><span>Role</span><span>EOD Required</span><span>Status</span><span>Actions</span>
+      <span>Name</span><span>Role</span><span>App</span><span>EOD Required</span><span>Status</span><span>Actions</span>
     </div>
     <div id="rows-mgmt"><div class="empty-state">Loading...</div></div>
   </div>
@@ -148,7 +148,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="section-label">Coaches & Trainers</div>
   <div class="roster-card" id="roster-coaches">
     <div class="roster-header">
-      <span>Name</span><span>Role</span><span>EOD Required</span><span>Status</span><span>Actions</span>
+      <span>Name</span><span>Role</span><span>App</span><span>EOD Required</span><span>Status</span><span>Actions</span>
     </div>
     <div id="rows-coaches"><div class="empty-state">Loading...</div></div>
   </div>
@@ -156,7 +156,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="section-label">MEA Team</div>
   <div class="roster-card" id="roster-mea">
     <div class="roster-header">
-      <span>Name</span><span>Role</span><span>EOD Required</span><span>Status</span><span>Actions</span>
+      <span>Name</span><span>Role</span><span>App</span><span>EOD Required</span><span>Status</span><span>Actions</span>
     </div>
     <div id="rows-mea"><div class="empty-state">Loading...</div></div>
   </div>
@@ -164,7 +164,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="section-label">Floor Tech</div>
   <div class="roster-card" id="roster-floor">
     <div class="roster-header">
-      <span>Name</span><span>Role</span><span>EOD Required</span><span>Status</span><span>Actions</span>
+      <span>Name</span><span>Role</span><span>App</span><span>EOD Required</span><span>Status</span><span>Actions</span>
     </div>
     <div id="rows-floor"><div class="empty-state">Loading...</div></div>
   </div>
@@ -450,6 +450,7 @@ function renderGroup(containerId, roles) {
         <div class="r-sub">${CLUB_NAMES[e.gym_id]||'Fairless Hills'}${e.email ? ' · '+esc(e.email) : ''}</div>
       </div>
       <div><span class="role-pill ${rolePillClass(e.role)}">${esc(e.role)}</span></div>
+      <div><button class="action-btn btn-edit" style="background:#2563EB;color:#fff;border-color:#2563EB;font-size:11px;padding:5px 8px" onclick="shareAppFromRow(${e.id})">📱 Share App</button></div>
       <div><span class="eod-badge ${e.eod_required ? 'eod-yes' : 'eod-no'}">${e.eod_required ? '✓ Yes' : '— No'}</span></div>
       <div style="font-size:12px;color:${e.active ? 'var(--green)' : 'var(--muted)'}">${e.active ? 'Active' : 'Inactive'}</div>
       <div class="row-actions">
@@ -639,21 +640,34 @@ async function saveEmployee() {
   } catch(e) { showToast('Connection error: ' + e.message); }
 }
 
-async function shareAppAccess(){
-  const id = document.getElementById('editId').value;
-  if (!id) { showToast('Save the employee first.'); return; }
-  const emp = roster.find(e => e.id === parseInt(id));
-  if (!emp) return;
-  const statusEl = document.getElementById('shareAppStatus');
-  const existingWorkEmail = authStatusMap[emp.id];
-  const workEmail = (existingWorkEmail && existingWorkEmail.endsWith('@myretrostrong.com'))
-    ? existingWorkEmail : document.getElementById('fWorkEmail').value.trim();
-  if (!workEmail) { statusEl.textContent = 'Set a work email above first (or save once with one filled in).'; return; }
-  const personalEmail = document.getElementById('fEmail').value.trim();
-  if (!personalEmail) { statusEl.textContent = 'Add a personal email above to send the invite to.'; return; }
-  if (!confirm('This resets ' + emp.name + '\'s login PIN and emails a new one to ' + personalEmail + '. Continue?')) return;
+function buildAppShareEmailHtml(emp, workEmail, newPin, appUrl, isCoach){
+  return `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+    <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Retro Strong app is ready, ${esc(emp.name.split(' ')[0])}</h2>
+    <p>${isCoach ? "Here's your direct link — it opens straight to your agenda, no need to pick your name each time." : "Here's your link to sign in to the staff app."}</p>
+    <p><a href="${appUrl}" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open the App &rarr;</a></p>
+    <p style="font-size:13px;color:#6B7280">Tip: open that link on your phone, then use your browser's "Add to Home Screen" option so it works like a real app icon.</p>
+    <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Work email</td><td><b>${esc(workEmail)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary PIN</td><td><b>${esc(newPin)}</b></td></tr></table>
+    <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own PIN the first time you sign in.</p>
+    </div>`;
+}
 
-  statusEl.textContent = 'Setting up login...';
+async function shareAppForEmployee(emp, statusEl){
+  const existingWorkEmail = authStatusMap[emp.id];
+  let workEmail = (existingWorkEmail && existingWorkEmail.endsWith('@myretrostrong.com')) ? existingWorkEmail : null;
+  if (!workEmail) {
+    const parts = (emp.name||'').split(/\s+/).filter(Boolean);
+    const suggested = parts.length>=2 ? (parts[0][0]+parts[parts.length-1]).toLowerCase().replace(/[^a-z]/g,'')+'@myretrostrong.com' : '';
+    workEmail = prompt('No work email set up yet for ' + emp.name + '. Set one:', suggested);
+    if (!workEmail) return;
+  }
+  let personalEmail = emp.email;
+  if (!personalEmail) {
+    personalEmail = prompt('No personal email on file for ' + emp.name + '. Where should the invite go?');
+    if (!personalEmail) return;
+  }
+  if (!confirm('Reset ' + emp.name + "'s login PIN and email new credentials to " + personalEmail + '?')) return;
+
+  if (statusEl) statusEl.textContent = 'Setting up login...';
   const newPin = String(Math.floor(1000 + Math.random()*9000));
   try {
     const pr = await fetch(WORKER + '/staff/provision', {
@@ -661,28 +675,37 @@ async function shareAppAccess(){
       body: JSON.stringify({ staff_id: emp.id, email: workEmail, pin: newPin })
     });
     const pd = await pr.json();
-    if (!pd.ok && !pd.provisioned) { statusEl.textContent = 'Could not set up login: ' + (pd.error||'unknown'); return; }
+    if (!pd.ok && !pd.provisioned) { const msg = 'Could not set up login: ' + (pd.error||'unknown'); if (statusEl) statusEl.textContent = msg; else showToast(msg); return; }
 
     const isCoach = (emp.role === 'PT Coach' || emp.role === "Men's Training Lead");
     const appUrl = isCoach
       ? 'https://myretrostrong.com/coach-crm.html?coach=' + encodeURIComponent(emp.name) + '&locked=1'
       : 'https://myretrostrong.com';
-    statusEl.textContent = 'Login set. Sending email...';
-    const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-      <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Retro Strong app is ready, ${esc(emp.name.split(' ')[0])}</h2>
-      <p>${isCoach ? "Here's your direct link — it opens straight to your agenda, no need to pick your name each time." : "Here's your link to sign in to the staff app."}</p>
-      <p><a href="${appUrl}" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open the App &rarr;</a></p>
-      <p style="font-size:13px;color:#6B7280">Tip: open that link on your phone, then use your browser's "Add to Home Screen" option so it works like a real app icon.</p>
-      <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Work email</td><td><b>${esc(workEmail)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary PIN</td><td><b>${esc(newPin)}</b></td></tr></table>
-      <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own PIN the first time you sign in.</p>
-      </div>`;
+    if (statusEl) statusEl.textContent = 'Login set. Sending email...';
+    const html = buildAppShareEmailHtml(emp, workEmail, newPin, appUrl, isCoach);
     const er = await fetch(WORKER + '/reports/email', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ to: personalEmail, subject: 'Your Retro Strong app is ready', html, context: 'Staff app access shared' })
     });
     const ed = await er.json();
-    statusEl.textContent = ed.sent ? ('Emailed ' + personalEmail + '.') : ('Login set, but email did not send (' + (ed.reason||ed.error||'unknown') + '). Share it manually — PIN: ' + newPin);
-  } catch(e) { statusEl.textContent = 'Something went wrong: ' + e.message; }
+    const resultMsg = ed.sent ? ('Emailed ' + personalEmail + '.') : ('Login set, but email did not send (' + (ed.reason||ed.error||'unknown') + '). Share it manually — PIN: ' + newPin);
+    if (statusEl) statusEl.textContent = resultMsg; else showToast(resultMsg);
+    loadRoster();
+  } catch(e) { const msg = 'Something went wrong: ' + e.message; if (statusEl) statusEl.textContent = msg; else showToast(msg); }
+}
+
+async function shareAppFromRow(id){
+  const emp = roster.find(e => e.id === id);
+  if (!emp) return;
+  await shareAppForEmployee(emp, null);
+}
+
+async function shareAppAccess(){
+  const id = document.getElementById('editId').value;
+  if (!id) { showToast('Save the employee first.'); return; }
+  const emp = roster.find(e => e.id === parseInt(id));
+  if (!emp) return;
+  await shareAppForEmployee(emp, document.getElementById('shareAppStatus'));
 }
 
 async function toggleActive(id, newVal) {
