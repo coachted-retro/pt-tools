@@ -271,7 +271,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <button class="btn sm red" onclick="addExercise()">Add</button>
     </div>
     <datalist id="exLib"></datalist>
-    <button class="btn sm" style="margin-top:10px;width:100%" onclick="saveAsClassRoutine()">💾 Save as Class Routine</button>
+    <button class="btn sm" id="saveClassRoutineBtn" style="margin-top:10px;width:100%;display:none" onclick="saveAsClassRoutine()">💾 Save as Class Routine</button>
   </div>
   <div class="bottombar">
     <button class="btn" onclick="finishSession()">Finish</button>
@@ -304,7 +304,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     <div class="stepper-wrap">
       <div class="stepper">
         <div class="lbl">Weight</div>
-        <div class="val" id="wVal">135<span class="unit"> lb</span></div>
+        <div class="val" id="wVal" onclick="editWeightManually()" style="cursor:pointer;text-decoration:underline dotted;text-underline-offset:4px">135<span class="unit"> lb</span></div>
         <div class="ctr">
           <button ontouchstart="event.preventDefault();holdStart('w',-5)" ontouchend="holdEnd()" onmousedown="holdStart('w',-5)" onmouseup="holdEnd()" onmouseleave="holdEnd()">−</button>
           <button ontouchstart="event.preventDefault();holdStart('w',5)" ontouchend="holdEnd()" onmousedown="holdStart('w',5)" onmouseup="holdEnd()" onmouseleave="holdEnd()">+</button>
@@ -1264,7 +1264,7 @@ async function saveAsClassRoutine(){
       body: JSON.stringify({ group_class_id: groupClassId, exercises: SESSION.exercises.map(e=>e.name), work_seconds: work, rest_seconds: rest, rounds })});
     const d = await r.json();
     if (d.saved) alert('Saved — this class will now pull this exact routine up from the agenda every time.');
-    else alert('Could not save: ' + (d.error||'unknown error'));
+    else { const msg = typeof d.error === 'string' ? d.error : (d.error ? JSON.stringify(d.error) : 'unknown error'); alert('Could not save: ' + msg); }
   } catch(e) { alert('Connection error.'); }
 }
 
@@ -1326,6 +1326,8 @@ function renderQueue(){
   $('queueName').textContent=SESSION.client_name;
   const done=SESSION.exercises.filter(e=>e.sets.length).length;
   $('queueMeta').textContent=SESSION.exercises.length+' exercises · '+done+' with sets logged';
+  const classBtn=$('saveClassRoutineBtn');
+  if(classBtn) classBtn.style.display=(SESSION.groupClassId||window.SUGGESTED_CLASS_ID||window.SUGGESTED_CLASS_NAME)?'block':'none';
   let html='';
   SESSION.exercises.forEach((e,i)=>{
     const gc=e.group?GROUP_COLORS[(e.group-1)%GROUP_COLORS.length]:null;
@@ -1597,6 +1599,14 @@ function isCompoundLift(name){
 function paintSteppers(){
   $('wVal').innerHTML=(curW%1?curW.toFixed(1):curW)+'<span class="unit"> lb</span>';
   $('rVal').textContent=curR;
+}
+function editWeightManually(){
+  const input=prompt('Enter exact weight (lb):', curW%1?curW.toFixed(1):String(curW));
+  if(input===null) return;
+  const val=parseFloat(input);
+  if(isNaN(val)||val<0){ alert('Enter a valid weight.'); return; }
+  curW=val;
+  paintSteppers();
 }
 function bump(k,d){
   if(k==='w'){curW=Math.max(0,curW+d);}else{curR=Math.max(0,curR+d);}
