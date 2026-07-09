@@ -1542,6 +1542,36 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok(result, cors);
       }
 
+      // ── CLASS ROUTINES (preprogrammed workout per class name, e.g. ──
+      // "Boot Camp" - so a coach running the class can pull it up from ──
+      // the agenda instead of building it from scratch every time) ────
+      if (url.pathname === '/class-routines/save' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.class_name || !Array.isArray(b.exercises)) return bad('class_name and exercises required', cors);
+        await env.DB.prepare(
+          `INSERT INTO class_routines (class_name,exercises_json,work_seconds,rest_seconds,rounds,notes,updated_by,updated_at)
+           VALUES (?,?,?,?,?,?,?,?)
+           ON CONFLICT(class_name) DO UPDATE SET exercises_json=excluded.exercises_json, work_seconds=excluded.work_seconds,
+             rest_seconds=excluded.rest_seconds, rounds=excluded.rounds, notes=excluded.notes, updated_by=excluded.updated_by, updated_at=excluded.updated_at`
+        ).bind(b.class_name, JSON.stringify(b.exercises), b.work_seconds||40, b.rest_seconds||20, b.rounds||1, b.notes||null, b.updated_by||null, new Date().toISOString()).run();
+        return ok({ saved: true }, cors);
+      }
+
+      if (url.pathname === '/class-routines/get' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const className = url.searchParams.get('class_name');
+        if (!className) return bad('class_name required', cors);
+        const row = await env.DB.prepare('SELECT * FROM class_routines WHERE lower(class_name)=lower(?)').bind(className).first();
+        return ok({ routine: row || null }, cors);
+      }
+
+      if (url.pathname === '/class-routines/list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const rows = await env.DB.prepare('SELECT * FROM class_routines ORDER BY class_name ASC').all();
+        return ok({ routines: rows.results || [] }, cors);
+      }
+
       // ── CLASS RSVPS (real, synced, date-specific — replaces the old ──
       // localStorage-only "I'm Going" that never left the device) ──────
       if (url.pathname === '/classes/rsvp' && request.method === 'POST') {

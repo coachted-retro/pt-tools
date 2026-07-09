@@ -445,11 +445,12 @@ async function loadTodaySchedule(){
   if (labelEl) labelEl.textContent = dateLabel + (SCHEDULE_DAY_OFFSET===0 ? ' (today)' : '');
   if (!coach) { box.innerHTML = ''; return; }
   try {
-    const [r, roleRes, r3, clientsRes] = await Promise.all([
+    const [r, roleRes, r3, clientsRes, classRoutinesRes] = await Promise.all([
       fetch(WORKER + '/coach/today-schedule?coach=' + encodeURIComponent(coach) + '&date=' + dateStr),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'staff_roster', where:{name:coach}, limit:1})}),
       fetch(WORKER + '/appointments/coach-day?coach=' + encodeURIComponent(coach) + '&date=' + dateStr),
-      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'clients', limit:2000})})
+      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({op:'select', table:'clients', limit:2000})}),
+      fetch(WORKER + '/class-routines/list')
     ]);
     const d = await r.json();
     const roleRow = ((await roleRes.json()).results || [])[0];
@@ -463,6 +464,7 @@ async function loadTodaySchedule(){
     const d2 = isTrainingLead ? await (await fetch(WORKER + '/schedule/clubos-day?date=' + dateStr)).json() : { appointments: [] };
     const d3 = await r3.json();
     const clients = (await clientsRes.json()).results || [];
+    const knownClassRoutines = (await classRoutinesRes.json()).routines || [];
     const rows = d.today || [];
     const clubosRows = d2.appointments || [];
     const apptRows = d3.appointments || [];
@@ -504,7 +506,9 @@ async function loadTodaySchedule(){
     });
 
     clubosRows.forEach(a => {
-      const resolved = resolveClubOsLinkCrm(a.summary, clients);
+      const summaryLower = (a.summary||'').toLowerCase();
+      const isClass = summaryLower.includes('class') || summaryLower.includes('bootcamp') || summaryLower.includes('boot camp')
+        || knownClassRoutines.some(cr => summaryLower.includes(cr.class_name.toLowerCase()));
       const status = a.status || 'scheduled';
       const dimmed = ['done','rescheduled','no_show','cancel'].includes(status);
       const rescheduleNote = status==='rescheduled' ? (a.reschedule_tbd ? 'To be determined' : (a.reschedule_date ? 'to ' + fmtApptDate(a.reschedule_date) + (a.reschedule_time ? ' ' + a.reschedule_time : '') : '')) : '';
@@ -515,6 +519,31 @@ async function loadTodaySchedule(){
         : '';
       const summaryEsc = escH(a.summary||'Booking').replace(/'/g,"");
       const dt = new Date(a.start_datetime);
+
+      if (isClass) {
+        // Class bookings aren't tied to one person - match by class name
+        // against saved class_routines instead of the client roster.
+        const matchedRoutine = knownClassRoutines.find(cr => summaryLower.includes(cr.class_name.toLowerCase()));
+        const classNameGuess = matchedRoutine ? matchedRoutine.class_name : (a.summary||'Class').replace(/class/i,'').trim();
+        items.push({
+          uid: 'cb' + a.id, timeSort: dt.toTimeString().slice(0,5),
+          timeLabel: dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+          name: a.summary || 'Class', typeLabel: '', isClass: true, needsClassSetup: !matchedRoutine && !dimmed,
+          dimmed, statusBadge, clientId: null, accent: '#7C3AED',
+          note: a.notes || null,
+          startHref: matchedRoutine ? ('gym-floor.html?class=' + encodeURIComponent(matchedRoutine.class_name)) : null,
+          classNameGuess,
+          doneBtn: `openClubosDoneModal(${a.id},'${summaryEsc}')`,
+          noShowBtn: `openClubosNoShowModal(${a.id},'${summaryEsc}')`,
+          rescheduleBtn: `openClubosRescheduleModal(${a.id},'${summaryEsc}')`,
+          cancelBtn: `openClubosCancelModal(${a.id},'${summaryEsc}')`,
+          undoBtn: `setClubosStatus(${a.id},'scheduled')`,
+          noteFallback: { endpoint:'/schedule/clubos-status', idValue:a.id }
+        });
+        return;
+      }
+
+      const resolved = resolveClubOsLinkCrm(a.summary, clients);
       const noClientMatch = resolved && !resolved.clientId;
       const needsProfile = (!resolved || noClientMatch) && !dimmed;
       const guessedName = (a.summary||'').split(/[-–]/)[0].trim();
@@ -566,9 +595,10 @@ async function loadTodaySchedule(){
       <div class="card" style="border-left:4px solid ${it.dimmed?'#D1D5DB':(it.needsProfile?'#D98A0B':it.accent)};flex-direction:column;align-items:stretch;cursor:default;${it.dimmed?'opacity:.6':''}">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="flex:1">
-            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsProfile ? `<a href="#" onclick="openQuickAddClient('${escH(it.guessedName||'').replace(/'/g,"\\'")}');return false" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.startHref ? `<a href="${it.startHref}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name)))}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
+            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsProfile ? `<a href="#" onclick="openQuickAddClient('${escH(it.guessedName||'').replace(/'/g,"\\'")}');return false" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsClassSetup ? `<a href="gym-floor.html?setupClass=${encodeURIComponent(it.classNameGuess||it.name)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.startHref ? `<a href="${it.startHref}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name))))}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
             <div class="sub">${it.timeLabel}</div>
             ${it.needsProfile ? `<div style="display:inline-block;margin-top:4px;background:#FEF3C7;color:#92400E;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px">&#9888; No client record yet — tap the name to set up their profile</div>` : ''}
+            ${it.needsClassSetup ? `<div style="display:inline-block;margin-top:4px;background:#EDE9FE;color:#5B21B6;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px">&#9888; No routine saved for this class yet — tap the name to build and save one</div>` : ''}
             ${it.note ? `<div class="sub" style="margin-top:2px;font-style:italic">${escH(it.note)}</div>` : ''}
           </div>
           ${it.statusBadge}
@@ -580,7 +610,7 @@ async function loadTodaySchedule(){
             <span id="note-status-${it.uid}" style="font-size:11px;color:var(--green,#1E9E5A);font-weight:700"></span>
           </div>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-            ${it.needsProfile ? `<button onclick="openQuickAddClient('${escH(it.guessedName||'').replace(/'/g,"\\'")}')" style="background:#D98A0B;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Set Up Profile</button>` : (it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : '')}
+            ${it.needsProfile ? `<button onclick="openQuickAddClient('${escH(it.guessedName||'').replace(/'/g,"\\'")}')" style="background:#D98A0B;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Set Up Profile</button>` : (it.needsClassSetup ? `<a href="gym-floor.html?setupClass=${encodeURIComponent(it.classNameGuess||it.name)}" style="background:#7C3AED;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Build Routine</a>` : (it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''))}
             <button onclick="${it.doneBtn}" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
             <button onclick="${it.rescheduleBtn}" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
             <button onclick="${it.noShowBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>

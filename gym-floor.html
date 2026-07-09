@@ -270,6 +270,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
       <button class="btn sm red" onclick="addExercise()">Add</button>
     </div>
     <datalist id="exLib"></datalist>
+    <button class="btn sm" style="margin-top:10px;width:100%" onclick="saveAsClassRoutine()">💾 Save as Class Routine</button>
   </div>
   <div class="bottombar">
     <button class="btn" onclick="finishSession()">Finish</button>
@@ -1195,12 +1196,43 @@ async function handleFormVideo(ev){
    SESSION LIFECYCLE
    ===================================================================== */
 function newSession(exs,title){
-  SESSION={client_id:CLIENT.id,client_name:((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim(),
+  SESSION={client_id:CLIENT?CLIENT.id:null,client_name:CLIENT?((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim():'',
     title:title||'Training Session',date:todayStr(),startedAt:Date.now(),
     exercises:exs.map(n=>(typeof n==='object'?{name:n.name,sets:[],note:'',targetSets:n.targetSets||3}:{name:n,sets:[],note:'',targetSets:3})),workoutNote:''};
   persistActive();EXI=0;renderQueue();show('scr-queue');
 }
 function startFresh(){newSession([],'Training Session');}
+
+async function saveAsClassRoutine(){
+  if (!SESSION || !SESSION.exercises || !SESSION.exercises.length) { alert('Add exercises to this session first.'); return; }
+  const className = prompt('Save this as which class? (e.g. "Boot Camp", "Ignite Core") — this is what coaches will search for on the agenda.', window.SUGGESTED_CLASS_NAME || SESSION.title || '');
+  if (!className) return;
+  const work = parseInt(prompt('Work time per interval (seconds):', '40'), 10) || 40;
+  const rest = parseInt(prompt('Rest time between intervals (seconds):', '20'), 10) || 20;
+  const rounds = parseInt(prompt('How many rounds through the list?', '3'), 10) || 3;
+  try {
+    const r = await fetch(WORKER+'/class-routines/save', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ class_name: className, exercises: SESSION.exercises.map(e=>e.name), work_seconds: work, rest_seconds: rest, rounds, updated_by: (localStorage.getItem('coach_crm_name')||'') })});
+    const d = await r.json();
+    if (d.saved) alert('Saved. "'+className+'" will now pull this routine up from the agenda.');
+    else alert('Could not save: ' + (d.error||'unknown error'));
+  } catch(e) { alert('Connection error.'); }
+}
+
+async function loadClassRoutine(className){
+  try {
+    const r = await fetch(WORKER+'/class-routines/get?class_name='+encodeURIComponent(className));
+    const d = await r.json();
+    if (!d.routine) return false;
+    const names = JSON.parse(d.routine.exercises_json||'[]');
+    newSession(names, className);
+    ivWork = d.routine.work_seconds || 40; ivRest = d.routine.rest_seconds || 20; ivRounds = d.routine.rounds || 1;
+    timerResetVals();
+    SESSION.classPreset = { work: ivWork, rest: ivRest, rounds: ivRounds };
+    persistActive();
+    return true;
+  } catch(e) { return false; }
+}
 function startRepeatLast(){
   const last=HISTORY[0];if(!last){startFresh();return;}
   let exs=[];try{exs=(JSON.parse(last.exercises_json||'[]')||[]).map(x=>x.name).filter(Boolean);}catch(e){}
@@ -2140,10 +2172,15 @@ function startHero(){
   keepAwake();paintSync();trySync();
   const q=new URLSearchParams(location.search);
   const cid=q.get('client');
+  const className=q.get('class');
+  const setupClass=q.get('setupClass');
   const COACH_PARAM=q.get('coach')||'';
   window.COACH_PARAM=COACH_PARAM;
+  window.SUGGESTED_CLASS_NAME=setupClass||null;
   await loadClients();
   if(tryResume())return;
+  if(className){ if(await loadClassRoutine(className)) return; }
+  if(setupClass){ startFresh(); alert('Build the "'+setupClass+'" routine below, then tap Save as Class Routine when it\'s ready.'); return; }
   if(cid&&/^\d+$/.test(cid)){
     if(CLIENTS.find(c=>c.id===+cid))pickClient(+cid);
   }
