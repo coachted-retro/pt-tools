@@ -73,7 +73,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <button onclick="toggleBell()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;position:relative">&#128276;<span id="bell-badge" style="display:none;position:absolute;top:-4px;right:-6px;background:var(--red);color:#fff;font-size:9px;font-weight:800;border-radius:10px;padding:1px 5px">0</span></button>
     <div id="bell-drop" style="display:none;position:absolute;top:36px;right:0;width:300px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2);z-index:50;color:var(--ink)"></div>
   </div>
-  <a href="member-app.html" target="_blank" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">&#127968; Gym Home</a>
+  <a href="member-app.html?forceGuest=1" target="_blank" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">&#127968; Gym Home</a>
   <a href="coach-calendar.html" id="calendar-link" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
   <a href="client-management.html" id="all-clients-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">All Clients</a>
   <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
@@ -1238,6 +1238,7 @@ async function saveIntakeAppointment(coach){
 }
 
 function openQuickAddClient(prefillName){
+  openClientPanel();
   const el = document.getElementById('quick-add-form');
   el.style.display = 'block';
   let first = '', last = '';
