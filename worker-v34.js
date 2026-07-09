@@ -1852,6 +1852,37 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok(parsed, cors);
       }
 
+      // ── EXERCISE FAVORITES ("clients love this") — real signal, not a
+      // fabricated success rate. Toggle on/off per client per exercise,
+      // counts shown to both clients and coaches. ──────────────────────
+      if (url.pathname === '/favorites/toggle' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id || !b.exercise_name) return bad('client_id and exercise_name required', cors);
+        const existing = await env.DB.prepare('SELECT id FROM exercise_favorites WHERE client_id=? AND exercise_name=?')
+          .bind(b.client_id, b.exercise_name).first();
+        if (existing) {
+          await env.DB.prepare('DELETE FROM exercise_favorites WHERE id=?').bind(existing.id).run();
+          return ok({ favorited: false }, cors);
+        }
+        await env.DB.prepare('INSERT INTO exercise_favorites (client_id, exercise_name) VALUES (?,?)').bind(b.client_id, b.exercise_name).run();
+        return ok({ favorited: true }, cors);
+      }
+
+      if (url.pathname === '/favorites/counts' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const clientId = url.searchParams.get('client_id');
+        const rows = await env.DB.prepare('SELECT exercise_name, COUNT(*) n FROM exercise_favorites GROUP BY exercise_name').all();
+        const counts = {};
+        (rows.results || []).forEach(r => { counts[r.exercise_name] = r.n; });
+        let mine = [];
+        if (clientId) {
+          const mineRows = await env.DB.prepare('SELECT exercise_name FROM exercise_favorites WHERE client_id=?').bind(clientId).all();
+          mine = (mineRows.results || []).map(r => r.exercise_name);
+        }
+        return ok({ counts, mine }, cors);
+      }
+
       if (url.pathname === '/exercise-video/upload' && request.method === 'POST') {
         if (!env.PHOTOS) return bad('R2 binding "PHOTOS" not found.', cors);
         if (!env.DB) return bad('D1 binding "DB" not found.', cors);

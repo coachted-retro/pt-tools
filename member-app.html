@@ -2154,6 +2154,37 @@ function mOpenExercise(){
   mPaintSteppers();
   document.getElementById('ll-note').value = ex.note || '';
   mRenderSetsDone();
+  mLoadFavoriteState(ex.name);
+}
+
+let M_FAV_COUNTS = {}, M_FAV_MINE = [];
+async function mLoadFavoriteState(exerciseName){
+  try {
+    const r = await fetch(WORKER + '/favorites/counts' + (SESSION&&SESSION.client_id ? '?client_id='+SESSION.client_id : ''));
+    const d = await r.json();
+    M_FAV_COUNTS = d.counts || {};
+    M_FAV_MINE = d.mine || [];
+  } catch(e) {}
+  paintFavoriteButton(exerciseName);
+}
+function paintFavoriteButton(exerciseName){
+  const mine = M_FAV_MINE.includes(exerciseName);
+  const count = M_FAV_COUNTS[exerciseName] || 0;
+  document.getElementById('ll-fav-heart').textContent = mine ? '❤️' : '🤍';
+  document.getElementById('ll-fav-count').textContent = count > 0 ? count : '';
+}
+async function mToggleFavorite(){
+  if (!SESSION || !SESSION.client_id) return;
+  const ex = MSESSION.exercises[MEXI];
+  mVib(20);
+  try {
+    const r = await fetch(WORKER + '/favorites/toggle', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: SESSION.client_id, exercise_name: ex.name }) });
+    const d = await r.json();
+    if (d.favorited) { M_FAV_MINE.push(ex.name); M_FAV_COUNTS[ex.name] = (M_FAV_COUNTS[ex.name]||0) + 1; }
+    else { M_FAV_MINE = M_FAV_MINE.filter(n => n !== ex.name); M_FAV_COUNTS[ex.name] = Math.max(0, (M_FAV_COUNTS[ex.name]||1) - 1); }
+    paintFavoriteButton(ex.name);
+  } catch(e) {}
 }
 
 function mPaintSteppers(){
@@ -4531,6 +4562,9 @@ if (IS_DEMO) {
         <div style="font-size:12px;color:var(--ink3,#9CA3AF)" id="ll-last-perf"></div>
         <div style="font-size:12px;font-weight:700;color:#1E9E5A;margin-top:2px" id="ll-suggest"></div>
       </div>
+      <button id="ll-fav-btn" onclick="mToggleFavorite()" style="background:var(--soft,#F5F6F8);border:none;border-radius:20px;padding:8px 12px;font-size:14px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;gap:4px">
+        <span id="ll-fav-heart">🤍</span><span id="ll-fav-count" style="font-size:12px;font-weight:700;color:var(--ink3,#6B7280)"></span>
+      </button>
       <button onclick="mCloseLiveLog()" style="background:var(--soft,#F5F6F8);border:none;border-radius:50%;width:36px;height:36px;font-size:16px;cursor:pointer;flex-shrink:0">&times;</button>
     </div>
 

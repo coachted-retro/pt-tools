@@ -1756,7 +1756,7 @@ function closeTimer(){$('timerOverlay').classList.remove('active');}
 
 /* ---- Exercise swap: one-tap replace with an equivalent (same body_part) ---- */
 let SWAP_IDX=null;
-function openExerciseSwap(idx){
+async function openExerciseSwap(idx){
   const ex=SESSION.exercises[idx]; if(!ex) return;
   SWAP_IDX=idx;
   const options=exercisesForBodyPart(ex.name);
@@ -1770,13 +1770,18 @@ function openExerciseSwap(idx){
   } else {
     sub.textContent=`Swapping "${ex.name}" — ${known.body_part} exercises with the same target:`;
   }
-  list.innerHTML=(options.map(o=>`
-    <div class="ex-row" onclick="swapExerciseTo('${o.name.replace(/'/g,"\\'")}')" style="cursor:pointer">
+  let favCounts = {};
+  try { const r = await fetch(WORKER+'/favorites/counts'); const d = await r.json(); favCounts = d.counts || {}; } catch(e) {}
+  const sorted = options.slice().sort((a,b) => (favCounts[b.name]||0) - (favCounts[a.name]||0));
+  list.innerHTML=(sorted.map(o=>{
+    const n = favCounts[o.name] || 0;
+    return `<div class="ex-row" onclick="swapExerciseTo('${o.name.replace(/'/g,"\\'")}')" style="cursor:pointer">
       <div style="flex:1">
-        <div class="nm">${esc(o.name)}</div>
+        <div class="nm">${esc(o.name)}${n>0?` <span style="font-size:11px;font-weight:700;color:#E0192B">\u2764\uFE0F ${n}</span>`:''}</div>
         <div class="meta">${esc(o.equipment||'')}${o.mechanics?' · '+esc(o.mechanics):''}</div>
       </div>
-    </div>`).join(''))+
+    </div>`;
+  }).join(''))+
     `<div style="margin-top:10px"><input type="text" id="swapCustomName" placeholder="Or type a different exercise..." style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--line);font-size:13px;box-sizing:border-box">
      <button class="btn red" style="width:100%;margin-top:8px" onclick="swapExerciseTo(($('swapCustomName').value||'').trim())">Use This</button></div>`;
   $('swapOverlay').classList.add('active');
