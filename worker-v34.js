@@ -121,7 +121,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media','followups'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media','followups','eod_flag_dismissals'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -605,6 +605,40 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const hash = await sha256(new_pin);
         await env.DB.prepare('UPDATE staff_auth SET pin_hash=?, must_change_pin=0 WHERE id=?').bind(hash, row.id).run();
         return ok({ changed: true }, cors);
+      }
+
+      // Map of staff_id -> their real work login email, so the roster UI can
+      // tell "already has a login" apart from "needs one suggested" instead
+      // of guessing fresh every time.
+      // Checks whether a trainer already has something booked in this
+      // window before New Member Onboarding books their intake - this
+      // route never existed before, meaning this step always silently
+      // failed (the worker has no "route not found" fallback, so an
+      // unmatched pathname just fell through with no response at all).
+      if (url.pathname === '/availability/check' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const staffId = url.searchParams.get('staff_id');
+        const date = url.searchParams.get('date');
+        const startTime = url.searchParams.get('start_time');
+        const endTime = url.searchParams.get('end_time');
+        if (!staffId || !date || !startTime || !endTime) return bad('staff_id, date, start_time, end_time required', cors);
+        const staff = await env.DB.prepare('SELECT name FROM staff_roster WHERE id=?').bind(staffId).first();
+        if (!staff) return bad('Trainer not found', cors);
+        const conflict = await env.DB.prepare(
+          `SELECT id, appointment_type FROM pt_appointments
+           WHERE assigned_coach=? AND appointment_date=? AND status NOT IN ('cancel','no_show','rescheduled')
+           AND appointment_time IS NOT NULL AND appointment_time >= ? AND appointment_time < ? LIMIT 1`
+        ).bind(staff.name, date, startTime, endTime).first();
+        if (conflict) return ok({ available: false, reason: staff.name + ' already has something booked at that time.' }, cors);
+        return ok({ available: true }, cors);
+      }
+
+      if (url.pathname === '/staff/auth-status' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const rows = await env.DB.prepare('SELECT staff_id, email FROM staff_auth WHERE active=1').all();
+        const map = {};
+        (rows.results || []).forEach(r => { map[r.staff_id] = r.email; });
+        return ok({ map }, cors);
       }
 
       if (url.pathname === '/staff/provision' && request.method === 'POST') {
