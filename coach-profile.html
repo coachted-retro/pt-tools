@@ -124,6 +124,7 @@ function renderView(staff, profile, isMine) {
     </div>
     <div class="card">
       <div class="sec-label" style="margin-top:0">My Work Shifts</div>
+      <div id="my-shift-calendar" style="margin-bottom:12px"></div>
       <div id="my-work-shifts-body"><div class="empty-state">Loading...</div></div>
     </div>
     <div class="card">
@@ -176,9 +177,47 @@ async function loadMyWorkShifts(staffId) {
     const r = await fetch(WORKER + '/shifts/mine?staff_id=' + staffId);
     const d = await r.json();
     const shifts = d.shifts || [];
+    renderShiftCalendar('my-shift-calendar', shifts);
     if (!shifts.length) { el.innerHTML = '<div class="empty-state">No upcoming shifts scheduled.</div>'; return; }
     el.innerHTML = shifts.map(s => renderWorkShiftRow(s, true)).join('');
   } catch(e) { el.innerHTML = '<div class="empty-state">Could not load your schedule.</div>'; }
+}
+
+function renderShiftCalendar(containerId, shifts) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const startWeekday = firstDay.getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const byDate = {};
+  (shifts||[]).forEach(s => { (byDate[s.shift_date] = byDate[s.shift_date]||[]).push(s); });
+  const todayStr = now.toISOString().slice(0,10);
+  const dotColor = s => s.status==='needs_coverage' ? '#D98A0B' : s.status==='pending_swap_approval' ? '#2563EB' : '#1E9E5A';
+  let cells = '';
+  for (let i=0;i<startWeekday;i++) cells += '<div></div>';
+  for (let d=1; d<=daysInMonth; d++) {
+    const dateStr = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const dayShifts = byDate[dateStr]||[];
+    const isToday = dateStr===todayStr;
+    cells += `<div style="aspect-ratio:1;border-radius:8px;background:${isToday?'#FDEAEC':'var(--soft,#F5F6F8)'};border:${isToday?'2px solid var(--red,#E0192B)':'1px solid transparent'};padding:3px;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start">
+      <div style="font-weight:${isToday?800:600}">${d}</div>
+      ${dayShifts.length ? `<div style="display:flex;gap:2px;margin-top:2px">${dayShifts.slice(0,3).map(s=>`<span style="width:6px;height:6px;border-radius:50%;background:${dotColor(s)}"></span>`).join('')}</div>` : ''}
+    </div>`;
+  }
+  const monthLabel = firstDay.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  el.innerHTML = `
+    <div style="text-align:center;font-weight:700;font-family:'Oswald',sans-serif;font-size:13px;margin-bottom:8px">${monthLabel}</div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;font-size:9px;text-align:center;color:var(--ink3,#6B7280);margin-bottom:4px;font-weight:700">
+      <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells}</div>
+    <div style="display:flex;gap:10px;margin-top:10px;font-size:9.5px;color:var(--ink3,#6B7280);flex-wrap:wrap">
+      <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#1E9E5A;margin-right:3px"></span>Scheduled</span>
+      <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#D98A0B;margin-right:3px"></span>Needs Coverage</span>
+      <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#2563EB;margin-right:3px"></span>Pending Approval</span>
+    </div>`;
 }
 
 async function loadOpenWorkShifts(staffId, staffName, role) {
