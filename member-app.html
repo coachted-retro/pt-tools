@@ -1682,6 +1682,10 @@ function startStaffApp() {
     location.href = 'coach-crm.html?coach=' + encodeURIComponent(STAFF_SESSION.name) + '&locked=1';
     return;
   }
+  if (role === 'mea' && !window._skipProfileRedirect) {
+    location.href = 'mea-agenda.html?staff=' + encodeURIComponent(STAFF_SESSION.name) + '&locked=1';
+    return;
+  }
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('staff-shell').style.display = 'flex';
   document.getElementById('staff-greeting-name').textContent = STAFF_SESSION.name;
@@ -1717,6 +1721,7 @@ function renderStaffHome() {
     cards += staffCard('Log a Workout', 'Floor logging, offline-ready', 'gym-floor.html', '💪');
     cards += staffCard('Coaches Hub', 'The full coach directory', 'coaches-hub.html', '🧑‍🏫');
   } else if (role === 'mea') {
+    cards += staffCard('My Agenda', "Today's tours, intakes, and priority calls", 'mea-agenda.html?staff='+name+'&locked=1', '🗓️');
     cards += staffCard('My Call List', 'Today\'s people + business calls, ranked by priority', 'prospect-tracker.html?tab=calllist', '📞');
     cards += staffCard('Prospect Tracker', 'People and Businesses pipeline', 'prospect-tracker.html', '🎯');
     cards += staffCard('Coverage Board', 'Staff shifts and PT sessions, one calendar', 'coverage-board.html', '🗓');

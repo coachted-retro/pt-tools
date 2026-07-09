@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
+<title>My Agenda — Retro Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--blue:#2563EB;--lgreen:#E3F5EC;--lred:#FEF2F2;--lamber:#FFF7ED;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;position:sticky;top:0;z-index:40;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .spacer{flex:1}
+.topbar .submit-btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+.wrap{max-width:860px;margin:0 auto;padding:18px 16px 60px}
+.section{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden}
+.section-header{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.section-title{font-family:'Oswald';font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;flex:1}
+.section-status{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--soft);color:var(--muted)}
+.section-body{padding:12px 16px}
+.kpi-hint{font-size:12px;color:var(--muted);margin-bottom:10px}
+.daynav{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.daynav button{border:1.5px solid var(--line);background:#fff;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px}
+.daynav .lbl{font-family:'Oswald';font-weight:700;font-size:14px}
+.daynav a{font-size:12px;color:var(--red);font-weight:700;text-decoration:none;margin-left:4px}
+.agenda-row{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:8px}
+.agenda-row .ar-top{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.agenda-row .ar-icon{font-size:16px}
+.agenda-row .ar-name{font-weight:700;font-size:13px;flex:1}
+.agenda-row .ar-time{font-size:11px;color:var(--muted);font-weight:600}
+.agenda-row .ar-sub{font-size:12px;color:var(--muted);margin-bottom:8px;padding-left:24px}
+.note-row{display:flex;gap:8px;padding-left:24px}
+.note-row textarea{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:12px;resize:vertical;min-height:36px}
+.note-row button{border:none;background:var(--ink);color:#fff;border-radius:8px;padding:0 14px;font-size:12px;font-weight:700;cursor:pointer}
+.note-status{font-size:11px;margin-top:4px;padding-left:24px;min-height:14px}
+.empty-auto{color:var(--muted);font-size:13px;text-align:center;padding:16px}
+.locked-header{background:var(--ink);color:#fff;border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.locked-header .ln{font-family:'Oswald';font-size:18px;font-weight:800;text-transform:uppercase}
+.locked-header .ls{font-size:12px;color:#9CA3AF;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">RETRO<span>FITNESS</span> — My Agenda</div>
+  <div class="spacer"></div>
+  <a class="submit-btn" id="eod-link" href="sarah-eod.html">Submit End of Day →</a>
+</div>
+<div class="wrap">
+
+  <div class="locked-header" id="locked-header" style="display:none">
+    <div class="ln" id="locked-name"></div>
+    <div class="ls">Today's tours, intakes, and priority calls — with a place to log notes as the day goes.</div>
+  </div>
+
+  <div class="daynav">
+    <button onclick="shiftDay(-1)">←</button>
+    <div class="lbl" id="day-label"></div>
+    <button onclick="shiftDay(1)">→</button>
+    <a href="#" onclick="resetDay();return false">Today</a>
+  </div>
+
+  <!-- TOURS & INTAKES -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Tours &amp; Intakes</span>
+      <span class="section-status" id="status-tours">Loading...</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Pulled live from the Club OS calendar for this day.</div>
+      <div id="tours-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY CALLS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Today's Priority Calls</span>
+      <span class="section-status" id="status-calls">Loading...</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Ranked by follow-up date due — new/contacted/qualified leads only. <a href="prospect-tracker.html?tab=calllist" style="color:var(--red);font-weight:700;text-decoration:none">Open full call list →</a></div>
+      <div id="calls-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- TODAY'S NOTES -->
+  <div class="section" style="border:1.5px solid #1E9E5A">
+    <div class="section-header">
+      <span class="section-title">Today's Notes</span>
+      <span class="section-status" id="status-notes" style="background:var(--lgreen);color:#065F46">Loading...</span>
+    </div>
+    <div class="section-body">
+      <div class="kpi-hint">Everything you've logged today, live.</div>
+      <div id="notes-list"><div class="empty-auto">Loading...</div></div>
+    </div>
+  </div>
+
+</div>
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const urlParams = new URLSearchParams(location.search);
+const STAFF_NAME = urlParams.get('staff') || 'Sarah Aldrich';
+const IS_LOCKED = urlParams.get('locked') === '1';
+if (IS_LOCKED) {
+  document.getElementById('locked-header').style.display = 'block';
+  document.getElementById('locked-name').textContent = STAFF_NAME;
+}
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let DAY_OFFSET = 0;
+function dayForOffset(off){ const d = new Date(); d.setDate(d.getDate()+off); return d.toISOString().slice(0,10); }
+function shiftDay(delta){ DAY_OFFSET += delta; loadAgenda(); }
+function resetDay(){ DAY_OFFSET = 0; loadAgenda(); }
+
+async function loadAgenda(){
+  const dateStr = dayForOffset(DAY_OFFSET);
+  const label = new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
+  document.getElementById('day-label').textContent = label + (DAY_OFFSET===0 ? ' (today)' : '');
+  await Promise.all([loadTours(dateStr), loadCalls(), loadNotes(dateStr)]);
+}
+
+async function loadTours(dateStr){
+  const el = document.getElementById('tours-list');
+  try {
+    const r = await fetch(WORKER + '/schedule/clubos-day?date=' + dateStr);
+    const d = await r.json();
+    const rows = d.appointments || [];
+    if (!rows.length) {
+      el.innerHTML = '<div class="empty-auto">Nothing on the Club OS calendar for this day</div>';
+      document.getElementById('status-tours').textContent = 'None';
+      return;
+    }
+    el.innerHTML = rows.map(a => {
+      const dt = new Date(a.start_datetime);
+      const time = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      const uid = 'tour-' + a.id;
+      return `<div class="agenda-row">
+        <div class="ar-top"><span class="ar-icon">🚶</span><span class="ar-name">${esc(a.summary||'Booking')}</span><span class="ar-time">${time}</span></div>
+        ${a.notes ? `<div class="ar-sub">${esc(a.notes)}</div>` : ''}
+        <div class="note-row">
+          <textarea id="note-${uid}" placeholder="Add a note about this..."></textarea>
+          <button onclick="saveNote('${uid}','clubos_appointments',${a.id})">Save</button>
+        </div>
+        <div class="note-status" id="note-status-${uid}"></div>
+      </div>`;
+    }).join('');
+    document.getElementById('status-tours').textContent = rows.length + ' today';
+  } catch(e) { el.innerHTML = '<div class="empty-auto">Could not load — try again.</div>'; }
+}
+
+async function loadCalls(){
+  const el = document.getElementById('calls-list');
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'leads', orderBy:'next_action_date asc', limit:300 }) });
+    const d = await r.json();
+    const today = new Date().toISOString().slice(0,10);
+    const active = (d.results||[])
+      .filter(l => ['new','contacted','qualified'].includes(l.status))
+      .filter(l => !l.next_action_date || l.next_action_date <= today)
+      .slice(0, 15);
+    if (!active.length) {
+      el.innerHTML = '<div class="empty-auto">No priority calls due right now</div>';
+      document.getElementById('status-calls').textContent = 'None';
+      return;
+    }
+    el.innerHTML = active.map(l => {
+      const uid = 'call-' + l.id;
+      const label = l.business_name || ((l.first_name||'')+' '+(l.last_name||'')).trim() || 'Lead #'+l.id;
+      const sub = [l.status, l.next_action_date ? 'Due ' + l.next_action_date : 'No date set', l.phone].filter(Boolean).join(' · ');
+      return `<div class="agenda-row">
+        <div class="ar-top"><span class="ar-icon">📞</span><span class="ar-name">${esc(label)}</span></div>
+        <div class="ar-sub">${esc(sub)}</div>
+        <div class="note-row">
+          <textarea id="note-${uid}" placeholder="Log this call..."></textarea>
+          <button onclick="saveNote('${uid}','leads',${l.id})">Save</button>
+        </div>
+        <div class="note-status" id="note-status-${uid}"></div>
+      </div>`;
+    }).join('');
+    document.getElementById('status-calls').textContent = active.length + ' due';
+  } catch(e) { el.innerHTML = '<div class="empty-auto">Could not load — try again.</div>'; }
+}
+
+async function saveNote(uid, sourceTable, leadId){
+  const ta = document.getElementById('note-' + uid);
+  const statusEl = document.getElementById('note-status-' + uid);
+  const body = ta ? ta.value.trim() : '';
+  if (!body) { statusEl.textContent = 'Write something first.'; statusEl.style.color = 'var(--red)'; return; }
+  statusEl.textContent = 'Saving...'; statusEl.style.color = 'var(--muted)';
+  try {
+    const res = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'touchpoints', values:{
+        lead_id: leadId, source_table: sourceTable, contact_date: new Date().toISOString(),
+        channel: sourceTable === 'leads' ? 'call' : 'in_person', direction: 'outbound',
+        summary: body, outcome: null, advisor: STAFF_NAME
+      }})});
+    const d = await res.json();
+    if (d.ok === false) throw new Error(d.error || 'save failed');
+    statusEl.textContent = 'Saved ✓'; statusEl.style.color = 'var(--green)';
+    if (ta) ta.value = '';
+    loadNotes(dayForOffset(DAY_OFFSET));
+  } catch(e) { statusEl.textContent = 'Could not save — try again.'; statusEl.style.color = 'var(--red)'; }
+}
+
+async function loadNotes(dateStr){
+  const el = document.getElementById('notes-list');
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'touchpoints', where:{ advisor: STAFF_NAME }, orderBy:'contact_date desc', limit:100 }) });
+    const d = await r.json();
+    const notes = (d.results||[]).filter(n => (n.contact_date||'').slice(0,10) === dateStr);
+    if (!notes.length) {
+      el.innerHTML = "<div class='empty-auto'>No notes saved yet today.</div>";
+      document.getElementById('status-notes').textContent = 'None yet';
+      return;
+    }
+    el.innerHTML = notes.map(n => {
+      const time = n.contact_date ? new Date(n.contact_date).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
+      return `<div class="agenda-row">
+        <div class="ar-top"><span class="ar-icon">📝</span><span class="ar-name">${esc(n.source_table === 'clubos_appointments' ? 'Tour / Intake' : 'Call')}</span><span class="ar-time">${time}</span></div>
+        <div class="ar-sub" style="padding-left:24px">${esc(n.summary)}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('status-notes').textContent = notes.length + ' saved';
+  } catch(e) { el.innerHTML = "<div class='empty-auto'>Could not load today's notes.</div>"; }
+}
+
+loadAgenda();
+</script>
+</body>
+</html>
