@@ -3965,6 +3965,53 @@ async function latestInbody(env, clientId){
   return co || {};
 }
 
+// ── New client assigned to a coach: email them a heads-up with a link
+// straight to the client's Coach View, the consultation summary if one
+// exists, and a lightweight starting-program suggestion based on their
+// stated goal (a starting point, not a replacement for the full AI
+// Program Builder in gym-floor.html - the email points them there too).
+function suggestStartingProgram(goalText){
+  const g = (goalText||'').toLowerCase();
+  if (/fat loss|lose weight|weight loss|lean|tone|cut/.test(g)) return { name: 'Fat Loss Circuit', why: 'stated goal centers on fat loss / leaning out' };
+  if (/strength|powerlift|1rm|get stronger/.test(g)) return { name: 'Strength Foundation 5\u00d75', why: 'stated goal centers on raw strength' };
+  if (/muscle|size|hypertrophy|bulk|build/.test(g)) return { name: 'Push / Pull / Legs', why: 'stated goal centers on building muscle' };
+  if (/function|mobility|injury|rehab|pain/.test(g)) return { name: 'Functional Strength', why: 'stated goal involves function/mobility considerations' };
+  return { name: 'Full Body', why: 'a safe, balanced default until there\'s more to go on' };
+}
+function escEmail(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function notifyCoachOfNewClient(env, coachName, clientId){
+  if (!env.DB || !coachName || !clientId) return;
+  const client = await env.DB.prepare('SELECT first_name,last_name FROM clients WHERE id=?').bind(clientId).first();
+  if (!client) return;
+  const clientName = ((client.first_name||'')+' '+(client.last_name||'')).trim() || 'A new client';
+  const coachRow = await env.DB.prepare('SELECT email FROM staff_roster WHERE name=? LIMIT 1').bind(coachName).first();
+  if (!coachRow || !coachRow.email) return; // no personal email on file - nothing to send to
+  const consult = await env.DB.prepare('SELECT * FROM consultations WHERE client_id=? ORDER BY created_at DESC LIMIT 1').bind(clientId).first();
+  const suggestion = suggestStartingProgram(consult?.goals);
+  const profileUrl = 'https://myretrostrong.com/coach-client-profile.html?client=' + clientId + '&coach=' + encodeURIComponent(coachName);
+  const html = `<div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+    <h2 style="color:#E0192B;font-family:Oswald,sans-serif">You have a new client: ${escEmail(clientName)}</h2>
+    <p><a href="${profileUrl}" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open ${escEmail(clientName.split(' ')[0])}'s Profile &rarr;</a></p>
+    ${consult ? `
+    <div style="background:#F5F6F8;border-radius:10px;padding:16px;margin-top:16px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:8px">Consultation Summary</div>
+      ${consult.goals ? `<div style="font-size:13px;margin-bottom:6px"><b>Goals:</b> ${escEmail(consult.goals)}</div>` : ''}
+      ${consult.medical_notes ? `<div style="font-size:13px;margin-bottom:6px"><b>Medical/limitations:</b> ${escEmail(consult.medical_notes)}</div>` : ''}
+      ${consult.assessment_summary ? `<div style="font-size:13px;margin-top:10px;line-height:1.5">${escEmail(consult.assessment_summary)}</div>` : ''}
+    </div>
+    <div style="background:#FDEAEC;border-radius:10px;padding:16px;margin-top:12px">
+      <div style="font-weight:700;font-size:14px;margin-bottom:6px">Suggested Starting Point: ${escEmail(suggestion.name)}</div>
+      <div style="font-size:13px;color:#6B7280">Based on ${escEmail(suggestion.why)} — a starting point, not a final plan. Use the AI Program Builder on the gym floor tool for something dialed in to their actual InBody and limitations.</div>
+    </div>` : `<p style="font-size:13px;color:#6B7280;margin-top:12px">No consultation record on file yet for this client — check their profile for whatever intake info is there.</p>`}
+    <p style="font-size:13px;color:#6B7280;margin-top:16px">Tap "Schedule Workouts" on their profile to set up their training plan — days, weeks, or months out.</p>
+  </div>`;
+  try {
+    await fetch('https://api.resend.com/emails', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(env.RESEND_KEY||'')},
+      body: JSON.stringify({ from: env.MAIL_FROM || 'onboarding@resend.dev', to:[coachRow.email], subject: 'New client assigned: '+clientName, html }) });
+  } catch(e) {}
+}
+
 async function buildMealPlan(env, r, inbody){
   const name = ((r.first_name||'')+' '+(r.last_name||'')).trim() || 'Client';
   const goal = r.goal_type || r.goal_primary || 'maintain';
@@ -4244,6 +4291,9 @@ async function handleDb(q, env, cors) {
         }
       } catch(e) {}
     }
+    if (table === 'clients' && q.values.coach && res.meta?.last_row_id) {
+      try { await notifyCoachOfNewClient(env, q.values.coach, res.meta.last_row_id); } catch(e) {}
+    }
     return ok({ id: res.meta?.last_row_id, meta: res.meta }, cors);
   }
   if (op === 'select') {
@@ -4262,8 +4312,18 @@ async function handleDb(q, env, cors) {
   if (op === 'update') {
     if (!cols.length) return bad('update needs values', cors);
     if (!whereCols.length) return bad('update needs where', cors);
+    let priorCoach = undefined;
+    if (table === 'clients' && cols.includes('coach') && whereCols.includes('id')) {
+      try {
+        const priorRow = await env.DB.prepare('SELECT coach FROM clients WHERE id=?').bind(q.where.id).first();
+        priorCoach = priorRow ? priorRow.coach : null;
+      } catch(e) {}
+    }
     const sql = `UPDATE ${table} SET ${cols.map(c=>`${c}=?`).join(',')} WHERE ${whereCols.map(c=>`${c}=?`).join(' AND ')}`;
     const res = await env.DB.prepare(sql).bind(...cols.map(c=>q.values[c] ?? null), ...whereCols.map(c=>q.where[c] ?? null)).run();
+    if (table === 'clients' && cols.includes('coach') && q.values.coach && q.values.coach !== priorCoach) {
+      try { await notifyCoachOfNewClient(env, q.values.coach, q.where.id); } catch(e) {}
+    }
     return ok({ meta: res.meta }, cors);
   }
   if (op === 'delete') {
