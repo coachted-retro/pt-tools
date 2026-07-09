@@ -1785,7 +1785,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const client_id = url.searchParams.get('client_id');
         if (!client_id) return bad('client_id required', cors);
-        const [client, checkins, mealPlan, scans, sessions, selfWorkouts, tier, mealProfile, dailyLogs] = await Promise.all([
+        const [client, checkins, mealPlan, scans, sessions, selfWorkouts, tier, mealProfile, dailyLogs, scheduled] = await Promise.all([
           env.DB.prepare('SELECT id,first_name,last_name,email,phone,status,advisor,coach,goal_primary,training_start_date,package,coach_recommendation,coach_recommendation_date,coach_recommendation_by FROM clients WHERE id=?').bind(client_id).first(),
           env.DB.prepare('SELECT * FROM checkins WHERE client_id=? ORDER BY checkin_date DESC LIMIT 12').bind(client_id).all(),
           env.DB.prepare('SELECT * FROM meal_plans WHERE client_id=? ORDER BY week_of DESC, id DESC LIMIT 1').bind(client_id).first(),
@@ -1794,9 +1794,14 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           env.DB.prepare('SELECT * FROM self_workouts WHERE client_id=? ORDER BY workout_date DESC LIMIT 20').bind(client_id).all(),
           getMemberTier(env, client_id),
           env.DB.prepare('SELECT * FROM meal_profiles WHERE client_id=? LIMIT 1').bind(client_id).first(),
-          env.DB.prepare('SELECT * FROM daily_logs WHERE client_id=? ORDER BY log_date DESC LIMIT 45').bind(client_id).all()
+          env.DB.prepare('SELECT * FROM daily_logs WHERE client_id=? ORDER BY log_date DESC LIMIT 45').bind(client_id).all(),
+          // Coach-assigned recurring program (coach-crm.html's weekly scheduler,
+          // /schedule/create) — this was never actually being returned here even
+          // though the client app has always expected it, so assigned programs
+          // silently never appeared in the Training tab for any client.
+          env.DB.prepare("SELECT * FROM scheduled_sessions WHERE client_id=? AND scheduled_date >= date('now','-1 day') ORDER BY scheduled_date ASC LIMIT 60").bind(client_id).all()
         ]);
-        return ok({ client, checkins: checkins.results||[], mealPlan, scans: scans.results||[], sessions: sessions.results||[], selfWorkouts: selfWorkouts.results||[], tier, mealProfile: mealProfile||null, dailyLogs: dailyLogs.results||[] }, cors);
+        return ok({ client, checkins: checkins.results||[], mealPlan, scans: scans.results||[], sessions: sessions.results||[], selfWorkouts: selfWorkouts.results||[], tier, mealProfile: mealProfile||null, dailyLogs: dailyLogs.results||[], scheduled: scheduled.results||[] }, cors);
       }
 
       if (url.pathname === '/portal/log-workout' && request.method === 'POST') {
