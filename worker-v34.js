@@ -1869,6 +1869,42 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok({ favorited: true }, cors);
       }
 
+      // ── FITCHAT — client-facing AI Q&A, grounded in the real exercise
+      // library instead of generic advice, with hard safety rules around
+      // anything pain/injury-adjacent. Client sends its own EXERCISE_DB
+      // along with the question (member-app.html already has it loaded),
+      // keeping this endpoint stateless instead of a second hardcoded copy.
+      if (url.pathname === '/fitchat/ask' && request.method === 'POST') {
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+        const b = await request.json();
+        if (!b.question) return bad('question required', cors);
+        const exercises = Array.isArray(b.exercises) ? b.exercises : [];
+        const exerciseList = exercises.map(e => `${e.name} | ${e.body_part} | ${e.equipment} | ${e.type}`).join('\n');
+        const sys = `You are FitChat, a friendly assistant inside the Retro Fitness Fairless Hills member app. Members ask you fitness questions and you help them, grounded in the gym's real exercise library below (format: name | body part | equipment | type).
+
+EXERCISE LIBRARY:
+${exerciseList}
+
+Rules:
+- When recommending exercises, prefer exact names from the library above so they match what the member can actually find and log in the app. You can mention exercises outside the library too if genuinely relevant, but call out clearly that it's not in the app's library.
+- Keep answers short and conversational - a few sentences, not an essay. This is a chat, not an article.
+- For anything involving pain, injury, or a medical condition (back pain, joint pain, "is this safe if I have X"): give only general, conservative movement guidance (e.g. gentle mobility work, avoiding load/impact on the affected area), and always clearly recommend they check with their coach or a doctor before starting anything new. Never diagnose, never guarantee an exercise is "safe" for their specific situation, never suggest specific loads/weights for an injury-adjacent question.
+- You're encouraging and knowledgeable, not clinical. Sound like a good coach, not a textbook.
+- If a question has nothing to do with fitness/exercise/nutrition basics, gently redirect back to what you can actually help with.`;
+        try {
+          const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, system: sys, messages: [{ role: 'user', content: b.question }] })
+          });
+          const aiData = await aiResp.json();
+          const text = (aiData.content && aiData.content[0] && aiData.content[0].text) || "Sorry, I couldn't come up with an answer for that — try asking again.";
+          return ok({ answer: text }, cors);
+        } catch(e) {
+          return bad('Could not reach the AI right now — try again in a moment.', cors);
+        }
+      }
+
       if (url.pathname === '/favorites/counts' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const clientId = url.searchParams.get('client_id');

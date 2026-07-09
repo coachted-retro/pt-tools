@@ -2947,6 +2947,37 @@ async function toggleReaction(winId, emoji) {
   } catch(e) {}
 }
 
+// ── FITCHAT ──────────────────────────────────────────────────
+function openFitChat(){ document.getElementById('fitchat-panel').style.display = 'block'; document.getElementById('fitchat-input').focus(); }
+function closeFitChat(){ document.getElementById('fitchat-panel').style.display = 'none'; }
+function fitChatBubble(text, fromUser){
+  const box = document.getElementById('fitchat-messages');
+  const div = document.createElement('div');
+  div.style.cssText = fromUser
+    ? 'background:#1E9E5A;color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13px;max-width:85%;margin-bottom:10px;margin-left:auto'
+    : 'background:var(--soft,#F5F6F8);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:13px;max-width:85%;margin-bottom:10px;white-space:pre-wrap';
+  div.textContent = text;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+async function sendFitChat(){
+  const input = document.getElementById('fitchat-input');
+  const question = input.value.trim();
+  if (!question) return;
+  input.value = '';
+  fitChatBubble(question, true);
+  const thinking = fitChatBubble('...', false);
+  try {
+    const r = await fetch(WORKER + '/fitchat/ask', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ question, exercises: EXERCISE_DB }) });
+    const d = await r.json();
+    thinking.textContent = d.answer || "Sorry, couldn't come up with an answer for that — try again.";
+  } catch(e) {
+    thinking.textContent = "Couldn't reach FitChat right now — try again in a moment.";
+  }
+}
+
 function shareWin(headline) {
   const shareData = { title: 'Retro Fitness Fairless Hills', text: headline + ' — Retro Fitness of Fairless Hills', url: 'https://myretrostrong.com/member-app.html' };
   if (navigator.share) { navigator.share(shareData).catch(()=>{}); }
@@ -4553,6 +4584,33 @@ if (IS_DEMO) {
   <button id="chat-fab" onclick="openChat()" style="display:none;position:fixed;bottom:78px;right:16px;width:52px;height:52px;border-radius:50%;background:var(--red);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:22px;z-index:60;cursor:pointer">
     &#128172;<span id="chat-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#15171A;color:#fff;font-size:10px;font-weight:800;border-radius:10px;padding:1px 6px">0</span>
   </button>
+
+  <!-- FITCHAT FAB — always visible, no login required, since it doesn't
+       need a client session to give useful answers -->
+  <button id="fitchat-fab" onclick="openFitChat()" style="position:fixed;bottom:140px;right:16px;width:52px;height:52px;border-radius:50%;background:#1E9E5A;color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:22px;z-index:60;cursor:pointer">
+    &#10024;
+  </button>
+  <div id="fitchat-panel" style="display:none;position:fixed;bottom:0;right:0;left:0;top:0;background:rgba(0,0,0,.4);z-index:70" onclick="if(event.target===this) closeFitChat()">
+    <div style="position:absolute;bottom:0;left:0;right:0;max-height:80vh;background:#fff;border-radius:20px 20px 0 0;display:flex;flex-direction:column;max-width:480px;margin:0 auto">
+      <div style="padding:16px 18px;border-bottom:1px solid var(--line3,#E4E7EC);display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:#1E9E5A;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">&#10024;</div>
+        <div style="flex:1">
+          <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:16px">FitChat</div>
+          <div style="font-size:11px;color:var(--ink3,#9CA3AF)">Ask me anything about training — I know the gym's exercise library</div>
+        </div>
+        <button onclick="closeFitChat()" style="background:var(--soft,#F5F6F8);border:none;border-radius:50%;width:32px;height:32px;font-size:14px;cursor:pointer;flex-shrink:0">&times;</button>
+      </div>
+      <div id="fitchat-messages" style="flex:1;overflow-y:auto;padding:16px 18px;min-height:200px;max-height:50vh">
+        <div style="background:var(--soft,#F5F6F8);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:13px;max-width:85%;margin-bottom:10px">
+          Hey! Ask me things like "best exercise to build my arms" or "what's good for tight hips" — I'll pull from what's actually in the app.
+        </div>
+      </div>
+      <div style="padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line3,#E4E7EC);display:flex;gap:8px">
+        <input id="fitchat-input" placeholder="Ask a fitness question..." onkeydown="if(event.key==='Enter')sendFitChat()" style="flex:1;padding:11px 14px;border:1px solid var(--line3,#E4E7EC);border-radius:20px;font-size:14px">
+        <button onclick="sendFitChat()" style="background:#1E9E5A;color:#fff;border:none;border-radius:50%;width:42px;height:42px;font-size:16px;cursor:pointer;flex-shrink:0">&#10148;</button>
+      </div>
+    </div>
+  </div>
   <!-- LIVE WORKOUT LOGGING OVERLAY -->
   <div id="live-log-screen" style="display:none;position:fixed;inset:0;background:var(--soft, #F5F6F8);z-index:80;flex-direction:column">
     <div style="background:#fff;padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));border-bottom:1px solid var(--line3, #E4E7EC);display:flex;align-items:center;gap:10px">
