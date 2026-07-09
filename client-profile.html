@@ -341,8 +341,10 @@ async function db(body){
 }
 async function loadCoachRoster(){
   try {
-    const res = await db({op:'select', table:'pt_reps', where:{gym_id:1, active:1}, orderBy:'name asc', limit:50});
-    const reps = (res && res.data) || res.results || res || [];
+    const res = await db({op:'select', table:'staff_roster', where:{gym_id:1, active:1}, orderBy:'name asc', limit:100});
+    const allStaff = (res && res.data) || res.results || res || [];
+    const TRAINER_ROLES = ['PT Coach', "Men's Training Lead", 'Director of Fitness'];
+    const reps = Array.isArray(allStaff) ? allStaff.filter(r => TRAINER_ROLES.includes(r.role)) : [];
     const sel = document.getElementById('m_coach');
     if (!sel || !Array.isArray(reps)) return;
     const current = sel.value;
