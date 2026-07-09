@@ -1251,27 +1251,31 @@ function startFresh(){newSession([],'Training Session');}
 
 async function saveAsClassRoutine(){
   if (!SESSION || !SESSION.exercises || !SESSION.exercises.length) { alert('Add exercises to this session first.'); return; }
-  const className = prompt('Save this as which class? (e.g. "Boot Camp", "Ignite Core") — this is what coaches will search for on the agenda.', window.SUGGESTED_CLASS_NAME || SESSION.title || '');
-  if (!className) return;
+  const groupClassId = window.SUGGESTED_CLASS_ID || (SESSION.groupClassId || null);
+  if (!groupClassId) {
+    alert('This booking isn\'t tied to a class on the public calendar yet, so there\'s nowhere to save this routine permanently. Add "'+ (window.SUGGESTED_CLASS_NAME||SESSION.title||'this class') +'" to the class calendar first, then come back and build its routine from the agenda.');
+    return;
+  }
   const work = parseInt(prompt('Work time per interval (seconds):', '40'), 10) || 40;
   const rest = parseInt(prompt('Rest time between intervals (seconds):', '20'), 10) || 20;
   const rounds = parseInt(prompt('How many rounds through the list?', '3'), 10) || 3;
   try {
     const r = await fetch(WORKER+'/class-routines/save', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ class_name: className, exercises: SESSION.exercises.map(e=>e.name), work_seconds: work, rest_seconds: rest, rounds, updated_by: (localStorage.getItem('coach_crm_name')||'') })});
+      body: JSON.stringify({ group_class_id: groupClassId, exercises: SESSION.exercises.map(e=>e.name), work_seconds: work, rest_seconds: rest, rounds })});
     const d = await r.json();
-    if (d.saved) alert('Saved. "'+className+'" will now pull this routine up from the agenda.');
+    if (d.saved) alert('Saved — this class will now pull this exact routine up from the agenda every time.');
     else alert('Could not save: ' + (d.error||'unknown error'));
   } catch(e) { alert('Connection error.'); }
 }
 
-async function loadClassRoutine(className){
+async function loadClassRoutine(groupClassId){
   try {
-    const r = await fetch(WORKER+'/class-routines/get?class_name='+encodeURIComponent(className));
+    const r = await fetch(WORKER+'/class-routines/get?group_class_id='+encodeURIComponent(groupClassId));
     const d = await r.json();
     if (!d.routine) return false;
     const names = JSON.parse(d.routine.exercises_json||'[]');
-    newSession(names, className);
+    newSession(names, d.class ? d.class.name : 'Class');
+    SESSION.groupClassId = groupClassId;
     ivWork = d.routine.work_seconds || 40; ivRest = d.routine.rest_seconds || 20; ivRounds = d.routine.rounds || 1;
     timerResetVals();
     SESSION.classPreset = { work: ivWork, rest: ivRest, rounds: ivRounds };
@@ -2283,18 +2287,25 @@ function startHero(){
   keepAwake();paintSync();trySync();
   const q=new URLSearchParams(location.search);
   const cid=q.get('client');
-  const className=q.get('class');
+  const classId=q.get('class_id');
+  const setupClassId=q.get('setupClassId');
   const setupClass=q.get('setupClass');
   const COACH_PARAM=q.get('coach')||'';
   window.COACH_PARAM=COACH_PARAM;
   window.SUGGESTED_CLASS_NAME=setupClass||null;
+  window.SUGGESTED_CLASS_ID=setupClassId?parseInt(setupClassId,10):null;
   await loadClients();
-  if(tryResume())return;
-  if(className){ if(await loadClassRoutine(className)) return; }
-  if(setupClass){ startFresh(); alert('Build the "'+setupClass+'" routine below, then tap Save as Class Routine when it\'s ready.'); return; }
+  // A specific link always wins over resuming a leftover session - tapping
+  // Boot Camp on the agenda should go to Boot Camp, full stop, not get
+  // hijacked by whatever unfinished session happens to be sitting saved from
+  // earlier. The resume prompt only gets a chance when there's no specific
+  // destination in the URL at all (just opening the app generically).
+  if(classId){ if(await loadClassRoutine(classId)) return; }
+  if(setupClassId||setupClass){ startFresh(); if(SUGGESTED_CLASS_ID) SESSION.groupClassId=SUGGESTED_CLASS_ID; alert('Build the "'+(setupClass||'class')+'" routine below, then tap Save as Class Routine when it\'s ready.'); return; }
   if(cid&&/^\d+$/.test(cid)){
-    if(CLIENTS.find(c=>c.id===+cid))pickClient(+cid);
+    if(CLIENTS.find(c=>c.id===+cid)){ pickClient(+cid); return; }
   }
+  if(tryResume())return;
 })();
 </script>
 </body>

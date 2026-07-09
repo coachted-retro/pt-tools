@@ -1560,33 +1560,42 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok(result, cors);
       }
 
-      // ── CLASS ROUTINES (preprogrammed workout per class name, e.g. ──
-      // "Boot Camp" - so a coach running the class can pull it up from ──
-      // the agenda instead of building it from scratch every time) ────
+      // ── CLASS ROUTINES (preprogrammed workout per class, e.g. "Boot ──
+      // Camp" - tied to the real group_classes record, the same table ──
+      // that powers the public class calendar, not a loose text match) ─
       if (url.pathname === '/class-routines/save' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
-        if (!b.class_name || !Array.isArray(b.exercises)) return bad('class_name and exercises required', cors);
+        if (!b.group_class_id || !Array.isArray(b.exercises)) return bad('group_class_id and exercises required', cors);
         await env.DB.prepare(
-          `INSERT INTO class_routines (class_name,exercises_json,work_seconds,rest_seconds,rounds,notes,updated_by,updated_at)
-           VALUES (?,?,?,?,?,?,?,?)
-           ON CONFLICT(class_name) DO UPDATE SET exercises_json=excluded.exercises_json, work_seconds=excluded.work_seconds,
-             rest_seconds=excluded.rest_seconds, rounds=excluded.rounds, notes=excluded.notes, updated_by=excluded.updated_by, updated_at=excluded.updated_at`
-        ).bind(b.class_name, JSON.stringify(b.exercises), b.work_seconds||40, b.rest_seconds||20, b.rounds||1, b.notes||null, b.updated_by||null, new Date().toISOString()).run();
+          `UPDATE group_classes SET exercises_json=?, work_seconds=?, rest_seconds=?, rounds=? WHERE id=?`
+        ).bind(JSON.stringify(b.exercises), b.work_seconds||40, b.rest_seconds||20, b.rounds||1, b.group_class_id).run();
         return ok({ saved: true }, cors);
       }
 
       if (url.pathname === '/class-routines/get' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const className = url.searchParams.get('class_name');
-        if (!className) return bad('class_name required', cors);
-        const row = await env.DB.prepare('SELECT * FROM class_routines WHERE lower(class_name)=lower(?)').bind(className).first();
-        return ok({ routine: row || null }, cors);
+        const groupClassId = url.searchParams.get('group_class_id');
+        if (!groupClassId) return bad('group_class_id required', cors);
+        const row = await env.DB.prepare('SELECT * FROM group_classes WHERE id=?').bind(groupClassId).first();
+        return ok({ routine: (row && row.exercises_json) ? row : null, class: row || null }, cors);
+      }
+
+      // Matches a free-text booking summary (from ClubOS, etc) against the
+      // real group_classes list by name - this is how the agenda finds the
+      // right class record to link to, rather than guessing from text alone.
+      if (url.pathname === '/class-routines/match' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const summary = (url.searchParams.get('summary') || '').toLowerCase();
+        if (!summary) return bad('summary required', cors);
+        const rows = await env.DB.prepare('SELECT * FROM group_classes WHERE active=1').all();
+        const match = (rows.results || []).find(c => summary.includes((c.name||'').toLowerCase()));
+        return ok({ match: match || null }, cors);
       }
 
       if (url.pathname === '/class-routines/list' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const rows = await env.DB.prepare('SELECT * FROM class_routines ORDER BY class_name ASC').all();
+        const rows = await env.DB.prepare('SELECT * FROM group_classes WHERE active=1 ORDER BY name ASC').all();
         return ok({ routines: rows.results || [] }, cors);
       }
 
