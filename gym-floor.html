@@ -211,6 +211,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
     </div>
   </div>
   <div class="scroll">
+    <div id="resumeBanner"></div>
     <div id="scheduledBanner"></div>
     <button class="opt-tile" onclick="startRepeatLast()">
       <span class="ic">🔁</span>
@@ -675,6 +676,31 @@ async function pickClient(id){
   }).join(''):'<div class="empty">No sessions yet</div>';
   buildExLib();
   checkTodaysSchedule();
+  checkResumeBanner();
+}
+
+function checkResumeBanner(){
+  const box=$('resumeBanner'); if(!box) return;
+  try{
+    const s=JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
+    if(!s||!s.client_id){ box.innerHTML=''; return; }
+    const doneCount=(s.exercises||[]).filter(e=>e.sets&&e.sets.length).length;
+    box.innerHTML=`<button class="opt-tile" style="border:2px solid var(--red);background:linear-gradient(135deg,#fff 70%,#FDEAEC);width:100%;text-align:left" onclick="resumeActiveSession()">
+      <span class="ic">▶</span>
+      <span><span class="t" style="color:var(--red)">Resume In-Progress Session</span><br><span class="d">${esc(s.client_name||'A client')} &middot; ${esc(s.title||'Training Session')} &middot; ${doneCount} of ${(s.exercises||[]).length} exercises logged</span></span>
+    </button>`;
+  }catch(e){ box.innerHTML=''; }
+}
+
+function resumeActiveSession(){
+  try{
+    const s=JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
+    if(!s||!s.client_id) return;
+    SESSION=s;
+    CLIENT={id:s.client_id,first_name:(s.client_name||'').split(' ')[0]||'',last_name:(s.client_name||'').split(' ').slice(1).join(' ')};
+    db({op:'select',table:'workouts',where:{client_id:s.client_id},orderBy:'workout_date DESC',limit:60}).then(d=>{HISTORY=d.results||[];buildExLib();}).catch(()=>{});
+    EXI=0;renderQueue();show('scr-queue');
+  }catch(e){}
 }
 
 let TODAYS_SCHEDULED = null;
@@ -1196,6 +1222,14 @@ async function handleFormVideo(ev){
    SESSION LIFECYCLE
    ===================================================================== */
 function newSession(exs,title){
+  try{
+    const existing=JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
+    const newClientId=CLIENT?CLIENT.id:null;
+    if(existing&&existing.client_id&&existing.client_id!==newClientId){
+      const doneCount=(existing.exercises||[]).filter(e=>e.sets&&e.sets.length).length;
+      if(!confirm('Heads up: there\'s an unfinished session for '+(existing.client_name||'another client')+' ('+doneCount+' exercise(s) logged) that hasn\'t been saved yet. Starting a new session will replace it in the resume slot. Continue?')) return;
+    }
+  }catch(e){}
   SESSION={client_id:CLIENT?CLIENT.id:null,client_name:CLIENT?((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim():'',
     title:title||'Training Session',date:todayStr(),startedAt:Date.now(),
     exercises:exs.map(n=>(typeof n==='object'?{name:n.name,sets:[],note:'',targetSets:n.targetSets||3}:{name:n,sets:[],note:'',targetSets:3})),workoutNote:''};
@@ -1244,19 +1278,26 @@ function startFromWorkout(id){
   newSession(exs,w.title||'Training Session');
 }
 function persistActive(){localStorage.setItem(LS_ACTIVE,JSON.stringify(SESSION));}
-function confirmAbandon(){if(confirm('Leave this session? Unsaved sets stay on this device until you finish or discard.')){localStorage.removeItem(LS_ACTIVE);SESSION=null;show('scr-setup');}}
+function confirmAbandon(){show('scr-setup');if(CLIENT)pickClient(CLIENT.id);}
 
 /* resume interrupted session on load */
 function tryResume(){
   try{
     const s=JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
-    if(s&&s.client_id&&confirm('Resume the in-progress session for '+(s.client_name||'client')+'?')){
+    if(!s||!s.client_id) return false;
+    if(confirm('Resume the in-progress session for '+(s.client_name||'client')+'?')){
       SESSION=s;
-      CLIENT={id:s.client_id,first_name:s.client_name.split(' ')[0]||'',last_name:s.client_name.split(' ').slice(1).join(' ')};
+      CLIENT={id:s.client_id,first_name:(s.client_name||'').split(' ')[0]||'',last_name:(s.client_name||'').split(' ').slice(1).join(' ')};
       db({op:'select',table:'workouts',where:{client_id:s.client_id},orderBy:'workout_date DESC',limit:60}).then(d=>{HISTORY=d.results||[];buildExLib();}).catch(()=>{});
       EXI=0;renderQueue();show('scr-queue');return true;
     }
-    if(s)localStorage.removeItem(LS_ACTIVE);
+    // Declined (or the dialog silently failed to render, which happens on
+    // some installed-app contexts) - the data is NOT deleted here anymore.
+    // Land on that client's own screen instead, where the persistent Resume
+    // banner (checkResumeBanner) is always there as a reliable way back in,
+    // rather than a one-shot popup being the only chance to recover it.
+    const match=CLIENTS.find(c=>c.id===s.client_id);
+    if(match){ pickClient(match.id); return true; }
   }catch(e){}
   return false;
 }
