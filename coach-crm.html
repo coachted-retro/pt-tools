@@ -497,7 +497,7 @@ async function loadTodaySchedule(){
         name: clientName, typeLabel: typeLabels[a.appointment_type]||a.appointment_type,
         dimmed, statusBadge, clientId: a.client_id||null, accent: 'var(--red)',
         startHref: routable ? (toolFor[a.appointment_type] + (a.client_id?'?client_id='+a.client_id:'') + (a.client_id?'&':'?') + 'appt=' + a.id) : null,
-        doneBtn: `openApptNoteAction(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','showed')`,
+        doneBtn: `quickMarkDone('${'pt'+a.id}','appt',${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}')`,
         noShowBtn: `openNoShowModal(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','${escH(typeLabels[a.appointment_type]||a.appointment_type)}')`,
         rescheduleBtn: `openRescheduleModal(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}')`,
         cancelBtn: `openApptNoteAction(${a.id},${a.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','cancel')`,
@@ -539,7 +539,7 @@ async function loadTodaySchedule(){
           note: a.notes || null,
           startHref: matchedClass ? ('class-agenda.html?class_id=' + matchedClass.id + '&date=' + dateStr) : null,
           classNameGuess, matchedGroupClassId: matchedClass ? matchedClass.id : null,
-          doneBtn: `openClubosDoneModal(${a.id},'${summaryEsc}')`,
+          doneBtn: `quickMarkDone('${'cb'+a.id}','clubos',${a.id},null,null)`,
           noShowBtn: `openClubosNoShowModal(${a.id},'${summaryEsc}')`,
           rescheduleBtn: `openClubosRescheduleModal(${a.id},'${summaryEsc}')`,
           cancelBtn: `openClubosCancelModal(${a.id},'${summaryEsc}')`,
@@ -562,7 +562,7 @@ async function loadTodaySchedule(){
         startHref: !resolved ? null : (resolved.tool === 'gym-floor.html'
           ? 'gym-floor.html' + (resolved.clientId ? `?client=${resolved.clientId}` : '')
           : resolved.tool + (resolved.clientId ? `?client_id=${resolved.clientId}&clubos_appt=${a.id}` : `?clubos_appt=${a.id}`)),
-        doneBtn: `openClubosDoneModal(${a.id},'${summaryEsc}')`,
+        doneBtn: `quickMarkDone('${'cb'+a.id}','clubos',${a.id},${resolved&&resolved.clientId?resolved.clientId:'null'},null)`,
         noShowBtn: `openClubosNoShowModal(${a.id},'${summaryEsc}')`,
         rescheduleBtn: `openClubosRescheduleModal(${a.id},'${summaryEsc}')`,
         cancelBtn: `openClubosCancelModal(${a.id},'${summaryEsc}')`,
@@ -586,7 +586,7 @@ async function loadTodaySchedule(){
         name: clientName, typeLabel: s.focus_notes || 'Training Session',
         dimmed, statusBadge, clientId: s.client_id||null, accent: 'var(--muted)',
         startHref: s.client_id ? `gym-floor.html?client=${s.client_id}` : null,
-        doneBtn: `openSessionActionModal(${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','done')`,
+        doneBtn: `quickMarkDone('${'rs'+s.id}','session',${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}')`,
         noShowBtn: `openSessionActionModal(${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','no_show')`,
         rescheduleBtn: `openSessionActionModal(${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','rescheduled')`,
         cancelBtn: `openSessionActionModal(${s.id},${s.client_id||'null'},'${escH(clientName).replace(/'/g,"")}','cancel')`,
@@ -679,6 +679,46 @@ function fmtApptDate(d){ if(!d) return ''; return new Date(d+'T00:00:00').toLoca
 // Cancel — status changes with a note that gets saved as a permanent
 // touchpoint on the client's own profile, not just left on today's agenda.
 const APPT_ACTION_LABELS = { showed:'Mark Done', cancel:'Cancel', no_show:'No Show' };
+// Mark Done used to always pop a second modal asking for notes again, even
+// when the coach already typed one in the card's own notes box - Ted's exact
+// "notes popping up twice" complaint. This skips that modal entirely and
+// just uses whatever's already in the inline box, for all three data
+// sources. No Show / Reschedule / Cancel keep their own modals since those
+// need more than just a note (a reason, a new date, etc) - this is
+// specifically for the redundant Done case.
+async function quickMarkDone(uid, source, id, clientId, clientName){
+  const ta = document.getElementById('note-' + uid);
+  const inlineNote = ta ? ta.value.trim() : '';
+  try {
+    if (source === 'clubos') {
+      await setClubosStatus(id, 'done', { notes: inlineNote || null });
+      if (clientId && inlineNote) {
+        const coach = document.getElementById('coach-select').value;
+        await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ client_id: clientId, coach_name: coach, type:'note', body: inlineNote }) });
+      }
+    } else if (source === 'appt') {
+      await fetch(WORKER + '/appointments/status', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id, status: 'showed', notes: inlineNote || null }) });
+      if (clientId && inlineNote) {
+        const coach = document.getElementById('coach-select').value;
+        await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ client_id: clientId, coach_name: coach, type:'note', body: inlineNote }) });
+      }
+      loadTodaySchedule();
+    } else if (source === 'session') {
+      await fetch(WORKER + '/schedule/session-status', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ id, status: 'done' }) });
+      if (clientId && inlineNote) {
+        const coach = document.getElementById('coach-select').value;
+        await fetch(WORKER + '/coach/touchpoint', { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ client_id: clientId, coach_name: coach, type:'note', body: inlineNote }) });
+      }
+      loadTodaySchedule();
+    }
+  } catch(e) { alert('Could not mark done — try again.'); }
+}
+
 function openApptNoteAction(apptId, clientId, clientName, status){
   const label = APPT_ACTION_LABELS[status] || status;
   const overlay = document.createElement('div');
