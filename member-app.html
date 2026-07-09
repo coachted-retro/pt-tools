@@ -496,6 +496,15 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <button class="avatar-btn" id="g-avatar" onclick="switchTab('profile')">?</button>
   </div>
 
+  <!-- BACK TO STAFF APP — shown whenever this browser has an active staff
+       session (e.g. a coach tapped "Gym Home" to preview member-app.html),
+       since target="_blank" doesn't reliably open a real new tab on mobile
+       / inside a PWA, which was stranding staff on the member home screen
+       with no way back to their own tool. -->
+  <div id="staff-back-banner" style="display:none;background:var(--ink);padding:10px 16px;text-align:center">
+    <a id="staff-back-link" href="#" style="color:#fff;font-family:'Oswald';font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;text-decoration:none">&larr; Back to <span id="staff-back-label">Coach App</span></a>
+  </div>
+
   <!-- SCREENS -->
   <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">
 
@@ -2456,6 +2465,7 @@ async function startApp() {
   }
   const shell = document.getElementById('app-shell');
   shell.style.display = 'flex';
+  showStaffBackBanner();
   await loadPortalData();
   renderHome(); renderHomeExtras();
   renderHabits(DATA.dailyLogs || []);
@@ -3097,6 +3107,36 @@ GATED_TABS.forEach(t => {
   if (el) GATED_TAB_HTML_CACHE[t] = el.innerHTML;
 });
 
+// Shows a "Back to [Coach App / My Agenda]" banner whenever this browser
+// still has an active staff session, regardless of whether the person is
+// currently browsing member-app.html as a guest or a signed-in member.
+// Covers the "Gym Home" preview link from coach-crm.html / mea-agenda.html,
+// which can't reliably rely on target="_blank" opening a real new tab.
+function showStaffBackBanner() {
+  const banner = document.getElementById('staff-back-banner');
+  const link = document.getElementById('staff-back-link');
+  const label = document.getElementById('staff-back-label');
+  if (!banner || !link) return;
+  let staff = null;
+  try { staff = JSON.parse(localStorage.getItem('staff_session') || 'null'); } catch(e) { staff = null; }
+  if (!staff || !staff.name) { banner.style.display = 'none'; return; }
+  const role = (staff.role || '').toLowerCase();
+  let href, text;
+  if (role === 'pt coach' || role === "men's training lead") {
+    href = 'coach-crm.html?coach=' + encodeURIComponent(staff.name) + '&locked=1';
+    text = 'Coach App';
+  } else if (role === 'mea') {
+    href = 'mea-agenda.html?staff=' + encodeURIComponent(staff.name) + '&locked=1';
+    text = 'My Agenda';
+  } else {
+    href = 'command-center.html';
+    text = 'Command Center';
+  }
+  link.href = href;
+  label.textContent = text;
+  banner.style.display = 'block';
+}
+
 function startGuestMode() {
   GUEST_MODE = true;
   document.getElementById('login-screen').style.display = 'none';
@@ -3109,6 +3149,7 @@ function startGuestMode() {
   renderHomeExtras();
   loadPublicHomeContent();
   renderClasses();
+  showStaffBackBanner();
 }
 
 function showLoginFromGuest() {
