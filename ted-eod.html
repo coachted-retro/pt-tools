@@ -143,25 +143,11 @@ textarea{resize:vertical;min-height:72px}
     </div>
   </div>
 
-  <!-- SECTION 1: SESSIONS TODAY -->
-  <div class="section" id="sec-sessions">
-    <div class="section-header" onclick="toggleSection('sec-sessions')">
-      <span class="section-num">01</span>
-      <span class="section-title">Sessions Today</span>
-      <span class="section-status status-auto" id="status-sessions">Loading from D1...</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="kpi-hint">Auto-pulled from your calendar and session logs. Tap any row to add a note.</div>
-      <div class="auto-list" id="sessions-list"><div class="empty-auto">Loading...</div></div>
-    </div>
-  </div>
-
   <!-- SECTION: CONSULTATIONS TODAY -->
   <div class="section" id="sec-consultations">
     <div class="section-header" onclick="toggleSection('sec-consultations')">
-      <span class="section-num">02</span>
-      <span class="section-title">Consultations Today</span>
+      <span class="section-num">01</span>
+      <span class="section-title">Initial Consultations</span>
       <span class="section-status status-auto" id="status-consultations">Loading from D1...</span>
       <span class="chevron">▾</span>
     </div>
@@ -171,19 +157,20 @@ textarea{resize:vertical;min-height:72px}
     </div>
   </div>
 
-  <!-- SECTION: CLIENTS IN JEOPARDY -->
-  <div class="section" id="sec-jeopardy">
-    <div class="section-header" onclick="toggleSection('sec-jeopardy')">
-      <span class="section-num">04</span>
-      <span class="section-title">Clients In Jeopardy</span>
-      <span class="section-status status-auto" id="status-jeopardy">Loading from D1...</span>
+  <!-- SECTION: 6-WEEK FOLLOW-UPS TODAY -->
+  <div class="section" id="sec-followups">
+    <div class="section-header" onclick="toggleSection('sec-followups')">
+      <span class="section-num">02</span>
+      <span class="section-title">6-Week Follow-Ups</span>
+      <span class="section-status status-auto" id="status-followups">Loading from D1...</span>
       <span class="chevron">▾</span>
     </div>
     <div class="section-body">
-      <div class="kpi-hint">No PT session scheduled in 7+ days — reach out before they slip away.</div>
-      <div class="auto-list" id="jeopardy-list"><div class="empty-auto">Loading...</div></div>
+      <div class="kpi-hint">Auto-pulled from 6-Week Follow-Ups logged today — outcome for each.</div>
+      <div class="auto-list" id="followups-list"><div class="empty-auto">Loading...</div></div>
     </div>
   </div>
+
 
   <!-- SECTION: MONTHLY CHECK-INS TODAY -->
   <div class="section" id="sec-checkins">
@@ -199,131 +186,6 @@ textarea{resize:vertical;min-height:72px}
     </div>
   </div>
 
-
-  <!-- SECTION: SALES BREAKDOWN -->
-  <div class="section collapsed" id="sec-sales">
-    <div class="section-header" onclick="toggleSection('sec-sales')">
-      <span class="section-num">06</span>
-      <span class="section-title">Sales Breakdown</span>
-      <span class="section-status status-empty" id="status-sales">Empty</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="field"><label>Total PT sales made today ($)</label><input type="number" id="sales-total" placeholder="0" oninput="updateStatus('sales')"></div>
-      <div class="field-row two">
-        <div class="field"><label>New Business</label><input type="number" id="sales-new" placeholder="0" oninput="updateStatus('sales')"></div>
-        <div class="field"><label>Renewals</label><input type="number" id="sales-renewal" placeholder="0" oninput="updateStatus('sales')"></div>
-      </div>
-      <div class="field"><label>Upgrades</label><input type="number" id="sales-upgrade" placeholder="0" oninput="updateStatus('sales')"></div>
-    </div>
-  </div>
-
-  <!-- SECTION 3: PT LEADS -->
-  <div class="section collapsed" id="sec-leads">
-    <div class="section-header" onclick="toggleSection('sec-leads')">
-      <span class="section-num">07</span>
-      <span class="section-title">PT Leads</span>
-      <span class="section-status status-auto" id="status-leads">Loading...</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="kpi-hint">Auto-pulled from leads table. Tap to update status or add a note.</div>
-      <div class="auto-list" id="leads-list"><div class="empty-auto">Loading...</div></div>
-      <button class="add-row-btn" onclick="addLeadNote()">+ Add Lead Not in System</button>
-      <div id="extra-leads"></div>
-    </div>
-  </div>
-
-  <!-- SECTION 5: FROZEN / PAST DUE -->
-  <div class="section collapsed" id="sec-frozen">
-    <div class="section-header" onclick="toggleSection('sec-frozen')">
-      <span class="section-num">09</span>
-      <span class="section-title">Frozen & Past Due</span>
-      <span class="section-status status-auto" id="status-frozen">Loading...</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="auto-list" id="frozen-list"><div class="empty-auto">Loading...</div></div>
-    </div>
-  </div>
-
-  <!-- SECTION 6: SESSION RENEWALS -->
-  <div class="section collapsed" id="sec-renewals">
-    <div class="section-header" onclick="toggleSection('sec-renewals')">
-      <span class="section-num">10</span>
-      <span class="section-title">Session Renewals</span>
-      <span class="section-status status-auto" id="status-renewals">Loading...</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="kpi-hint">Clients at 0 sessions remaining or 2 or fewer left.</div>
-      <div class="auto-list" id="renewals-list"><div class="empty-auto">Loading...</div></div>
-    </div>
-  </div>
-
-  <!-- SECTION 7: NOTABLE WINS -->
-  <div class="section collapsed" id="sec-wins">
-    <div class="section-header" onclick="toggleSection('sec-wins')">
-      <span class="section-num">11</span>
-      <span class="section-title">Notable Wins</span>
-      <span class="section-status status-empty" id="status-wins">Empty</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="field"><label>Wins worth celebrating today</label>
-        <textarea id="notable-wins" placeholder="e.g. Gage hit a new deadlift PR — 225 lbs. Rick completed his first month." oninput="updateStatus('wins')"></textarea>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 8: REFLECTIONS -->
-  <div class="section collapsed" id="sec-plan">
-    <div class="section-header" onclick="toggleSection('sec-plan')">
-      <span class="section-num">12</span>
-      <span class="section-title">Reflections</span>
-      <span class="section-status status-empty" id="status-plan">Empty</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="field"><label>List at least ONE positive thing you are leaving work with today</label>
-        <textarea id="reflect-positive" placeholder="Something you learned, an objection you won over, anything that made you feel good." oninput="updateStatus('plan')"></textarea>
-      </div>
-      <div class="field"><label>List at least ONE thing you want to learn or get better at</label>
-        <textarea id="reflect-improve" placeholder="Something you observed with yourself today." oninput="updateStatus('plan')"></textarea>
-      </div>
-      <div class="field"><label>What's the focus tomorrow</label>
-        <textarea id="game-plan" placeholder="e.g. Floor pulls before 11am. Follow up with Maria. Fill open WW slots." oninput="updateStatus('plan')"></textarea>
-      </div>
-      <div class="field"><label style="color:var(--red)">Is there anything you would like Keelin to help you with tomorrow?</label>
-        <textarea id="ask-keelin" placeholder="This gets flagged directly to Keelin's help queue — she'll see it first thing." oninput="updateStatus('plan')"></textarea>
-      </div>
-    </div>
-  </div>
-
-  <!-- SECTION 9: PRIORITY FLAGS -->
-  <div class="section collapsed" id="sec-notes">
-    <div class="section-header" onclick="toggleSection('sec-notes')">
-      <span class="section-num">13</span>
-      <span class="section-title">Additional Notes & Flags</span>
-      <span class="section-status status-empty" id="status-notes">Empty</span>
-      <span class="chevron">▾</span>
-    </div>
-    <div class="section-body">
-      <div class="note-composer">
-        <label style="margin-bottom:6px;display:block">Add a Note or Flag</label>
-        <textarea id="noteText" placeholder="Flag anything for review..." rows="3"></textarea>
-        <div class="priority-row">
-          <label>Priority:</label>
-          <label class="prio-opt"><input type="radio" name="notePriority" value="fyi" checked><span style="font-size:12px;font-weight:600;color:var(--blue)">FYI</span></label>
-          <label class="prio-opt"><input type="radio" name="notePriority" value="follow_up"><span style="font-size:12px;font-weight:600;color:#C2410C">Follow-up</span></label>
-          <label class="prio-opt"><input type="radio" name="notePriority" value="urgent"><span style="font-size:12px;font-weight:600;color:var(--red)">Urgent</span></label>
-          <label class="prio-opt"><input type="radio" name="notePriority" value="escalate"><span style="font-size:12px;font-weight:600;background:var(--ink);color:#fff;padding:2px 8px;border-radius:10px">Escalate</span></label>
-          <button class="add-row-btn" style="width:auto;padding:6px 14px;margin:0" onclick="addNote()">Add</button>
-        </div>
-      </div>
-      <div class="note-list" id="notesList"></div>
-    </div>
-  </div>
 
   <!-- SUBMIT -->
   <div class="submit-panel">
@@ -343,6 +205,7 @@ let allClients = [];
 let allScans = [];
 let allLeads = [];
 let allConsultations = [];
+let allFollowups = [];
 let allCheckins = [];
 let allJeopardy = [];
 let todaySessionClientIds_GLOBAL = new Set();
@@ -435,42 +298,20 @@ function toggleInlineNote(id) {
 async function loadData() {
   try {
     const today = new Date().toISOString().slice(0,10);
-    const [clientsRes, scansRes, leadsRes, dismissalsRes, consultRes, checkinRes, sessionsRes, apptSessionsRes] = await Promise.all([
+    const [clientsRes, consultRes, followupRes, checkinRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:200})}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'inbody_scans', orderBy:'scan_date desc', limit:500})}),
-      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:100})}),
-      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'eod_flag_dismissals', where:{dismissed_at: today}, limit:500})}).catch(function(){return null;}),
-      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'consultations', where:{consult_date: today}, limit:100})}).catch(function(){return null;}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'checkins', where:{checkin_date: today}, limit:100})}).catch(function(){return null;}),
+        body: JSON.stringify({op:'select', table:'followups', where:{followup_date: today}, limit:100})}).catch(function(){return null;}),
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'scheduled_sessions', where:{scheduled_date: today}, limit:200})}).catch(function(){return null;}),
-      fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({op:'select', table:'pt_appointments', where:{appointment_date: today, appointment_type:'training_session'}, limit:200})}).catch(function(){return null;})
+        body: JSON.stringify({op:'select', table:'checkins', where:{checkin_date: today}, limit:100})}).catch(function(){return null;})
     ]);
     allClients = (await clientsRes.json()).results || [];
-    allScans = (await scansRes.json()).results || [];
-    allLeads = (await leadsRes.json()).results || [];
-    todayDismissals = dismissalsRes ? ((await dismissalsRes.json()).results || []) : [];
     allConsultations = consultRes ? ((await consultRes.json()).results || []) : [];
+    allFollowups = followupRes ? ((await followupRes.json()).results || []) : [];
     allCheckins = checkinRes ? ((await checkinRes.json()).results || []) : [];
-    const scheduledToday = sessionsRes ? ((await sessionsRes.json()).results || []) : [];
-    const apptSessionsToday = apptSessionsRes ? ((await apptSessionsRes.json()).results || []) : [];
-    // Merge both sources into one client_id list — a client only needs to
-    // appear once even if they somehow have rows in both tables.
-    const todaySessionClientIds = new Set();
-    scheduledToday.forEach(function(s){ if (s.status !== 'cancelled') todaySessionClientIds.add(s.client_id); });
-    apptSessionsToday.forEach(function(a){ if (a.status !== 'cancelled' && a.client_id) todaySessionClientIds.add(a.client_id); });
-    todaySessionClientIds_GLOBAL = todaySessionClientIds;
-    try {
-      const jr = await fetch(WORKER + '/jeopardy/clients?coach=' + encodeURIComponent('Ted Scholl'));
-      allJeopardy = ((await jr.json()).jeopardy) || [];
-    } catch(e) { allJeopardy = []; }
     renderAll();
   } catch(e) { showToast('Error loading data: ' + e.message); }
 }
@@ -503,13 +344,9 @@ async function dismissAllFlags(flagType, clientIds) {
 }
 
 function renderAll() {
-  renderSessions();
   renderConsultations();
-  renderJeopardy();
+  renderFollowups();
   renderCheckins();
-  renderLeads();
-  renderFrozen();
-  renderRenewals();
   renderNotesSummary();
 }
 
@@ -548,6 +385,24 @@ function renderConsultations() {
     return autoRow(icon, flagClass, name(client) || 'Client #' + c.client_id, label + (fullNote ? ' — ' + fullNote : ''), 'consult-' + c.id, null, c.client_id, 'EOD - Consultation');
   }).join('');
   updateStatus('consultations', allConsultations.length + ' today', 'status-auto');
+}
+
+function renderFollowups() {
+  const el = document.getElementById('followups-list');
+  if (!allFollowups.length) {
+    el.innerHTML = '<div class="empty-auto">No 6-week follow-ups recorded today yet</div>';
+    updateStatus('followups', 'None yet', 'status-empty');
+    return;
+  }
+  el.innerHTML = allFollowups.map(f => {
+    const client = clientById(f.client_id);
+    const outcome = f.outcome || 'pending';
+    const flagClass = /^accepted|^long_followup|renewed/i.test(outcome) ? 'flag-green' : 'flag-amber';
+    const icon = /^accepted|^long_followup|renewed/i.test(outcome) ? '✅' : '⏳';
+    const detail = [f.assessment_summary, f.program_freq, f.program_length].filter(Boolean).join('  •  ');
+    return autoRow('🔁', flagClass, name(client) || 'Client #' + f.client_id, (outcome || 'Follow-up completed') + (detail ? ' — ' + detail : ''), 'followup-' + f.id, null, f.client_id, 'EOD - Follow-up');
+  }).join('');
+  updateStatus('followups', allFollowups.length + ' today', 'status-auto');
 }
 
 function renderCheckins() {
@@ -597,10 +452,11 @@ function renderLeads() {
 
 async function renderNotesSummary() {
   const el = document.getElementById('notes-summary-list');
+  const ALLOWED_TAGS = ['EOD - Consultation', 'EOD - Follow-up', 'EOD - Monthly Check-In'];
   try {
     const r = await fetch(WORKER + '/coach/notes-today?coach=' + encodeURIComponent('Ted Scholl'));
     const d = await r.json();
-    const notes = d.notes || [];
+    const notes = (d.notes || []).filter(n => ALLOWED_TAGS.includes(n.tag));
     if (!notes.length) {
       el.innerHTML = "<div class='empty-auto'>No notes saved yet today — they'll show up here the moment you add one below.</div>";
       updateStatus('notes-summary', 'None yet', 'status-empty');
@@ -712,27 +568,10 @@ async function confirmSubmit() {
     authorName: 'Ted Scholl',
     author_role: 'training_lead',
     gym_id: 1,
-    notable_wins: document.getElementById('notable-wins').value,
-    game_plan: document.getElementById('game-plan').value,
-    notes: notes,
     consultations_today: allConsultations.map(c => ({ client_id: c.client_id, outcome: c.outcome, note: sessionNotes['consult-'+c.id] || '' })),
+    followups_today: allFollowups.map(f => ({ client_id: f.client_id, outcome: f.outcome, note: sessionNotes['followup-'+f.id] || '' })),
     checkins_today: allCheckins.map(ci => ({ client_id: ci.client_id, note: sessionNotes['checkin-'+ci.id] || '' })),
-    sales: {
-      total: document.getElementById('sales-total').value,
-      new_business: document.getElementById('sales-new').value,
-      renewals: document.getElementById('sales-renewal').value,
-      upgrades: document.getElementById('sales-upgrade').value
-    },
-    reflect_positive: document.getElementById('reflect-positive').value,
-    reflect_improve: document.getElementById('reflect-improve').value,
-    ask_keelin: document.getElementById('ask-keelin').value,
-    session_notes: sessionNotes,
-    auto_summary: {
-      active_clients: allClients.filter(c=>c.status==='active_pt').length,
-      leads: allLeads.filter(l=>l.status==='new'||l.status==='contacted').length,
-      frozen: allClients.filter(c=>c.status==='frozen').length,
-      renewals_needed: allClients.filter(c=>c.status==='active_pt'&&(c.sessions_remaining||0)===0).length
-    }
+    session_notes: sessionNotes
   };
   try {
     const r = await fetch(WORKER + '/eod/submit', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
