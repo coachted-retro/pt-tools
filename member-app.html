@@ -1556,6 +1556,19 @@ async function doLogin() {
     const r = await fetch(WORKER + '/auth/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, password: pass}) });
     const d = await r.json();
     if (!d.ok) { errEl.textContent = d.error || 'Invalid email or password.'; errEl.style.display = 'block'; return; }
+    if (d.must_change) {
+      // Coach-granted temporary password — don't let them into the app on
+      // it. Send them straight into the existing self-service reset flow
+      // (email code + new password) with their email pre-filled, so they
+      // set their own password before their first real session.
+      document.getElementById('member-login-box').style.display = 'none';
+      document.getElementById('reset-box').style.display = 'block';
+      document.getElementById('r-email').value = email;
+      document.getElementById('r-err').style.display = 'block';
+      document.getElementById('r-err').style.color = '#0F9D6E';
+      document.getElementById('r-err').textContent = "You're using a temporary password. Set your own to continue — we'll email you a code.";
+      return;
+    }
     SESSION = { client_id: d.client_id, token: d.token, email };
     localStorage.setItem('member_session', JSON.stringify(SESSION));
     startApp();
