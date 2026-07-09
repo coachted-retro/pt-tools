@@ -2837,13 +2837,36 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       // ── COACHES HUB ────────────────────────────────────────────────
       if (url.pathname === '/coaches/roster' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const reps = await env.DB.prepare('SELECT name, role FROM pt_reps WHERE gym_id=1 AND active=1 ORDER BY name ASC').all();
+        const TRAINER_ROLES = ['PT Coach', "Men's Training Lead", 'Director of Fitness'];
+        const staffRes = await env.DB.prepare('SELECT name, role FROM staff_roster WHERE gym_id=1 AND active=1 ORDER BY name ASC').all();
+        const reps = (staffRes.results || []).filter(r => TRAINER_ROLES.includes(r.role));
         const rows = [];
-        for (const rep of (reps.results || [])) {
+        for (const rep of reps) {
           const count = await env.DB.prepare('SELECT COUNT(*) n FROM clients WHERE coach=?').bind(rep.name).first();
           rows.push({ name: rep.name, role: rep.role, client_count: count?.n || 0 });
         }
         return ok({ coaches: rows }, cors);
+      }
+
+      // Bulk-reassign every client from one coach to another - for when a
+      // coach leaves and their whole roster needs a new home in one action,
+      // rather than editing clients one at a time.
+      if (url.pathname === '/coaches/reassign-clients' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.from_coach || !b.to_coach) return bad('from_coach and to_coach required', cors);
+        if (b.from_coach === b.to_coach) return bad('Pick a different coach to reassign to', cors);
+        const affected = await env.DB.prepare('SELECT id FROM clients WHERE coach=?').bind(b.from_coach).all();
+        const clientIds = (affected.results || []).map(r => r.id);
+        if (!clientIds.length) return ok({ reassigned: 0 }, cors);
+        await env.DB.prepare('UPDATE clients SET coach=? WHERE coach=?').bind(b.to_coach, b.from_coach).run();
+        // Fire the same new-client notification for each one, so the coach
+        // picking up this roster gets the same heads-up email as a normal
+        // assignment - consultation summary, program suggestion, all of it.
+        for (const clientId of clientIds) {
+          try { await notifyCoachOfNewClient(env, b.to_coach, clientId); } catch(e) {}
+        }
+        return ok({ reassigned: clientIds.length }, cors);
       }
 
 

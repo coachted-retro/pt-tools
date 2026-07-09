@@ -65,20 +65,61 @@ async function load(){
     const r = await fetch(WORKER + '/coaches/roster');
     const d = await r.json();
     const coaches = d.coaches || [];
+    window._coachRoster = coaches;
     if (!coaches.length) { box.innerHTML = '<div class="empty">No coaches on the roster yet. Add them in Staff Roster.</div>'; return; }
     box.innerHTML = coaches.map(c => {
       const initials = c.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const portalUrl = 'coach-crm.html?coach=' + encodeURIComponent(c.name) + '&locked=1';
-      return `<a class="card" href="${portalUrl}">
-        <div class="avatar">${esc(initials)}</div>
-        <div style="flex:1">
-          <div class="name">${esc(c.name)}</div>
-          <div class="role">${esc(c.role||'Coach')}</div>
-        </div>
-        <div class="count"><div class="n">${c.client_count}</div><div class="l">Client${c.client_count===1?'':'s'}</div></div>
-      </a>`;
+      return `<div class="card" style="flex-direction:column;align-items:stretch;gap:0">
+        <a href="${portalUrl}" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit">
+          <div class="avatar">${esc(initials)}</div>
+          <div style="flex:1">
+            <div class="name">${esc(c.name)}</div>
+            <div class="role">${esc(c.role||'Coach')}</div>
+          </div>
+          <div class="count"><div class="n">${c.client_count}</div><div class="l">Client${c.client_count===1?'':'s'}</div></div>
+        </a>
+        ${c.client_count > 0 ? `<button onclick="openReassignModal('${esc(c.name).replace(/'/g,"\\'")}',${c.client_count})" style="margin-top:10px;background:none;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px;font-size:12px;font-weight:700;color:var(--muted,#6B7280);cursor:pointer">&#8618; Reassign their clients to another coach</button>` : ''}
+      </div>`;
     }).join('');
   } catch(e) { box.innerHTML = '<div class="empty">Could not load the coach roster.</div>'; }
+}
+
+function openReassignModal(fromCoach, count){
+  const others = (window._coachRoster||[]).filter(c => c.name !== fromCoach);
+  if (!others.length) { alert('No other coach on the roster to reassign to.'); return; }
+  const overlay = document.createElement('div');
+  overlay.id = 'reassign-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:8px">Reassign ${esc(fromCoach)}'s Clients</div>
+    <div style="font-size:13px;color:var(--muted,#6B7280);margin-bottom:14px">This moves all ${count} client${count===1?'':'s'} to the new coach at once. Each one gets the same new-client email the new coach would normally get for a fresh assignment.</div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted,#6B7280)">Move all clients to</label>
+    <select id="reassign-to-coach" style="width:100%;padding:10px;border:1px solid var(--line,#E4E7EC);border-radius:8px;margin-top:6px;margin-bottom:16px">
+      ${others.map(c => `<option value="${esc(c.name)}">${esc(c.name)} (${c.client_count} client${c.client_count===1?'':'s'} currently)</option>`).join('')}
+    </select>
+    <div id="reassign-status" style="font-size:12px;color:var(--muted,#6B7280);margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('reassign-overlay').remove()" style="flex:1;background:var(--soft,#F5F6F8);border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Cancel</button>
+      <button onclick="confirmReassign('${esc(fromCoach).replace(/'/g,"\\'")}')" style="flex:1;background:var(--red,#E0192B);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Reassign All</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function confirmReassign(fromCoach){
+  const toCoach = document.getElementById('reassign-to-coach').value;
+  const status = document.getElementById('reassign-status');
+  if (!confirm('Move every one of ' + fromCoach + '\'s clients to ' + toCoach + '? This can\'t be undone in one click — you\'d have to reassign them back individually.')) return;
+  status.textContent = 'Reassigning...';
+  try {
+    const r = await fetch(WORKER + '/coaches/reassign-clients', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ from_coach: fromCoach, to_coach: toCoach }) });
+    const d = await r.json();
+    if (d.reassigned == null) { status.textContent = d.error || 'Could not reassign.'; return; }
+    status.textContent = 'Done — ' + d.reassigned + ' client(s) moved to ' + toCoach + '.';
+    setTimeout(() => { document.getElementById('reassign-overlay')?.remove(); load(); }, 1200);
+  } catch(e) { status.textContent = 'Connection error.'; }
 }
 load();
 </script>
