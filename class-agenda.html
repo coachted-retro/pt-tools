@@ -44,6 +44,22 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="cname" id="class-name">Loading...</div>
   <div class="meta" id="class-meta"></div>
 </div>
+<div id="timer-overlay" style="display:none;position:fixed;inset:0;background:#E0192B;z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:#fff;text-align:center;transition:background .4s">
+  <button onclick="closeClassTimer()" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:40px;height:40px;border-radius:50%;cursor:pointer">&times;</button>
+  <div id="timer-progress" style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:8px"></div>
+  <div id="timer-phase-label" style="font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px"></div>
+  <div id="timer-name" style="font-family:'Oswald';font-size:32px;font-weight:800;text-transform:uppercase;margin-bottom:16px;max-width:500px"></div>
+  <div id="timer-clock" style="font-family:'Oswald';font-size:96px;font-weight:800;line-height:1;margin-bottom:16px">0:00</div>
+  <div id="timer-cue" style="font-size:15px;max-width:480px;margin-bottom:12px;opacity:.95"></div>
+  <div id="timer-next" style="font-size:13px;opacity:.75;margin-bottom:30px"></div>
+  <div style="display:flex;gap:16px;align-items:center">
+    <button onclick="prevPhase()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:52px;height:52px;border-radius:50%;cursor:pointer">⏮</button>
+    <button id="timer-playpause" onclick="toggleTimerPause()" style="background:#fff;border:none;color:#E0192B;font-size:26px;width:68px;height:68px;border-radius:50%;cursor:pointer">⏸</button>
+    <button onclick="skipPhase()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:52px;height:52px;border-radius:50%;cursor:pointer">⏭</button>
+  </div>
+  <div style="font-size:11px;opacity:.6;margin-top:24px;max-width:320px">Play your music from Spotify/Apple Music in the background — these cues layer on top through the same Bluetooth speaker automatically.</div>
+</div>
+<button id="start-timer-btn" onclick="startClassTimer()" style="display:none;width:calc(100% - 40px);max-width:600px;margin:20px auto 0;background:var(--red);color:#fff;border:none;border-radius:12px;padding:16px;font-family:'Oswald';font-weight:800;text-transform:uppercase;font-size:16px;cursor:pointer">▶ Start Class Timer</button>
 <div class="wrap" id="content">
   <div class="loading">Loading this week's class...</div>
 </div>
@@ -54,6 +70,114 @@ const classId = params.get('class_id');
 const date = params.get('date');
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ── CLASS TIMER — runs through the real warmup/stations/cooldown for ──
+// this specific class, in order, with audio cues at every transition ──
+let TIMER_QUEUE = [];
+let TIMER_IDX = 0, TIMER_LEFT = 0, TIMER_RUNNING = false, TIMER_TICK = null, AC = null;
+
+function beep(freq, dur, when){
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = AC.createOscillator(), gain = AC.createGain();
+    osc.frequency.value = freq; osc.connect(gain); gain.connect(AC.destination);
+    const t = AC.currentTime + (when||0);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t); osc.stop(t + dur);
+  } catch(e) {}
+}
+function vib(pattern){ try { navigator.vibrate && navigator.vibrate(pattern); } catch(e) {} }
+function cueGo(){ beep(880,.12); beep(880,.12,.18); vib(200); }
+function cueRest(){ beep(440,.3); vib([120,80,120]); }
+function cueDone(){ beep(660,.15); beep(880,.15,.18); beep(1046,.25,.36); vib([100,60,100,60,200]); }
+
+function parseSeconds(text, fallback){
+  if (!text) return fallback;
+  const m = String(text).match(/(\d+)\s*sec/i);
+  if (m) return parseInt(m[1],10);
+  const m2 = String(text).match(/(\d+)\s*min/i);
+  if (m2) return parseInt(m2[1],10) * 60;
+  return fallback; // rep/distance-based station (e.g. "10 reps") - no clock time given, use a sensible default the coach can skip past
+}
+
+function buildTimerQueue(warmup, stations, cooldown, restSeconds){
+  const q = [];
+  (warmup||[]).forEach(w => q.push({type:'warmup', name:w.name, seconds:parseSeconds(w.duration,45)}));
+  (stations||[]).forEach((st,i) => {
+    q.push({type:'work', name:st.name, cue:st.cue, work:st.work, seconds:parseSeconds(st.work,40)});
+    if (i < stations.length-1) q.push({type:'rest', name:'Rest', seconds:restSeconds});
+  });
+  (cooldown||[]).forEach(c => q.push({type:'cooldown', name:c.name, seconds:parseSeconds(c.duration,45)}));
+  return q;
+}
+
+function startClassTimer(){
+  if (!TIMER_QUEUE.length) { alert('Nothing to time yet.'); return; }
+  TIMER_IDX = 0;
+  document.getElementById('timer-overlay').style.display = 'flex';
+  loadPhase();
+}
+function closeClassTimer(){
+  clearInterval(TIMER_TICK); TIMER_TICK = null; TIMER_RUNNING = false;
+  document.getElementById('timer-overlay').style.display = 'none';
+}
+function loadPhase(){
+  clearInterval(TIMER_TICK); TIMER_TICK = null;
+  if (TIMER_IDX >= TIMER_QUEUE.length) { finishClassTimer(); return; }
+  const phase = TIMER_QUEUE[TIMER_IDX];
+  TIMER_LEFT = phase.seconds;
+  paintPhase();
+  (phase.type === 'rest') ? cueRest() : cueGo();
+  TIMER_RUNNING = true;
+  document.getElementById('timer-playpause').textContent = '⏸';
+  TIMER_TICK = setInterval(tick, 1000);
+}
+function tick(){
+  if (!TIMER_RUNNING) return;
+  TIMER_LEFT--;
+  if (TIMER_LEFT <= 3 && TIMER_LEFT > 0) beep(660,.1);
+  if (TIMER_LEFT <= 0) { TIMER_IDX++; loadPhase(); return; }
+  paintClock();
+}
+function paintPhase(){
+  const phase = TIMER_QUEUE[TIMER_IDX];
+  const labels = { warmup:'🔥 WARM-UP', work:'💪 STATION ' + (stationNumber(TIMER_IDX)), rest:'😮‍💨 REST', cooldown:'🧘 COOL-DOWN' };
+  document.getElementById('timer-phase-label').textContent = labels[phase.type] || '';
+  document.getElementById('timer-name').textContent = phase.name;
+  document.getElementById('timer-cue').textContent = phase.cue ? '💡 ' + phase.cue : (phase.work && phase.type==='work' ? phase.work : '');
+  const next = TIMER_QUEUE[TIMER_IDX+1];
+  document.getElementById('timer-next').textContent = next ? 'Up next: ' + next.name : 'Last one — almost done!';
+  document.getElementById('timer-progress').textContent = (TIMER_IDX+1) + ' of ' + TIMER_QUEUE.length;
+  paintClock();
+}
+function stationNumber(idx){
+  let n = 0;
+  for (let i=0;i<=idx;i++) if (TIMER_QUEUE[i].type==='work') n++;
+  return n;
+}
+function paintClock(){
+  const m = Math.floor(TIMER_LEFT/60), s = TIMER_LEFT%60;
+  document.getElementById('timer-clock').textContent = m + ':' + String(s).padStart(2,'0');
+  const phase = TIMER_QUEUE[TIMER_IDX];
+  document.getElementById('timer-overlay').style.background = phase.type==='rest' ? '#1E9E5A' : (phase.type==='warmup'||phase.type==='cooldown') ? '#2563EB' : '#E0192B';
+}
+function toggleTimerPause(){
+  TIMER_RUNNING = !TIMER_RUNNING;
+  document.getElementById('timer-playpause').textContent = TIMER_RUNNING ? '⏸' : '▶';
+}
+function skipPhase(){ TIMER_IDX++; loadPhase(); }
+function prevPhase(){ if (TIMER_IDX>0) TIMER_IDX--; loadPhase(); }
+function finishClassTimer(){
+  cueDone();
+  document.getElementById('timer-phase-label').textContent = '✅ CLASS COMPLETE';
+  document.getElementById('timer-name').textContent = 'Nice work!';
+  document.getElementById('timer-cue').textContent = '';
+  document.getElementById('timer-next').textContent = '';
+  document.getElementById('timer-clock').textContent = '';
+  document.getElementById('timer-overlay').style.background = '#1E9E5A';
+}
 
 async function load(){
   if (!classId || !date) {
@@ -113,6 +237,8 @@ async function load(){
       </div>`;
     html += `<button class="print-btn" onclick="window.print()">Print / Save for Whiteboard</button>`;
     document.getElementById('content').innerHTML = html;
+    TIMER_QUEUE = buildTimerQueue(warmup, stations, cooldown, (CLASS_RECORD && CLASS_RECORD.rest_seconds) || 40);
+    document.getElementById('start-timer-btn').style.display = 'block';
     loadClassMedia();
   } catch(e) {
     document.getElementById('content').innerHTML = '<div class="empty">Could not connect. Try again.</div>';
@@ -148,18 +274,19 @@ async function loadClassMedia(){
   } catch(e) {}
 }
 
+let CLASS_RECORD = null;
 async function loadClassName(){
   try {
     const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ op:'select', table:'group_classes', where:{ id: parseInt(classId,10) }, limit:1 }) });
     const d = await r.json();
     const cls = (d.results||[])[0];
+    CLASS_RECORD = cls || null;
     if (cls) document.getElementById('class-name').innerHTML = cls.name.replace(/(Core|Camp)$/, '<span>$1</span>');
   } catch(e) {}
 }
 
-loadClassName();
-load();
+(async function(){ await loadClassName(); await load(); })();
 </script>
 </body>
 </html>
