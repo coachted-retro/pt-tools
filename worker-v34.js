@@ -121,7 +121,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media','followups','eod_flag_dismissals'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media','followups','eod_flag_dismissals','cardio_logs'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -4421,6 +4421,21 @@ async function handleDb(q, env, cors) {
             .bind(client.coach, 'meal_logged', JSON.stringify({
               client_id: q.values.client_id, client_name: name, meal_type: mealType,
               message: name + ' logged ' + mealType
+            })).run();
+        }
+      } catch(e) {}
+    }
+    if (table === 'cardio_logs' && q.values.client_id) {
+      try {
+        const client = await env.DB.prepare('SELECT first_name,last_name,coach FROM clients WHERE id=?').bind(q.values.client_id).first();
+        if (client && client.coach) {
+          const name = ((client.first_name||'')+' '+(client.last_name||'')).trim();
+          const dur = q.values.duration_minutes ? q.values.duration_minutes + ' min ' : '';
+          const type = q.values.cardio_type || 'cardio';
+          await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json) VALUES (?,?,?)')
+            .bind(client.coach, 'cardio_logged', JSON.stringify({
+              client_id: q.values.client_id, client_name: name, cardio_type: type,
+              message: name + ' logged ' + dur + type + ' on their own'
             })).run();
         }
       } catch(e) {}

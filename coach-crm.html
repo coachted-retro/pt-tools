@@ -221,7 +221,7 @@ async function loadBell(){
     const badge = document.getElementById('bell-badge');
     if (d.unread>0){ badge.style.display='block'; badge.textContent=d.unread; } else badge.style.display='none';
     const drop = document.getElementById('bell-drop');
-    const ICONS = { self_workout:'\uD83D\uDCAA', client_message:'\uD83D\uDCAC', meal_logged:'\uD83C\uDF7D' };
+    const ICONS = { self_workout:'\uD83D\uDCAA', client_message:'\uD83D\uDCAC', meal_logged:'\uD83C\uDF7D', cardio_logged:'\uD83C\uDFC3' };
     const notifHtml = (d.notifications||[]).map(n=>{
       let p={}; try{p=JSON.parse(n.payload_json||'{}')}catch(e){}
       const icon = ICONS[n.type] || '\uD83D\uDD14';
