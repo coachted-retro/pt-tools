@@ -2951,6 +2951,17 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const sender = ['coach','client'].includes(b.sender) ? b.sender : 'client';
         const ins = await env.DB.prepare('INSERT INTO portal_messages (client_id,coach_name,sender,body) VALUES (?,?,?,?)')
           .bind(b.client_id, b.coach_name||null, sender, b.body).run();
+        if (sender === 'client') {
+          const client = await env.DB.prepare('SELECT first_name,last_name,coach FROM clients WHERE id=?').bind(b.client_id).first();
+          if (client && client.coach) {
+            const name = ((client.first_name||'')+' '+(client.last_name||'')).trim();
+            await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json) VALUES (?,?,?)')
+              .bind(client.coach, 'client_message', JSON.stringify({
+                client_id: b.client_id, client_name: name, body: b.body,
+                message: name + ' sent a message: "' + b.body.slice(0,80) + (b.body.length>80?'...':'') + '"'
+              })).run();
+          }
+        }
         return ok({ sent: true, id: ins.meta?.last_row_id }, cors);
       }
 
@@ -4171,6 +4182,20 @@ async function handleDb(q, env, cors) {
     if (!cols.length) return bad('insert needs values', cors);
     const sql = `INSERT INTO ${table} (${cols.join(',')}) VALUES (${cols.map(()=>'?').join(',')})`;
     const res = await env.DB.prepare(sql).bind(...cols.map(c => q.values[c] ?? null)).run();
+    if (table === 'meals' && q.values.client_id) {
+      try {
+        const client = await env.DB.prepare('SELECT first_name,last_name,coach FROM clients WHERE id=?').bind(q.values.client_id).first();
+        if (client && client.coach) {
+          const name = ((client.first_name||'')+' '+(client.last_name||'')).trim();
+          const mealType = q.values.meal_type || 'a meal';
+          await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json) VALUES (?,?,?)')
+            .bind(client.coach, 'meal_logged', JSON.stringify({
+              client_id: q.values.client_id, client_name: name, meal_type: mealType,
+              message: name + ' logged ' + mealType
+            })).run();
+        }
+      } catch(e) {}
+    }
     return ok({ id: res.meta?.last_row_id, meta: res.meta }, cors);
   }
   if (op === 'select') {

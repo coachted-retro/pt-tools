@@ -215,35 +215,43 @@ async function loadBell(){
   const coach = document.getElementById('coach-select').value;
   if (!coach) return;
   try {
-    const [r, ir] = await Promise.all([
-      fetch(WORKER + '/coach/notifications?coach=' + encodeURIComponent(coach)),
-      fetch(WORKER + '/coach/inbox?coach=' + encodeURIComponent(coach))
-    ]);
+    const r = await fetch(WORKER + '/coach/notifications?coach=' + encodeURIComponent(coach));
     const d = await r.json();
-    const idata = await ir.json();
-    const unreadThreads = (idata.threads || []).filter(t => t.unread_count > 0);
-    const msgUnread = unreadThreads.reduce((sum, t) => sum + t.unread_count, 0);
-    const totalUnread = (d.unread||0) + msgUnread;
     const badge = document.getElementById('bell-badge');
-    if (totalUnread>0){ badge.style.display='block'; badge.textContent=totalUnread; } else badge.style.display='none';
+    if (d.unread>0){ badge.style.display='block'; badge.textContent=d.unread; } else badge.style.display='none';
     const drop = document.getElementById('bell-drop');
-    const msgHtml = unreadThreads.map(t => `
-      <a href="coach-client-profile.html?client=${t.client_id}&coach=${encodeURIComponent(coach)}&tab=chat" style="display:block;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--lred);text-decoration:none;color:inherit">
-        <div style="font-size:12px;font-weight:700">\uD83D\uDCAC ${escH(t.name)} sent a message</div>
-        <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(t.last_body)}</div>
-      </a>`).join('');
+    const ICONS = { self_workout:'\uD83D\uDCAA', client_message:'\uD83D\uDCAC', meal_logged:'\uD83C\uDF7D' };
     const notifHtml = (d.notifications||[]).map(n=>{
       let p={}; try{p=JSON.parse(n.payload_json||'{}')}catch(e){}
-      if (n.type==='self_workout') {
-        return `<div style="padding:12px 14px;border-bottom:1px solid var(--line);${n.read?'':'background:var(--lred)'};cursor:pointer" onclick="bellTap(${n.id},${p.client_id},'${escH(p.client_name)}','${escH(p.title)}')">
-          <div style="font-size:12px;font-weight:700">\uD83D\uDCAA ${escH(p.client_name)} logged a workout</div>
+      const icon = ICONS[n.type] || '\uD83D\uDD14';
+      const rowStyle = `padding:12px 14px;border-bottom:1px solid var(--line);${n.read?'':'background:var(--lred)'};cursor:pointer`;
+      if (n.type === 'self_workout') {
+        return `<div style="${rowStyle}" onclick="bellTap(${n.id},${p.client_id},'${escH(p.client_name)}','${escH(p.title)}')">
+          <div style="font-size:12px;font-weight:700">${icon} ${escH(p.client_name)} logged a workout</div>
           <div style="font-size:12px;color:var(--muted)">${escH(p.title)} \u00B7 ${p.exercise_count||0} exercises</div>
           <div style="font-size:10px;color:var(--muted);margin-top:2px">${escH(p.date||'')} \u00B7 tap to send encouragement</div>
         </div>`;
       }
-      return '';
+      if (n.type === 'client_message') {
+        return `<a href="coach-client-profile.html?client=${p.client_id}&coach=${encodeURIComponent(coach)}&tab=chat" style="display:block;${rowStyle};text-decoration:none;color:inherit" onclick="markNotificationRead(${n.id})">
+          <div style="font-size:12px;font-weight:700">${icon} ${escH(p.client_name)} sent a message</div>
+          <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escH(p.body||'')}</div>
+        </a>`;
+      }
+      if (n.type === 'meal_logged') {
+        return `<a href="coach-client-profile.html?client=${p.client_id}&coach=${encodeURIComponent(coach)}" style="display:block;${rowStyle};text-decoration:none;color:inherit" onclick="markNotificationRead(${n.id})">
+          <div style="font-size:12px;font-weight:700">${icon} ${escH(p.client_name)} logged ${escH(p.meal_type||'a meal')}</div>
+        </a>`;
+      }
+      // generic fallback for any other notification type - relies on the
+      // 'message' field every notification payload includes, so nothing
+      // silently disappears just because it's a type this dropdown doesn't
+      // have bespoke styling for yet.
+      return `<div style="${rowStyle}" onclick="markNotificationRead(${n.id})">
+        <div style="font-size:12px;font-weight:700">${icon} ${escH(p.message||n.type)}</div>
+      </div>`;
     }).join('');
-    drop.innerHTML = (msgHtml + notifHtml) || '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No notifications</div>';
+    drop.innerHTML = notifHtml || '<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No notifications</div>';
   } catch(e){}
 }
 
@@ -262,6 +270,15 @@ async function bellTap(notifId, clientId, clientName, workoutTitle){
   const coach = document.getElementById('coach-select').value;
   await fetch(WORKER + '/coach/react-workout', {method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({client_id: clientId, coach_name: coach, body: msg})});
+}
+
+async function markNotificationRead(notifId){
+  document.getElementById('bell-drop').style.display = 'none';
+  try {
+    await fetch(WORKER + '/coach/notifications/read', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({id: notifId})});
+    loadBell();
+  } catch(e){}
 }
 
 async function loadJeopardy(){
