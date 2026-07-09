@@ -1277,7 +1277,8 @@ function renderQueue(){
     const agendaLine=e.sets.length
       ? e.sets.length+' sets · '+setsBrief(e.sets)
       : (sug ? target+' sets planned &mdash; today: '+esc(sug.text) : target+' sets planned &mdash; '+lastBrief(e.name));
-    html+=`<div class="ex-row ${e.sets.length?'done':''}" style="${gc?'border-left:4px solid '+gc:''}">
+    html+=`<div class="ex-row ${e.sets.length?'done':''}" data-idx="${i}" style="${gc?'border-left:4px solid '+gc:''}">
+      <div class="drag-handle" onpointerdown="dragStart(event,${i})" style="touch-action:none;cursor:grab;padding:4px 10px 4px 2px;color:var(--ink3,#9CA3AF);font-size:18px;line-height:1;user-select:none">⠿</div>
       <div style="flex:1" onclick="jumpTo(${i})">
         <div class="nm">${esc(e.name)}${e.group?' <span style="font-size:10px;color:'+gc+';font-weight:800">SS'+e.group+'</span>':''}</div>
         <div class="meta">${agendaLine}</div>
@@ -1293,6 +1294,63 @@ function renderQueue(){
   $('queueList').innerHTML=html||'<div class="empty">Add exercises below, or go back and pick Repeat Last.</div>';
   $('beginBtn').disabled=!SESSION.exercises.length;
 }
+let DRAG=null;
+function dragStart(ev,i){
+  ev.preventDefault();
+  const list=$('queueList');
+  const rowEls=Array.from(list.querySelectorAll('.ex-row'));
+  const rowEl=rowEls[i];
+  if(!rowEl) return;
+  rowEl.setPointerCapture&&rowEl.setPointerCapture(ev.pointerId);
+  DRAG={fromIdx:i, curIdx:i, rowEl, rowEls, startY:ev.clientY, baseTop:rowEl.offsetTop};
+  rowEl.style.position='relative';
+  rowEl.style.zIndex=50;
+  rowEl.style.boxShadow='0 10px 26px rgba(0,0,0,.22)';
+  rowEl.style.background='var(--panel2)';
+  document.body.style.userSelect='none';
+  window.addEventListener('pointermove',dragMove);
+  window.addEventListener('pointerup',dragEnd);
+  window.addEventListener('pointercancel',dragEnd);
+}
+function dragMove(ev){
+  if(!DRAG) return;
+  const dy=ev.clientY-DRAG.startY;
+  DRAG.rowEl.style.transform='translateY('+dy+'px)';
+  const rowH=DRAG.rowEl.offsetHeight+10; // approx row + gap
+  const shift=Math.round(dy/rowH);
+  const targetIdx=Math.max(0,Math.min(SESSION.exercises.length-1,DRAG.fromIdx+shift));
+  if(targetIdx!==DRAG.curIdx){
+    const arr=SESSION.exercises;
+    const [moved]=arr.splice(DRAG.curIdx,1);
+    arr.splice(targetIdx,0,moved);
+    DRAG.curIdx=targetIdx;
+    DRAG.fromIdx=targetIdx;
+    DRAG.startY=ev.clientY;
+    DRAG.rowEl.style.transition='none';
+    DRAG.rowEl.style.transform='translateY(0)';
+    const draggedEl=DRAG.rowEl;
+    renderQueue();
+    const newRowEls=Array.from($('queueList').querySelectorAll('.ex-row'));
+    const newEl=newRowEls[targetIdx];
+    if(newEl){
+      newEl.style.position='relative';newEl.style.zIndex=50;
+      newEl.style.boxShadow='0 10px 26px rgba(0,0,0,.22)';newEl.style.background='var(--panel2)';
+      DRAG.rowEl=newEl;
+    }
+  }
+}
+function dragEnd(){
+  if(!DRAG) return;
+  DRAG.rowEl.style.position='';DRAG.rowEl.style.zIndex='';DRAG.rowEl.style.boxShadow='';
+  DRAG.rowEl.style.background='';DRAG.rowEl.style.transform='';DRAG.rowEl.style.transition='';
+  document.body.style.userSelect='';
+  window.removeEventListener('pointermove',dragMove);
+  window.removeEventListener('pointerup',dragEnd);
+  window.removeEventListener('pointercancel',dragEnd);
+  DRAG=null;
+  persistActive();
+}
+
 function setsBrief(sets){return sets.map(s=>s.reps+'@'+s.weight).join(', ');}
 function lastBrief(name){const lp=lastPerf(name);return lp?('Last: '+lp):'New';}
 function toggleLink(i){
