@@ -1177,6 +1177,13 @@ async function handleFormVideo(ev){
   const ex = SESSION.exercises[EXI];
   if (!ex) return;
   const box = $('videoReview');
+
+  const MAX_MB = 50;
+  if (file.size > MAX_MB*1024*1024) {
+    box.innerHTML = `<div class="card" style="margin-top:10px;border-left:3px solid var(--red)"><div class="empty">That clip is ${(file.size/1024/1024).toFixed(0)}MB — too big to upload reliably (max ${MAX_MB}MB). Try a shorter clip, around 10-15 seconds is plenty for a form check.</div></div>`;
+    return;
+  }
+
   box.innerHTML = '<div class="card" style="margin-top:10px"><div class="empty">Reading your form...</div></div>';
 
   const url = URL.createObjectURL(file);
@@ -1205,17 +1212,22 @@ async function handleFormVideo(ev){
     ${feedback.observation ? `<div style="font-size:13px;margin-bottom:6px">${esc(feedback.observation)}</div>` : ''}
     ${feedback.cue ? `<div style="font-size:13px;color:var(--ink2)"><b>Try this:</b> ${esc(feedback.cue)}</div>` : ''}
     ${feedback.flag ? `<div style="font-size:13px;color:var(--red);margin-top:6px;font-weight:600">\u26A0 ${esc(feedback.flag)}</div>` : ''}
-    <div style="font-size:10px;color:var(--ink3);margin-top:8px">AI coaching note, not a substitute for in-person supervision. Saving clip...</div>
+    <div style="font-size:10px;color:var(--ink3);margin-top:8px" id="videoSaveStatus">Saving clip to ${esc(ex.name)}'s history...</div>
   </div>`;
 
+  const statusEl = $('videoSaveStatus');
   try {
     const feedbackText = [feedback.observation, feedback.cue, feedback.flag].filter(Boolean).join(' | ');
     const buf = await file.arrayBuffer();
-    const upRes = await fetch(WORKER + `/exercise-video/upload?client=${CLIENT.id}&exercise=${encodeURIComponent(ex.name)}&session=${encodeURIComponent(SESSION.date||'')}`,
+    const upRes = await fetch(WORKER + `/exercise-video/upload?client=${CLIENT.id}&exercise=${encodeURIComponent(ex.name)}&session=${encodeURIComponent(SESSION.date||'')}&feedback=${encodeURIComponent(feedbackText)}`,
       {method:'POST', body: buf});
+    if (!upRes.ok) { const errText = await upRes.text().catch(()=>''); throw new Error('Upload failed (' + upRes.status + ')' + (errText?': '+errText:'')); }
     const upData = await upRes.json();
-    if (upData.id) await db({op:'update', table:'exercise_videos', id: upData.id, data:{note: feedbackText}});
-  } catch(e) {}
+    if (!upData.id) throw new Error(upData.error || 'Server did not confirm the save.');
+    if (statusEl) statusEl.textContent = 'Saved — visible on ' + (CLIENT.first_name||'their') + "'s profile under Form Videos.";
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = 'var(--red)'; statusEl.style.fontWeight = '700'; statusEl.textContent = '\u26A0 Did not save: ' + e.message + ' — the AI feedback above is real, but this clip was not stored.'; }
+  }
 }
 
 /* =====================================================================
