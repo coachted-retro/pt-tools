@@ -516,10 +516,12 @@ async function loadTodaySchedule(){
       const summaryEsc = escH(a.summary||'Booking').replace(/'/g,"");
       const dt = new Date(a.start_datetime);
       const noClientMatch = resolved && !resolved.clientId;
+      const needsProfile = (!resolved || noClientMatch) && !dimmed;
+      const guessedName = (a.summary||'').split(/[-–]/)[0].trim();
       items.push({
         uid: 'cb' + a.id, timeSort: dt.toTimeString().slice(0,5),
-        timeLabel: dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ((!resolved || noClientMatch) && !dimmed ? ' · no exact client match' : ''),
-        name: a.summary || 'Booking', typeLabel: '',
+        timeLabel: dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+        name: a.summary || 'Booking', typeLabel: '', needsProfile, guessedName,
         dimmed, statusBadge, clientId: resolved ? resolved.clientId : null, accent: '#2563EB',
         note: a.notes || null,
         startHref: !resolved ? null : (resolved.tool === 'gym-floor.html'
@@ -561,11 +563,12 @@ async function loadTodaySchedule(){
     items.sort((a,b) => a.timeSort.localeCompare(b.timeSort));
 
     let html = items.map(it => `
-      <div class="card" style="border-left:4px solid ${it.dimmed?'#D1D5DB':it.accent};flex-direction:column;align-items:stretch;cursor:default;${it.dimmed?'opacity:.6':''}">
+      <div class="card" style="border-left:4px solid ${it.dimmed?'#D1D5DB':(it.needsProfile?'#D98A0B':it.accent)};flex-direction:column;align-items:stretch;cursor:default;${it.dimmed?'opacity:.6':''}">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="flex:1">
-            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.startHref ? `<a href="${it.startHref}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name))}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
+            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsProfile ? `<a href="#" onclick="openQuickAddClient('${escH(it.guessedName||'').replace(/'/g,"\\'")}');return false" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.startHref ? `<a href="${it.startHref}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name)))}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
             <div class="sub">${it.timeLabel}</div>
+            ${it.needsProfile ? `<div style="display:inline-block;margin-top:4px;background:#FEF3C7;color:#92400E;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px">&#9888; No client record yet — tap the name to set up their profile</div>` : ''}
             ${it.note ? `<div class="sub" style="margin-top:2px;font-style:italic">${escH(it.note)}</div>` : ''}
           </div>
           ${it.statusBadge}
@@ -577,7 +580,7 @@ async function loadTodaySchedule(){
             <span id="note-status-${it.uid}" style="font-size:11px;color:var(--green,#1E9E5A);font-weight:700"></span>
           </div>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-            ${it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''}
+            ${it.needsProfile ? `<button onclick="openQuickAddClient('${escH(it.guessedName||'').replace(/'/g,"\\'")}')" style="background:#D98A0B;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Set Up Profile</button>` : (it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : '')}
             <button onclick="${it.doneBtn}" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
             <button onclick="${it.rescheduleBtn}" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
             <button onclick="${it.noShowBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
@@ -1200,15 +1203,21 @@ async function saveIntakeAppointment(coach){
   } catch(e) { status.textContent = 'Error: ' + e.message; }
 }
 
-function openQuickAddClient(){
+function openQuickAddClient(prefillName){
   const el = document.getElementById('quick-add-form');
   el.style.display = 'block';
+  let first = '', last = '';
+  if (prefillName) {
+    const parts = prefillName.trim().split(/\s+/);
+    first = parts[0] || '';
+    last = parts.slice(1).join(' ') || '';
+  }
   el.innerHTML = `<div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
     <div style="font-weight:800;margin-bottom:10px">Quick Add Client</div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:10px">For someone already booked elsewhere (ClubOS, ABC) whose full info you already have — get them into the system now so the calendar matches them correctly going forward.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-      <input id="qa-first" placeholder="First name" style="padding:10px;border:1px solid var(--line);border-radius:8px">
-      <input id="qa-last" placeholder="Last name" style="padding:10px;border:1px solid var(--line);border-radius:8px">
+      <input id="qa-first" placeholder="First name" value="${escH(first)}" style="padding:10px;border:1px solid var(--line);border-radius:8px">
+      <input id="qa-last" placeholder="Last name" value="${escH(last)}" style="padding:10px;border:1px solid var(--line);border-radius:8px">
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
       <input id="qa-phone" placeholder="Phone" style="padding:10px;border:1px solid var(--line);border-radius:8px">
@@ -1221,6 +1230,7 @@ function openQuickAddClient(){
     </div>
     <div id="qa-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
   </div>`;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 async function saveQuickAddClient(){
@@ -1239,8 +1249,9 @@ async function saveQuickAddClient(){
     const d = await r.json();
     if (d.ok === false) { status.textContent = d.error || 'Could not save.'; return; }
     const newClientId = d.id;
-    status.innerHTML = `Added! <a href="#" onclick="bookIntakeForNewClient(${newClientId},'${first.replace(/'/g,"")} ${last.replace(/'/g,"")}');return false" style="color:var(--red);font-weight:700">Book their intake appointment now →</a>`;
+    status.innerHTML = `Added! Their appointment on today's agenda should now show as matched — <a href="#" onclick="bookIntakeForNewClient(${newClientId},'${first.replace(/'/g,"")} ${last.replace(/'/g,"")}');return false" style="color:var(--red);font-weight:700">or book their intake appointment now →</a>`;
     loadClients();
+    if (typeof loadTodaySchedule === 'function') loadTodaySchedule();
   } catch(e) { status.textContent = 'Error: ' + e.message; }
 }
 
