@@ -2267,6 +2267,7 @@ async function sendClientChat(){
 
 // ── APP INIT ─────────────────────────────────────────────────
 async function startApp() {
+  GUEST_MODE = false;
   document.getElementById('login-screen').style.display = 'none';
   if (IS_DEMO) {
     const banner = document.createElement('div');
