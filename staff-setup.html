@@ -533,8 +533,18 @@ function openLoginModal(id) {
   const emp = roster.find(e => e.id === id);
   if (!emp) return;
   document.getElementById('loginStaffId').value = id;
-  document.getElementById('loginEmail').value = emp.email || '';
-  document.getElementById('loginPin').value = '';
+  const existingWorkEmail = authStatusMap[emp.id];
+  const hasRealWorkEmail = existingWorkEmail && existingWorkEmail.endsWith('@myretrostrong.com');
+  if (hasRealWorkEmail) {
+    document.getElementById('loginEmail').value = existingWorkEmail;
+  } else {
+    const parts = (emp.name||'').trim().split(/\s+/).filter(Boolean);
+    document.getElementById('loginEmail').value = parts.length >= 2
+      ? (parts[0][0] + parts[parts.length-1]).toLowerCase().replace(/[^a-z]/g,'') + '@myretrostrong.com'
+      : (emp.email || '');
+  }
+  const digits = (emp.phone||'').replace(/\D/g,'');
+  document.getElementById('loginPin').value = digits.length >= 4 ? digits.slice(-4) : '';
   document.getElementById('loginModalOverlay').classList.add('open');
 }
 
