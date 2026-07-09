@@ -122,6 +122,15 @@ function renderView(staff, profile, isMine) {
       <div id="my-shifts-body"><div class="empty-state">Loading...</div></div>
       <button class="action-btn secondary" style="margin-top:10px" onclick="syncCalendarToPhone(${staff.id})">Sync to My Phone Calendar</button>
     </div>
+    <div class="card">
+      <div class="sec-label" style="margin-top:0">My Work Shifts</div>
+      <div id="my-work-shifts-body"><div class="empty-state">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="sec-label" style="margin-top:0">Open Shifts — Need Coverage</div>
+      <p style="font-size:12px;color:var(--ink3,#6B7280);margin:-4px 0 10px">Claiming one goes to your manager for approval before it's official.</p>
+      <div id="open-work-shifts-body"><div class="empty-state">Loading...</div></div>
+    </div>
     <a href="coach-crm.html?coach=${encodeURIComponent(staff.name)}&locked=1" class="action-btn" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Open Coach CRM — My Clients</a>
     <a href="${(function(n){ n=(n||'').toLowerCase(); if(n.includes('ted')) return 'ted-eod.html'; if(n.includes('dani')) return 'dani-eod.html'; if(n.includes('sarah')) return 'sarah-eod.html'; return 'eod-picker.html'; })(staff.name)}" class="action-btn secondary" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Submit End of Day Report</a>
     <div class="card">
@@ -152,10 +161,88 @@ function renderView(staff, profile, isMine) {
   window._currentProfile = profile;
   if (isMine) {
     loadMyShiftsProfile(staff.id, staff.name, staff.role);
+    loadMyWorkShifts(staff.id);
+    loadOpenWorkShifts(staff.id, staff.name, staff.role);
     loadGymEventsProfile();
     if (NEEDS_COVERAGE_ROLES.includes(staff.role)) loadAvailabilityProfile(staff.id);
     if (staff.role !== "Men's Training Lead") loadMyTimeOffProfile(staff.id);
   }
+}
+
+async function loadMyWorkShifts(staffId) {
+  const el = document.getElementById('my-work-shifts-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/shifts/mine?staff_id=' + staffId);
+    const d = await r.json();
+    const shifts = d.shifts || [];
+    if (!shifts.length) { el.innerHTML = '<div class="empty-state">No upcoming shifts scheduled.</div>'; return; }
+    el.innerHTML = shifts.map(s => renderWorkShiftRow(s, true)).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load your schedule.</div>'; }
+}
+
+async function loadOpenWorkShifts(staffId, staffName, role) {
+  const el = document.getElementById('open-work-shifts-body');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/shifts/open?role=' + encodeURIComponent(role));
+    const d = await r.json();
+    const shifts = (d.shifts || []).filter(s => String(s.staff_id) !== String(staffId));
+    if (!shifts.length) { el.innerHTML = '<div class="empty-state">No open shifts matching your role right now.</div>'; return; }
+    el.innerHTML = shifts.map(s => renderWorkShiftRow(s, false, staffId, staffName)).join('');
+  } catch(e) { el.innerHTML = '<div class="empty-state">Could not load open shifts.</div>'; }
+}
+
+function renderWorkShiftRow(s, isMine, staffId, staffName) {
+  const dateLabel = new Date(s.shift_date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+  const timeLabel = s.start_time + ' \u2013 ' + s.end_time;
+  let statusBadge = '';
+  let actionBtn = '';
+  if (s.status === 'needs_coverage') {
+    statusBadge = '<span class="wp-supp-tag" style="background:#FEF3C7;color:#92400E">Needs Coverage</span>';
+    if (isMine) actionBtn = `<button class="wp-swap-btn" onclick="cancelShiftCoverageRequest(${s.id},${staffId||'null'})">Undo Request</button>`;
+    else actionBtn = `<button class="action-btn" style="width:auto;margin-top:0;padding:8px 14px;font-size:12px" onclick="claimWorkShiftCoverage(${s.id},${staffId},'${esc(staffName).replace(/'/g,"\\'")}','${esc(s.role).replace(/'/g,"\\'")}')">I'll Cover This</button>`;
+  } else if (s.status === 'pending_swap_approval') {
+    statusBadge = '<span class="wp-supp-tag" style="background:#DBEAFE;color:#1E40AF">Pending manager approval \u2014 ' + esc(s.covered_by_name||'') + '</span>';
+  } else if (s.status === 'covered') {
+    statusBadge = '<span class="wp-supp-tag" style="background:var(--green-lt,#DCFCE7);color:var(--green,#1E9E5A)">Covered by ' + esc(s.covered_by_name||'') + '</span>';
+  } else if (isMine) {
+    actionBtn = `<button class="wp-swap-btn" onclick="requestShiftCoverageProfile(${s.id},${staffId})">Need Coverage / Swap</button>`;
+  }
+  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line,#E4E7EC)">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:13px">${esc(dateLabel)} &middot; ${esc(timeLabel)}</div>
+      <div style="font-size:12px;color:var(--ink3,#6B7280)">${esc(s.role)}${!isMine ? ' &middot; ' + esc(s.staff_name) : ''} ${statusBadge}</div>
+    </div>
+    ${actionBtn}
+  </div>`;
+}
+
+async function requestShiftCoverageProfile(id, staffId) {
+  if (!confirm('Flag this shift as needing coverage? Other staff in your role will see it and can pick it up.')) return;
+  try {
+    await fetch(WORKER + '/shifts/request-coverage', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+    loadMyWorkShifts(staffId);
+  } catch(e) {}
+}
+
+async function cancelShiftCoverageRequest(id, staffId) {
+  try {
+    await fetch(WORKER + '/shifts/cancel-request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+    loadMyWorkShifts(staffId);
+  } catch(e) {}
+}
+
+async function claimWorkShiftCoverage(id, staffId, staffName, role) {
+  if (!confirm("Cover this shift? It'll be sent to your manager for approval before it's official.")) return;
+  try {
+    const r = await fetch(WORKER + '/shifts/claim-coverage', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, covering_staff_id: staffId, covering_name: staffName }) });
+    const d = await r.json();
+    if (!d.pending_approval) { alert(d.error || 'Could not claim this shift \u2014 it may already be covered.'); }
+    loadMyWorkShifts(staffId);
+    loadOpenWorkShifts(staffId, staffName, role);
+  } catch(e) {}
 }
 
 async function loadMyShiftsProfile(staffId, coachName, role) {

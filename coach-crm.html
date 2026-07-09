@@ -76,6 +76,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <a href="coach-calendar.html" id="calendar-link" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
   <a href="client-management.html" id="all-clients-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">All Clients</a>
   <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
+  <a href="#" id="my-shifts-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">My Shifts &amp; Time Off</a>
   <a href="command-center.html" id="command-center-link" style="display:none;margin-left:12px">&larr; Command Center</a>
 </div>
 <div class="wrap">
@@ -988,12 +989,26 @@ function renderClientGraphs(c) {
   return workoutRow + macroRow;
 }
 
+async function updateMyShiftsLink(coach){
+  const link = document.getElementById('my-shifts-link');
+  if (!link) return;
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'staff_roster', where:{ name: coach }, limit:1 }) });
+    const d = await r.json();
+    const row = (d.results || [])[0];
+    if (row) { link.href = 'coach-profile.html?staff_id=' + row.id; link.style.display = 'inline-block'; }
+    else link.style.display = 'none';
+  } catch(e) { link.style.display = 'none'; }
+}
+
 async function loadClients(){
   const coach = document.getElementById('coach-select').value;
   const list = document.getElementById('client-list');
   const countLabel = document.getElementById('client-count-label');
   if (!coach){ list.innerHTML = '<div class="empty">Select your name above to see your clients.</div>'; if(countLabel) countLabel.textContent = 'No coach selected'; return; }
   localStorage.setItem('coach_crm_name', coach);
+  updateMyShiftsLink(coach);
   list.innerHTML = '<div class="empty">Loading...</div>';
   try {
     const r = await fetch(WORKER + '/coach/clients?coach=' + encodeURIComponent(coach) + '&all=1');

@@ -830,16 +830,38 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!b.id || !b.covering_staff_id || !b.covering_name) return bad('id, covering_staff_id, covering_name required', cors);
         const shift = await env.DB.prepare("SELECT * FROM staff_shifts WHERE id=? AND status='needs_coverage'").bind(b.id).first();
         if (!shift) return bad('Shift not found or already covered', cors);
-        await env.DB.prepare("UPDATE staff_shifts SET status='covered', covered_by_staff_id=?, covered_by_name=?, updated_at=? WHERE id=?")
+        // Swap claims need a manager to sign off before they're official - just
+        // flags it as pending_swap_approval here, doesn't finalize the coverage.
+        // See /shifts/approve-swap and /shifts/deny-swap below.
+        await env.DB.prepare("UPDATE staff_shifts SET status='pending_swap_approval', covered_by_staff_id=?, covered_by_name=?, updated_at=? WHERE id=?")
           .bind(b.covering_staff_id, b.covering_name, new Date().toISOString(), b.id).run();
         const whenText = shift.shift_date === new Date().toISOString().slice(0,10) ? 'today' : ('on ' + new Date(shift.shift_date+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}));
         await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json) VALUES (?,?,?)')
-          .bind('management', 'shift_covered', JSON.stringify({
+          .bind('management', 'shift_swap_pending', JSON.stringify({
             shift_id: b.id, original_staff: shift.staff_name, covering_staff: b.covering_name,
             role: shift.role, date: shift.shift_date, start_time: shift.start_time, end_time: shift.end_time,
-            message: b.covering_name + ' is covering ' + shift.staff_name + "'s " + shift.role + ' shift ' + whenText + ' (' + shift.start_time + '-' + shift.end_time + ').'
+            message: b.covering_name + ' wants to cover ' + shift.staff_name + "'s " + shift.role + ' shift ' + whenText + ' (' + shift.start_time + '-' + shift.end_time + ') - needs approval.'
           })).run();
-        return ok({ covered: true }, cors);
+        return ok({ pending_approval: true }, cors);
+      }
+
+      if (url.pathname === '/shifts/approve-swap' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        const shift = await env.DB.prepare("SELECT * FROM staff_shifts WHERE id=? AND status='pending_swap_approval'").bind(b.id).first();
+        if (!shift) return bad('Shift not found or not pending approval', cors);
+        await env.DB.prepare("UPDATE staff_shifts SET status='covered', updated_at=? WHERE id=?").bind(new Date().toISOString(), b.id).run();
+        return ok({ approved: true }, cors);
+      }
+
+      if (url.pathname === '/shifts/deny-swap' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.id) return bad('id required', cors);
+        await env.DB.prepare("UPDATE staff_shifts SET status='needs_coverage', covered_by_staff_id=NULL, covered_by_name=NULL, updated_at=? WHERE id=? AND status='pending_swap_approval'")
+          .bind(new Date().toISOString(), b.id).run();
+        return ok({ denied: true }, cors);
       }
 
       // ── FLOOR TECH PUNCH LIST (cleaning + maintenance) ──────────────
