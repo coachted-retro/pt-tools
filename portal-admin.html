@@ -79,7 +79,8 @@
         <button class="btn red" onclick="grantAccess()">Grant Access</button>
       </div>
     </div>
-    <p style="font-size:12px;color:var(--muted);margin:8px 0 0">Client will be prompted to change their password on first sign-in. Portal URL: <b>coachted-retro.github.io/pt-tools/client-portal.html</b></p>
+    <p style="font-size:12px;color:var(--muted);margin:8px 0 0">Client will be prompted to change their password on first sign-in. Portal URL: <b>myretrostrong.com</b></p>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:6px;cursor:pointer"><input type="checkbox" id="ga-send-email" checked> Email the client their login link and temporary password</label>
     <div class="status" id="ga-status"></div>
     <div class="log" id="ga-log"></div>
   </div>
@@ -234,7 +235,7 @@ async function loadActiveUsers(){
       return '<div class="row"><div class="main"><div class="name">'+esc(name)+'</div><div class="meta">'+esc(r.email)+(r.last_login?' · Last login '+esc(r.last_login.slice(0,10)):'')+'</div></div>'+
         '<span class="pill '+(r.active?'active':'revoked')+'">'+(r.active?'Active':'Revoked')+'</span>'+
         (r.active?'<button class="btn sm" style="background:#FDECEA;color:var(--red);border-color:#FDECEA" onclick="revokeAccess(\''+esc(r.email)+'\', this)">Revoke</button>':
-                  '<button class="btn sm green" onclick="reGrantAccess('+r.client_id+',\''+esc(r.email)+'\', this)">Re-grant</button>')+
+                  '<button class="btn sm green" onclick="reGrantAccess('+r.client_id+',\''+esc(r.email)+'\',\''+esc(name).replace(/'/g,"\\'")+'\', this)">Re-grant</button>')+
         '</div>';
     }).join('');
   }catch(e){ el.innerHTML='<div style="color:var(--muted)">Could not load users.</div>'; }
@@ -242,15 +243,39 @@ async function loadActiveUsers(){
 
 async function grantAccess(){
   const client_id=document.getElementById('ga-client').value;
+  const clientName=document.getElementById('ga-client').selectedOptions[0]?.textContent.trim()||'there';
   const email=document.getElementById('ga-email').value.trim();
   const password=document.getElementById('ga-pass').value.trim();
+  const sendEmail=document.getElementById('ga-send-email').checked;
   const st=document.getElementById('ga-status');
   if(!client_id||!email||!password){ st.textContent='Fill all fields'; return; }
   st.textContent='Provisioning...';
   try{
     const r=await fetch(WORKER+'/auth/provision',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({client_id:+client_id,email,password})});
     const d=await r.json();
-    if(d.provisioned||d.ok){ st.textContent='Access granted. Share the portal URL and temp password with the client.'; log('ga-log','Granted: '+email+' (client #'+client_id+')','ok'); loadActiveUsers(); }
+    if(d.provisioned||d.ok){
+      log('ga-log','Granted: '+email+' (client #'+client_id+')','ok');
+      if(sendEmail){
+        st.textContent='Access granted. Sending welcome email...';
+        const html=`<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+          <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Welcome to Retro Strong, ${esc(clientName)}!</h2>
+          <p>Your coach just set you up with the Retro Strong app — your workouts, nutrition tracking, schedule, and direct chat with your coach, all in one place.</p>
+          <p><a href="https://myretrostrong.com" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Retro Strong &rarr;</a></p>
+          <p style="font-size:13px;color:#6B7280">Or go to <b>myretrostrong.com</b> on your phone and tap "Sign In" — works great as an app if you add it to your home screen.</p>
+          <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Email</td><td><b>${esc(email)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${esc(password)}</b></td></tr></table>
+          <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
+          </div>`;
+        try{
+          const er=await fetch(WORKER+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,subject:'Welcome to Retro Strong — your login is ready',html,client_id:+client_id,context:'Portal access granted'})});
+          const ed=await er.json();
+          if(ed.sent){ st.textContent='Access granted and welcome email sent to '+email+'.'; log('ga-log','Emailed: '+email,'ok'); }
+          else { st.textContent='Access granted, but the email did not send ('+(ed.reason||ed.error||'unknown')+'). Share the login manually.'; log('ga-log','Email not sent: '+(ed.reason||ed.error||'unknown'),'err'); }
+        }catch(e){ st.textContent='Access granted, but the email failed to send. Share the login manually.'; }
+      } else {
+        st.textContent='Access granted. Share the portal URL and temp password with the client.';
+      }
+      loadActiveUsers();
+    }
     else{ st.textContent='Error: '+(d.error||'try again'); log('ga-log','Error: '+(d.error||'unknown'),'err'); }
   }catch(e){ st.textContent='Connection error'; }
 }
@@ -262,12 +287,24 @@ async function revokeAccess(email, btn){
     await r.json(); loadActiveUsers();
   }catch(e){ btn.textContent='Revoke'; btn.disabled=false; }
 }
-async function reGrantAccess(client_id, email, btn){
+async function reGrantAccess(client_id, email, clientName, btn){
   const pw=prompt('Set a new temporary password for '+email+':','BodyShoppe2024'); if(!pw) return;
+  const sendIt=confirm('Email '+email+' their new temporary password?');
   btn.textContent='Granting...'; btn.disabled=true;
   try{
     const r=await fetch(WORKER+'/auth/provision',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({client_id,email,password:pw})});
-    await r.json(); loadActiveUsers();
+    await r.json();
+    if(sendIt){
+      const html=`<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Retro Strong access is back</h2>
+        <p>Hi ${esc(clientName||'there')}, your coach just re-granted your app access with a new temporary password.</p>
+        <p><a href="https://myretrostrong.com" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Retro Strong &rarr;</a></p>
+        <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Email</td><td><b>${esc(email)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${esc(pw)}</b></td></tr></table>
+        <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
+        </div>`;
+      try{ await fetch(WORKER+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,subject:'Your Retro Strong login was reset',html,client_id:+client_id,context:'Portal access re-granted'})}); }catch(e){}
+    }
+    loadActiveUsers();
   }catch(e){ btn.textContent='Re-grant'; btn.disabled=false; }
 }
 
