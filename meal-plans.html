@@ -63,7 +63,7 @@
     <div class="meta" style="margin-bottom:12px">This is the step that gets a client showing up below — package, goal, and any exclusions. No need to redo the whole consultation to test or fix this.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Client</label>
-        <select id="np-client" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"><option value="">Select a client...</option></select></div>
+        <select id="np-client" onchange="prefillProfile()" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"><option value="">Select a client...</option></select></div>
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Package</label>
         <select id="np-package" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px">
           <option value="training">Training (no nutrition)</option>
@@ -76,6 +76,14 @@
         <input id="np-goal" placeholder="e.g. lose fat, build muscle" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Coach-set calories (optional)</label>
         <input id="np-calories" type="number" placeholder="leave blank to auto-calculate" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Protein (g)</label>
+        <input id="np-protein" type="number" placeholder="e.g. 160" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Carbs (g)</label>
+        <input id="np-carbs" type="number" placeholder="e.g. 180" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Fat (g)</label>
+        <input id="np-fat" type="number" placeholder="e.g. 65" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Excluded proteins</label>
@@ -96,6 +104,7 @@
 <script>
 const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
 let CLIENTS={};
+let ALL_PROFILES=[];
 
 async function db(body){
   const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
@@ -109,6 +118,7 @@ async function load(){
     db({op:'select',table:'clients',limit:1000})
   ]);
   (cl.results||[]).forEach(c=>CLIENTS[c.id]=c);
+  ALL_PROFILES = pf.results||[];
   populateClientDropdown(cl.results||[]);
   const profiles=(pf.results||[]).filter(p=>p.package==='complete'||p.package==='complete_plus');
   const el=document.getElementById('list');
@@ -141,6 +151,25 @@ function populateClientDropdown(clients){
     '<option value="'+c.id+'">'+esc(((c.first_name||'')+' '+(c.last_name||'')).trim())+'</option>').join('');
 }
 
+// Prefill the form with a client's existing nutrition profile (if any) the
+// moment they're selected, so saving doesn't blindly overwrite calories/
+// macros/exclusions that are already on file with blanks.
+function prefillProfile(){
+  const clientId = document.getElementById('np-client').value;
+  const fields = ['np-package','np-goal','np-calories','np-protein','np-carbs','np-fat','np-excl-protein','np-excl-veg','np-allergies'];
+  if (!clientId) { fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = id==='np-package' ? 'training' : ''; }); return; }
+  const existing = ALL_PROFILES.find(p => String(p.client_id) === String(clientId));
+  document.getElementById('np-package').value = existing?.package || 'training';
+  document.getElementById('np-goal').value = existing?.goal_type || '';
+  document.getElementById('np-calories').value = existing?.calories ?? '';
+  document.getElementById('np-protein').value = existing?.protein_g ?? '';
+  document.getElementById('np-carbs').value = existing?.carbs_g ?? '';
+  document.getElementById('np-fat').value = existing?.fat_g ?? '';
+  document.getElementById('np-excl-protein').value = existing?.excluded_proteins || '';
+  document.getElementById('np-excl-veg').value = existing?.excluded_vegetables || '';
+  document.getElementById('np-allergies').value = existing?.allergies || '';
+}
+
 async function saveNutritionProfile(){
   const clientId=document.getElementById('np-client').value;
   const status=document.getElementById('np-status');
@@ -151,6 +180,9 @@ async function saveNutritionProfile(){
     package:document.getElementById('np-package').value,
     goal_type:document.getElementById('np-goal').value.trim(),
     calories:document.getElementById('np-calories').value?+document.getElementById('np-calories').value:null,
+    protein_g:document.getElementById('np-protein').value?+document.getElementById('np-protein').value:null,
+    carbs_g:document.getElementById('np-carbs').value?+document.getElementById('np-carbs').value:null,
+    fat_g:document.getElementById('np-fat').value?+document.getElementById('np-fat').value:null,
     excluded_proteins:document.getElementById('np-excl-protein').value.trim(),
     excluded_vegetables:document.getElementById('np-excl-veg').value.trim(),
     allergies:document.getElementById('np-allergies').value.trim(),
