@@ -111,7 +111,8 @@ if (IS_LOCKED) {
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 let DAY_OFFSET = 0;
-function dayForOffset(off){ const d = new Date(); d.setDate(d.getDate()+off); return d.toISOString().slice(0,10); }
+function dayForOffset(off){ const d = new Date(todayET() + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+off); return d.toISOString().slice(0,10); }
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 function shiftDay(delta){ DAY_OFFSET += delta; loadAgenda(); }
 function resetDay(){ DAY_OFFSET = 0; loadAgenda(); }
 
@@ -157,7 +158,7 @@ async function loadCalls(){
     const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ op:'select', table:'leads', orderBy:'next_action_date asc', limit:300 }) });
     const d = await r.json();
-    const today = new Date().toISOString().slice(0,10);
+    const today = todayET();
     const active = (d.results||[])
       .filter(l => ['new','contacted','qualified'].includes(l.status))
       .filter(l => !l.next_action_date || l.next_action_date <= today)
