@@ -110,6 +110,61 @@ mapping happens — that is exactly the pattern that created tonight's mess.
    are probably the closest existing patterns to follow for style/format).
    This should be scoped and built as a real, connected feature — not
    another isolated add-on — as part of the pipeline mapping work below.
+
+0a. PLAN: Condense the monthly check-in intake (fitness-monthly-checkin.html).
+   Confirmed count: 80 fields today. Ted's complaint: members get antsy
+   waiting to work out. Grounded plan, not yet built:
+   - Split into "core" (always asked, ~15-20 fields: session count/quality,
+     one overall diet-adherence scale, energy, motivation, sleep, stress,
+     current challenge, wins, weight/InBody pull) vs "deep dive" (the
+     meal-by-meal breakdown, segmental %, individual strength/endurance/
+     flexibility/confidence/challenging-movement text fields) that only
+     shows if the coach taps "add detail" or if something in the core
+     section flags a concern (e.g. diet adherence scored low -> auto-expand
+     nutrition detail).
+   - InBody segmental % fields (now-seg-la/ra/trunk/ll/rl) should pull
+     automatically from the client's latest inbody_scans row instead of
+     being manually typed during the conversation -- this alone removes a
+     real chunk of live-with-the-member time.
+   - Many of the six meal-description textareas could likely collapse to
+     one "any changes to typical eating since last check-in?" with the
+     detailed breakdown only needed at initial consultation, not monthly.
+   - Needs Ted's sign-off on which fields are truly "core" before building
+     -- this is a judgment call about what he actually needs to see live
+     vs what he can review from Coach's notes/history instead.
+
+0b. SPEC: Appointment/session email reminders with reply-confirmation.
+   Ted's request (verbatim intent): email 24 hours before a scheduled
+   appointment/session, asking for a "confirmed" reply, auto-marks the
+   appointment as confirmed in the system when that reply comes in. Ted
+   provided draft copy: "I want to confirm your meeting with (coach name)
+   at (date and time) for your upcoming (event type). Kindly respond with
+   confirmed below as our schedules are very busy and consistently
+   changing and we want to make sure the time we set aside for you is
+   available." Said the email wording can be adjusted for best response
+   rate. ALSO: if a scheduled event has no email on file, do not silently
+   skip it -- surface a notification/reminder to staff so they can add one
+   and send that reminder manually.
+   OPEN QUESTIONS, must resolve before building (do not guess):
+   - Which table(s) count as "a scheduled event" for this purpose? Found
+     three candidates in the codebase: pt_appointments (consultations/
+     follow-ups/tours), scheduled_sessions (coach-crm.html's recurring
+     training program), clubos_appointments (synced from Club OS, no
+     client_id link typically). Confirm with Ted which of these -- likely
+     more than one -- should get reminders.
+   - Does the Resend account on this project support INBOUND email
+     (receiving + parsing a reply), or only outbound send (confirmed
+     working today for other notifications)? This is a different Resend
+     product/setup. Check the Resend dashboard before assuming reply-
+     detection is buildable as described. If inbound isn't set up, the
+     fallback is a reply-to address with a webhook, or a "tap to confirm"
+     link in the email instead of a literal reply -- functionally similar
+     result, different (and maybe easier) build.
+   - Needs a Cloudflare Worker Cron Trigger (scheduled execution, not
+     request-triggered) to check daily for appointments ~24h out and fire
+     the emails -- confirm this project's Cloudflare plan/setup supports
+     Cron Triggers before scoping the build.
+
 1. Read this file in full.
 2. Map the full nutrition/macro/InBody pipeline end to end: every file that
    touches calories, macros, meal_profiles, or inbody_scans; what each one
