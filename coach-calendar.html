@@ -188,7 +188,7 @@ function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,
 function fmtDate(s){ return s ? new Date(s+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : ''; }
 
 function openBulkModal(){
-  document.getElementById('bulk-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('bulk-date').value = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   document.getElementById('bulk-msg').textContent = '';
   document.getElementById('bulk-modal').style.display = 'flex';
 }
@@ -311,7 +311,7 @@ async function renderCalendar(){
 
   const firstDow = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m+1, 0).getDate();
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   let cells = '';
   for (let i=0; i<firstDow; i++) cells += '<div class="day empty"></div>';
   for (let day=1; day<=daysInMonth; day++){

@@ -417,7 +417,7 @@ function closeWon() {
   const t = TIERS.find(x => x.key === selectedTier);
   dbCall({
     op: 'update', table: 'clients',
-    values: { status: 'active', membership_tier: t.name, membership_price: t.price, training_start_date: new Date().toISOString().slice(0,10) },
+    values: { status: 'active', membership_tier: t.name, membership_price: t.price, training_start_date: new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()) },
     where: { id: clientId }
   });
   document.getElementById('record-status').innerHTML = '<span class="status-pill active">Active Member</span>';

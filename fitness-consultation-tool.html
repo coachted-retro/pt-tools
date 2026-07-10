@@ -2092,6 +2092,8 @@
 </div>
 
 <script>
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
+
 
 function getApiUrl() {
   return getCfg('proxyUrl') || 'https://broken-cake-e9c2.tedscholl.workers.dev';
@@ -2174,7 +2176,7 @@ window.addEventListener('load', () => {
     if (advisor) document.getElementById('advisor-name').value = advisor;
   }
   // Set today's date
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayET();
   document.getElementById('consult-date').value = today;
 
   // Auto-save draft every 45 seconds
@@ -2892,7 +2894,7 @@ async function saveInBodyScan(clientId, source) {
   var hasSegmental = Object.keys(segmental).some(function(k) { return segmental[k] != null; });
   var payload = {
     client_id: clientId,
-    scan_date: new Date().toISOString().slice(0,10),
+    scan_date: todayET(),
     weight: gv('weight') || null,
     lean_mass: gv('lean-mass') || null,
     body_fat_pct: gv('pbf') || null,
@@ -2911,7 +2913,7 @@ async function saveMeasurementsNow() {
   var fields = ['neck','shoulders','chest','bicep-r','bicep-l','waist','hips','thigh-r','thigh-l','calf-r','calf-l','forearm'];
   var payload = {
     client_id: window._enrolledClientId || null,
-    measurement_date: new Date().toISOString().slice(0,10),
+    measurement_date: todayET(),
     notes: (document.getElementById('meas-notes') || {}).value || ''
   };
   fields.forEach(function(f) {
@@ -3111,7 +3113,7 @@ async function finalizeAccept() {
       birthday: gv('dob') || null,
       goal_primary: gv('goals') || null,
       package: pkgDbValue(),
-      training_start_date: gv('consult-date') || new Date().toISOString().slice(0,10),
+      training_start_date: gv('consult-date') || todayET(),
       status: 'active',
       gym_id: CLUB_GYM_ID,
       notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Medical: ' + (gv('medical')||'none') + '. Assessment: ' + (assessmentText||'').substring(0,400)
@@ -3151,7 +3153,7 @@ async function finalizeAccept() {
       notesParts.push('Package: ' + pkgDisplayName() + '. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : ''));
       var consultPayload = {
         client_id: window._enrolledClientId,
-        consult_date: gv('consult-date') || new Date().toISOString().slice(0,10),
+        consult_date: gv('consult-date') || todayET(),
         advisor: gv('advisor-name') || 'Ted Scholl',
         weight: gv('weight') || null,
         lean_mass: gv('lean-mass') || null,
@@ -3219,7 +3221,7 @@ async function finalizeDecline() {
       status: 'prospect',
       coach: advisorName || null,
       gym_id: CLUB_GYM_ID,
-      notes: 'Declined PT on ' + new Date().toISOString().slice(0,10) + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. Medical: ' + (gv('medical')||'none') + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
+      notes: 'Declined PT on ' + todayET() + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. Medical: ' + (gv('medical')||'none') + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
     };
     Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
     var _declineSave = window.EXISTING_CLIENT_ID
@@ -3247,7 +3249,7 @@ async function finalizeDecline() {
         if (declineConvoNotes) declineNotesParts.push(declineConvoNotes);
         dbCall({ op:'insert', table:'consultations', values: {
           client_id: clientId,
-          consult_date: gv('consult-date') || new Date().toISOString().slice(0,10),
+          consult_date: gv('consult-date') || todayET(),
           advisor: gv('advisor-name') || 'Ted Scholl',
           weight: gv('weight') || null,
           lean_mass: gv('lean-mass') || null,
@@ -3266,7 +3268,7 @@ async function finalizeDecline() {
         var dow = followDate.getDay();
         fetch('https://broken-cake-e9c2.tedscholl.workers.dev/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({
-            client_id: clientId, program_name: '6-Week Follow-Up', focus_notes: 'Re-engagement — declined ' + new Date().toISOString().slice(0,10) + ', reason: ' + reason,
+            client_id: clientId, program_name: '6-Week Follow-Up', focus_notes: 'Re-engagement — declined ' + todayET() + ', reason: ' + reason,
             weekdays: [dow], start_date: followDate.toISOString().slice(0,10), end_date: followDate.toISOString().slice(0,10),
             coach_name: advisorName, assigned_coach: advisorName
           })}).catch(function(){});
@@ -3647,7 +3649,7 @@ function resetForm() {
     else el.value = '';
     el.classList.remove('autofilled');
   });
-  document.getElementById('consult-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('consult-date').value = todayET();
   document.getElementById('advisor-name').value = advisor;
   document.getElementById('gender').value = '';
   document.querySelectorAll('.gender-opt').forEach(o => o.classList.remove('selected'));
@@ -4063,7 +4065,7 @@ async function handlePhotoUpload(type, input) {
     var r = await fetch(getApiUrl() + '/file/upload?client=' + clientId + '&kind=photo_' + type + '&ext=' + ext + '&ct=' + encodeURIComponent(file.type || 'image/jpeg'), { method: 'POST', body: buf });
     var d = await r.json();
     if (!d.key) throw new Error(d.error || 'Upload failed');
-    var row = { client_id: clientId, captured_at: new Date().toISOString().slice(0,10), pose: type, r2_key: d.key, source: 'consultation' };
+    var row = { client_id: clientId, captured_at: todayET(), pose: type, r2_key: d.key, source: 'consultation' };
     var ins = await dbCall({ op: 'insert', table: 'progress_photos', values: row });
     if (ins && ins.error) throw new Error(ins.error);
     slot.classList.add('uploaded');
@@ -4469,7 +4471,7 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.text('Coach Ted Scholl  |  Retro Fitness of Fairless Hills  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
 
   // Save locally as a backup copy, and return base64 for automated email attachment
-  const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+  const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + todayET() + '.pdf';
   doc.save(filename);
   const base64 = doc.output('datauristring').split(',')[1];
   return { filename, base64 };

@@ -782,7 +782,7 @@ function fmtTimeOnly(iso){
   return h+':'+mins+' '+ap;
 }
 function buildNBA(){
-  const today=new Date().toISOString().slice(0,10);
+  const today=new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   const items=[];
   APPTS.forEach(a=>{
     if((a.start||'').slice(0,10)!==today) return;
@@ -984,7 +984,7 @@ async function logTouch(id){
   const channel=document.getElementById('tch').value;
   const summary=document.getElementById('tsum').value;
   if(!summary.trim()){ toast('Add a summary first'); return; }
-  await db({op:'insert',table:'touchpoints',values:{lead_id:id,contact_date:new Date().toISOString().split('T')[0],channel,direction:'outbound',summary}});
+  await db({op:'insert',table:'touchpoints',values:{lead_id:id,contact_date:new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()),channel,direction:'outbound',summary}});
   toast('Touchpoint logged'); openLead(id);
 }
 

@@ -320,7 +320,7 @@ function coachOptionsHtml(){
 function initCoverageTab(){
   document.getElementById('cov-covering').innerHTML = coachOptionsHtml();
   document.getElementById('cov-covered').innerHTML = coachOptionsHtml();
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   document.getElementById('cov-start').value = today;
   document.getElementById('cov-end').value = today;
   loadCoverageList();
@@ -352,7 +352,7 @@ async function loadCoverageList(){
     const d = await r.json();
     const rows = d.coverage || [];
     if (!rows.length) { el.innerHTML = '<div class="empty-state">No coverage assignments right now.</div>'; return; }
-    const today = new Date().toISOString().slice(0,10);
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
     el.innerHTML = rows.map(c => {
       const active = today >= c.start_date && today <= c.end_date;
       return `<div class="roster-row" style="grid-template-columns:2fr 1fr">

@@ -169,6 +169,8 @@
 </div>
 
 <script>
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
+
 const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
 const CLUB_SLUG=(new URLSearchParams(window.location.search).get('club')||'fairless-hills').toLowerCase();
 const CLUB_GYM_ID={'fairless-hills':1,'forest-hills':2,'glendale':3,'jersey-city':4,'cedar-city':5,'rego-park':6,'fairfield':7,'tottenville':8,'mt-olive':9,'whippany':10}[CLUB_SLUG]||1;
@@ -220,7 +222,7 @@ async function loadUpcomingAppointments(clientId){
   if (!body) return;
   try {
     const r = await db({ op:'select', table:'pt_appointments', where:{ client_id: clientId }, orderBy:'appointment_date asc', limit:50 });
-    const today = new Date().toISOString().slice(0,10);
+    const today = todayET();
     const upcoming = (r.results||[]).filter(a => a.appointment_date >= today && a.status !== 'cancelled');
     if (!upcoming.length) { body.innerHTML = '<div style="font-size:12px;color:var(--muted,#6B7280)">Nothing scheduled — use + Schedule Appointment above.</div>'; return; }
     window._upcomingAppts = upcoming;
@@ -405,7 +407,7 @@ async function saveClient(){
     package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), birthday:getF('m_birthday')||null, my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
   };
   if (isCancelling) {
-    const cancelNote = 'CANCELLED (' + new Date().toISOString().slice(0,10) + ') — Reason: ' + cancelReason + (getF('m_cancel_notes') ? '. ' + getF('m_cancel_notes') : '');
+    const cancelNote = 'CANCELLED (' + todayET() + ') — Reason: ' + cancelReason + (getF('m_cancel_notes') ? '. ' + getF('m_cancel_notes') : '');
     vals.notes = ((CURRENT && CURRENT.notes) ? CURRENT.notes + ' | ' : '') + cancelNote;
   }
   if (!EDIT_ID) vals.gym_id = CLUB_GYM_ID;
@@ -1083,7 +1085,7 @@ async function uploadPhoto(ev, pose){
     const buf=await file.arrayBuffer();
     const r=await fetch(WORKER+'/file/upload?client='+CURRENT.id+'&kind=photo_'+pose+'&ext='+ext+'&ct='+encodeURIComponent(file.type||'image/jpeg'),{method:'POST',body:buf});
     const d=await r.json(); if(!d.key) throw new Error(d.error||'Upload failed');
-    const row={client_id:CURRENT.id, captured_at:new Date().toISOString().slice(0,10), pose:pose, r2_key:d.key, source:'profile'};
+    const row={client_id:CURRENT.id, captured_at:todayET(), pose:pose, r2_key:d.key, source:'profile'};
     const ins=await db({op:'insert',table:'progress_photos',values:row});
     if(ins && ins.error) throw new Error(ins.error);
     if(st) st.textContent='Saved.'; loadProfile(CURRENT.id);
@@ -1120,7 +1122,7 @@ function toggleMeasForm(){
       mf('mm_date','Date','date')+mf('mm_weight','Weight')+mf('mm_waist','Waist')+mf('mm_chest','Chest')+mf('mm_hips','Hips')+mf('mm_neck','Neck')+
       mf('mm_larm','L Arm')+mf('mm_rarm','R Arm')+mf('mm_lthigh','L Thigh')+mf('mm_rthigh','R Thigh')+
       '<div style="grid-column:1/4;display:flex;gap:8px;margin-top:4px"><button class="btn red" onclick="saveMeasurement()">Save</button><button class="btn" onclick="toggleMeasForm()">Cancel</button></div></div>';
-    const dd=document.getElementById('mm_date'); if(dd) dd.value=new Date().toISOString().slice(0,10);
+    const dd=document.getElementById('mm_date'); if(dd) dd.value=todayET();
     el.style.display='block';
   } else { el.style.display='none'; el.innerHTML=''; }
 }
@@ -1128,7 +1130,7 @@ async function saveMeasurement(){
   if(!CURRENT) return;
   const g=id=>{ const e=document.getElementById(id); const v=e?e.value.trim():''; return v===''?null:v; };
   const pf=v=>{ if(v==null) return null; const n=parseFloat(v); return isNaN(n)?null:n; };
-  const row={client_id:CURRENT.id, measured_at:g('mm_date')||new Date().toISOString().slice(0,10),
+  const row={client_id:CURRENT.id, measured_at:g('mm_date')||todayET(),
     weight:pf(g('mm_weight')), waist:pf(g('mm_waist')), chest:pf(g('mm_chest')), hips:pf(g('mm_hips')), neck:pf(g('mm_neck')),
     left_arm:pf(g('mm_larm')), right_arm:pf(g('mm_rarm')), left_thigh:pf(g('mm_lthigh')), right_thigh:pf(g('mm_rthigh')), source:'profile'};
   Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; }); row.client_id=CURRENT.id;
@@ -1165,7 +1167,7 @@ async function uploadInbody(ev){
     const b64=await fileToB64(file);
     const key=await uploadFile(file,'inbody');
     const j=await aiExtract(file,b64,IB_PROMPT);
-    const main={client_id:CURRENT.id, scan_date:j.test_date||new Date().toISOString().slice(0,10), file_url:key, source:'inbody_pdf',
+    const main={client_id:CURRENT.id, scan_date:j.test_date||todayET(), file_url:key, source:'inbody_pdf',
       weight:j.weight, lean_mass:j.lean_body_mass, skeletal_muscle:j.skeletal_muscle_mass, body_fat_pct:j.percent_body_fat, fat_mass:j.body_fat_mass, bmi:j.bmi,
       segmental_json: j.segmental_lean ? JSON.stringify(j.segmental_lean) : null};
     Object.keys(main).forEach(k=>{ if(main[k]==null) delete main[k]; }); main.client_id=CURRENT.id;
@@ -1332,7 +1334,7 @@ let woEditId=null;
 function openSessionLogger(date, existing){
   woExercises=[];
   woEditId=existing?existing.id:null;
-  document.getElementById('woDate').value=date||new Date().toISOString().slice(0,10);
+  document.getElementById('woDate').value=date||todayET();
   document.getElementById('woTitle').value=existing?existing.title||'':(date?'Session '+fmtDateShort(date):'');
   document.getElementById('woRpe').value=existing?existing.rpe||'':6;
   document.getElementById('woNotes').value=existing?existing.session_notes||'':'';
@@ -1473,7 +1475,7 @@ async function importCSV(ev){
       let ds=''; const dm=dk.match(/(\d{1,2})\s(\w{3})\s(\d{4})/);
       if(dm){ const months={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'}; ds=dm[3]+'-'+(months[dm[2]]||'01')+'-'+String(dm[1]).padStart(2,'0'); }
       else ds=dk;
-      const row={client_id:CURRENT.id,workout_date:ds||new Date().toISOString().slice(0,10),title,exercises_json:JSON.stringify(exs),total_volume:vol||null,source:'trainerize_csv'};
+      const row={client_id:CURRENT.id,workout_date:ds||todayET(),title,exercises_json:JSON.stringify(exs),total_volume:vol||null,source:'trainerize_csv'};
       Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; });
       await db({op:'insert',table:'workouts',values:row}); saved++;
     }
@@ -1506,7 +1508,7 @@ async function uploadWorkout(ev){
       const key=await uploadFile(file,'workout');
       const j=await aiExtract(file,b64,WO_PROMPT);
       let vol=0; (j.exercises||[]).forEach(x=>{ const s=parseFloat(x.sets),rp=parseFloat(x.reps),w=parseFloat(x.weight); if(!isNaN(s)&&!isNaN(rp)&&!isNaN(w)) vol+=s*rp*w; });
-      const row={client_id:CURRENT.id,workout_date:j.workout_date||new Date().toISOString().slice(0,10),title:j.title||'Workout',file_url:key,exercises_json:JSON.stringify(j.exercises||[]),total_volume:vol||null,source:'trainerize_screenshot'};
+      const row={client_id:CURRENT.id,workout_date:j.workout_date||todayET(),title:j.title||'Workout',file_url:key,exercises_json:JSON.stringify(j.exercises||[]),total_volume:vol||null,source:'trainerize_screenshot'};
       Object.keys(row).forEach(k=>{ if(row[k]==null) delete row[k]; }); row.client_id=CURRENT.id;
       const ins=await db({op:'insert',table:'workouts',values:row});
       if(ins&&ins.error) throw new Error(ins.error);

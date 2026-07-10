@@ -975,7 +975,7 @@ function openScheduleModal() {
   }
   // Pre-fill today's date
   const dateEl = document.getElementById('sch-date');
-  if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().slice(0,10);
+  if (dateEl && !dateEl.value) dateEl.value = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   // Populate client datalist from active clients
   const dl = document.getElementById('sch-client-list');
   if (dl && allActiveClients && allActiveClients.length) {

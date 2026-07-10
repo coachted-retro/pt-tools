@@ -291,7 +291,7 @@ function exportReportCsv() {
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'gym-report-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.href = url; a.download = 'gym-report-' + new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
 }

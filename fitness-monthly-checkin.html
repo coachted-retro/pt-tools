@@ -816,6 +816,8 @@
 </div>
 
 <script>
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
+
 function getApiUrl(){ return getCfg('proxyUrl')||'https://broken-cake-e9c2.tedscholl.workers.dev'; }
 function getApiHeaders(){ return {'Content-Type':'application/json'}; }
 
@@ -839,7 +841,7 @@ function openConfig(){}
 
 window.addEventListener('load',()=>{
   saveConfig();
-  const today=new Date().toISOString().split('T')[0];
+  const today=todayET();
   document.getElementById('checkin-date').value=today;
   updateDates();
   const adv=getCfg('advisor'); if(adv){ const el=document.getElementById('advisor-name'); if(el&&!el.value) el.value=adv; }
@@ -1270,7 +1272,7 @@ function resetForm(){
   ['weight','bmi','fat','lean','water','pbf'].forEach(m=>{ const el=document.getElementById('delta-'+m); if(el){el.textContent='';el.className='delta';} });
   ['la','ra','trunk','ll','rl'].forEach(id=>{ const el=document.getElementById('sp-'+id); if(el) el.textContent='Prev: -'; });
   document.getElementById('advisor-name').value=advisor;
-  const today=new Date().toISOString().split('T')[0];
+  const today=todayET();
   document.getElementById('checkin-date').value=today;
   updateDates(); goPage(0);
 }
@@ -1516,7 +1518,7 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.text('Coach Ted Scholl  |  Retro Fitness of Fairless Hills  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
 
   // Save locally as a backup copy, and return base64 for automated email attachment
-  const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+  const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + todayET() + '.pdf';
   doc.save(filename);
   const base64 = doc.output('datauristring').split(',')[1];
   return { filename, base64 };
@@ -1711,7 +1713,7 @@ async function handleCheckinPhotoUpload(type, input){
     const r = await fetch(getApiUrl()+'/file/upload?client='+clientId+'&kind=photo_'+type+'&ext='+ext+'&ct='+encodeURIComponent(file.type||'image/jpeg'), {method:'POST', body:buf});
     const d = await r.json();
     if (!d.key) throw new Error(d.error||'Upload failed');
-    const row = { client_id:clientId, captured_at:new Date().toISOString().slice(0,10), pose:type, r2_key:d.key, source:'monthly_checkin' };
+    const row = { client_id:clientId, captured_at:todayET(), pose:type, r2_key:d.key, source:'monthly_checkin' };
     const ins = await _db({op:'insert', table:'progress_photos', values:row});
     if (ins && ins.error) throw new Error(ins.error);
     slot.style.borderColor = '#4caf7d'; slot.style.borderStyle = 'solid';

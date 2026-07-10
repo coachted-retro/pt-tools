@@ -153,7 +153,7 @@ async function renderMonth() {
 
   const firstDow = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m+1, 0).getDate();
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   let cells = '';
   for (let i=0; i<firstDow; i++) cells += '<div class="day empty"></div>';
   for (let day=1; day<=daysInMonth; day++) {
@@ -335,7 +335,7 @@ async function reviewShiftSwap(id, action) {
 
 loadStaffRoster();
 renderMonth();
-selectDay(new Date().toISOString().slice(0,10));
+selectDay(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()));
 loadPendingTimeOff();
 loadPendingAvailability();
 loadPendingShiftSwaps();

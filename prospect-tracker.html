@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <script>
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
+
 (function(){
   var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead","MEA"];
   var session = null;
@@ -1297,7 +1299,7 @@ function renderList(filter='') {
     const tps = touchpoints.filter(t => t.prospectId === p.id);
     const last = tps[0];
     const badgeClass = 'badge-' + p.interest.toLowerCase();
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayET();
     const overdue = p.followUpDate && p.followUpDate <= today;
     const dueToday = p.followUpDate === today;
     return '<div class="prospect-item' + (p.id===selectedId?' active':'') + '" style="' + (overdue?'border-left:4px solid var(--red,#E0192B)':'') + '" onclick="selectProspect(\'' + p.id + '\')">' +
@@ -1332,7 +1334,7 @@ function selectProspect(id) {
   const badge = document.getElementById('d-badge');
   badge.textContent = p.interest;
   badge.className = 'interest-badge badge-' + p.interest.toLowerCase();
-  document.getElementById('tp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('tp-date').value = todayET();
   document.getElementById('d-followup').value = p.followUpDate || '';
   renderMemberStatus(p);
   document.getElementById('member-create-form').style.display = 'none';
@@ -1480,7 +1482,7 @@ function openQuickCreateMember(p) {
   document.getElementById('mc-phone').value = p.phone || '';
   document.getElementById('mc-email').value = p.email || '';
   document.getElementById('mc-tier').value = '';
-  document.getElementById('mc-joindate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('mc-joindate').value = todayET();
   document.getElementById('mc-gender').value = '';
   document.getElementById('member-create-form').style.display = 'block';
 }
@@ -1582,7 +1584,7 @@ function clearForm() {
 
 async function addTouchpoint() {
   if (!selectedId) return;
-  const date = gv('tp-date') || new Date().toISOString().split('T')[0];
+  const date = gv('tp-date') || todayET();
   const notes = gv('tp-notes'), outcome = gv('tp-outcome'), advisor = gv('tp-advisor'), channel = gv('tp-channel');
   if (!notes) { setStatus('tp-status','error','Please add notes.'); return; }
   const p = prospects.find(x => x.id === selectedId);
@@ -1797,7 +1799,7 @@ function selectBC(id) {
   document.getElementById('bc-btn-reschedule').style.display = isActive ? 'block' : 'none';
 
   document.getElementById('bc-btn-reset').style.display = b.status==='Rescheduled' ? 'block' : 'none';
-  document.getElementById('bc-tp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('bc-tp-date').value = todayET();
   renderBCTouchpoints(id);
   renderBC(document.getElementById('bc-search').value);
 }
@@ -2124,7 +2126,7 @@ function openNewBookingModal() {
   document.getElementById('nb-last').value = '';
   document.getElementById('nb-phone').value = '';
   document.getElementById('nb-email').value = '';
-  document.getElementById('nb-date-booked').value = new Date().toISOString().split('T')[0];
+  document.getElementById('nb-date-booked').value = todayET();
   document.getElementById('nb-appt-date').value = '';
   document.getElementById('nb-appt-time').value = '';
   document.getElementById('nb-mea').value = '';
@@ -2192,7 +2194,7 @@ renderList();
 updateStats();
 updateTabCounts();
 setInterest('Warm');
-document.getElementById('tp-date').value = new Date().toISOString().split('T')[0];
+document.getElementById('tp-date').value = todayET();
 initCalendar();
 renderCalendar();
 syncFromSheet(); // pull Sheet → localStorage on every load
@@ -2224,7 +2226,7 @@ function renderBizList() {
   const q = (document.getElementById('biz-search').value || '').toLowerCase();
   const list = document.getElementById('biz-list');
   document.getElementById('biz-lead-count').textContent = BIZ_LEADS.length;
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayET();
   const filtered = BIZ_LEADS.filter(l => !q ||
     (l.business_name||'').toLowerCase().includes(q) ||
     (l.phone||'').includes(q) || (l.email||'').toLowerCase().includes(q));
@@ -2411,7 +2413,7 @@ function renderCallList() {
         <div style="font-weight:700;font-size:13px">${(r.name||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</div>
         <div style="font-size:11px;color:var(--muted,#6B7280)">${(r.sub||'')} &middot; ${(r.phone||'no phone')} &middot; Last: ${(r.last||'')}</div>
       </div>
-      ${r.dueDate && r.dueDate <= new Date().toISOString().split('T')[0] ? '<span style="font-size:10px;font-weight:800;color:var(--red,#E0192B)">DUE</span>' : ''}
+      ${r.dueDate && r.dueDate <= todayET() ? '<span style="font-size:10px;font-weight:800;color:var(--red,#E0192B)">DUE</span>' : ''}
     </div>`).join('');
 }
 

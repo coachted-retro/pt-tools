@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <script>
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
+
 (function(){
   var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead"];
   var session = null;
@@ -465,7 +467,7 @@ async function toggleDoc(docType, checked) {
   const row = document.getElementById('doc-row-' + docType);
   const dateInput = row ? row.querySelector('.date-input') : null;
   if (dateInput) dateInput.style.display = checked ? 'block' : 'none';
-  const today = new Date().toISOString().slice(0,10);
+  const today = todayET();
   try {
     const existing = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({op:'select', table:'hr_documents', where:{employee_id: currentEmp.id, doc_type: docType}, limit:1})});
@@ -532,7 +534,7 @@ async function loadOnboarding() {
 }
 
 async function toggleOnboard(task, checked, rowId) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = todayET();
   try {
     const existing = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({op:'select', table:'hr_onboarding', where:{employee_id: currentEmp.id, task: task}, limit:1})});
@@ -568,7 +570,7 @@ async function loadPerformance() {
         </div>
         <div class="perf-text">${esc(row.notes||'')}</div>
       </div>`).join('') : '<div class="empty-state">No performance entries yet.</div>';
-    document.getElementById('perf-date').value = new Date().toISOString().slice(0,10);
+    document.getElementById('perf-date').value = todayET();
   } catch(e) { console.error(e); }
 }
 
@@ -579,7 +581,7 @@ async function savePerfEntry() {
     await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({op:'insert', table:'hr_performance', values:{
         employee_id: currentEmp.id,
-        entry_date: document.getElementById('perf-date').value || new Date().toISOString().slice(0,10),
+        entry_date: document.getElementById('perf-date').value || todayET(),
         entry_type: document.getElementById('perf-type').value,
         notes,
         entered_by: document.getElementById('perf-by').value,
@@ -733,7 +735,7 @@ async function promoteToStaff(id) {
   if (!c) return;
   if (!confirm(`Add ${c.name} to the staff roster as ${c.role_applied} and mark this application Hired?`)) return;
   try {
-    const today = new Date().toISOString().slice(0,10);
+    const today = todayET();
     const ins = await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({op:'insert', table:'staff_roster', values:{
         name: c.name, role: c.role_applied, email: c.email, phone: c.phone,

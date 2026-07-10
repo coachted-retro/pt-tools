@@ -1452,6 +1452,8 @@
 </div><!-- /app -->
 
 <script>
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
+
 
 function getApiUrl() {
   return getCfg('proxyUrl') || 'https://broken-cake-e9c2.tedscholl.workers.dev';
@@ -1591,7 +1593,7 @@ window.addEventListener('load',()=>{
   localStorage.setItem('ptci_proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
   // config handled by hub
   const adv=getCfg('advisor'); if(adv) document.getElementById('advisor-name').value=adv;
-  const today=new Date().toISOString().split('T')[0];
+  const today=todayET();
   document.getElementById('fu-date').value=today;
   updateNextFuDate();
   const preClientId = new URLSearchParams(window.location.search).get('client_id');
@@ -2039,7 +2041,7 @@ async function createClientFolder(name, gKey, content) {
     await fetch(uploadBase + '/files?uploadType=multipart&key=' + gKey, {
       method:'POST',
       headers:{'Content-Type':'multipart/related; boundary=b123'},
-      body:'--b123\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify({name:'6-Week Follow-Up - '+new Date().toISOString().split('T')[0]+'.txt',parents:[clientFolderId]}) + '\r\n--b123\r\nContent-Type: text/plain\r\n\r\n' + content + '\r\n--b123--'
+      body:'--b123\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify({name:'6-Week Follow-Up - '+todayET()+'.txt',parents:[clientFolderId]}) + '\r\n--b123\r\nContent-Type: text/plain\r\n\r\n' + content + '\r\n--b123--'
     });
     return { folderId: clientFolderId, folderUrl: 'https://drive.google.com/drive/folders/' + clientFolderId };
   } catch(e) { return null; }
@@ -2303,7 +2305,7 @@ function resetForm(){
     else el.value='';
     el.classList.remove('autofilled');
   });
-  document.getElementById('fu-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fu-date').value=todayET();
   document.getElementById('advisor-name').value=advisor;
   document.querySelectorAll('.scale-btn,.tag,.pill').forEach(el=>el.classList.remove('selected'));
   document.getElementById('obstacle-list').value='';
@@ -2565,7 +2567,7 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.text('Coach Ted Scholl  |  Retro Fitness of Fairless Hills  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
 
   // Save locally as a backup copy, and return base64 for automated email attachment
-  const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+  const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + todayET() + '.pdf';
   doc.save(filename);
   const base64 = doc.output('datauristring').split(',')[1];
   return { filename, base64 };
