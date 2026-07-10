@@ -175,8 +175,15 @@ async function loadCalls(){
       return `<div class="agenda-row">
         <div class="ar-top"><span class="ar-icon">📞</span><span class="ar-name">${esc(label)}</span></div>
         <div class="ar-sub">${esc(sub)}</div>
-        <div class="note-row">
-          <textarea id="note-${uid}" placeholder="Log this call..."></textarea>
+        <div class="note-row" style="flex-wrap:wrap">
+          <select id="channel-${uid}" style="border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px">
+            <option value="call">📞 Call</option>
+            <option value="text">💬 Text</option>
+            <option value="email">📧 Email</option>
+            <option value="floor_pull">🏋️ Floor Pull</option>
+            <option value="appt_booked">📅 Appt Booked</option>
+          </select>
+          <textarea id="note-${uid}" placeholder="Log this outreach..."></textarea>
           <button onclick="saveNote('${uid}','leads',${l.id})">Save</button>
         </div>
         <div class="note-status" id="note-status-${uid}"></div>
@@ -192,11 +199,13 @@ async function saveNote(uid, sourceTable, leadId){
   const body = ta ? ta.value.trim() : '';
   if (!body) { statusEl.textContent = 'Write something first.'; statusEl.style.color = 'var(--red)'; return; }
   statusEl.textContent = 'Saving...'; statusEl.style.color = 'var(--muted)';
+  const channelSelect = document.getElementById('channel-' + uid);
+  const channel = channelSelect ? channelSelect.value : (sourceTable === 'leads' ? 'call' : 'in_person');
   try {
     const res = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ op:'insert', table:'touchpoints', values:{
         lead_id: leadId, source_table: sourceTable, contact_date: new Date().toISOString(),
-        channel: sourceTable === 'leads' ? 'call' : 'in_person', direction: 'outbound',
+        channel, direction: 'outbound',
         summary: body, outcome: null, advisor: STAFF_NAME
       }})});
     const d = await res.json();

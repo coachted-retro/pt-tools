@@ -218,7 +218,7 @@ table.log-table .del-btn:hover{color:var(--red)}
       <span class="chevron">▾</span>
     </div>
     <div class="section-body">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Tap each type to add. Numbers update automatically.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Auto-pulled from your calls/texts/emails logged today on the main agenda (Priority Calls) — nothing to re-type here. Only use the buttons below for outreach that wasn't tied to a specific lead there (e.g. a floor pull with no name attached).</p>
       <div class="outreach-chips">
         <button class="chip-btn" onclick="addOutreach('call')" id="chip-call">📞 Calls <span class="count" id="cnt-call">0</span></button>
         <button class="chip-btn" onclick="addOutreach('text')" id="chip-text">💬 Texts <span class="count" id="cnt-text">0</span></button>
@@ -497,7 +497,7 @@ table.log-table .del-btn:hover{color:var(--red)}
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 const outreachCounts = { call:0, text:0, email:0, floor_pull:0, appt_booked:0 };
 const notes = [];
 let isDirty = false;
@@ -506,9 +506,55 @@ let isDirty = false;
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
   loadDraft();
+  loadRealOutreach();
   updateProgress();
   setInterval(() => { if(isDirty) saveDraft(); }, 30000);
 });
+
+// Pulls Sarah's actual outreach activity for today straight from the same
+// touchpoints table mea-agenda.html's Priority Calls section writes to --
+// one source of truth. She logs a call once, against the real lead, from
+// her agenda during the day; it shows up here automatically instead of
+// needing separate manual chip-clicks disconnected from the real record.
+async function loadRealOutreach(){
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'touchpoints', where:{ advisor:'Sarah Aldrich' }, orderBy:'contact_date DESC', limit:100 }) });
+    const d = await r.json();
+    const todayRows = (d.results||[]).filter(t => (t.contact_date||'').slice(0,10) === TODAY && t.source_table === 'leads');
+    if (!todayRows.length) return;
+    const leadIds = [...new Set(todayRows.map(t => t.lead_id))];
+    const lr = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'leads', limit:500 }) });
+    const ld = await lr.json();
+    const leadsById = {};
+    (ld.results||[]).forEach(l => { leadsById[l.id] = l; });
+    const CHANNEL_LABEL = { call:'📞 Call', text:'💬 Text', email:'📧 Email', floor_pull:'🏋️ Floor Pull', appt_booked:'📅 Appt Booked' };
+    const tb = document.getElementById('outreach-body');
+    todayRows.forEach(t => {
+      const lead = leadsById[t.lead_id] || {};
+      const name = lead.business_name || ((lead.first_name||'')+' '+(lead.last_name||'')).trim() || 'Lead #'+t.lead_id;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><select onchange="updateStatus('outreach')">
+          ${Object.entries(CHANNEL_LABEL).map(([v,l]) => `<option value="${v}" ${v===t.channel?'selected':''}>${l}</option>`).join('')}
+        </select></td>
+        <td><input type="text" value="${esc(name)}" oninput="updateStatus('outreach')"></td>
+        <td><input type="text" value="${esc(lead.phone||'')}" oninput="updateStatus('outreach')"></td>
+        <td><input type="text" value="${esc(t.summary||'')}" oninput="updateStatus('outreach')"></td>
+        <td><button class="del-btn" onclick="this.closest('tr').remove();updateStatus('outreach')">✕</button></td>`;
+      tb.appendChild(tr);
+    });
+    // Keep the chip counters in sync so the section still shows an
+    // at-a-glance count, now reflecting real logged activity.
+    todayRows.forEach(t => { if (outreachCounts[t.channel] !== undefined) outreachCounts[t.channel]++; });
+    Object.keys(outreachCounts).forEach(type => {
+      const el = document.getElementById('cnt-' + type);
+      if (el) el.textContent = outreachCounts[type];
+    });
+    markSectionDone('outreach');
+  } catch(e) { /* non-fatal, manual entry still works */ }
+}
 
 // ── SECTION TOGGLE ────────────────────────────────────────────────
 function toggleSection(id) {
