@@ -2889,7 +2889,14 @@ Rules:
 
         let apptDetail = '';
         if (appointment_type === 'consultation' || appointment_type === 'followup') {
-          apptDetail = `Assessment summary: ${appt.assessment_summary || 'none on file'}\nOutcome: ${appt.outcome || 'not recorded'}\nAdvisor notes: ${appt.advisor_notes || 'none'}`;
+          apptDetail = `Assessment summary: ${appt.assessment_summary || 'none on file'}\nOutcome: ${appt.outcome || 'not recorded'}\nAdvisor notes: ${appt.advisor_notes || 'none'}\nGoals: ${appt.goals || 'not noted'}`;
+          if (appointment_type === 'consultation') {
+            // diet_habits carries the eating-out frequency / coffee spending /
+            // weekly budget range Keelin wants touched on every consultation
+            // to help handle cost objections -- was being captured on the
+            // intake form already but never actually reaching this summary.
+            apptDetail += `\nEating out & spending habits discussed: ${appt.diet_habits || 'not captured this consultation -- worth asking next time'}`;
+          }
           if (appointment_type === 'followup') {
             apptDetail += `\nTraining progress: ${appt.training_progress || 'not noted'}\nObstacles: ${appt.obstacles || 'none noted'}\nMindset: ${appt.mindset || 'not noted'}`;
           }
@@ -2897,7 +2904,10 @@ Rules:
           apptDetail = `Assessment summary: ${appt.assessment_summary || 'none on file'}\nWins: ${appt.wins || 'none noted'}\nAdvisor notes: ${appt.advisor_notes || 'none'}\nScores (1-10) -- session: ${appt.session_score ?? '?'}, diet: ${appt.diet_score ?? '?'}, energy: ${appt.energy_score ?? '?'}, sleep: ${appt.sleep_score ?? '?'}, stress: ${appt.stress_score ?? '?'}`;
         }
 
-        const sys = `You are helping a personal trainer compose one short, professional caption summarizing a client appointment for a daily report their regional director reads. Combine the appointment's intake/assessment data with the coach's own follow-up note into ONE tight paragraph (2-4 sentences max). Lead with the outcome/result, then the key supporting detail. Plain, factual, businesslike tone -- this is a status report, not marketing copy. No emojis, no em dashes, plain punctuation only. Return ONLY the caption text, nothing else.`;
+        const spendingNote = appointment_type === 'consultation'
+          ? ' If eating-out/spending habits were discussed, briefly note what was learned and how it factored into the cost conversation -- the regional director is specifically tracking whether that ground gets covered on every consultation. If it was NOT captured, say so plainly in one short clause so it is visible as a gap, do not silently omit it.'
+          : '';
+        const sys = `You are helping a personal trainer compose one short, professional caption summarizing a client appointment for a daily report their regional director reads. Combine the appointment's intake/assessment data with the coach's own follow-up note into ONE tight paragraph (2-4 sentences max). Lead with the outcome/result, then the key supporting detail. Plain, factual, businesslike tone -- this is a status report, not marketing copy.${spendingNote} No emojis, no em dashes, plain punctuation only. Return ONLY the caption text, nothing else.`;
         const user = `Client: ${clientName}\nAppointment type: ${apptLabel}\n\n${apptDetail}\n\nCoach's note(s) logged today about this client: ${agendaNotes}\n\nCompose the caption.`;
 
         const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
