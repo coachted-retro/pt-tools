@@ -1003,8 +1003,8 @@ let MM_STATE = null; // holds pending capture data before save
 
 function shiftNutritionDay(delta){
   const d = document.getElementById('nutri-date');
-  const dt = new Date(d.value + 'T00:00:00');
-  dt.setDate(dt.getDate() + delta);
+  const dt = new Date(d.value + 'T00:00:00Z');
+  dt.setUTCDate(dt.getUTCDate() + delta);
   d.value = dt.toISOString().slice(0,10);
   loadNutritionDay();
 }
@@ -1207,7 +1207,7 @@ async function confirmSaveMeal(){
   const now = new Date();
   const payload = {
     client_id: SESSION.client_id,
-    meal_date: document.getElementById('nutri-date').value || now.toISOString().slice(0,10),
+    meal_date: document.getElementById('nutri-date').value || todayET(),
     meal_time: now.toTimeString().slice(0,5),
     meal_type: MM_STATE.mealType,
     photo_key: MM_STATE.photo_key || null,
@@ -1231,7 +1231,7 @@ async function confirmSaveMeal(){
 
 // ── DAILY HABITS ─────────────────────────────────────────────────────────────
 const HABIT_TARGETS = { hydration: 8, sleep_hours: 7, steps: 8000 };
-function dateStr(offsetDays){ const d=new Date(); d.setDate(d.getDate()+offsetDays); return d.toISOString().slice(0,10); }
+function dateStr(offsetDays){ const d=new Date(todayET() + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+offsetDays); return d.toISOString().slice(0,10); }
 
 function computeStreak(logs, key, threshold){
   const byDate = {}; logs.forEach(l=>{ byDate[l.log_date]=l; });
@@ -1399,7 +1399,7 @@ async function logRecipeAsMeal(idx){
   if(status) status.textContent = 'Logging...';
   const now = new Date();
   const payload = {
-    client_id: SESSION.client_id, meal_date: now.toISOString().slice(0,10), meal_time: now.toTimeString().slice(0,5),
+    client_id: SESSION.client_id, meal_date: todayET(), meal_time: now.toTimeString().slice(0,5),
     meal_type: r.meal_type || 'snack', photo_key: null,
     calories: r.calories||0, protein_g: r.protein_g||0, carbs_g: r.carbs_g||0, fat_g: r.fat_g||0,
     items_json: JSON.stringify([{ name:r.title, portion:'1 serving', calories:r.calories||0, protein_g:r.protein_g||0, carbs_g:r.carbs_g||0, fat_g:r.fat_g||0 }]),
