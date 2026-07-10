@@ -77,6 +77,10 @@
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Coach-set calories (optional)</label>
         <input id="np-calories" type="number" placeholder="leave blank to auto-calculate" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
     </div>
+    <div style="margin-bottom:10px">
+      <button class="btn" type="button" onclick="suggestFromInbody()" style="width:100%">Suggest from InBody + Intake</button>
+      <div id="np-suggest-note" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Protein (g)</label>
         <input id="np-protein" type="number" placeholder="e.g. 160" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
@@ -109,6 +113,56 @@ let ALL_PROFILES=[];
 async function db(body){
   const r=await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
   return r.json();
+}
+
+// Suggests calories/macros from a client's actual InBody scan (lean mass,
+// via Katch-McArdle BMR -- more accurate than a generic height/weight
+// guess since it's based on real measured lean tissue) plus their intake
+// answers (goal text, training days/week for an activity multiplier).
+// This is the feature that was supposed to auto-build targets but never
+// got wired up -- fills the form for the coach to review/adjust and save,
+// rather than silently auto-saving a health-related number unreviewed.
+async function suggestFromInbody(){
+  const clientId = document.getElementById('np-client').value;
+  const note = document.getElementById('np-suggest-note');
+  if (!clientId) { note.textContent = 'Pick a client first.'; note.style.color = 'var(--red-dk)'; return; }
+  note.textContent = 'Looking up scan + intake...'; note.style.color = 'var(--muted)';
+  try {
+    const [scanRes, consultRes] = await Promise.all([
+      db({ op:'select', table:'inbody_scans', where:{client_id:+clientId}, orderBy:'scan_date DESC', limit:1 }),
+      db({ op:'select', table:'consultations', where:{client_id:+clientId}, orderBy:'created_at DESC', limit:1 })
+    ]);
+    const scan = (scanRes.results||[])[0] || null;
+    const consult = (consultRes.results||[])[0] || null;
+    const leanLb = scan?.lean_mass || null;
+    const weightLb = scan?.weight || null;
+    if (!leanLb || !weightLb) {
+      note.textContent = 'No InBody scan on file for this client yet -- upload one first (Lean Mass and Weight are required).';
+      note.style.color = 'var(--red-dk)';
+      return;
+    }
+    const leanKg = leanLb * 0.453592;
+    const bmr = 370 + 21.6 * leanKg; // Katch-McArdle, uses real lean mass
+    const daysPerWeek = parseInt(consult?.days_per_week, 10) || 3;
+    const activityMult = daysPerWeek >= 6 ? 1.65 : daysPerWeek >= 5 ? 1.55 : daysPerWeek >= 3 ? 1.45 : 1.35;
+    const maintenance = Math.round(bmr * activityMult);
+    const goalsText = (consult?.goals || document.getElementById('np-goal').value || '').toLowerCase();
+    let calories = maintenance, proteinPerLb = 0.8, carbPct = 0.40, fatPct = 0.30, goalLabel = 'maintain';
+    if (/lose|cut|fat loss|shred|lean out/.test(goalsText)) { calories = Math.round(maintenance*0.8); proteinPerLb=1.0; carbPct=0.35; fatPct=0.30; goalLabel='lose fat'; }
+    else if (/build|muscle|gain|bulk|mass/.test(goalsText)) { calories = Math.round(maintenance*1.1); proteinPerLb=0.9; carbPct=0.45; fatPct=0.25; goalLabel='build muscle'; }
+    const protein_g = Math.round(weightLb * proteinPerLb);
+    const proteinCal = protein_g * 4;
+    const remaining = Math.max(calories - proteinCal, 0);
+    const carbs_g = Math.round((remaining * (carbPct/(carbPct+fatPct))) / 4);
+    const fat_g = Math.round((remaining * (fatPct/(carbPct+fatPct))) / 9);
+    document.getElementById('np-calories').value = calories;
+    document.getElementById('np-protein').value = protein_g;
+    document.getElementById('np-carbs').value = carbs_g;
+    document.getElementById('np-fat').value = fat_g;
+    if (!document.getElementById('np-goal').value.trim() && consult?.goals) document.getElementById('np-goal').value = consult.goals;
+    note.textContent = `Suggested from scan dated ${scan.scan_date||'on file'} (${leanLb}lb lean mass, ${weightLb}lb total) + ${daysPerWeek}x/week, goal: ${goalLabel}. Review and adjust before saving.`;
+    note.style.color = 'var(--muted)';
+  } catch(e) { note.textContent = 'Could not pull scan/intake data: ' + e.message; note.style.color = 'var(--red-dk)'; }
 }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
