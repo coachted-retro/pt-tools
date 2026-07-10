@@ -150,6 +150,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 </div>
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 
 function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
@@ -367,8 +368,8 @@ async function saveResign(clientId){
   status.textContent = 'Saving...';
   const client = (window._jeopardyClients||[]).find(c => c.id === clientId);
   const clientName = client ? (client.first_name+' '+client.last_name) : '';
-  const today = new Date();
-  const endDate = new Date(today); endDate.setDate(endDate.getDate() + termDays);
+  const today = new Date(todayET() + 'T00:00:00Z');
+  const endDate = new Date(today); endDate.setUTCDate(endDate.getUTCDate() + termDays);
   try {
     await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ op:'update', table:'clients', values:{ package: pkg, package_start_date: today.toISOString().slice(0,10), package_end_date: endDate.toISOString().slice(0,10), status:'active_pt' }, where:{ id: clientId } }) });
@@ -425,8 +426,8 @@ async function saveNotResigning(clientId){
 let SCHEDULE_DAY_OFFSET = 0;
 
 function scheduleDateForOffset(offset){
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
+  const d = new Date(todayET() + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + offset);
   return d.toISOString().slice(0,10);
 }
 
@@ -1743,8 +1744,8 @@ async function saveAppointment() {
   const startCheck = new Date(start + 'T00:00:00');
   const minAllowed = new Date(Date.now() + 24*60*60*1000);
   if (startCheck < minAllowed) { status.textContent = 'Needs at least 24 hours notice — pick a later start date.'; return; }
-  const endDateObj = new Date(start + 'T00:00:00');
-  endDateObj.setDate(endDateObj.getDate() + (weeks * 7) - 1);
+  const endDateObj = new Date(start + 'T00:00:00Z');
+  endDateObj.setUTCDate(endDateObj.getUTCDate() + (weeks * 7) - 1);
   const end = endDateObj.toISOString().slice(0,10);
   const dayRoutines = {};
   for (const i of weekdays) {
