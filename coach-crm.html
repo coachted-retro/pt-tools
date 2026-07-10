@@ -129,6 +129,26 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div id="today-schedule"></div>
   <div id="jeopardy-section"></div>
 
+  <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">PT Leads I'm Tracking</div>
+  <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Prospects you're personally chasing for training — social media, gym floor, wherever. Once they sign up, they become a real client and drop off this list.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <input id="ptlead-name" placeholder="Name" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:13px">
+      <input id="ptlead-phone" placeholder="Phone (optional)" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:13px">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <select id="ptlead-source" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:13px">
+        <option value="Social media">Social media</option>
+        <option value="Gym floor">Gym floor</option>
+        <option value="Referral">Referral</option>
+        <option value="Other">Other</option>
+      </select>
+      <input id="ptlead-note" placeholder="Note (optional)" style="padding:9px;border:1px solid var(--line);border-radius:8px;font-size:13px">
+    </div>
+    <button onclick="addPtLead()" style="width:100%;background:var(--red);color:#fff;border:none;border-radius:8px;padding:10px;font-family:'Oswald';font-weight:700;text-transform:uppercase;font-size:12px;cursor:pointer">+ Add Lead</button>
+    <div id="ptlead-list" style="margin-top:12px"></div>
+  </div>
+
   <div style="font-family:'Oswald';font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Stats at a Glance</div>
   <div id="coach-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
 
@@ -216,6 +236,7 @@ function switchCoverageView(){
   loadClients();
   loadTodaySchedule();
   loadCoachStats();
+  loadPtLeads();
 }
 
 
@@ -1150,6 +1171,7 @@ async function loadClients(){
   loadJeopardy();
   loadCoachDailyTip();
   loadCoachStats();
+  loadPtLeads();
 }
 
 let ACTIVE_TAG_FILTER = null;
@@ -1406,6 +1428,66 @@ async function loadCoachStats(){
         <div style="font-size:10px;color:var(--muted);text-transform:uppercase;font-weight:700">${escH(t.label)}</div>
       </div>`).join('');
   } catch(e) { el.innerHTML = ''; }
+}
+
+// ── PT LEADS — simple standalone tracker, deliberately not tangled into
+// the businesses/prospects system (that one is fragile and needs its own
+// cleanup pass later). Just a name, phone, source, note, and status per
+// coach, so someone like Danielle can log a prospect she's chasing for
+// training without hunting through a bigger, unrelated tool.
+async function loadPtLeads(){
+  const coach = document.getElementById('coach-select').value;
+  const el = document.getElementById('ptlead-list');
+  if (!el) return;
+  if (!coach) { el.innerHTML = ''; return; }
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'pt_leads', where:{ coach_name: coach }, orderBy:'created_at desc', limit:50 }) });
+    const d = await r.json();
+    const leads = (d.results||[]).filter(l => l.status !== 'converted' && l.status !== 'not_interested');
+    if (!leads.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted);text-align:center;padding:8px">No PT leads on your list right now</div>'; return; }
+    el.innerHTML = leads.map(l => `
+      <div style="border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px">${escH(l.name)}</div>
+          <div style="font-size:11px;color:var(--muted)">${escH([l.source, l.phone, l.note].filter(Boolean).join(' · '))}</div>
+        </div>
+        <select onchange="updatePtLeadStatus(${l.id}, this.value)" style="font-size:11px;padding:5px;border:1px solid var(--line);border-radius:6px">
+          <option value="new" ${l.status==='new'?'selected':''}>New</option>
+          <option value="contacted" ${l.status==='contacted'?'selected':''}>Contacted</option>
+          <option value="converted">Converted — signed up</option>
+          <option value="not_interested">Not interested</option>
+        </select>
+      </div>`).join('');
+  } catch(e) { el.innerHTML = ''; }
+}
+async function addPtLead(){
+  const coach = document.getElementById('coach-select').value;
+  if (!coach) { alert('Select a coach first.'); return; }
+  const name = document.getElementById('ptlead-name').value.trim();
+  if (!name) { alert('Enter a name.'); return; }
+  const values = {
+    coach_name: coach, name,
+    phone: document.getElementById('ptlead-phone').value.trim(),
+    source: document.getElementById('ptlead-source').value,
+    note: document.getElementById('ptlead-note').value.trim(),
+    status: 'new'
+  };
+  try {
+    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'pt_leads', values }) });
+    document.getElementById('ptlead-name').value = '';
+    document.getElementById('ptlead-phone').value = '';
+    document.getElementById('ptlead-note').value = '';
+    loadPtLeads();
+  } catch(e) { alert('Could not save — try again.'); }
+}
+async function updatePtLeadStatus(id, status){
+  try {
+    await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'update', table:'pt_leads', values:{ status, updated_at: new Date().toISOString() }, where:{ id } }) });
+    loadPtLeads();
+  } catch(e) {}
 }
 
 async function loadCoachDailyTip(){

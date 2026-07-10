@@ -214,6 +214,11 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
         <div class="kpi-hint">Auto-pulled list of currently frozen clients. Add the reason and return date so it's on file, not just a count.</div>
         <div id="frozen-list"></div>
       </div>
+      <div class="field" style="margin-bottom:0;margin-top:14px">
+        <label>PT Leads I'm Tracking</label>
+        <div class="kpi-hint">Auto-pulled from your PT Leads tracker on the dashboard — log them there once, they show up here.</div>
+        <div id="pt-leads-summary"></div>
+      </div>
     </div>
   </div>
 
@@ -477,6 +482,20 @@ function renderPTSection() {
   document.getElementById('pt-renewals').value = renewals;
   updateStatus('pt', `${active} active · ${frozenClients.length} frozen · ${renewals} renewals`, 'status-auto');
   renderFrozenList(frozenClients);
+  loadPtLeadsSummary();
+}
+
+async function loadPtLeadsSummary() {
+  const el = document.getElementById('pt-leads-summary');
+  if (!el) return;
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'pt_leads', where:{ coach_name:'Danielle Pellegrini' }, orderBy:'created_at desc', limit:50 }) });
+    const d = await r.json();
+    const leads = (d.results||[]).filter(l => l.status !== 'converted' && l.status !== 'not_interested');
+    if (!leads.length) { el.innerHTML = '<div class="empty-auto">No active PT leads right now</div>'; return; }
+    el.innerHTML = leads.map(l => `<div class="auto-row" style="margin-bottom:6px"><div class="ar-name">${esc(l.name)}</div><div style="font-size:11px;color:var(--muted)">${esc([l.source, l.status, l.note].filter(Boolean).join(' · '))}</div></div>`).join('');
+  } catch(e) { el.innerHTML = ''; }
 }
 
 // Frozen status is already tracked on the client record, but WHY they're
