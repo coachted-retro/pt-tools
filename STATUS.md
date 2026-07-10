@@ -142,18 +142,24 @@ via the Cloudflare Developer Platform connector, not just code reading:
       this bug is easy to reintroduce by habit, not just historically
       present). ted-eod.html, sarah-eod.html, keelin-dashboard.html were
       already clean from earlier fixes.
-      STILL HAS THE BUG, NOT YET TOUCHED (lower priority, less
-      daily-traffic, but still real): client-portal.html,
-      client-profile.html, coach-calendar.html, coach-dashboard-v2.html,
-      coach-log.html, command-center.html, coverage-board.html,
-      director-dashboard.html, fitness-consultation-tool.html,
-      fitness-followup-tool.html, fitness-monthly-checkin.html,
-      gym-analytics.html, gym-floor.html, hr-portal.html, mea-log.html,
-      member-onboarding.html, prospect-tracker.html, staff-setup.html.
-      Re-grep for the exact pattern
-      `new Date().toISOString().slice(0,10)` (and the `.split('T')[0]`
-      variant) before touching any of these, confirm count hasn't grown,
-      then apply the same fix: add a local todayET() using
+      COMPLETED July 10, same session: all 19 remaining files fixed too
+      (client-portal.html, client-profile.html, coach-calendar.html,
+      coach-dashboard-v2.html, coach-log.html, coach-profile.html,
+      command-center.html, coverage-board.html, director-dashboard.html,
+      fitness-consultation-tool.html, fitness-followup-tool.html,
+      fitness-monthly-checkin.html, gym-analytics.html, gym-floor.html,
+      hr-portal.html, mea-log.html, member-onboarding.html,
+      prospect-tracker.html, staff-setup.html). Every file validated
+      individually (JS syntax + div balance) before committing. Confirmed
+      via a final repo-wide grep immediately before commit: ZERO
+      remaining instances of `new Date().toISOString().slice(0,10)` or
+      the `.split('T')[0]` variant anywhere in the entire codebase. This
+      bug is fully closed out, not partially -- started as a single
+      monthly check-in visibility complaint, ended up being 105 total
+      instances across 24 files. If this bug pattern ever resurfaces in
+      new code (it was reintroduced once already tonight, in code written
+      fresh in this same session), the fix is: add a local todayET()
+      using
       `new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
       year:'numeric', month:'2-digit', day:'2-digit' }).format(new
       Date())` and replace every instance with a call to it.
