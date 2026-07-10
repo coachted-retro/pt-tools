@@ -403,6 +403,45 @@ NOT YET STARTED, needs real scoping work before building:
       Park (Ruveena), Fairfield (Shawn), Tottenville (Sarah), Mt. Olive
       (Sarah & Bianca), Whippany (Dij'uan). Clean now, no fake data mixed
       with real.
+- [x] RESOLVED July 10: Full 14-club list recovered from two past sessions
+      (not guessed -- retrieved via conversation_search, then confirmed
+      directly with Ted): Forest Hills NY, Glendale NY, Jersey City NJ,
+      Cedar City UT, Rego Park NY, Fairfield NJ, Tottenville NY, Mt. Olive
+      NJ, Whippany NJ, Park Slope NY, Astoria NY, Fair Lawn NJ,
+      Stroudsburg PA, Sayreville NJ. Directors known for the first 9 (see
+      gyms table); the last 5 (Park Slope, Astoria, Fair Lawn,
+      Stroudsburg, Sayreville) confirmed fine to leave blank, clubs will
+      fill in themselves.
+- [x] DATABASES CREATED AND SEEDED July 10 (7 of 14): Forest Hills,
+      Glendale, Jersey City, Cedar City, Rego Park, Fairfield, and
+      Tottenville each have a real D1 database (retro-fitness-{slug}
+      naming), all 93 tables from the current schema, zero seeded data
+      except the single correct gyms row (name/city/state/director).
+      Verified directly against live Cloudflare for at least Forest Hills
+      and Rego Park (table count + gyms row), not just trusted from the
+      insert response.
+- [ ] BLOCKED: Cloudflare caps this account at 10 D1 databases total.
+      Hit the wall after 7 new clubs (3 pre-existing: retro-crm,
+      retro-crm-demo, relentless-db + 7 new = 10). The remaining 7 clubs
+      (Mt. Olive, Whippany, Park Slope, Astoria, Fair Lawn, Stroudsburg,
+      Sayreville) CANNOT be created until this is resolved. Real options
+      given to Ted: (1) upgrade the Cloudflare plan -- likely fastest,
+      but a billing decision only he can make, unknown what the new D1
+      limit would be, (2) delete retro-crm-demo to free one slot, still
+      short of what's needed, (3) architecture pivot to one shared D1
+      with gym_id partitioning instead of separate D1s per club --
+      there's real precedent for this (Keelin's regional dashboard was
+      originally built this way across 16 locations before tonight's
+      separate-D1 direction), but it's a genuine redesign, not a small
+      change. Ted was still deciding as of end of session. Do NOT create
+      more D1 databases until this is resolved, even if asked to "just
+      try" -- confirm the account limit was actually raised first.
+- [ ] Worker deployment for the 7 already-provisioned clubs' databases
+      hasn't happened yet -- Claude cannot deploy Workers directly (no
+      tool for it). Ted still needs to do Steps 2-9 of
+      provisioning/NEW_CLUB_SETUP.md for each of these 7 clubs by hand
+      before they're actually usable, even though their databases are
+      ready and waiting.
 - [ ] STILL OPEN: Ted's pilot roster from a past session also listed
       Forest Hills, Glendale, Jersey City, and Cedar City -- four real
       locations never actually added to the gyms table. Ted said (July 10)
