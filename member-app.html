@@ -1621,6 +1621,19 @@ async function doStaffLogin() {
     const r = await fetch(WORKER + '/staff/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({email, pin}) });
     const d = await r.json();
     if (!d.ok) { errEl.textContent = d.error || 'Invalid email or PIN.'; errEl.style.display = 'block'; return; }
+    if (d.must_change) {
+      // Same class of bug as the client-side temp-password issue fixed
+      // earlier: the worker already flags this correctly, but nothing on
+      // the staff side was checking it, so a coach given a temporary PIN
+      // was getting silently logged in with no prompt to set their own.
+      document.getElementById('staff-login-box').style.display = 'none';
+      document.getElementById('staff-reset-box').style.display = 'block';
+      document.getElementById('sr-email').value = email;
+      document.getElementById('sr-err').style.display = 'block';
+      document.getElementById('sr-err').style.color = '#0F9D6E';
+      document.getElementById('sr-err').textContent = "You're using a temporary PIN. Set your own to continue — we'll email you a code.";
+      return;
+    }
     STAFF_SESSION = { staff_id: d.staff_id, token: d.token, email, name: d.name, role: d.role };
     localStorage.setItem('staff_session', JSON.stringify(STAFF_SESSION));
     startStaffApp();
