@@ -655,6 +655,16 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         </div>
 
         <div class="card"><div class="card-body">
+          <div class="sec-label" style="margin:0 0 8px">🧑‍🍳 Ask the Chef</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">"What should I make tonight?" or "I have chicken and rice, what can I make?" — pulls real suggestions from Coach's Table.</div>
+          <div id="ct-chat-log" style="max-height:280px;overflow-y:auto;margin-bottom:10px"></div>
+          <div style="display:flex;gap:8px;padding-right:60px">
+            <input type="text" id="ct-chat-input" placeholder="Ask the chef..." style="flex:1;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')sendChefChat()">
+            <button class="action-btn" style="width:auto;padding:0 18px" onclick="sendChefChat()">Ask</button>
+          </div>
+        </div></div>
+
+        <div class="card"><div class="card-body">
           <div class="sec-label" style="margin:0 0 8px">Today's Meals</div>
           <div id="meal-list"><div class="empty-state">No meals logged yet</div></div>
         </div></div>
@@ -681,16 +691,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
           <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Browse the full recipe library — filters below auto-apply anything you've told your coach you can't or won't eat.</div>
           <div class="recipe-filter-row" id="ct-filters"></div>
           <div id="ct-list"><div class="empty-state">Loading...</div></div>
-        </div></div>
-
-        <div class="card"><div class="card-body">
-          <div class="sec-label" style="margin:0 0 8px">🧑‍🍳 Ask the Chef</div>
-          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">"What should I make tonight?" or "I have chicken and rice, what can I make?" — pulls real suggestions from Coach's Table.</div>
-          <div id="ct-chat-log" style="max-height:280px;overflow-y:auto;margin-bottom:10px"></div>
-          <div style="display:flex;gap:8px">
-            <input type="text" id="ct-chat-input" placeholder="Ask the chef..." style="flex:1;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')sendChefChat()">
-            <button class="action-btn" style="width:auto;padding:0 18px" onclick="sendChefChat()">Ask</button>
-          </div>
         </div></div>
       </div>
     </div>
@@ -4605,15 +4605,37 @@ async function logCTRecipeAsMeal(idx) {
 // real Coach's Table library server-side and answer from actual matches,
 // never invent a recipe that isn't in the library.
 let CT_CHAT_HISTORY = [];
-function appendChefChatLine(role, text) {
+function appendChefChatLine(role, text, isHtml) {
   const log = document.getElementById('ct-chat-log');
   const bubble = document.createElement('div');
   bubble.style.cssText = role==='user'
     ? 'background:var(--red);color:#fff;padding:8px 12px;border-radius:12px 12px 2px 12px;margin:4px 0;margin-left:20%;font-size:13px'
     : 'background:var(--soft);color:var(--ink);padding:8px 12px;border-radius:12px 12px 12px 2px;margin:4px 0;margin-right:20%;font-size:13px;white-space:pre-wrap';
-  bubble.textContent = text;
+  if (isHtml) bubble.innerHTML = text; else bubble.textContent = text;
   log.appendChild(bubble);
   log.scrollTop = log.scrollHeight;
+}
+// Turns any real Coach's Table recipe name mentioned in the chef's reply
+// into a tap target that opens that recipe's actual detail view -- so a
+// suggestion isn't just text, it's one tap away from ingredients/steps.
+function linkifyChefReply(text) {
+  if (!CT_FLAT.length) return esc(text);
+  let html = esc(text);
+  // Longest names first so a shorter name that's a substring of a longer
+  // one doesn't get linked first and break the longer match.
+  const sorted = [...CT_FLAT].sort((a,b) => b.name.length - a.name.length);
+  sorted.forEach((r, origIdx) => {
+    const idx = CT_FLAT.indexOf(r);
+    const variants = [r.name, r.name.replace(/&/g, 'and')];
+    variants.forEach(name => {
+      if (!name) return;
+      const escName = esc(name);
+      if (html.includes(escName)) {
+        html = html.split(escName).join('<a href="#" onclick="openCTRecipeDetail(' + idx + ');return false;" style="color:var(--red);font-weight:700;text-decoration:underline">' + escName + '</a>');
+      }
+    });
+  });
+  return html;
 }
 async function sendChefChat() {
   const input = document.getElementById('ct-chat-input');
@@ -4629,7 +4651,7 @@ async function sendChefChat() {
     const d = await r.json();
     log.lastChild.remove();
     const reply = d.reply || 'Could not come up with something — try rephrasing?';
-    appendChefChatLine('assistant', reply);
+    appendChefChatLine('assistant', linkifyChefReply(reply), true);
     CT_CHAT_HISTORY.push({ role:'user', content: msg }, { role:'assistant', content: reply });
   } catch(e) {
     log.lastChild.remove();
