@@ -123,14 +123,40 @@ via the Cloudflare Developer Platform connector, not just code reading:
       below, once the open questions above are answered)
 - [ ] Monthly check-in intake condensing (once Ted gives refined field
       guidance)
-- [ ] TIMEZONE BUG AUDIT: `new Date().toISOString().slice(0,10)` returns
-      UTC, not Eastern — breaks every "today" comparison after 8pm Eastern,
-      when UTC has already rolled to the next calendar day. Found and fixed
-      tonight in: ted-eod.html (TODAY constant, used by 3 sections),
-      /coach/notes-today (worker date-param fallback), keelin-dashboard.html
-      (eodDateStr), /eod/feed (worker date-param fallback). NOT YET AUDITED:
-      every other html file and every other worker endpoint. Grep both for
-      this exact pattern before assuming anywhere else is safe
+- [x] TIMEZONE BUG -- MAJOR SYSTEMIC FIX COMPLETED July 10: full sweep
+      done, not just spot-fixes. `new Date().toISOString().slice(0,10)`
+      returns UTC, not Eastern -- breaks every "today" comparison for
+      roughly 4-5 hours every evening once UTC rolls to the next calendar
+      day while it's still today here. Started as isolated fixes (ted-eod
+      TODAY, two worker endpoints, keelin-dashboard eodDateStr), then a
+      full grep found 104 total instances across 23 files (72 in HTML, 32
+      in the worker). FIXED: entire worker-v34.js (added shared todayET()
+      helper, replaced all 33 instances -- covers every date-dependent
+      endpoint: shift scheduling, challenge entries, self-guided workouts,
+      EOD feed/submit, sales reporting, daily logs, meal tracking, class
+      bookings), entire member-app.html (added matching todayET() helper,
+      7 instances, plus fixed habitDateStr()'s offset-day arithmetic to
+      use it as its base), coach-crm.html (2), dani-eod.html (1),
+      mea-agenda.html (2, including one I introduced myself earlier in
+      the same session before catching the pattern -- worth remembering
+      this bug is easy to reintroduce by habit, not just historically
+      present). ted-eod.html, sarah-eod.html, keelin-dashboard.html were
+      already clean from earlier fixes.
+      STILL HAS THE BUG, NOT YET TOUCHED (lower priority, less
+      daily-traffic, but still real): client-portal.html,
+      client-profile.html, coach-calendar.html, coach-dashboard-v2.html,
+      coach-log.html, command-center.html, coverage-board.html,
+      director-dashboard.html, fitness-consultation-tool.html,
+      fitness-followup-tool.html, fitness-monthly-checkin.html,
+      gym-analytics.html, gym-floor.html, hr-portal.html, mea-log.html,
+      member-onboarding.html, prospect-tracker.html, staff-setup.html.
+      Re-grep for the exact pattern
+      `new Date().toISOString().slice(0,10)` (and the `.split('T')[0]`
+      variant) before touching any of these, confirm count hasn't grown,
+      then apply the same fix: add a local todayET() using
+      `new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
+      year:'numeric', month:'2-digit', day:'2-digit' }).format(new
+      Date())` and replace every instance with a call to it.
 - [ ] coach-client-profile.html EXERCISE_DB sync: still 137 exercises vs 292
       in gym-floor.html/member-app.html. Pre-existing drift, not caused by
       tonight, still unresolved
