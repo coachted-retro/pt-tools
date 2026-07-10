@@ -2945,6 +2945,52 @@ Rules:
         return ok({ draft: text }, cors);
       }
 
+      // ── ASK THE CHEF -- Ted's idea (July 10): a client-facing chat that
+      // suggests real meals from Coach's Table, grounded like FitChat is
+      // for exercises. Builds a compact index (name/macros/tags/first few
+      // ingredients only, not full recipes) so this stays cheap even as
+      // the library grows from 93 toward Ted's target of 1,300+ -- full
+      // ingredients/steps aren't needed here, the client can tap into the
+      // real recipe from the browse screen once they pick one.
+      if (url.pathname === '/coach-table/chat' && request.method === 'POST') {
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+        const b = await request.json();
+        if (!b.message) return bad('message required', cors);
+        let macroLine = 'No coach-set macro targets on file for this client.';
+        if (env.DB && b.client_id) {
+          try {
+            const mp = await env.DB.prepare('SELECT * FROM meal_profiles WHERE client_id=? LIMIT 1').bind(b.client_id).first();
+            if (mp && (mp.calories || mp.protein_g)) {
+              macroLine = `This client's daily targets: ${mp.calories||'?'} kcal, protein ${mp.protein_g||'?'}g, carbs ${mp.carbs_g||'?'}g, fat ${mp.fat_g||'?'}g. Excluded: proteins ${mp.excluded_proteins||'none'}, vegetables ${mp.excluded_vegetables||'none'}, fruits ${mp.excluded_fruits||'none'}, allergies ${mp.allergies||'none'}.`;
+            }
+          } catch(e) {}
+        }
+        const compactIndex = [];
+        Object.keys(MEAL_LIBRARY).forEach(cat => {
+          MEAL_LIBRARY[cat].forEach(r => {
+            const firstFew = ((r.recipe && r.recipe.ingredients) || []).slice(0,4).join(', ');
+            compactIndex.push(`${r.name} | ${cat} | ${r.calories}kcal ${r.protein_g}p/${r.carbs_g}c/${r.fat_g}f | tags: ${(r.tags||[]).join(',')||'none'} | key ingredients: ${firstFew}`);
+          });
+        });
+        const sys = `You are "Chef", a friendly recipe assistant for Retro Fitness's Coach's Table meal library. A member is asking what to make. Suggest 1-3 REAL recipes from the library below by their EXACT name -- never invent a recipe that isn't in this list. If they mention an ingredient they have on hand, prioritize recipes whose key ingredients include it. If they ask something generic like "what should I make tonight," pick something reasonable given any macro targets provided. Keep the reply short and conversational (3-5 sentences), like a friendly chef texting back, not a formal list. Mention the recipe name(s) clearly so they can find it in the app. No emojis, no em dashes, plain punctuation only.
+
+${macroLine}
+
+COACH'S TABLE LIBRARY:
+${compactIndex.join('\n')}`;
+        const history = (b.history||[]).slice(-6).map(h => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: h.content }));
+        const messages = [...history, { role:'user', content: b.message }];
+        const aiResp2 = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json','x-api-key':env.ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
+          body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:400, system: sys, messages })
+        });
+        const aiData2 = await aiResp2.json();
+        const reply = (aiData2.content||[]).filter(x=>x.type==='text').map(x=>x.text||'').join('').trim();
+        return ok({ reply: reply || "Couldn't come up with something -- try asking differently?" }, cors);
+      }
+
+
       // ── UNIFIED COACH INBOX (aggregated 1:1 threads, never merged) ──
       if (url.pathname === '/coach/inbox' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);

@@ -675,6 +675,23 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
           <button class="action-btn" onclick="generateRecipes()" style="margin-top:12px">Get More Recipes</button>
           <div class="mm-status" id="recipe-gen-status"></div>
         </div></div>
+
+        <div class="card"><div class="card-body">
+          <div class="sec-label" style="margin:0 0 8px">Coach's Table</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Browse the full recipe library — filters below auto-apply anything you've told your coach you can't or won't eat.</div>
+          <div class="recipe-filter-row" id="ct-filters"></div>
+          <div id="ct-list"><div class="empty-state">Loading...</div></div>
+        </div></div>
+
+        <div class="card"><div class="card-body">
+          <div class="sec-label" style="margin:0 0 8px">🧑‍🍳 Ask the Chef</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">"What should I make tonight?" or "I have chicken and rice, what can I make?" — pulls real suggestions from Coach's Table.</div>
+          <div id="ct-chat-log" style="max-height:280px;overflow-y:auto;margin-bottom:10px"></div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="ct-chat-input" placeholder="Ask the chef..." style="flex:1;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')sendChefChat()">
+            <button class="action-btn" style="width:auto;padding:0 18px" onclick="sendChefChat()">Ask</button>
+          </div>
+        </div></div>
       </div>
     </div>
 
@@ -3926,6 +3943,7 @@ function initNutrition() {
   loadNutritionDay();
   loadPantry().then(() => renderMealPlan(DATA.mealPlan));
   loadRecipes();
+  loadCoachsTable();
 }
 
 function shiftNutritionDay(delta) {
@@ -4496,6 +4514,127 @@ function renderRecipeList() {
       '<div class="recipe-card-meta">'+(r.meal_type||'')+(r.prep_min?(' &middot; '+r.prep_min+' min'):'')+'</div></div>'+
       '<div class="recipe-card-macros">'+Math.round(r.calories||0)+' kcal<br>'+Math.round(r.protein_g||0)+'g pro</div></div></div>'
   ).join('');
+}
+
+// ── COACH'S TABLE — the shared recipe library (distinct from the
+// personal AI-generated recipe bank above). Filters auto-apply whatever
+// exclusions/allergies are already on file in the client's meal profile,
+// so nobody has to re-tell the app what they can't eat.
+let CT_LIBRARY = null, CT_FLAT = [], CT_FILTER = { meal:'all', tag:'all' };
+async function loadCoachsTable() {
+  const el = document.getElementById('ct-list');
+  try {
+    CT_LIBRARY = await loadMealLibrary();
+    CT_FLAT = [];
+    Object.keys(CT_LIBRARY).forEach(cat => {
+      (CT_LIBRARY[cat]||[]).forEach(r => CT_FLAT.push({ ...r, meal_type: cat }));
+    });
+    renderCTFilters();
+    renderCTList();
+  } catch(e) { if (el) el.innerHTML = '<div class="empty-state">Could not load Coach\'s Table</div>'; }
+}
+function ctExcludedTerms() {
+  const mp = DATA.mealProfile || {};
+  return [mp.excluded_proteins, mp.excluded_vegetables, mp.excluded_fruits, mp.allergies]
+    .filter(Boolean).join(',').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+}
+function ctMatchesExclusions(recipe, terms) {
+  if (!terms.length) return false;
+  const ingredientText = ((recipe.recipe && recipe.recipe.ingredients) || []).join(' ').toLowerCase();
+  return terms.some(t => ingredientText.includes(t));
+}
+function renderCTFilters() {
+  const meals = ['all','breakfast','lunch','dinner','snack'];
+  const tags = ['all','quick','vegetarian','low-carb','meal-prep'];
+  document.getElementById('ct-filters').innerHTML =
+    meals.map(m=>'<div class="rf-chip'+(CT_FILTER.meal===m?' sel':'')+'" onclick="setCTFilter(\'meal\',\''+m+'\')">'+m+'</div>').join('') +
+    tags.map(t=>'<div class="rf-chip'+(CT_FILTER.tag===t?' sel':'')+'" onclick="setCTFilter(\'tag\',\''+t+'\')">'+t+'</div>').join('');
+}
+function setCTFilter(kind, val) { CT_FILTER[kind] = val; renderCTFilters(); renderCTList(); }
+function renderCTList() {
+  const el = document.getElementById('ct-list');
+  const excluded = ctExcludedTerms();
+  let list = CT_FLAT.filter(r => !ctMatchesExclusions(r, excluded));
+  if (CT_FILTER.meal !== 'all') list = list.filter(r => r.meal_type === CT_FILTER.meal);
+  if (CT_FILTER.tag !== 'all') list = list.filter(r => (r.tags||[]).includes(CT_FILTER.tag));
+  if (!list.length) { el.innerHTML = '<div class="empty-state">No recipes match those filters</div>'; return; }
+  el.innerHTML = list.slice(0,30).map(r => {
+    const i = CT_FLAT.indexOf(r);
+    return '<div class="recipe-card" onclick="openCTRecipeDetail('+i+')">'+
+      '<div class="recipe-card-head"><div><div class="recipe-card-title">'+esc(r.name)+'</div>'+
+      '<div class="recipe-card-meta">'+(r.meal_type||'')+'</div></div>'+
+      '<div class="recipe-card-macros">'+Math.round(r.calories||0)+' kcal<br>'+Math.round(r.protein_g||0)+'g pro</div></div></div>';
+  }).join('') + (list.length > 30 ? '<div class="empty-state" style="padding:8px">Showing 30 of '+list.length+' — narrow the filters to see more precisely</div>' : '');
+}
+function openCTRecipeDetail(idx) {
+  const r = CT_FLAT[idx];
+  if (!r) return;
+  const ingredients = (r.recipe && r.recipe.ingredients) || [];
+  const steps = (r.recipe && r.recipe.steps) || [];
+  document.getElementById('meal-modal').classList.add('open');
+  document.getElementById('mm-title').textContent = r.name;
+  document.getElementById('mm-body').innerHTML =
+    '<div class="recipe-card-meta" style="margin-bottom:10px">'+(r.meal_type||'')+' &middot; '+Math.round(r.calories||0)+' kcal &middot; '+Math.round(r.protein_g||0)+'g protein &middot; '+Math.round(r.carbs_g||0)+'g carbs &middot; '+Math.round(r.fat_g||0)+'g fat</div>'+
+    '<div class="recipe-detail"><h4>Ingredients</h4><ul>'+ingredients.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>'+
+    '<h4>Steps</h4><ol>'+steps.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol></div>'+
+    '<button class="action-btn" onclick="logCTRecipeAsMeal('+idx+')" style="margin-top:16px">Log This Meal</button>'+
+    '<div class="mm-status" id="mm-status"></div>';
+}
+async function logCTRecipeAsMeal(idx) {
+  const r = CT_FLAT[idx];
+  if (!r) return;
+  const status = document.getElementById('mm-status');
+  if (status) status.textContent = 'Logging...';
+  const now = new Date();
+  const payload = {
+    client_id: SESSION.client_id, meal_date: todayET(), meal_time: now.toTimeString().slice(0,5),
+    meal_type: r.meal_type || 'snack', photo_key: null,
+    calories: r.calories||0, protein_g: r.protein_g||0, carbs_g: r.carbs_g||0, fat_g: r.fat_g||0,
+    items_json: JSON.stringify([{ name: r.name }]), source: 'coachs_table'
+  };
+  try {
+    const res = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'insert', table:'meals', values: payload }) });
+    const d = await res.json();
+    if (status) status.textContent = d.ok !== false ? 'Logged ✓' : 'Could not log — try again';
+    if (d.ok !== false) { loadNutritionDay(); setTimeout(closeMealModal, 900); }
+  } catch(e) { if (status) status.textContent = 'Could not log — try again'; }
+}
+
+// ── ASK THE CHEF — grounded chat, same principle as FitChat: search the
+// real Coach's Table library server-side and answer from actual matches,
+// never invent a recipe that isn't in the library.
+let CT_CHAT_HISTORY = [];
+function appendChefChatLine(role, text) {
+  const log = document.getElementById('ct-chat-log');
+  const bubble = document.createElement('div');
+  bubble.style.cssText = role==='user'
+    ? 'background:var(--red);color:#fff;padding:8px 12px;border-radius:12px 12px 2px 12px;margin:4px 0;margin-left:20%;font-size:13px'
+    : 'background:var(--soft);color:var(--ink);padding:8px 12px;border-radius:12px 12px 12px 2px;margin:4px 0;margin-right:20%;font-size:13px;white-space:pre-wrap';
+  bubble.textContent = text;
+  log.appendChild(bubble);
+  log.scrollTop = log.scrollHeight;
+}
+async function sendChefChat() {
+  const input = document.getElementById('ct-chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  appendChefChatLine('user', msg);
+  appendChefChatLine('assistant', 'Thinking...');
+  const log = document.getElementById('ct-chat-log');
+  try {
+    const r = await fetch(WORKER + '/coach-table/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ message: msg, client_id: SESSION.client_id, history: CT_CHAT_HISTORY.slice(-6) }) });
+    const d = await r.json();
+    log.lastChild.remove();
+    const reply = d.reply || 'Could not come up with something — try rephrasing?';
+    appendChefChatLine('assistant', reply);
+    CT_CHAT_HISTORY.push({ role:'user', content: msg }, { role:'assistant', content: reply });
+  } catch(e) {
+    log.lastChild.remove();
+    appendChefChatLine('assistant', 'Could not connect — try again in a moment.');
+  }
 }
 
 function openRecipeDetail(idx) {
