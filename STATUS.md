@@ -13,6 +13,12 @@ and ask, rather than guessing and building on top of a wrong guess.
 ## MASTER OPEN ITEMS LIST
 
 ### VERIFY LIVE — built and deployed tonight, not yet confirmed working by Ted
+- [x] CONFIRMED July 10: worker-v34.js redeploy landed correctly. Verified
+      directly against live Cloudflare via the Developer Platform
+      connector (not just trusting Ted's word) -- live code matches the
+      repo exactly (only diff was a trailing newline). All the timezone
+      fixes and the Sanjay/Anthony workouts fix are genuinely live now,
+      not just pushed to GitHub.
 - [ ] Scheduled workouts now showing for Sanjay and Anthony Mango in the
       Training tab (was: /portal/me never returned scheduled_sessions at all)
 - [ ] Temp password flow: a real client logging in on a coach-granted temp
