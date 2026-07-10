@@ -547,6 +547,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="sessions-bar-card"></div>
         <div class="sec-label">Today's Workout</div>
         <div id="training-today-card"></div>
+        <div id="assigned-workouts-history"></div>
         <div class="sec-label">Stretch &amp; Mobility</div>
         <div class="card"><div class="card-body">
           <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">Tight quads, sore lower back, stiff shoulders — loosen up before you train or cool down after. Self-guided, no coach needed.</div>
@@ -898,7 +899,7 @@ function demoGoal() {
 }
 
 
-let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null, demoNutrition: null, demoMeals: [], dailyLogs: [] };
+let DATA = { client: null, checkins: [], scans: [], sessions: [], selfWorkouts: [], mealPlan: null, tier: null, mealProfile: null, demoNutrition: null, demoMeals: [], dailyLogs: [], scheduled: [], workouts: [] };
 // goingClasses removed — class RSVPs now sync to D1 via /classes/rsvp, not localStorage.
 let slExCount = 0;
 
@@ -2509,6 +2510,7 @@ async function loadPortalData() {
     DATA.mealProfile = d.mealProfile;
     DATA.dailyLogs = d.dailyLogs || [];
     DATA.scheduled = d.scheduled || [];
+    DATA.workouts = d.workouts || [];
     // Update greeting
     const name = DATA.client ? (DATA.client.first_name || 'Friend') : 'Friend';
     const hr = new Date().getHours();
@@ -3489,6 +3491,12 @@ function renderTraining() {
     const todaysSession = (DATA.scheduled||[]).find(s => s.scheduled_date === today);
     const nextSession = (DATA.scheduled||[]).find(s => s.scheduled_date > today);
     const shown = todaysSession || nextSession;
+    // Separate from scheduled_sessions above -- coach-uploaded/extracted
+    // workout documents (workouts table). Different feature, different
+    // data shape, but the same "what's my workout" card should surface
+    // whichever one actually has something for the client, since a coach
+    // might use either path depending on the client.
+    const todaysUpload = (DATA.workouts||[]).find(w => w.workout_date === today);
     if (shown) {
       let exNames = [];
       try { exNames = JSON.parse(shown.exercises_json||'[]').map(e => e.name || e); } catch(e) {}
@@ -3499,6 +3507,16 @@ function renderTraining() {
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:2px;">🎯 ${esc(shown.program_name||'Training Day')}</div>
           ${shown.focus_notes ? `<div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">${esc(shown.focus_notes)}</div>` : ''}
           ${isToday ? `<button class="action-btn" onclick='mOpenLiveLog(${JSON.stringify(exNames)}, ${JSON.stringify(shown.program_name||"Today's Workout")})'>Start Your Workout →</button>` : `<div style="font-size:12px;color:var(--ink3)">Check back on ${fmtShortDate(shown.scheduled_date)} to start it</div>`}
+        </div></div>`;
+    } else if (todaysUpload) {
+      let exNames = [];
+      try { exNames = JSON.parse(todaysUpload.exercises_json||'[]').map(e => e.name || e); } catch(e) {}
+      document.getElementById('training-today-card').innerHTML = `
+        <div class="card" style="border-top:3px solid var(--red)"><div class="card-body">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--red);margin-bottom:4px;">Assigned by your coach — Today</div>
+          <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:2px;">🎯 ${esc(todaysUpload.title||"Today's Workout")}</div>
+          ${todaysUpload.notes ? `<div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">${esc(todaysUpload.notes)}</div>` : ''}
+          <button class="action-btn" onclick='mOpenLiveLog(${JSON.stringify(exNames)}, ${JSON.stringify(todaysUpload.title||"Today's Workout")})'>Start Your Workout →</button>
         </div></div>`;
     } else {
       document.getElementById('training-today-card').innerHTML = `
@@ -3511,6 +3529,32 @@ function renderTraining() {
             </div>
           </div>
         </div></div>`;
+    }
+    // Full list of everything a coach has assigned/uploaded, not just
+    // today's -- so older or upcoming assigned workouts are still visible
+    // even on a day with nothing scheduled for today specifically.
+    const historyEl = document.getElementById('assigned-workouts-history');
+    if (historyEl) {
+      const list = (DATA.workouts||[]).slice(0, 15);
+      if (list.length) {
+        historyEl.innerHTML = `<div class="sec-label">Assigned Workouts</div>` + list.map(w => {
+          let exCount = 0;
+          try { exCount = JSON.parse(w.exercises_json||'[]').length; } catch(e) {}
+          let exNames = [];
+          try { exNames = JSON.parse(w.exercises_json||'[]').map(e => e.name || e); } catch(e) {}
+          return `<div class="card" style="margin-bottom:8px"><div class="card-body" style="padding:12px 14px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-weight:700;font-size:13px;color:var(--ink)">${esc(w.title||'Workout')}</div>
+                <div style="font-size:11px;color:var(--ink3)">${fmtShortDate(w.workout_date)}${exCount ? ' · ' + exCount + ' exercises' : ''}</div>
+              </div>
+              <button class="action-btn" style="width:auto;padding:8px 14px;font-size:12px" onclick='mOpenLiveLog(${JSON.stringify(exNames)}, ${JSON.stringify(w.title||"Workout")})'>Start →</button>
+            </div>
+          </div></div>`;
+        }).join('');
+      } else {
+        historyEl.innerHTML = '';
+      }
     }
   }
 
