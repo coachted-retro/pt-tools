@@ -119,6 +119,15 @@ and ask, rather than guessing and building on top of a wrong guess.
 
 ## MAJOR INITIATIVE: MULTI-CLUB DEPLOYMENT (confirmed direction, not started)
 
+PRIORITY ORDER, Ted's explicit direction (July 10): Fairless Hills must be
+fully audited and running cleanly FIRST, before any multi-club rollout
+work begins. Do not start template extraction, D1 provisioning, or any
+other multi-club build work until the Fairless Hills audit (see the live
+Cloudflare/D1 audit started July 9-10, using the Cloudflare Developer
+Platform connector -- continue that first) is actually complete and Ted has
+confirmed the system is solid. He does not want "a nightmare, every club
+calling with issues" from rolling out something unpolished.
+
 Ted confirmed the architecture directly (July 9-10, late session) — do not
 re-litigate this decision, it is settled:
 - Keelin gets a MASTER dashboard that sees across all 11 clubs.
@@ -155,6 +164,36 @@ NOT YET STARTED, needs real scoping work before building:
       names, gym-specific IDs) vs what's genuinely shared code that every
       club should get identically (EXERCISE_DB, ROUTINE_LIBRARY,
       MEAL_LIBRARY, the app logic itself)?
+- [ ] D1 naming convention (Ted, July 10): each club's D1 database should be
+      named after the club itself (e.g. "retro-fitness-fair-lawn"), not a
+      generic name, so it's identifiable when browsing Cloudflare directly
+- [ ] Club branding: each club's build needs to actually display that
+      club's real name (e.g. "Retro Fitness Fair Lawn") throughout the app,
+      not "Fairless Hills" or a generic placeholder
+- [ ] VERIFIED July 10: the "add your own social media" feature Ted
+      remembered building is real and already works. command-center.html
+      has working edit fields (Facebook/Instagram/TikTok, ids soc-fb/
+      soc-ig/soc-tt) that save into each gym's own row in the gyms table,
+      and member-app.html already reads gym.facebook_url/instagram_url/
+      tiktok_url dynamically per gym — confirmed via full codebase search,
+      there is NO hardcoded Instagram link anywhere. The fields are simply
+      empty right now for every club including Fairless Hills, which is
+      why nothing currently shows. No code change needed here, just data
+      entry once a club is live -- UNLESS the shared-vs-separate-DB
+      question below changes how this needs to work
+- [ ] IMPORTANT, NEEDS TED'S INPUT: queried the live retro-crm database
+      directly and found a `gyms` table already seeded with all 11 clubs
+      (Fairless Hills plus Bristol, Doylestown, Hamilton, Cherry Hill, Rego
+      Park, Fairfield, Tottenville, Mt. Olive, Whippany, and one more),
+      several with director names already filled in, all living in the
+      SAME shared database as Fairless Hills' operational data -- not
+      separate per-club databases. This needs Ted to clarify: is this
+      table a lightweight reference/directory list (harmless either way),
+      or a sign that a shared-database approach was started at some point
+      before tonight's separate-D1-per-club direction was confirmed? Do
+      not silently proceed with either architecture without resolving this
+      -- it changes what "scrub the template" and "per-club D1" actually
+      mean in practice
 - [ ] D1 schema export: a clean, reusable CREATE TABLE script for a brand
       new club's database, matching the CURRENT real schema (not a stale
       guess) — needs to be generated from the actual live Fairless Hills
