@@ -3652,7 +3652,7 @@ Rules:
       // ── EOD FEED (Dani / Keelin dashboard) ─────────────────────
       if (url.pathname === '/eod/feed' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const feedDate = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
+        const feedDate = url.searchParams.get('date') || new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
         const gymId = url.searchParams.get('gym_id') || null;
         let sql = `SELECT * FROM eod_submissions WHERE log_date=? ORDER BY submitted_at DESC`;
         const binds = [feedDate];

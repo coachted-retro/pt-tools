@@ -279,7 +279,11 @@ function goToGym(gymId) {
   location.href = withDemo('director-dashboard.html?gym_id=' + gymId + '&month=' + OVERVIEW_MONTH);
 }
 if (DEMO_VIEW) { const rl = document.getElementById('reports-link'); if (rl) rl.href = 'reports-portal.html?demo=1'; }
-let eodDateStr = new Date().toISOString().slice(0,10);
+// Same UTC-vs-Eastern bug as ted-eod.html (fixed July 9, 2026) — this
+// dashboard was defaulting to tomorrow's date every evening after 8pm
+// Eastern, which meant Keelin could open it the same night an EOD was
+// submitted and see nothing under "today" unless she manually paged back.
+let eodDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 let allClients = [], allScans = [];
 
 function switchTab(name) {
