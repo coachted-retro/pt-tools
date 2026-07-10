@@ -123,46 +123,85 @@ via the Cloudflare Developer Platform connector, not just code reading:
       below, once the open questions above are answered)
 - [ ] Monthly check-in intake condensing (once Ted gives refined field
       guidance)
-- [x] TIMEZONE BUG -- MAJOR SYSTEMIC FIX COMPLETED July 10: full sweep
-      done, not just spot-fixes. `new Date().toISOString().slice(0,10)`
-      returns UTC, not Eastern -- breaks every "today" comparison for
-      roughly 4-5 hours every evening once UTC rolls to the next calendar
-      day while it's still today here. Started as isolated fixes (ted-eod
-      TODAY, two worker endpoints, keelin-dashboard eodDateStr), then a
-      full grep found 104 total instances across 23 files (72 in HTML, 32
-      in the worker). FIXED: entire worker-v34.js (added shared todayET()
-      helper, replaced all 33 instances -- covers every date-dependent
-      endpoint: shift scheduling, challenge entries, self-guided workouts,
-      EOD feed/submit, sales reporting, daily logs, meal tracking, class
-      bookings), entire member-app.html (added matching todayET() helper,
-      7 instances, plus fixed habitDateStr()'s offset-day arithmetic to
-      use it as its base), coach-crm.html (2), dani-eod.html (1),
-      mea-agenda.html (2, including one I introduced myself earlier in
-      the same session before catching the pattern -- worth remembering
-      this bug is easy to reintroduce by habit, not just historically
-      present). ted-eod.html, sarah-eod.html, keelin-dashboard.html were
-      already clean from earlier fixes.
-      COMPLETED July 10, same session: all 19 remaining files fixed too
-      (client-portal.html, client-profile.html, coach-calendar.html,
-      coach-dashboard-v2.html, coach-log.html, coach-profile.html,
-      command-center.html, coverage-board.html, director-dashboard.html,
-      fitness-consultation-tool.html, fitness-followup-tool.html,
-      fitness-monthly-checkin.html, gym-analytics.html, gym-floor.html,
-      hr-portal.html, mea-log.html, member-onboarding.html,
-      prospect-tracker.html, staff-setup.html). Every file validated
-      individually (JS syntax + div balance) before committing. Confirmed
-      via a final repo-wide grep immediately before commit: ZERO
-      remaining instances of `new Date().toISOString().slice(0,10)` or
-      the `.split('T')[0]` variant anywhere in the entire codebase. This
-      bug is fully closed out, not partially -- started as a single
-      monthly check-in visibility complaint, ended up being 105 total
-      instances across 24 files. If this bug pattern ever resurfaces in
-      new code (it was reintroduced once already tonight, in code written
-      fresh in this same session), the fix is: add a local todayET()
-      using
-      `new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York',
-      year:'numeric', month:'2-digit', day:'2-digit' }).format(new
-      Date())` and replace every instance with a call to it.
+- [x] TIMEZONE BUG -- MAJOR SYSTEMIC FIX, TWO PASSES, COMPLETED July 10:
+      `new Date().toISOString().slice(0,10)` (and variable-based versions
+      of the same thing, e.g. `now.toISOString().slice(0,10)`) returns
+      UTC, not Eastern -- breaks every "today" comparison for roughly 4-5
+      hours every evening once UTC rolls to the next calendar day while
+      it's still today here. Also a related but distinct bug: parsing a
+      date-only string as browser-local time (`new Date(val+'T00:00:00')`,
+      no Z) then converting back via toISOString can shift by a day
+      depending on the parse/convert round-trip.
+
+      PASS 1: searched for the exact literal `new Date().toISOString()
+      .slice(0,10)` string. Found and fixed 105 instances across 24 files
+      -- entire worker-v34.js (33), entire member-app.html (7 at the
+      time), all three coach EOD/agenda tools, and 19 other files
+      (client-portal, client-profile, coach-calendar,
+      coach-dashboard-v2, coach-log, coach-profile, command-center,
+      coverage-board, director-dashboard, fitness-consultation-tool,
+      fitness-followup-tool, fitness-monthly-checkin, gym-analytics,
+      gym-floor, hr-portal, mea-log, member-onboarding,
+      prospect-tracker, staff-setup). A shared todayET() helper (using
+      Intl.DateTimeFormat, correct across EDT/EST automatically) was
+      added to every file and used to replace the broken pattern.
+
+      PASS 2, same session: realized the literal-string search missed
+      every instance that used a variable instead of the inline pattern
+      (e.g. `const now = new Date(); ... now.toISOString().slice(0,10)`).
+      Broader grep for `.toISOString().slice(0,10)` and `.split('T')[0]`
+      regardless of prefix found ~43 more candidates. NOT all of these
+      were bugs -- critical distinction learned during this pass:
+        - On the CLIENT (browser, physically in Eastern time): a Date
+          object is only actually broken if it retains the CURRENT
+          moment's time-of-day when converted (e.g. new Date() used
+          directly, or Date.now() arithmetic). If the time component is
+          explicitly zeroed first (setHours(0,0,0,0)) or the date is
+          built via the 3-arg local constructor (new Date(y,m,d)), the
+          Eastern-behind-UTC conversion does NOT cross a day boundary,
+          so it's already safe. Confirmed and left untouched:
+          gym-analytics.html's getPeriodBounds().
+        - On the WORKER (Cloudflare, no local timezone at all -- the
+          runtime IS UTC): this safety net does NOT apply. Even
+          setHours(0,0,0,0)-style zeroing just zeroes to UTC midnight,
+          not Eastern midnight, which is still wrong. Found and fixed
+          two real bugs in worker-v34.js on this basis (class schedule
+          occurrence generator, workout-completion weeks-ago calc).
+          Left two alone after confirming they're self-consistent:
+          /schedule/create's date range loop (parses date-only strings,
+          which the spec defines as UTC regardless of environment) and
+          mondayOf() (explicit UTC methods throughout; correctness
+          depends on its caller, not a bug in the function itself).
+      Fixed genuine bugs found this pass in: client-portal.html (3),
+      client-profile.html (2), coach-client-profile.html (2 -- this file
+      wasn't touched in Pass 1 at all), coach-crm.html (3 more),
+      coach-dashboard-v2.html (2 more), coach-profile.html (1 more),
+      director-dashboard.html (3 more), fitness-consultation-tool.html
+      (5 more), fitness-followup-tool.html (3 more),
+      fitness-monthly-checkin.html (1 more), keelin-dashboard.html (2
+      more), member-app.html (5 more), prospect-tracker.html (1 more),
+      reports-portal.html (1 -- another file Pass 1 never touched),
+      worker-v34.js (2 more).
+
+      Every single file was validated individually (node --check on
+      extracted scripts + div-balance check) before committing, in
+      dozens of separate commits so any single mistake would be easy to
+      isolate and revert. A final repo-wide grep after Pass 2 confirmed
+      every remaining match is either a correctly-anchored function's
+      final conversion step, or one of the two confirmed-safe worker
+      exceptions above -- not a leftover bug.
+
+      IF THIS BUG PATTERN EVER RESURFACES in new code (it was
+      reintroduced at least twice already tonight, once in mea-agenda.html
+      and once implicitly via copy-pasted patterns -- it is easy to fall
+      into out of habit, not just historically present), the fix is:
+      add a local todayET() using `new Intl.DateTimeFormat('en-CA',
+      { timeZone: 'America/New_York', year:'numeric', month:'2-digit',
+      day:'2-digit' }).format(new Date())`, and for any date arithmetic,
+      anchor on that string (`new Date(todayET() + 'T00:00:00Z')`) and
+      use UTC methods (setUTCDate/getUTCDate/etc) throughout -- never
+      plain new Date() for "today," and never mix local and UTC date
+      methods on the same Date object.
 - [ ] coach-client-profile.html EXERCISE_DB sync: still 137 exercises vs 292
       in gym-floor.html/member-app.html. Pre-existing drift, not caused by
       tonight, still unresolved
