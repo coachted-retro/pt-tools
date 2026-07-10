@@ -4199,7 +4199,7 @@ async function generateMealPlans(env, opt){
   const binds = [];
   if (opt.clientId){ sql += ' AND mp.client_id = ?'; binds.push(opt.clientId); }
   const rows = (await env.DB.prepare(sql).bind(...binds).all()).results || [];
-  const week = mondayOf(new Date());
+  const week = mondayOf(new Date(todayET() + 'T00:00:00Z'));
   const results = []; const errors = []; let skipped = 0;
   for (const r of rows){
     try{
