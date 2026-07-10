@@ -181,19 +181,38 @@ NOT YET STARTED, needs real scoping work before building:
       why nothing currently shows. No code change needed here, just data
       entry once a club is live -- UNLESS the shared-vs-separate-DB
       question below changes how this needs to work
-- [ ] IMPORTANT, NEEDS TED'S INPUT: queried the live retro-crm database
-      directly and found a `gyms` table already seeded with all 11 clubs
-      (Fairless Hills plus Bristol, Doylestown, Hamilton, Cherry Hill, Rego
-      Park, Fairfield, Tottenville, Mt. Olive, Whippany, and one more),
-      several with director names already filled in, all living in the
-      SAME shared database as Fairless Hills' operational data -- not
-      separate per-club databases. This needs Ted to clarify: is this
-      table a lightweight reference/directory list (harmless either way),
-      or a sign that a shared-database approach was started at some point
-      before tonight's separate-D1-per-club direction was confirmed? Do
-      not silently proceed with either architecture without resolving this
-      -- it changes what "scrub the template" and "per-club D1" actually
-      mean in practice
+- [x] RESOLVED July 10: the gyms table finding above turned out to be a
+      real data integrity problem, not just a reference question. Bristol,
+      Doylestown, Hamilton, and Cherry Hill were confirmed FICTIONAL --
+      leftover from an old Keelin sales-demo build, never cleaned up
+      correctly despite a past session writing cleanup SQL for exactly
+      this. They were sitting in the LIVE Fairless Hills database marked
+      is_demo=0 (i.e. treated as real), which is why this kept resurfacing
+      for Ted. Verified no real sales/board-note data was attached, got
+      Ted's explicit go-ahead, and deleted them plus their fake pt_reps (10
+      rows) and gym_quotas (8 rows) directly via the Cloudflare D1 query
+      tool. Confirmed via live query after deletion: gyms table now
+      contains only Fairless Hills (real, id=1) and 5 real pilot locations
+      that match Ted's actual pilot roster from a past session -- Rego
+      Park (Ruveena), Fairfield (Shawn), Tottenville (Sarah), Mt. Olive
+      (Sarah & Bianca), Whippany (Dij'uan). Clean now, no fake data mixed
+      with real.
+- [ ] STILL OPEN: Ted's pilot roster from a past session also listed
+      Forest Hills, Glendale, Jersey City, and Cedar City -- four real
+      locations never actually added to the gyms table. Ted said (July 10)
+      the full target is 14 stores total, 11 as Keelin pilots going out
+      NEXT WEEK, with his own Fairless Hills locked down first. Do NOT
+      guess the remaining club list from old chat history again -- that
+      guessing is exactly what produced the fake-data problem above. Get
+      the definitive 14-store list directly from Ted (he mentioned a
+      whiteboard photo) before creating any more gym records or starting
+      template/provisioning work.
+- [ ] BUILD DIRECTION CONFIRMED (Ted, July 10): all 14 stores get built as
+      genuine blank slates from an identical template -- no demo or seeded
+      data of any kind, each club adds its own information after receiving
+      it. This applies whether the final architecture ends up being
+      separate D1s per club or something else -- either way, zero seeded
+      content beyond the empty schema structure itself.
 - [ ] D1 schema export: a clean, reusable CREATE TABLE script for a brand
       new club's database, matching the CURRENT real schema (not a stale
       guess) — needs to be generated from the actual live Fairless Hills
