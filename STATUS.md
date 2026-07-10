@@ -96,10 +96,24 @@ via the Cloudflare Developer Platform connector, not just code reading:
       fixed until Ted grants him access via portal-admin.html. His
       workouts fix from earlier will work correctly once he has an actual
       account to log into.
-- [ ] STILL TO AUDIT: meal plan generation, InBody scan display. Broader
-      audit of other user flows is ongoing -- do not assume the rest of
-      the app is clean just because login, class booking, nutrition
-      tracking, and touchpoints are now checked
+- [x] FULL LOGIN-TO-FEATURE AUDIT COMPLETE July 10: login, class booking,
+      nutrition tracking, coach touchpoints, meal plan generation, and
+      InBody scan display have all now been traced end to end against
+      live data, not just read in isolation. Real bugs found and fixed
+      along the way: the staff PIN bug (all 17 accounts), the login
+      entry-point confusion, the Sanjay/Anthony workouts table gap, a
+      timezone bug in meal plan week-tagging (mondayOf), and three
+      meal_profiles fields (excluded_fruits/conditions/notes) that the
+      AI meal generator already used but the coach form never exposed.
+      Confirmed-safe/working-as-designed with no changes needed: class
+      RSVP flow, nutrition ring display, the coach_notes vs
+      coach_touchpoints separation, InBody upload/extraction/display.
+      Genuinely zero real client usage yet on most features (RSVPs,
+      meals logged, real meal plans) -- consistent throughout, explained
+      by login being broken until tonight, not further bugs. This does
+      NOT mean the audit is over forever -- it means tonight's specific
+      pass is done. Re-check with real usage data in a week or two once
+      people have actually been using the fixed login.
 
 ### NUTRITION TRACKING AUDIT, July 10 -- checked, correctly wired
 - loadNutritionDay/renderNutritionDay reviewed end to end, correctly
