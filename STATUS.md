@@ -68,10 +68,36 @@ via the Cloudflare Developer Platform connector, not just code reading:
       fixed until Ted grants him access via portal-admin.html. His
       workouts fix from earlier will work correctly once he has an actual
       account to log into.
-- [ ] STILL TO AUDIT: nutrition tracking, coach touchpoints, meal plan
-      generation, InBody scan display. Broader audit of other user flows
-      is ongoing -- do not assume the rest of the app is clean just
-      because login and class booking are now checked
+- [ ] STILL TO AUDIT: meal plan generation, InBody scan display. Broader
+      audit of other user flows is ongoing -- do not assume the rest of
+      the app is clean just because login, class booking, nutrition
+      tracking, and touchpoints are now checked
+
+### NUTRITION TRACKING AUDIT, July 10 -- checked, correctly wired
+- loadNutritionDay/renderNutritionDay reviewed end to end, correctly
+  reads meal_profiles targets (calories/protein/carbs/fat) and displays
+  progress rings against logged meals for the selected date
+- meals table: ZERO rows ever. meal_profiles: exactly ONE row and it's
+  entirely empty (all macro fields null) -- but that row belongs to a
+  demo/test client ("Demo1 John S", id 25), not a real client, so
+  nothing to act on. Consistent with the broader pattern tonight: code
+  is correct, real usage just hasn't happened yet because login was
+  broken until tonight. The real test is the first real client logging
+  a meal now that login works
+
+### COACH TOUCHPOINTS AUDIT, July 10 -- confirmed working as designed
+Traced a real structural question: ted-eod.html writes notes to
+/coach/note (table coach_notes, tagged, feeds Today's Notes Summary and
+the EOD/Keelin report) while coach-crm.html's entire agenda note
+composer (8 call sites) writes to a different endpoint, /coach/touchpoint
+(table coach_touchpoints), which the EOD never reads. Initially looked
+like a gap -- notes typed throughout the day from the agenda seemed like
+they might disappear. Verified further: coach_touchpoints notes ARE
+displayed, in client-profile.html's Touchpoints tab, correctly scoped as
+private ongoing relationship notes per client. This matches Ted's
+explicit standard from earlier tonight (EOD is ONLY Consultations/
+Follow-ups/Check-ins, "that's it") -- the two note systems are correctly
+separated by design, not a bug.
 
 ### CLASS BOOKING AUDIT, July 10 -- checked, no code bugs found
 - RSVP flow (toggleGoing/classes/rsvp) and social-proof display
