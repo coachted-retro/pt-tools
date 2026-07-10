@@ -152,6 +152,16 @@ const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
 const ok  = (data, cors) => new Response(JSON.stringify({ ok: true, ...data }), { status: 200, headers: cors });
 const bad = (msg, cors)  => new Response(JSON.stringify({ ok: false, error: msg }), { status: 200, headers: cors });
 
+// Single source of truth for "today" across every endpoint in this worker.
+// todayET() is UTC, not Eastern -- it silently
+// rolls to the next calendar day every evening after 8pm Eastern while
+// it's still today here, which broke "today" comparisons/fallbacks
+// throughout this file (found first in /coach/notes-today and /eod/feed,
+// then confirmed as a 32-instance pattern across the whole worker).
+function todayET() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+}
+
 async function sha256(str) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -836,7 +846,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const staffId = url.searchParams.get('staff_id');
         if (!staffId) return bad('staff_id required', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const rows = await env.DB.prepare(
           "SELECT * FROM staff_shifts WHERE staff_id=? AND shift_date>=? AND status!='cancelled' ORDER BY shift_date ASC, start_time ASC LIMIT 30"
         ).bind(staffId, today).all();
@@ -846,7 +856,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/shifts/open' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const role = url.searchParams.get('role');
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         let q = "SELECT * FROM staff_shifts WHERE status='needs_coverage' AND shift_date>=?";
         const binds = [today];
         if (role) { q += ' AND role=?'; binds.push(role); }
@@ -910,7 +920,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         // See /shifts/approve-swap and /shifts/deny-swap below.
         await env.DB.prepare("UPDATE staff_shifts SET status='pending_swap_approval', covered_by_staff_id=?, covered_by_name=?, updated_at=? WHERE id=?")
           .bind(b.covering_staff_id, b.covering_name, new Date().toISOString(), b.id).run();
-        const whenText = shift.shift_date === new Date().toISOString().slice(0,10) ? 'today' : ('on ' + new Date(shift.shift_date+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}));
+        const whenText = shift.shift_date === todayET() ? 'today' : ('on ' + new Date(shift.shift_date+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}));
         await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json) VALUES (?,?,?)')
           .bind('management', 'shift_swap_pending', JSON.stringify({
             shift_id: b.id, original_staff: shift.staff_name, covering_staff: b.covering_name,
@@ -1192,7 +1202,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const body = await request.json();
         if (!body.client_id || !body.challenge_id) return bad('client_id and challenge_id required', cors);
         await env.DB.prepare('INSERT INTO challenge_entries (client_id,challenge_id,entry_date,activity,points,notes) VALUES (?,?,?,?,?,?)')
-          .bind(body.client_id, body.challenge_id, body.entry_date||new Date().toISOString().slice(0,10), body.activity||'', body.points||1, body.notes||'').run();
+          .bind(body.client_id, body.challenge_id, body.entry_date||todayET(), body.activity||'', body.points||1, body.notes||'').run();
         const total = await env.DB.prepare('SELECT SUM(points) as t FROM challenge_entries WHERE client_id=? AND challenge_id=?').bind(body.client_id, body.challenge_id).first();
         return ok({ logged: true, total: total?.t||0 }, cors);
       }
@@ -1200,7 +1210,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       // ── COACH'S EDGE / WORD OF THE DAY / INSIDE RETRO (daily content) ──
       if (url.pathname === '/daily/content' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         let row = await env.DB.prepare('SELECT * FROM daily_content WHERE content_date=?').bind(today).first();
         if (!row) {
           if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set, cannot generate daily content', cors);
@@ -1213,7 +1223,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB || !env.ANTHROPIC_KEY) return bad('Missing bindings', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
         if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const row = await generateDailyContent(env, today, true);
         return ok({ content: row }, cors);
       }
@@ -1543,7 +1553,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       // ── HAPPENING AT RETRO (gym events / announcements) ────────────
       if (url.pathname === '/events/list' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const res = await env.DB.prepare(
           'SELECT * FROM gym_events WHERE visible=1 AND (event_date IS NULL OR event_date>=?) ORDER BY event_date ASC LIMIT 10'
         ).bind(today).all();
@@ -1613,7 +1623,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
         if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
-        const result = await populateDailyFeedItems(env, new Date().toISOString().slice(0,10));
+        const result = await populateDailyFeedItems(env, todayET());
         return ok(result, cors);
       }
 
@@ -1715,7 +1725,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       const COACH_ROLES = ['PT Coach', "Men's Training Lead"];
       if (url.pathname === '/coaches/public-list' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const rows = await env.DB.prepare(
           `SELECT s.id, s.name, s.role, s.hire_date, p.photo_url, p.tagline, p.specialties,
             (SELECT COUNT(*) FROM scheduled_sessions ss LEFT JOIN clients c2 ON c2.id = ss.client_id
@@ -1732,7 +1742,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!staffId) return bad('staff_id required', cors);
         const staff = await env.DB.prepare('SELECT id, name, role, hire_date FROM staff_roster WHERE id=?').bind(staffId).first();
         if (!staff) return bad('Coach not found', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const sessionCount = await env.DB.prepare(
           `SELECT COUNT(*) n FROM scheduled_sessions ss LEFT JOIN clients c2 ON c2.id = ss.client_id
            WHERE COALESCE(NULLIF(ss.assigned_coach,''), c2.coach) = ? AND ss.scheduled_date <= ?`
@@ -1816,7 +1826,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         const body = await request.json();
         if (!body.client_id) return bad('client_id required', cors);
         const ins = await env.DB.prepare('INSERT INTO self_workouts (client_id,workout_date,title,exercises_json,duration_min,notes) VALUES (?,?,?,?,?,?)')
-          .bind(body.client_id, body.workout_date||new Date().toISOString().slice(0,10), body.title||'Self-guided workout', JSON.stringify(body.exercises||[]), body.duration_min||null, body.notes||'').run();
+          .bind(body.client_id, body.workout_date||todayET(), body.title||'Self-guided workout', JSON.stringify(body.exercises||[]), body.duration_min||null, body.notes||'').run();
         const workoutId = ins.meta?.last_row_id;
         // Notify the client's coach + post to a coach-client reaction thread
         const client = await env.DB.prepare('SELECT first_name,last_name,coach FROM clients WHERE id=?').bind(body.client_id).first();
@@ -1825,7 +1835,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
             .bind(client.coach, 'self_workout', JSON.stringify({
               client_id: body.client_id, client_name: ((client.first_name||'')+' '+(client.last_name||'')).trim(),
               workout_id: workoutId, title: body.title||'Self-guided workout',
-              exercise_count: (body.exercises||[]).length, date: body.workout_date||new Date().toISOString().slice(0,10)
+              exercise_count: (body.exercises||[]).length, date: body.workout_date||todayET()
             })).run();
         }
         return ok({ logged: true, id: workoutId }, cors);
@@ -2035,7 +2045,7 @@ Rules:
         if (!env.DB) return bad('No DB', cors);
         const coach = url.searchParams.get('coach');
         if (!coach) return bad('coach required', cors);
-        const targetDate = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
+        const targetDate = url.searchParams.get('date') || todayET();
         const rows = await env.DB.prepare(
           `SELECT s.id, s.client_id, s.program_name, s.focus_notes, s.status, c.first_name, c.last_name
            FROM scheduled_sessions s JOIN clients c ON s.client_id = c.id
@@ -2071,7 +2081,7 @@ Rules:
       // ── RETRO CHEF: daily rotating whole-foods recipe ─────────────
       if (url.pathname === '/chef/daily-recipe' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const existing = await env.DB.prepare('SELECT * FROM chef_recipes WHERE recipe_date=?').bind(today).first();
         if (existing) return ok({ recipe: existing }, cors);
         if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
@@ -2150,7 +2160,7 @@ Rules:
 
       if (url.pathname === '/appointments/day' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const date = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
+        const date = url.searchParams.get('date') || todayET();
         const coach = url.searchParams.get('coach');
         let query = `SELECT a.*, c.first_name as client_first_name, c.last_name as client_last_name
                      FROM pt_appointments a LEFT JOIN clients c ON a.client_id = c.id
@@ -2166,7 +2176,7 @@ Rules:
         if (!env.DB) return bad('No DB', cors);
         const coach = url.searchParams.get('coach');
         if (!coach) return bad('coach required', cors);
-        const targetDate = url.searchParams.get('date') || new Date().toISOString().slice(0,10);
+        const targetDate = url.searchParams.get('date') || todayET();
         const rows = await env.DB.prepare(
           `SELECT a.*, c.first_name, c.last_name FROM pt_appointments a
            LEFT JOIN clients c ON a.client_id = c.id
@@ -2384,7 +2394,7 @@ Rules:
       // ── COACH DAILY TIP: rotating AI content, cached once per day ──
       if (url.pathname === '/coach/daily-tip' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const existing = await env.DB.prepare('SELECT * FROM coach_daily_tips WHERE tip_date=?').bind(today).first();
         if (existing) return ok({ tip: existing }, cors);
         if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
@@ -2546,7 +2556,7 @@ Rules:
            WHERE s.scheduled_date = ? AND s.status = 'scheduled' AND COALESCE(NULLIF(s.assigned_coach,''), c.coach) = ?`
         ).bind(b.date, b.from_coach).all();
         const affected = rows.results || [];
-        const whenText = b.date === new Date().toISOString().slice(0,10) ? 'today' : ('on ' + new Date(b.date+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}));
+        const whenText = b.date === todayET() ? 'today' : ('on ' + new Date(b.date+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}));
         for (const row of affected) {
           await env.DB.prepare('UPDATE scheduled_sessions SET assigned_coach=? WHERE id=?').bind(b.to_coach, row.id).run();
           await env.DB.prepare("INSERT INTO portal_messages (client_id,coach_name,sender,body) VALUES (?,?,?,?)")
@@ -2698,7 +2708,7 @@ Rules:
         await env.DB.prepare(`UPDATE scheduled_sessions SET ${fields.join(', ')} WHERE id=?`).bind(...binds).run();
         if (before && b.assigned_coach != null && b.assigned_coach !== before.assigned_coach) {
           const dateStr = b.scheduled_date || before.scheduled_date;
-          const whenText = dateStr === new Date().toISOString().slice(0,10) ? 'today' : ('on ' + new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}));
+          const whenText = dateStr === todayET() ? 'today' : ('on ' + new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric'}));
           await env.DB.prepare("INSERT INTO portal_messages (client_id,coach_name,sender,body) VALUES (?,?,?,?)")
             .bind(before.client_id, b.assigned_coach, 'coach', `Heads up — ${b.assigned_coach} will be running your session ${whenText} instead of your regular trainer. See you then!`).run();
         }
@@ -2752,7 +2762,7 @@ Rules:
         if (!env.DB) return bad('No DB', cors);
         const clientId = url.searchParams.get('client_id');
         if (!clientId) return bad('client_id required', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const rows = await env.DB.prepare(
           'SELECT * FROM scheduled_sessions WHERE client_id=? AND scheduled_date >= ? ORDER BY scheduled_date ASC LIMIT 30'
         ).bind(clientId, today).all();
@@ -2763,7 +2773,7 @@ Rules:
         if (!env.DB) return bad('No DB', cors);
         const clientId = url.searchParams.get('client_id');
         if (!clientId) return bad('client_id required', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const row = await env.DB.prepare(
           "SELECT * FROM scheduled_sessions WHERE client_id=? AND scheduled_date=? AND status='scheduled' LIMIT 1"
         ).bind(clientId, today).first();
@@ -2800,7 +2810,7 @@ Rules:
            LEFT JOIN clients c ON n.client_id = c.id
            WHERE n.coach_name = ? AND date(n.created_at) = date(?)
            ORDER BY n.created_at ASC`
-        ).bind(coach, date || new Date().toISOString().slice(0,10)).all();
+        ).bind(coach, date || todayET()).all();
         return ok({ notes: rows.results || [] }, cors);
       }
 
@@ -2881,7 +2891,7 @@ Rules:
         if (!env.DB) return bad('No DB', cors);
         const coach = url.searchParams.get('coach');
         if (!coach) return bad('coach required', cors);
-        const today = new Date().toISOString().slice(0,10);
+        const today = todayET();
         const monthStr = today.slice(0,7);
 
         const clients = await env.DB.prepare(
@@ -3116,7 +3126,7 @@ Rules:
         const clientId = url.searchParams.get('client_id');
         if (!clientId) return bad('client_id required', cors);
         try {
-          const today = new Date().toISOString().slice(0,10);
+          const today = todayET();
           const [client, scans, sessions, selfWorkouts, photos, touchpoints, messages, notes, intake, consultations, checkins, upcomingAppts, upcomingSessions] = await Promise.all([
             env.DB.prepare('SELECT * FROM clients WHERE id=?').bind(clientId).first(),
             env.DB.prepare('SELECT * FROM inbody_scans WHERE client_id=? ORDER BY scan_date DESC LIMIT 24').bind(clientId).all(),
@@ -3238,7 +3248,7 @@ Rules:
       if (url.pathname === '/reports/funnel' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const from = url.searchParams.get('from') || '2026-01-01';
-        const to = url.searchParams.get('to') || new Date().toISOString().slice(0,10);
+        const to = url.searchParams.get('to') || todayET();
         const gymId = url.searchParams.get('gym_id');
         let q = "SELECT welcome_workout_outcome o, COUNT(*) n FROM members WHERE join_date >= ? AND join_date <= ?";
         const binds = [from, to];
@@ -3290,7 +3300,7 @@ Rules:
         const meas = src.measures[b.measure || 'count'];
         if (!meas) return bad('invalid measure for source', cors);
         const from = b.from || '2026-01-01';
-        const to = b.to || new Date().toISOString().slice(0,10);
+        const to = b.to || todayET();
         let q = `SELECT ${dim} AS dimension, ${meas} AS value FROM ${src.table} WHERE ${src.date} >= ? AND ${src.date} <= ?`;
         const binds = [from, to];
         if (b.gym_id && b.source !== 'guest_shares' && b.source !== 'coach_touchpoints') { q += ' AND gym_id = ?'; binds.push(b.gym_id); }
@@ -3365,7 +3375,7 @@ Rules:
         if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
         if (!b.gym_id || !b.amount || !b.sold_by) return bad('gym_id, amount, sold_by required', cors);
-        const saleDate = b.sale_date || new Date().toISOString().slice(0,10);
+        const saleDate = b.sale_date || todayET();
         const saleType = ['new','renewal','upgrade'].includes(b.sale_type) ? b.sale_type : 'new';
         const ins = await env.DB.prepare('INSERT INTO pt_sales (gym_id,member_id,client_name,package_name,sessions,amount,sold_by,sale_date,sale_type) VALUES (?,?,?,?,?,?,?,?,?)')
           .bind(b.gym_id, b.member_id||null, b.client_name||'', b.package_name||'', b.sessions||null, b.amount, b.sold_by, saleDate, saleType).run();
@@ -3480,7 +3490,7 @@ Rules:
         if (!env.DB) return bad('No DB', cors);
         const body = await request.json();
         if (!body.client_id) return bad('client_id required', cors);
-        const logDate = body.log_date || new Date().toISOString().slice(0,10);
+        const logDate = body.log_date || todayET();
         const existing = await env.DB.prepare('SELECT * FROM daily_logs WHERE client_id=? AND log_date=?').bind(body.client_id, logDate).first();
         const merged = {
           energy: body.energy !== undefined ? body.energy : (existing ? existing.energy : null),
@@ -3506,7 +3516,7 @@ Rules:
         if (!env.DB) return bad('D1 binding "DB" not found.', cors);
         if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
         const body = await request.json().catch(() => ({}));
-        const dateStr = body.date || new Date().toISOString().slice(0,10);
+        const dateStr = body.date || todayET();
         const result = await generateEODReport(env, dateStr);
         return ok(result, cors);
       }
@@ -3522,7 +3532,7 @@ Rules:
       if (url.pathname === '/eod/submit' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const body = await request.json().catch(() => ({}));
-        const logDate = body.date || new Date().toISOString().slice(0,10);
+        const logDate = body.date || todayET();
         const authorName = body.authorName || 'Unknown';
         const authorRole = body.author_role || 'staff';
         const gymId = body.gym_id || 1;
@@ -3659,7 +3669,7 @@ Rules:
       // ── EOD FEED (Dani / Keelin dashboard) ─────────────────────
       if (url.pathname === '/eod/feed' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
-        const feedDate = url.searchParams.get('date') || new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+        const feedDate = url.searchParams.get('date') || todayET();
         const gymId = url.searchParams.get('gym_id') || null;
         let sql = `SELECT * FROM eod_submissions WHERE log_date=? ORDER BY submitted_at DESC`;
         const binds = [feedDate];
@@ -3698,7 +3708,7 @@ Rules:
       ctx.waitUntil(generateMealPlans(env, { skipExisting: true, activeOnly: true }));
       return;
     }
-    const today = new Date().toISOString().slice(0,10);
+    const today = todayET();
     ctx.waitUntil(generateEODReport(env, today));
     ctx.waitUntil(populateDailyFeedItems(env, today));
     ctx.waitUntil(detectAutoWins(env));
@@ -4411,7 +4421,7 @@ function parseUpcoming(ics, limit){
     else if (key === 'LOCATION') cur.location = unescapeICS(val);
     else if (key === 'DESCRIPTION') cur.description = unescapeICS(val);
   }
-  const todayKey = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const todayKey = todayET().replace(/-/g,'');
   return events
     .map(e => ({ ...e, dateKey: (e.startRaw.match(/\d{8}/)||[''])[0] }))
     .filter(e => e.dateKey && e.dateKey >= todayKey)
