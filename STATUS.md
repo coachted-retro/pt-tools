@@ -74,15 +74,17 @@ via the Cloudflare Developer Platform connector, not just code reading:
   paths are correct -- consistent with "nobody could reliably log in
   until tonight," not a feature bug. Worth re-checking usage in a week
   once login fixes have had time to actually matter
-- REAL GAP FOUND, action item not a code bug: the AI-generated rotating
-  class-content system (group_class_sessions, feeds the "See Tonight's
-  Workout" button and class-agenda.html) has only ever been run for
-  Boot Camp. Ignite Core (Ted's own Tuesday 5:30pm class) has zero
-  session rows -- the button shows for it but clicking through always
-  says "may not be generated yet," which will never resolve on its own
-  since nobody has run the generator for that class. Needs Ted (or
-  whoever runs it) to actually generate Ignite Core content, not a code
-  fix
+- [x] RESOLVED July 10: Ignite Core had zero group_class_sessions rows,
+  only Boot Camp had content. Built and inserted 2 weeks of real content
+  (July 14, July 21) directly into the live D1 via the Cloudflare
+  connector, verified byte-for-byte intact after insert. Per Ted's
+  explicit direction: equipment restricted to kettlebell/dumbbell/plate/
+  medicine ball/bosu ball/bodyweight only, every station has a genuine
+  scale_up and scale_down so it works for any age or physical capability
+  at their own pace. This is date-keyed content that will need refreshing
+  again in a couple weeks -- ask Ted whether he wants a longer runway
+  generated at once (e.g. 8 weeks) rather than repeating this every
+  2 weeks going forward.
 
 ### NEEDS TED'S INPUT before building — do not guess at these
 - [ ] Monthly check-in intake condensing: which fields are truly "core"
