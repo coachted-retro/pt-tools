@@ -4725,9 +4725,14 @@ if (IS_DEMO) {
   const savedStaff = localStorage.getItem('staff_session');
   const forceGuest = new URLSearchParams(location.search).get('forceGuest');
   if (forceGuest) { startGuestMode(); }
-  else if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); startGuestMode(); } }
-  else if (savedStaff) { try { STAFF_SESSION = JSON.parse(savedStaff); startStaffApp(); } catch(e) { localStorage.removeItem('staff_session'); startGuestMode(); } }
-  else { startGuestMode(); }
+  else if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); } }
+  else if (savedStaff) { try { STAFF_SESSION = JSON.parse(savedStaff); startStaffApp(); } catch(e) { localStorage.removeItem('staff_session'); } }
+  // No forced-guest link, no saved session of any kind: this app is shared
+  // directly with coaches and PT clients, not the general public, so the
+  // front door is login -- not the gym-info guest home. #login-screen is
+  // already the default visible state before any JS runs, so there is
+  // nothing to call here; a "Continue as guest" link still exists on the
+  // login screen itself for the rare case someone genuinely needs it.
 }
 </script>
 
