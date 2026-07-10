@@ -299,9 +299,9 @@ separated by design, not a bug.
       use UTC methods (setUTCDate/getUTCDate/etc) throughout -- never
       plain new Date() for "today," and never mix local and UTC date
       methods on the same Date object.
-- [ ] coach-client-profile.html EXERCISE_DB sync: still 137 exercises vs 292
-      in gym-floor.html/member-app.html. Pre-existing drift, not caused by
-      tonight, still unresolved
+- [x] RESOLVED July 10: coach-client-profile.html EXERCISE_DB synced to
+      the full 292-exercise version. Confirmed the old 137-list was a
+      strict subset, clean wholesale replacement, no data lost.
 - [ ] Exercise catalog "Needs Manual Sort" bucket: ~120 exercises from the
       original Trainerize source list that the body-part classifier
       couldn't confidently categorize (things like "Groiner," "Goose Step").
