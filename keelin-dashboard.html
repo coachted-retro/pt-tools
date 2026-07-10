@@ -268,6 +268,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
 const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
 function withDemo(url) {
@@ -678,7 +679,7 @@ async function loadCoaching() {
   // Overdue monitoring
   const latestScans = {};
   allScans.forEach(s=>{if(!latestScans[s.client_id]||s.scan_date>latestScans[s.client_id])latestScans[s.client_id]=s.scan_date;});
-  const sixtyAgo = new Date(Date.now()-60*24*60*60*1000).toISOString().slice(0,10);
+  const sixtyAgo = (() => { const d = new Date(todayET() + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 60); return d.toISOString().slice(0,10); })();
   const overdue = allClients.filter(c=>c.status==='active_pt'&&(!latestScans[c.id]||latestScans[c.id]<sixtyAgo));
   const overdueEl = document.getElementById('overdue-list');
   overdueEl.innerHTML = overdue.length ? overdue.map(c => {
