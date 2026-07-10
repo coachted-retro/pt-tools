@@ -26,6 +26,11 @@ and ask, rather than guessing and building on top of a wrong guess.
 - [ ] Keelin's dashboard shows today's submissions correctly when checked in
       the evening (the eodDateStr timezone fix)
 
+- [ ] Login is now the default landing screen for member-app.html instead
+      of the public guest home (fixed July 9-10, late session) — verify
+      this actually resolves the confusion for real coaches/PT clients
+      clicking their invitation link
+
 ### NEEDS TED'S INPUT before building — do not guess at these
 - [ ] Monthly check-in intake condensing: which fields are truly "core"
       (always asked) vs "deep dive" (expand on tap / only if flagged)?
@@ -109,6 +114,69 @@ and ask, rather than guessing and building on top of a wrong guess.
   not a code bug. Manual PDF upload is the only reliable path until that
   access comes through. Do not attempt to "fix" this without new
   information from InBody's side.
+
+---
+
+## MAJOR INITIATIVE: MULTI-CLUB DEPLOYMENT (confirmed direction, not started)
+
+Ted confirmed the architecture directly (July 9-10, late session) — do not
+re-litigate this decision, it is settled:
+- Keelin gets a MASTER dashboard that sees across all 11 clubs.
+- Each club runs an IDENTICAL platform to Fairless Hills — same roles
+  (Director of Fitness, Coaches, Franchise Owner, MEAs), same features,
+  same code.
+- Each club gets its OWN D1 database — full data isolation, separate
+  Worker + D1 per club, not a shared multi-tenant database with gym_id
+  filtering. This was the open question from earlier tonight; it is now
+  answered. Do not build gym_id-based row-level isolation into a shared DB
+  — that is NOT the direction.
+- Rollout flow: Ted sends Keelin the master (her dashboard, aggregating all
+  clubs), then hands off the identical platform to each individual club.
+  Each club gets its own login; that club's own staff then self-provision
+  logins for their own employees and PT clients — Ted/Keelin are not
+  expected to manually create every account at every club.
+
+IMPORTANT CONSTRAINT: Claude does not have direct Cloudflare API access
+from this sandbox (checked the network egress allowlist — Cloudflare's API
+domains are not in it, and this held true even when Ted supplied a token
+for a different, unrelated domain earlier tonight). Claude can prepare
+everything needed (clean template codebase with Fairless-Hills-specific
+data stripped, D1 schema export as reusable SQL, wrangler.toml templates,
+exact step-by-step commands) but Ted has to be the one executing the
+Cloudflare-side provisioning (creating each club's D1, deploying each
+club's Worker) — same pattern as pasting worker code into Quick Edit.
+Do not assume this can be automated end-to-end without Ted's hands-on
+execution at the Cloudflare-account level.
+
+NOT YET STARTED, needs real scoping work before building:
+- [ ] Template extraction: what in the current gym-floor.html/member-app.html/
+      worker-v34.js/coach-crm.html/etc. is Fairless-Hills-specific data that
+      needs stripping for a clean club template (client records, staff
+      names, gym-specific IDs) vs what's genuinely shared code that every
+      club should get identically (EXERCISE_DB, ROUTINE_LIBRARY,
+      MEAL_LIBRARY, the app logic itself)?
+- [ ] D1 schema export: a clean, reusable CREATE TABLE script for a brand
+      new club's database, matching the CURRENT real schema (not a stale
+      guess) — needs to be generated from the actual live Fairless Hills
+      D1 schema, not reconstructed from memory
+- [ ] Per-club provisioning steps: exact, numbered, copy-pasteable
+      instructions for Ted to create a new club's D1 + Worker in
+      Cloudflare, using the template
+- [ ] Keelin's master dashboard: keelin-dashboard.html currently queries
+      ONE Worker/D1 (Fairless Hills only). A true master view across 11
+      separate per-club Workers/D1s is a different architecture than what
+      exists today — needs real design work (does her dashboard make 11
+      separate API calls, one to each club's Worker? does each club's
+      Worker need a way to report summary data back to a central place?)
+- [ ] Self-service staff/PT-client account creation per club: confirm the
+      existing portal-admin.html "Grant Access" flow is enough for a new
+      club's own staff to provision their own people, or whether it needs
+      changes to work cleanly for a brand-new club with no data yet
+- [ ] Sequencing: this is a big enough initiative that it should get its
+      own dedicated planning session, not be squeezed in alongside other
+      work. Confirm with Ted before starting whether this comes before or
+      after the nutrition/macro pipeline mapping and the other open items
+      above.
 
 ---
 
