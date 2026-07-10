@@ -656,10 +656,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
         <div class="card"><div class="card-body">
           <div class="sec-label" style="margin:0 0 8px">🧑‍🍳 Ask the Chef</div>
-          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">"What should I make tonight?" or "I have chicken and rice, what can I make?" — pulls real suggestions from Coach's Table.</div>
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">"What should I make tonight?" or "I have chicken and rice, what can I make?" — pulls real suggestions from Coach's Table. You can also snap a photo of your fridge with 📷, though a written description usually works better than a photo.</div>
           <div id="ct-chat-log" style="max-height:280px;overflow-y:auto;margin-bottom:10px"></div>
           <div style="display:flex;gap:8px;padding-right:60px">
             <input type="text" id="ct-chat-input" placeholder="Ask the chef..." style="flex:1;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:14px" onkeydown="if(event.key==='Enter')sendChefChat()">
+            <input type="file" accept="image/*" capture="environment" id="ct-fridge-input" style="display:none" onchange="handleFridgePhoto(event)">
+            <label for="ct-fridge-input" style="display:flex;align-items:center;justify-content:center;width:44px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:18px" title="Photo of your fridge/pantry">📷</label>
             <button class="action-btn" style="width:auto;padding:0 18px" onclick="sendChefChat()">Ask</button>
           </div>
         </div></div>
@@ -4653,6 +4655,30 @@ async function sendChefChat() {
     const reply = d.reply || 'Could not come up with something — try rephrasing?';
     appendChefChatLine('assistant', linkifyChefReply(reply), true);
     CT_CHAT_HISTORY.push({ role:'user', content: msg }, { role:'assistant', content: reply });
+  } catch(e) {
+    log.lastChild.remove();
+    appendChefChatLine('assistant', 'Could not connect — try again in a moment.');
+  }
+}
+// Fridge/pantry photo -> chef identifies what it can and suggests real
+// recipes. Deliberately honest in the UI copy: this is a bonus, not as
+// reliable as just describing what you have in the chat.
+async function handleFridgePhoto(evt) {
+  const file = evt.target.files[0];
+  evt.target.value = '';
+  if (!file) return;
+  appendChefChatLine('user', '📷 Sent a photo of my fridge');
+  appendChefChatLine('assistant', 'Taking a look...');
+  const log = document.getElementById('ct-chat-log');
+  try {
+    const r = await fetch(WORKER + '/coach-table/fridge-photo?client=' + SESSION.client_id, {
+      method:'POST', headers:{'Content-Type': file.type || 'image/jpeg'}, body: file
+    });
+    const d = await r.json();
+    log.lastChild.remove();
+    const reply = d.reply || 'Could not get a clear read on that — try describing what you have instead.';
+    appendChefChatLine('assistant', linkifyChefReply(reply), true);
+    CT_CHAT_HISTORY.push({ role:'user', content: '(sent a fridge photo)' }, { role:'assistant', content: reply });
   } catch(e) {
     log.lastChild.remove();
     appendChefChatLine('assistant', 'Could not connect — try again in a moment.');

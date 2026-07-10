@@ -2990,6 +2990,63 @@ ${compactIndex.join('\n')}`;
         return ok({ reply: reply || "Couldn't come up with something -- try asking differently?" }, cors);
       }
 
+      // ── ASK THE CHEF: FRIDGE PHOTO -- Ted's stretch idea, built now that
+      // the text version is solid. Told Ted directly this will NOT be
+      // reliably accurate (containers, packaging, partial visibility all
+      // make fridge photos genuinely hard to read) -- built as a real,
+      // functional bonus on top of the reliable text chat, not a
+      // replacement for it. Same grounding rule applies: only ever
+      // suggests real Coach's Table recipes, never invents one.
+      if (url.pathname === '/coach-table/fridge-photo' && request.method === 'POST') {
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+        const clientId = url.searchParams.get('client');
+        const bytes = await request.arrayBuffer();
+        const ct = request.headers.get('Content-Type') || 'image/jpeg';
+        let b64 = '';
+        {
+          const chunk = 8192; const arr = new Uint8Array(bytes);
+          let s = '';
+          for (let i=0;i<arr.length;i+=chunk) s += String.fromCharCode.apply(null, arr.subarray(i, i+chunk));
+          b64 = btoa(s);
+        }
+        const media_type = ct.indexOf('png')>-1 ? 'image/png' : 'image/jpeg';
+        let macroLine = 'No coach-set macro targets on file for this client.';
+        if (env.DB && clientId) {
+          try {
+            const mp = await env.DB.prepare('SELECT * FROM meal_profiles WHERE client_id=? LIMIT 1').bind(clientId).first();
+            if (mp && (mp.calories || mp.protein_g)) {
+              macroLine = `This client's daily targets: ${mp.calories||'?'} kcal, protein ${mp.protein_g||'?'}g, carbs ${mp.carbs_g||'?'}g, fat ${mp.fat_g||'?'}g. Excluded: proteins ${mp.excluded_proteins||'none'}, vegetables ${mp.excluded_vegetables||'none'}, fruits ${mp.excluded_fruits||'none'}, allergies ${mp.allergies||'none'}.`;
+            }
+          } catch(e) {}
+        }
+        const compactIndex = [];
+        Object.keys(MEAL_LIBRARY).forEach(cat => {
+          MEAL_LIBRARY[cat].forEach(r => {
+            const firstFew = ((r.recipe && r.recipe.ingredients) || []).slice(0,4).join(', ');
+            compactIndex.push(`${r.name} | ${cat} | ${r.calories}kcal ${r.protein_g}p/${r.carbs_g}c/${r.fat_g}f | tags: ${(r.tags||[]).join(',')||'none'} | key ingredients: ${firstFew}`);
+          });
+        });
+        const sys = `You are "Chef", a friendly recipe assistant for Retro Fitness's Coach's Table meal library. A member just sent a photo of their fridge or pantry. Identify what food items you can actually see -- be honest that a photo like this is hard to read fully (containers, packaging, items partially hidden), so only mention items you're reasonably confident about, don't guess wildly. Then suggest 1-3 REAL recipes from the library below by their EXACT name that use ingredients close to what you identified -- never invent a recipe that isn't in this list, and never claim high confidence about what's in the photo if it's genuinely unclear. If you can't identify much of anything useful, say so plainly and suggest they try describing what they have in the chat instead. Keep the reply short and conversational (3-5 sentences). No emojis, no em dashes, plain punctuation only.
+
+${macroLine}
+
+COACH'S TABLE LIBRARY:
+${compactIndex.join('\n')}`;
+        const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json','x-api-key':env.ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
+          body: JSON.stringify({
+            model:'claude-sonnet-4-6', max_tokens:400, system: sys,
+            messages:[{role:'user', content:[
+              { type:'image', source:{ type:'base64', media_type, data:b64 } },
+              { type:'text', text:'This is a photo of my fridge/pantry. What can I make?' }
+            ]}]
+          })
+        });
+        const aiData = await aiResp.json();
+        const reply = (aiData.content||[]).filter(x=>x.type==='text').map(x=>x.text||'').join('').trim();
+        return ok({ reply: reply || "Couldn't get a clear read on that photo -- try describing what you have in the chat instead." }, cors);
+      }
 
       // ── UNIFIED COACH INBOX (aggregated 1:1 threads, never merged) ──
       if (url.pathname === '/coach/inbox' && request.method === 'GET') {
