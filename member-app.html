@@ -404,13 +404,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     </div>
 
     <div class="landing-choices">
-      <button class="landing-choice lc-member" onclick="showLoginPath('member')">
-        <span class="lc-eyebrow">Gym Member</span>
-        <span class="lc-label">Member Login <span class="lc-arrow">→</span></span>
-      </button>
       <button class="landing-choice lc-pt" onclick="showLoginPath('ptclient')">
-        <span class="lc-eyebrow">Training With a Coach</span>
-        <span class="lc-label">PT Client Login <span class="lc-arrow">→</span></span>
+        <span class="lc-label">Client Login <span class="lc-arrow">→</span></span>
       </button>
       <button class="landing-choice lc-staff" onclick="showLoginPath('staff')">
         <span class="lc-label">Staff Login <span class="lc-arrow">→</span></span>
@@ -421,8 +416,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
   <div class="login-box" id="member-login-box" style="display:none">
     <a href="#" class="login-back" onclick="hideLoginPath(event)">&larr; Back</a>
-    <h2 id="member-login-title">Welcome Back</h2>
-    <p id="member-login-sub">Sign in to your member account</p>
+    <h2 id="member-login-title">Sign In</h2>
+    <p id="member-login-sub">See your training, nutrition plan, and progress</p>
     <div class="fld"><label>Email</label><input id="l-email" type="email" placeholder="you@email.com" autocomplete="email"></div>
     <div class="fld"><label>Password</label><input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
@@ -1588,7 +1583,7 @@ async function doLogin() {
 // ── STAFF LOGIN (separate tier — coaches, MEAs, floor techs, management) ──
 let STAFF_SESSION = null;
 
-let LOGIN_PATH_TYPE = 'member';
+let LOGIN_PATH_TYPE = 'ptclient';
 function showLoginPath(type) {
   document.getElementById('landing-wrap').style.display = 'none';
   document.getElementById('landing-guest') && (document.getElementById('landing-guest').style.display = 'none');
@@ -1596,18 +1591,12 @@ function showLoginPath(type) {
     document.getElementById('staff-login-box').style.display = 'block';
     document.getElementById('powered-by-footer').style.display = 'none';
   } else {
-    LOGIN_PATH_TYPE = type === 'ptclient' ? 'ptclient' : 'member';
+    // Only one client login path now (was "Gym Member" vs "PT Client" --
+    // same login form either way, so the distinction was removed per
+    // Ted's direction: this app is shared with coaches and PT clients
+    // only, not general gym members).
     document.getElementById('member-login-box').style.display = 'block';
     document.getElementById('powered-by-footer').style.display = 'block';
-    const title = document.getElementById('member-login-title');
-    const sub = document.getElementById('member-login-sub');
-    if (type === 'ptclient') {
-      title.textContent = 'PT Client Login';
-      sub.textContent = 'Sign in to see your training, nutrition plan, and progress';
-    } else {
-      title.textContent = 'Welcome Back';
-      sub.textContent = 'Sign in to your member account';
-    }
   }
 }
 function hideLoginPath(e) {
