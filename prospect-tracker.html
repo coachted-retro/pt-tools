@@ -2370,7 +2370,7 @@ async function buildCallList() {
   const assignee = document.getElementById('cl-assignee').value.trim();
   document.getElementById('cl-assigned-label').textContent = assignee ? 'Assigned to ' + assignee : '';
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = todayET();
 
   const peopleRows = prospects.filter(p => p.interest !== 'Cold').map(p => {
     const tps = touchpoints.filter(t => t.prospectId === p.id);
