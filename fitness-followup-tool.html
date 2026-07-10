@@ -2157,8 +2157,8 @@ async function finalizeEnrolled(){
   var fuDate = gv('fu-date');
   var nextCheckin = '';
   if (fuDate) {
-    var d = new Date(fuDate + 'T12:00:00');
-    d.setMonth(d.getMonth() + 1);
+    var d = new Date(fuDate + 'T12:00:00Z');
+    d.setUTCMonth(d.getUTCMonth() + 1);
     nextCheckin = d.toISOString().split('T')[0];
   }
   
@@ -2192,8 +2192,8 @@ async function finalizeEnrolled(){
 function showLongFollowup() {
   // Calculate date based on months
   var months = parseInt(document.getElementById('long-fu-months').value || '6');
-  var today = new Date();
-  today.setMonth(today.getMonth() + months);
+  var today = new Date(todayET() + 'T00:00:00Z');
+  today.setUTCMonth(today.getUTCMonth() + months);
   document.getElementById('long-fu-date').value = today.toISOString().split('T')[0];
   document.getElementById('long-fu-panel').style.display = 'block';
   document.getElementById('another-fu-panel').style.display = 'none';
@@ -2203,8 +2203,8 @@ function showLongFollowup() {
   // Update date when months changes
   document.getElementById('long-fu-months').onchange = function() {
     var m = parseInt(this.value);
-    var d = new Date();
-    d.setMonth(d.getMonth() + m);
+    var d = new Date(todayET() + 'T00:00:00Z');
+    d.setUTCMonth(d.getUTCMonth() + m);
     document.getElementById('long-fu-date').value = d.toISOString().split('T')[0];
   };
 }
