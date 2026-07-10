@@ -861,8 +861,8 @@ function updateDates(){
   const checkinVal=document.getElementById('checkin-date').value;
   const startVal=document.getElementById('program-start').value;
   if(!checkinVal) return;
-  const checkin=new Date(checkinVal+'T12:00:00');
-  const next=new Date(checkin); next.setMonth(next.getMonth()+1);
+  const checkin=new Date(checkinVal+'T12:00:00Z');
+  const next=new Date(checkin); next.setUTCMonth(next.getUTCMonth()+1);
   const fmt=(d)=>d.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
   const fmtISO=(d)=>d.toISOString().split('T')[0];
   document.getElementById('next-checkin').value=fmtISO(next);
