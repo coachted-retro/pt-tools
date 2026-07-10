@@ -31,6 +31,36 @@ and ask, rather than guessing and building on top of a wrong guess.
       this actually resolves the confusion for real coaches/PT clients
       clicking their invitation link
 
+### JULY 10 LIVE AUDIT — findings verified directly against production D1
+via the Cloudflare Developer Platform connector, not just code reading:
+- [x] FIXED: front door simplified from confusing 3-way chooser (Gym
+      Member / PT Client / Staff) to clean 2-way (Client / Staff) --
+      confirmed via code that Member and PT Client were literally the
+      same login form, zero functionality lost removing the redundant one
+- [x] FIXED, HIGH IMPACT: staff must_change_pin was never checked on
+      login. Verified against live data: ALL 17 staff accounts (Ted,
+      Danielle, Sarah, every coach and MEA) were sitting on unset temp
+      PINs, silently logged straight in every time with no prompt to set
+      their own. This is very likely a real contributor to "coaches can't
+      log in" -- a temp PIN nobody consciously set is easy to forget.
+      Fixed with the same pattern as the client-side fix from last night.
+- [x] VERIFIED WORKING: the client must_change_password fix from last
+      night is confirmed live and functioning -- Anthony Mango's
+      last_login timestamp in client_auth is consistent with the reset
+      flow now routing him correctly instead of logging him straight in
+- [ ] ACTION NEEDED FROM TED, not a code bug: Sanjay (Bodduluri, client id
+      12) has ZERO rows in client_auth -- no login account was ever
+      provisioned for him at all. He cannot log in no matter what else is
+      fixed until Ted grants him access via portal-admin.html. His
+      workouts fix from earlier will work correctly once he has an actual
+      account to log into.
+- [ ] STILL TO AUDIT: this was one focused pass on the login flow
+      specifically, driven by Ted's exact complaint (coaches/members
+      unable to log in, landing on wrong pages). Broader audit of other
+      user flows (nutrition tracking, class booking, coach touchpoints,
+      etc.) has not been done yet -- do not assume the rest of the app is
+      clean just because login is now solid
+
 ### NEEDS TED'S INPUT before building — do not guess at these
 - [ ] Monthly check-in intake condensing: which fields are truly "core"
       (always asked) vs "deep dive" (expand on tap / only if flagged)?
