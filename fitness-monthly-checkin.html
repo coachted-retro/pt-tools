@@ -411,43 +411,19 @@
       <div class="page" id="page-2">
         <div class="page-header"><h2>Training review</h2><p>How has training been going this month?</p></div>
         <div class="card">
-          <div class="card-title"><span class="dot"></span> Session overview</div>
-          <div class="grid3">
-            <div class="field"><label>Sessions completed this month</label><input type="number" id="sessions-done" min="0" placeholder="e.g. 8"></div>
-            <div class="field"><label>Sessions missed</label><input type="number" id="sessions-missed" min="0" placeholder="e.g. 2"></div>
-            <div class="field"><label>Reason for missed sessions</label>
-              <select id="missed-reason"><option value="">N/A or select...</option><option>Schedule conflict</option><option>Illness or injury</option><option>Travel</option><option>Family commitments</option><option>Fatigue / low energy</option><option>Forgot / no reminder</option><option>Other</option></select>
-            </div>
-          </div>
-          <div class="field">
-            <label>Overall session quality this month (1–10)</label>
-            <div class="scale-wrap">
-              <div class="scale-labels"><span>Poor</span><span>Excellent</span></div>
-              <div class="scale-btns" id="scale-session">
-                <div class="scale-btn" data-v="1" onclick="pickScale(this,'session')">1</div><div class="scale-btn" data-v="2" onclick="pickScale(this,'session')">2</div><div class="scale-btn" data-v="3" onclick="pickScale(this,'session')">3</div><div class="scale-btn" data-v="4" onclick="pickScale(this,'session')">4</div><div class="scale-btn" data-v="5" onclick="pickScale(this,'session')">5</div><div class="scale-btn" data-v="6" onclick="pickScale(this,'session')">6</div><div class="scale-btn" data-v="7" onclick="pickScale(this,'session')">7</div><div class="scale-btn" data-v="8" onclick="pickScale(this,'session')">8</div><div class="scale-btn" data-v="9" onclick="pickScale(this,'session')">9</div><div class="scale-btn" data-v="10" onclick="pickScale(this,'session')">10</div>
-              </div>
-            </div>
-            <input type="hidden" id="session-score" value="">
-          </div>
-        </div>
-        <div class="card">
           <div class="card-title"><span class="dot"></span> Performance & progress</div>
-          <div class="field"><label>Strength improvements noticed this month</label><textarea id="strength-progress" placeholder="Heavier weights, more reps, movements that feel easier, new PRs..."></textarea></div>
-          <div class="field"><label>Endurance & stamina changes</label><textarea id="endurance-progress" placeholder="Recovery between sets, cardio capacity..."></textarea></div>
-          <div class="field"><label>Flexibility & mobility changes</label><textarea id="flex-progress" placeholder="Range of motion improvements, reduced stiffness..."></textarea></div>
-          <div class="field"><label>Most confident movements this month</label><textarea id="confident-movements" placeholder="Movements that have really clicked..."></textarea></div>
-          <div class="field"><label>Movements still challenging or needing work</label><textarea id="challenging-movements" placeholder="Technical issues, discomfort, movements they avoid..."></textarea></div>
-          <hr class="divider">
-          <div class="field" style="margin-bottom:0">
-            <label>Recovery — how well recovering between sessions? (1–10)</label>
-            <div class="scale-wrap">
-              <div class="scale-labels"><span>Very sore / not recovering</span><span>Recovering great</span></div>
-              <div class="scale-btns" id="scale-recovery">
-                <div class="scale-btn" data-v="1" onclick="pickScale(this,'recovery')">1</div><div class="scale-btn" data-v="2" onclick="pickScale(this,'recovery')">2</div><div class="scale-btn" data-v="3" onclick="pickScale(this,'recovery')">3</div><div class="scale-btn" data-v="4" onclick="pickScale(this,'recovery')">4</div><div class="scale-btn" data-v="5" onclick="pickScale(this,'recovery')">5</div><div class="scale-btn" data-v="6" onclick="pickScale(this,'recovery')">6</div><div class="scale-btn" data-v="7" onclick="pickScale(this,'recovery')">7</div><div class="scale-btn" data-v="8" onclick="pickScale(this,'recovery')">8</div><div class="scale-btn" data-v="9" onclick="pickScale(this,'recovery')">9</div><div class="scale-btn" data-v="10" onclick="pickScale(this,'recovery')">10</div>
-              </div>
+          <div class="grid2">
+            <div class="field"><label>Strength this month</label>
+              <select id="strength-progress"><option value="">Select...</option><option>Improved a lot — heavier weights, new PRs</option><option>Improved some</option><option>About the same</option><option>Declined</option></select>
             </div>
-            <input type="hidden" id="recovery-score" value="">
+            <div class="field"><label>Endurance & stamina this month</label>
+              <select id="endurance-progress"><option value="">Select...</option><option>Improved a lot</option><option>Improved some</option><option>About the same</option><option>Declined</option></select>
+            </div>
           </div>
+          <div class="field"><label>Flexibility & mobility this month</label>
+            <select id="flex-progress"><option value="">Select...</option><option>Improved a lot</option><option>Improved some</option><option>About the same</option><option>Declined</option></select>
+          </div>
+          <div class="field" style="margin-bottom:0"><label>Any specific movements standing out — good or bad?</label><textarea id="movement-notes" placeholder="Movements that have really clicked, or ones still needing work..."></textarea></div>
         </div>
         <div class="card">
           <div class="card-title"><span class="dot"></span> Program feedback</div>
@@ -468,127 +444,17 @@
         <div class="card">
           <div class="card-title"><span class="dot blue"></span> Nutrition adherence</div>
           <div class="field">
-            <label>Overall diet adherence this month (1–10)</label>
-            <div class="scale-wrap">
-              <div class="scale-labels"><span>Off track</span><span>On point</span></div>
-              <div class="scale-btns" id="scale-diet">
-                <div class="scale-btn" data-v="1" onclick="pickScale(this,'diet')">1</div><div class="scale-btn" data-v="2" onclick="pickScale(this,'diet')">2</div><div class="scale-btn" data-v="3" onclick="pickScale(this,'diet')">3</div><div class="scale-btn" data-v="4" onclick="pickScale(this,'diet')">4</div><div class="scale-btn" data-v="5" onclick="pickScale(this,'diet')">5</div><div class="scale-btn" data-v="6" onclick="pickScale(this,'diet')">6</div><div class="scale-btn" data-v="7" onclick="pickScale(this,'diet')">7</div><div class="scale-btn" data-v="8" onclick="pickScale(this,'diet')">8</div><div class="scale-btn" data-v="9" onclick="pickScale(this,'diet')">9</div><div class="scale-btn" data-v="10" onclick="pickScale(this,'diet')">10</div>
-              </div>
-            </div>
-            <input type="hidden" id="diet-score" value="">
+            <label>Are they hitting their calorie and macro targets?</label>
+            <select id="macro-adherence"><option value="">Select...</option><option>Yes — consistently on target</option><option>Mostly — close most days</option><option>Loosely / estimating, not tracking closely</option><option>No — not hitting targets</option><option>Not tracking at all</option></select>
           </div>
-          <div class="grid2">
-            <div class="field"><label>Are they tracking calories?</label>
-              <select id="cal-tracking"><option value="">Select...</option><option>Yes — consistently</option><option>Yes — most days</option><option>Loosely / estimating</option><option>No — not tracking</option></select>
-            </div>
-            <div class="field"><label>Are they hitting their protein target?</label>
-              <select id="protein-tracking"><option value="">Select...</option><option>Yes — consistently hitting target</option><option>Most days — close to target</option><option>Struggling — below target most days</option><option>Not tracking protein</option></select>
-            </div>
-          </div>
-          <div class="grid2">
-            <div class="field"><label>Daily water intake</label>
-              <select id="water-intake"><option value="">Select...</option><option>Less than 4 glasses</option><option>4–6 glasses</option><option>6–8 glasses</option><option>8+ glasses / well hydrated</option></select>
-            </div>
-            <div class="field"><label>Meals per day (average)</label><input type="number" id="meals-per-day" min="1" max="10" placeholder="e.g. 3"></div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-title"><span class="dot blue"></span> Typical daily meals</div>
-          <div class="grid2">
-            <div class="field">
-              <label>Typical breakfast</label>
-              <select id="breakfast-type" onchange="mealTypeChanged('breakfast')">
-                <option value="">Select...</option>
-                <option value="none">Not at all — skips breakfast</option>
-                <option value="eggs_toast">Eggs & toast</option>
-                <option value="cereal_oatmeal">Cereal or oatmeal</option>
-                <option value="grab_and_go">Grabs something out (Wawa, McDonald's, etc.)</option>
-                <option value="other">Other (describe)</option>
-              </select>
-              <select id="breakfast-meat" style="display:none;margin-top:8px" onchange="composeMeal('breakfast')">
-                <option value="">Add a meat? (optional)</option>
-                <option value="none">None</option>
-                <option value="bacon">Bacon</option>
-                <option value="sausage">Sausage</option>
-                <option value="turkey_bacon">Turkey bacon</option>
-                <option value="turkey_sausage">Turkey sausage</option>
-              </select>
-              <input type="text" id="breakfast-other" style="display:none;margin-top:8px" placeholder="Describe..." oninput="composeMeal('breakfast')">
-              <input type="hidden" id="breakfast">
-            </div>
-            <div class="field">
-              <label>Typical lunch</label>
-              <select id="lunch-type" onchange="mealTypeChanged('lunch')">
-                <option value="">Select...</option>
-                <option value="fast_food">Fast food / on the road</option>
-                <option value="pbj">Packed lunch — PB&J</option>
-                <option value="chicken_wrap">Packed lunch — chicken wrap or sandwich</option>
-                <option value="rice_chicken">Rice & chicken</option>
-                <option value="other">Other (describe)</option>
-              </select>
-              <input type="text" id="lunch-other" style="display:none;margin-top:8px" placeholder="Describe..." oninput="composeMeal('lunch')">
-              <input type="hidden" id="lunch">
-            </div>
-          </div>
-          <div class="grid3">
-            <div class="field">
-              <label>Dinner — protein</label>
-              <select id="dinner-protein" onchange="composeMeal('dinner')">
-                <option value="">Select...</option>
-                <option value="chicken">Chicken</option>
-                <option value="beef">Beef</option>
-                <option value="fish">Fish / seafood</option>
-                <option value="pork">Pork</option>
-                <option value="turkey">Turkey</option>
-                <option value="plant">Plant-based / vegetarian</option>
-                <option value="varies">Varies day to day</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Dinner — starch</label>
-              <select id="dinner-starch" onchange="composeMeal('dinner')">
-                <option value="">Select...</option>
-                <option value="none">None</option>
-                <option value="white_potato">White potato</option>
-                <option value="sweet_potato">Sweet potato</option>
-                <option value="rice">Rice</option>
-                <option value="pasta">Pasta</option>
-                <option value="bread">Bread</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Dinner — vegetables?</label>
-              <select id="dinner-veg" onchange="composeMeal('dinner')">
-                <option value="">Select...</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-                <option value="sometimes">Sometimes</option>
-              </select>
-            </div>
-          </div>
-          <input type="hidden" id="dinner">
-          <div class="field">
-            <label>Snacks</label>
-            <select id="snacks">
-              <option value="">Select...</option>
-              <option value="healthy">Leans healthy — fruit, nuts, yogurt, protein bars</option>
-              <option value="junk">Relies on fast food / junk food</option>
-              <option value="mixed">Mix of both</option>
-              <option value="rarely">Doesn't really snack</option>
-            </select>
+          <div class="field" style="margin-bottom:0"><label>Daily water intake</label>
+            <select id="water-intake"><option value="">Select...</option><option>Less than 4 glasses</option><option>4–6 glasses</option><option>6–8 glasses</option><option>8+ glasses / well hydrated</option></select>
           </div>
         </div>
         <div class="card">
           <div class="card-title"><span class="dot blue"></span> Nutrition challenges & wins</div>
-          <div class="field"><label>What nutrition habits are going well?</label><textarea id="nutrition-wins" placeholder="Habits they've built, foods they've added..."></textarea></div>
-          <div class="field"><label>Where are they struggling with their diet?</label><textarea id="nutrition-struggles" placeholder="Late-night eating, weekend slip-ups, skipping meals..."></textarea></div>
-          <div class="field"><label>Any changes to supplements since last check-in?</label><textarea id="supplements-update" placeholder="New supplements started, discontinued, or adjusted..."></textarea></div>
-          <div class="field"><label>Are they eating differently on training days vs. rest days?</label>
-            <select id="training-day-nutrition"><option value="">Select...</option><option>Yes — fueling well around training</option><option>Trying to — not consistently</option><option>No — eating the same every day</option><option>Not aware of training day nutrition</option></select>
-          </div>
-          <div class="field"><label>Pre- and post-workout nutrition habits</label><textarea id="periworkout-nutrition" placeholder="What are they eating before and after sessions?"></textarea></div>
+          <div class="field"><label>Any major changes to their nutrition this month?</label><textarea id="nutrition-changes" placeholder="New habits, meal prep, eating out less, supplement changes..."></textarea></div>
+          <div class="field" style="margin-bottom:0"><label>What's their biggest nutrition challenge right now?</label><textarea id="nutrition-struggles" placeholder="Late-night eating, weekend slip-ups, skipping meals, something to work on together..."></textarea></div>
         </div>
         <div class="nav-row">
           <button class="btn btn-ghost" onclick="goPage(2)">← Back</button>
@@ -598,83 +464,35 @@
 
       <!-- PAGE 4: WELLBEING -->
       <div class="page" id="page-4">
-        <div class="page-header"><h2>Wellbeing & lifestyle</h2><p>Sleep, stress, energy, and lifestyle factors that affect training results.</p></div>
+        <div class="page-header"><h2>Wellbeing & lifestyle</h2><p>Sleep, energy, and lifestyle factors that affect training results.</p></div>
         <div class="card">
           <div class="card-title"><span class="dot gold"></span> Energy & motivation</div>
-          <div class="field">
-            <label>Energy levels throughout the day this month (1–10)</label>
-            <div class="scale-wrap">
-              <div class="scale-labels"><span>Exhausted</span><span>High energy</span></div>
-              <div class="scale-btns" id="scale-energy">
-                <div class="scale-btn" data-v="1" onclick="pickScale(this,'energy')">1</div><div class="scale-btn" data-v="2" onclick="pickScale(this,'energy')">2</div><div class="scale-btn" data-v="3" onclick="pickScale(this,'energy')">3</div><div class="scale-btn" data-v="4" onclick="pickScale(this,'energy')">4</div><div class="scale-btn" data-v="5" onclick="pickScale(this,'energy')">5</div><div class="scale-btn" data-v="6" onclick="pickScale(this,'energy')">6</div><div class="scale-btn" data-v="7" onclick="pickScale(this,'energy')">7</div><div class="scale-btn" data-v="8" onclick="pickScale(this,'energy')">8</div><div class="scale-btn" data-v="9" onclick="pickScale(this,'energy')">9</div><div class="scale-btn" data-v="10" onclick="pickScale(this,'energy')">10</div>
-              </div>
-            </div>
-            <input type="hidden" id="energy-score" value="">
+          <div class="field" style="margin-bottom:0"><label>How's their energy and motivation been since starting?</label>
+            <select id="energy-motivation"><option value="">Select...</option><option>Great — noticeably more energy and motivated</option><option>Good — holding steady</option><option>Mixed — up and down</option><option>Struggling — low energy or motivation</option></select>
           </div>
-          <div class="field">
-            <label>Motivation to train this month (1–10)</label>
-            <div class="scale-wrap">
-              <div class="scale-labels"><span>Dragging themselves in</span><span>Fired up</span></div>
-              <div class="scale-btns" id="scale-motivation">
-                <div class="scale-btn" data-v="1" onclick="pickScale(this,'motivation')">1</div><div class="scale-btn" data-v="2" onclick="pickScale(this,'motivation')">2</div><div class="scale-btn" data-v="3" onclick="pickScale(this,'motivation')">3</div><div class="scale-btn" data-v="4" onclick="pickScale(this,'motivation')">4</div><div class="scale-btn" data-v="5" onclick="pickScale(this,'motivation')">5</div><div class="scale-btn" data-v="6" onclick="pickScale(this,'motivation')">6</div><div class="scale-btn" data-v="7" onclick="pickScale(this,'motivation')">7</div><div class="scale-btn" data-v="8" onclick="pickScale(this,'motivation')">8</div><div class="scale-btn" data-v="9" onclick="pickScale(this,'motivation')">9</div><div class="scale-btn" data-v="10" onclick="pickScale(this,'motivation')">10</div>
-              </div>
-            </div>
-            <input type="hidden" id="motivation-score" value="">
-          </div>
-          <div class="field"><label>What's been keeping them motivated this month?</label><textarea id="motivation-drivers" placeholder="Results they've noticed, how they feel, accountability, upcoming events..."></textarea></div>
         </div>
         <div class="card">
-          <div class="card-title"><span class="dot gold"></span> Sleep & stress</div>
-          <div class="field">
-            <label>Sleep quality this month (1–10)</label>
-            <div class="scale-wrap">
-              <div class="scale-labels"><span>Poor sleep</span><span>Sleeping great</span></div>
-              <div class="scale-btns" id="scale-sleep">
-                <div class="scale-btn" data-v="1" onclick="pickScale(this,'sleep')">1</div><div class="scale-btn" data-v="2" onclick="pickScale(this,'sleep')">2</div><div class="scale-btn" data-v="3" onclick="pickScale(this,'sleep')">3</div><div class="scale-btn" data-v="4" onclick="pickScale(this,'sleep')">4</div><div class="scale-btn" data-v="5" onclick="pickScale(this,'sleep')">5</div><div class="scale-btn" data-v="6" onclick="pickScale(this,'sleep')">6</div><div class="scale-btn" data-v="7" onclick="pickScale(this,'sleep')">7</div><div class="scale-btn" data-v="8" onclick="pickScale(this,'sleep')">8</div><div class="scale-btn" data-v="9" onclick="pickScale(this,'sleep')">9</div><div class="scale-btn" data-v="10" onclick="pickScale(this,'sleep')">10</div>
-              </div>
-            </div>
-            <input type="hidden" id="sleep-score" value="">
+          <div class="card-title"><span class="dot gold"></span> Sleep</div>
+          <div class="field"><label>How's their sleep been since starting? Any major changes?</label>
+            <select id="sleep-change"><option value="">Select...</option><option>Better</option><option>Unchanged</option><option>Worse</option></select>
           </div>
-          <div class="grid2">
-            <div class="field"><label>Average hours of sleep per night</label>
-              <select id="sleep-hours"><option value="">Select...</option><option>Less than 5 hours</option><option>5–6 hours</option><option>6–7 hours</option><option>7–8 hours</option><option>8+ hours</option></select>
-            </div>
-            <div class="field">
-              <label>Overall stress level this month (1–10)</label>
-              <div class="scale-wrap" style="margin-top:2px">
-                <div class="scale-btns" id="scale-stress">
-                  <div class="scale-btn" data-v="1" onclick="pickScale(this,'stress')">1</div><div class="scale-btn" data-v="2" onclick="pickScale(this,'stress')">2</div><div class="scale-btn" data-v="3" onclick="pickScale(this,'stress')">3</div><div class="scale-btn" data-v="4" onclick="pickScale(this,'stress')">4</div><div class="scale-btn" data-v="5" onclick="pickScale(this,'stress')">5</div><div class="scale-btn" data-v="6" onclick="pickScale(this,'stress')">6</div><div class="scale-btn" data-v="7" onclick="pickScale(this,'stress')">7</div><div class="scale-btn" data-v="8" onclick="pickScale(this,'stress')">8</div><div class="scale-btn" data-v="9" onclick="pickScale(this,'stress')">9</div><div class="scale-btn" data-v="10" onclick="pickScale(this,'stress')">10</div>
-                </div>
-              </div>
-              <input type="hidden" id="stress-score" value="">
-            </div>
-          </div>
-          <div class="field"><label>Any lifestyle changes or events this month affecting training or recovery?</label><textarea id="lifestyle-changes" placeholder="Travel, work demands, illness, family events..."></textarea></div>
+          <div class="field" style="margin-bottom:0"><label>Any lifestyle changes or events this month affecting training or recovery?</label><textarea id="lifestyle-changes" placeholder="Travel, work demands, illness, family events..."></textarea></div>
         </div>
         <div class="card">
           <div class="card-title"><span class="dot gold"></span> Current challenges & wins</div>
           <div class="field"><label>What has been the biggest challenge this month?</label><textarea id="current-challenges" placeholder="In their own words — what's been hardest?"></textarea></div>
-          <div class="field"><label>Select all the wins from this month</label>
+          <div class="field"><label>Tell me a little about their major changes or wins during this training period</label><textarea id="changes-and-wins" placeholder="In their own words..."></textarea></div>
+          <div class="field" style="margin-bottom:0"><label>Quick tags — tap any that apply</label>
             <div class="win-grid" id="win-tags">
               <div class="win-tag" onclick="toggleWin(this)">💪 New strength PR</div>
               <div class="win-tag" onclick="toggleWin(this)">⚖️ Weight lost</div>
-              <div class="win-tag" onclick="toggleWin(this)">📉 Body fat reduced</div>
               <div class="win-tag" onclick="toggleWin(this)">💚 More energy daily</div>
               <div class="win-tag" onclick="toggleWin(this)">😴 Sleeping better</div>
-              <div class="win-tag" onclick="toggleWin(this)">🥗 Eating cleaner</div>
-              <div class="win-tag" onclick="toggleWin(this)">🧘 Less stressed</div>
-              <div class="win-tag" onclick="toggleWin(this)">🏃 Better endurance</div>
-              <div class="win-tag" onclick="toggleWin(this)">🤸 More flexible</div>
-              <div class="win-tag" onclick="toggleWin(this)">👕 Clothes fitting better</div>
-              <div class="win-tag" onclick="toggleWin(this)">🧪 Better lab results</div>
               <div class="win-tag" onclick="toggleWin(this)">🎯 Hit a goal</div>
-              <div class="win-tag" onclick="toggleWin(this)">📸 Progress photos</div>
-              <div class="win-tag" onclick="toggleWin(this)">💬 Feeling more confident</div>
               <div class="win-tag" onclick="toggleWin(this)">🔄 Consistent attendance</div>
             </div>
             <input type="hidden" id="wins-list" value="">
           </div>
-          <div class="field" style="margin-bottom:0"><label>Any other wins or milestones worth noting?</label><textarea id="other-wins" placeholder="Anything the data doesn't capture..."></textarea></div>
         </div>
         <div class="nav-row">
           <button class="btn btn-ghost" onclick="goPage(3)">← Back</button>
@@ -1003,66 +821,6 @@ function updateWelcome() {
   if (el) el.textContent = first ? ('Welcome, ' + first + '!') : 'Welcome';
 }
 
-const MEAL_LABELS = {
-  breakfast_type: {
-    none: 'Skips breakfast',
-    eggs_toast: 'Eggs & toast',
-    cereal_oatmeal: 'Cereal or oatmeal',
-    grab_and_go: "Grabs something out (Wawa, McDonald's, etc.)"
-  },
-  breakfast_meat: { bacon:'bacon', sausage:'sausage', turkey_bacon:'turkey bacon', turkey_sausage:'turkey sausage' },
-  lunch_type: {
-    fast_food: 'Fast food / on the road',
-    pbj: 'Packed lunch — PB&J',
-    chicken_wrap: 'Packed lunch — chicken wrap or sandwich',
-    rice_chicken: 'Rice & chicken'
-  },
-  dinner_protein: { chicken:'Chicken', beef:'Beef', fish:'Fish / seafood', pork:'Pork', turkey:'Turkey', plant:'Plant-based', varies:'Varies day to day', other:'Other protein' },
-  dinner_starch: { none:'no starch', white_potato:'white potato', sweet_potato:'sweet potato', rice:'rice', pasta:'pasta', bread:'bread', other:'other starch' },
-  dinner_veg: { yes:'with vegetables', no:'no vegetables', sometimes:'vegetables sometimes' }
-};
-
-function mealTypeChanged(which) {
-  if (which === 'breakfast') {
-    const t = document.getElementById('breakfast-type').value;
-    document.getElementById('breakfast-meat').style.display = (t === 'eggs_toast') ? 'block' : 'none';
-    document.getElementById('breakfast-other').style.display = (t === 'other') ? 'block' : 'none';
-  }
-  if (which === 'lunch') {
-    document.getElementById('lunch-other').style.display = (document.getElementById('lunch-type').value === 'other') ? 'block' : 'none';
-  }
-  composeMeal(which);
-}
-
-function composeMeal(which) {
-  if (which === 'breakfast') {
-    const t = document.getElementById('breakfast-type').value;
-    let text = '';
-    if (t === 'other') text = document.getElementById('breakfast-other').value;
-    else if (t) {
-      text = MEAL_LABELS.breakfast_type[t] || '';
-      const meat = document.getElementById('breakfast-meat').value;
-      if (t === 'eggs_toast' && meat && meat !== 'none') text += ' with ' + (MEAL_LABELS.breakfast_meat[meat] || meat);
-    }
-    document.getElementById('breakfast').value = text;
-  }
-  if (which === 'lunch') {
-    const t = document.getElementById('lunch-type').value;
-    document.getElementById('lunch').value = (t === 'other') ? document.getElementById('lunch-other').value : (MEAL_LABELS.lunch_type[t] || '');
-  }
-  if (which === 'dinner') {
-    const p = document.getElementById('dinner-protein').value;
-    const s = document.getElementById('dinner-starch').value;
-    const v = document.getElementById('dinner-veg').value;
-    const parts = [];
-    if (p) parts.push(MEAL_LABELS.dinner_protein[p] || p);
-    if (s) parts.push(MEAL_LABELS.dinner_starch[s] || s);
-    if (v) parts.push(MEAL_LABELS.dinner_veg[v] || v);
-    document.getElementById('dinner').value = parts.join(', ');
-  }
-}
-
-
 function formatAssessmentSections(text) {
   text = text.replace(/#{1,6}\s*/g, '');
   text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
@@ -1101,23 +859,17 @@ ADVISOR (report author): ${gv('advisor-name')||getCfg('advisor')} | ASSIGNED COA
 NAME HANDLING: The member's assigned coach/trainer is "${gv('client-coach')||'not specified'}". When the summary refers to the member's coach or trainer, use that name. The advisor above authored the report and may not be the member's trainer, so never call the advisor the member's coach or trainer.
 FREQUENCY: ${gv('training-freq')} | Program start: ${gv('program-start')}
 
-SCORES: Session quality ${gv('session-score')}/10 | Recovery ${gv('recovery-score')}/10 | Diet adherence ${gv('diet-score')}/10 | Energy ${gv('energy-score')}/10 | Motivation ${gv('motivation-score')}/10 | Sleep ${gv('sleep-score')}/10 | Stress ${gv('stress-score')}/10
-
-TRAINING: ${gv('sessions-done')} sessions done | ${gv('sessions-missed')} missed (${gv('missed-reason')})
-Strength: ${gv('strength-progress')}
-Endurance: ${gv('endurance-progress')}
-Confident movements: ${gv('confident-movements')}
-Challenging: ${gv('challenging-movements')}
+TRAINING: Strength: ${gv('strength-progress')} | Endurance: ${gv('endurance-progress')} | Flexibility/mobility: ${gv('flex-progress')}
+Movement notes: ${gv('movement-notes')}
 Program feel: ${gv('program-feel')} | Adjustments: ${gv('program-adjustments')}
 
-NUTRITION: ${gv('meals-per-day')} meals/day | Calories: ${gv('cal-tracking')} | Protein: ${gv('protein-tracking')} | Water: ${gv('water-intake')}
-Breakfast: ${gv('breakfast')} | Lunch: ${gv('lunch')} | Dinner: ${gv('dinner')} | Snacks: ${gv('snacks')}
-Wins: ${gv('nutrition-wins')} | Struggles: ${gv('nutrition-struggles')}
-Pre/post workout: ${gv('periworkout-nutrition')}
+NUTRITION: Calorie/macro adherence: ${gv('macro-adherence')} | Water: ${gv('water-intake')}
+Nutrition changes: ${gv('nutrition-changes')} | Biggest nutrition challenge: ${gv('nutrition-struggles')}
 
-LIFESTYLE: Sleep ${gv('sleep-hours')} | Lifestyle changes: ${gv('lifestyle-changes')}
-Challenges: ${gv('current-challenges')}
-Wins this month: ${gv('wins-list')} | ${gv('other-wins')}
+WELLBEING: Energy & motivation: ${gv('energy-motivation')} | Sleep: ${gv('sleep-change')}
+Lifestyle changes: ${gv('lifestyle-changes')}
+Biggest challenge this month: ${gv('current-challenges')}
+Changes & wins this month: ${gv('changes-and-wins')} | Quick tags: ${gv('wins-list')}
 
 INBODY COMPARISON (previous → current):
 Weight: ${gv('prev-weight')}lb → ${gv('now-weight')}lb
@@ -1630,10 +1382,8 @@ function runMonthlyReport() {
     bmi: gv('now-bmi') || '',
     leanMass: gv('now-lean') || '',
     fatMass: gv('now-fat') || '',
-    sessionsDone: gv('sessions-done') || '',
-    sessionsMissed: gv('sessions-missed') || '',
-    dietScore: gv('diet-score') || '',
-    nutritionWins: gv('nutrition-wins') || '',
+    macroAdherence: gv('macro-adherence') || '',
+    nutritionChanges: gv('nutrition-changes') || '',
     nutritionStruggles: gv('nutrition-struggles') || '',
     wins: gv('wins-list') || '',
   };
@@ -1652,7 +1402,7 @@ async function generateCheckinThankYou(clientData){
   const prompt = "Write a warm, personal check-in recap email from a personal trainer to their active client, right after a monthly check-in session. Return ONLY the plain-text email body. No subject line, no markdown, no asterisks, no bullet characters. Use natural paragraphs.\n\n"+
     "Address them by first name: "+firstName+". Sign off as "+(clientData.advisor||'Coach Ted')+", Retro Fitness of Fairless Hills.\n\n"+
     "Cover naturally, not as a numbered list: (1) a brief, genuine thank-you for coming in for their monthly check-in; (2) a short, warm recap of how things are going based on the session below; (3) clear direction on whether we're adjusting their program to help them progress further, or staying the current course because it's working — decide which fits based on the data below, and briefly say why; (4) an encouraging close. Around 150 to 250 words, noticeably shorter and more personal than a formal report.\n\n"+
-    "SESSION DATA: sessions completed "+(clientData.sessionsDone||'n/a')+", sessions missed "+(clientData.sessionsMissed||'n/a')+", diet score "+(clientData.dietScore||'n/a')+"/10, wins noted: "+(clientData.wins||'none specific noted')+", nutrition wins: "+(clientData.nutritionWins||'n/a')+", nutrition struggles: "+(clientData.nutritionStruggles||'n/a')+"\n"+
+    "SESSION DATA: macro/calorie adherence "+(clientData.macroAdherence||'n/a')+", wins noted: "+(clientData.wins||'none specific noted')+", nutrition changes: "+(clientData.nutritionChanges||'n/a')+", nutrition struggles: "+(clientData.nutritionStruggles||'n/a')+"\n"+
     "WEIGHT/BODY: current weight "+(clientData.weight||'n/a')+", lean mass "+(clientData.leanMass||'n/a')+", fat mass "+(clientData.fatMass||'n/a')+"\n"+
     "GOALS: "+(clientData.goals||'not specified')+"\n\n"+
     "ASSESSMENT SUMMARY: "+(assessmentText||'(base tone on the session data above)');
@@ -1834,31 +1584,39 @@ async function _saveCheckinToD1(){
     // when new fields get added to the form later.
     const fullIntake = {
       training_review: {
-        sessions_completed: gv('sessions-done'), sessions_missed: gv('sessions-missed'), missed_reason: gv('missed-reason'),
-        session_quality_score: gv('session-score'), strength_progress: gv('strength-progress'), endurance_progress: gv('endurance-progress'),
-        flexibility_progress: gv('flex-progress'), confident_movements: gv('confident-movements'), challenging_movements: gv('challenging-movements'),
-        recovery_score: gv('recovery-score'), program_feel: gv('program-feel'), program_adjustments: gv('program-adjustments')
+        strength_progress: gv('strength-progress'), endurance_progress: gv('endurance-progress'),
+        flexibility_progress: gv('flex-progress'), movement_notes: gv('movement-notes'),
+        program_feel: gv('program-feel'), program_adjustments: gv('program-adjustments')
       },
       diet_nutrition: {
-        diet_score: gv('diet-score'), calorie_tracking: gv('cal-tracking'), protein_tracking: gv('protein-tracking'), water_intake: gv('water-intake'),
-        meals_per_day: gv('meals-per-day'), breakfast: gv('breakfast'), lunch: gv('lunch'), dinner: gv('dinner'), snacks: gv('snacks'),
-        nutrition_struggles: gv('nutrition-struggles'), supplements_update: gv('supplements-update'),
-        training_day_nutrition: gv('training-day-nutrition'), periworkout_nutrition: gv('periworkout-nutrition')
+        macro_adherence: gv('macro-adherence'), water_intake: gv('water-intake'),
+        nutrition_changes: gv('nutrition-changes'), nutrition_struggles: gv('nutrition-struggles')
       },
       wellbeing_lifestyle: {
-        energy_score: gv('energy-score'), motivation_score: gv('motivation-score'), motivation_drivers: gv('motivation-drivers'),
-        sleep_score: gv('sleep-score'), sleep_hours: gv('sleep-hours'), stress_score: gv('stress-score'),
-        lifestyle_changes: gv('lifestyle-changes'), current_challenges: gv('current-challenges'), wins: gv('wins-list')
+        energy_motivation: gv('energy-motivation'), sleep_change: gv('sleep-change'),
+        lifestyle_changes: gv('lifestyle-changes'), current_challenges: gv('current-challenges'),
+        changes_and_wins: gv('changes-and-wins'), wins: gv('wins-list')
       },
       advisor_notes: gv('advisor-notes')
     };
+
+    // Dropdown-to-score proxies: the checkins table has fixed numeric score
+    // columns that other pages already read and display (e.g. ted-eod.html's
+    // "session: 9 · diet: 7..." summary line). Session quality and stress
+    // were removed as concepts entirely per Ted's direction, so those two
+    // columns intentionally go null going forward. Diet/energy/sleep were
+    // converted from 1-10 scales to faster dropdowns, so map those answers
+    // to a reasonable proxy score instead of leaving the columns blank.
+    const MACRO_SCORE = {'Yes — consistently on target':9,'Mostly — close most days':7,'Loosely / estimating, not tracking closely':5,'No — not hitting targets':3,'Not tracking at all':1};
+    const ENERGY_SCORE = {'Great — noticeably more energy and motivated':9,'Good — holding steady':7,'Mixed — up and down':5,'Struggling — low energy or motivation':3};
+    const SLEEP_SCORE = {'Better':8,'Unchanged':6,'Worse':3};
 
     const vals={
       client_id:clientId,
       checkin_date:gv('checkin-date'), next_checkin:gv('next-checkin'),
       advisor:gv('advisor-name')||getCfg('advisor'),
-      session_score:pf(gv('session-score')), diet_score:pf(gv('diet-score')),
-      energy_score:pf(gv('energy-score')), sleep_score:pf(gv('sleep-score')), stress_score:pf(gv('stress-score')),
+      diet_score:MACRO_SCORE[gv('macro-adherence')] ?? null,
+      energy_score:ENERGY_SCORE[gv('energy-motivation')] ?? null, sleep_score:SLEEP_SCORE[gv('sleep-change')] ?? null,
       prev_weight:pf(gv('prev-weight')), now_weight:pf(gv('now-weight')),
       prev_lean:pf(gv('prev-lean')), now_lean:pf(gv('now-lean')),
       prev_body_fat_pct:pf(gv('prev-pbf')), now_body_fat_pct:pf(gv('now-pbf')),
