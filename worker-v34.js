@@ -2843,6 +2843,77 @@ Rules:
         return ok({ saved: true, id: ins.meta?.last_row_id }, cors);
       }
 
+      // ── AI APPOINTMENT SUMMARY COMPOSER ──────────────────────────
+      // Ted's spec (July 10): for each Initial Consultation, 6-Week
+      // Follow-Up, or Monthly Check-In, combine (1) the appointment's own
+      // intake/assessment summary + outcome, and (2) the coach's own notes
+      // logged that day about that client (coach_touchpoints, written from
+      // the coach-crm.html agenda) into one short, condensed caption. Saves
+      // straight into coach_notes with the correct EOD tag, which is the
+      // exact table/tag Today's Notes Summary already reads -- so this
+      // populates the EOD automatically, no separate display path needed.
+      if (url.pathname === '/coach/compose-appointment-summary' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
+        const b = await request.json();
+        const { appointment_type, appointment_id, client_id, coach_name } = b;
+        if (!appointment_type || !appointment_id || !client_id || !coach_name) {
+          return bad('appointment_type, appointment_id, client_id, coach_name required', cors);
+        }
+        const tagMap = { consultation: 'EOD - Consultation', followup: 'EOD - Follow-up', checkin: 'EOD - Monthly Check-In' };
+        const tag = tagMap[appointment_type];
+        if (!tag) return bad('appointment_type must be consultation, followup, or checkin', cors);
+
+        const client = await env.DB.prepare('SELECT first_name, last_name FROM clients WHERE id=?').bind(client_id).first();
+        const clientName = client ? ((client.first_name||'')+' '+(client.last_name||'')).trim() : ('Client #'+client_id);
+
+        let appt = null, apptLabel = '';
+        if (appointment_type === 'consultation') {
+          appt = await env.DB.prepare('SELECT * FROM consultations WHERE id=?').bind(appointment_id).first();
+          apptLabel = 'Initial Consultation';
+        } else if (appointment_type === 'followup') {
+          appt = await env.DB.prepare('SELECT * FROM followups WHERE id=?').bind(appointment_id).first();
+          apptLabel = '6-Week Follow-Up';
+        } else {
+          appt = await env.DB.prepare('SELECT * FROM checkins WHERE id=?').bind(appointment_id).first();
+          apptLabel = 'Monthly Check-In';
+        }
+        if (!appt) return bad('Appointment not found', cors);
+
+        // Today's coach notes about this client from the agenda (coach_touchpoints)
+        const today = todayET();
+        const touchpoints = await env.DB.prepare(
+          "SELECT body, created_at FROM coach_touchpoints WHERE client_id=? AND date(created_at)=date(?) ORDER BY created_at ASC"
+        ).bind(client_id, today).all();
+        const agendaNotes = (touchpoints.results||[]).map(t => t.body).filter(Boolean).join(' | ') || 'None logged today.';
+
+        let apptDetail = '';
+        if (appointment_type === 'consultation' || appointment_type === 'followup') {
+          apptDetail = `Assessment summary: ${appt.assessment_summary || 'none on file'}\nOutcome: ${appt.outcome || 'not recorded'}\nAdvisor notes: ${appt.advisor_notes || 'none'}`;
+          if (appointment_type === 'followup') {
+            apptDetail += `\nTraining progress: ${appt.training_progress || 'not noted'}\nObstacles: ${appt.obstacles || 'none noted'}\nMindset: ${appt.mindset || 'not noted'}`;
+          }
+        } else {
+          apptDetail = `Assessment summary: ${appt.assessment_summary || 'none on file'}\nWins: ${appt.wins || 'none noted'}\nAdvisor notes: ${appt.advisor_notes || 'none'}\nScores (1-10) -- session: ${appt.session_score ?? '?'}, diet: ${appt.diet_score ?? '?'}, energy: ${appt.energy_score ?? '?'}, sleep: ${appt.sleep_score ?? '?'}, stress: ${appt.stress_score ?? '?'}`;
+        }
+
+        const sys = `You are helping a personal trainer compose one short, professional caption summarizing a client appointment for a daily report their regional director reads. Combine the appointment's intake/assessment data with the coach's own follow-up note into ONE tight paragraph (2-4 sentences max). Lead with the outcome/result, then the key supporting detail. Plain, factual, businesslike tone -- this is a status report, not marketing copy. No emojis, no em dashes, plain punctuation only. Return ONLY the caption text, nothing else.`;
+        const user = `Client: ${clientName}\nAppointment type: ${apptLabel}\n\n${apptDetail}\n\nCoach's note(s) logged today about this client: ${agendaNotes}\n\nCompose the caption.`;
+
+        const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json','x-api-key':env.ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
+          body: JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:300, system: sys, messages:[{role:'user', content: user}] })
+        });
+        const aiData = await aiResp.json();
+        const caption = (aiData.content||[]).filter(x=>x.type==='text').map(x=>x.text||'').join('').trim();
+        if (!caption) return bad('Could not compose summary, try again', cors);
+
+        const ins = await env.DB.prepare('INSERT INTO coach_notes (client_id,coach_name,tag,body,created_at) VALUES (?,?,?,?,?)')
+          .bind(client_id, coach_name, tag, caption, new Date().toISOString()).run();
+        return ok({ caption, saved: true, id: ins.meta?.last_row_id }, cors);
+      }
+
 
 
 
