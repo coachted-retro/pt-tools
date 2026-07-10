@@ -12,6 +12,34 @@ and ask, rather than guessing and building on top of a wrong guess.
 
 ## MASTER OPEN ITEMS LIST
 
+### NEW IDEA, July 10 -- not started, needs its own scoping session
+- [ ] Meal browsing filters + "chef bot" recommendation chat. Ted's idea,
+      two parts:
+      1. Filters on the meal/recipe library (both the client-facing
+         browsing screen and likely the coach-side meal-plan builder):
+         meal type, calorie range, dietary exclusions (auto-apply from
+         meal_profiles.excluded_proteins/excluded_vegetables/allergies,
+         which already exist from last night's build), macro-forward
+         tags (high protein/low carb, computed from existing calorie/
+         macro fields, no new tagging needed). Ted confirmed he likes
+         this direction, needs: is this for clients, coaches, or both?
+      2. A branded AI chat ("chef bot"/mascot personality matching
+         Coach's Table branding) clients can ask "what should I make
+         tonight" or "I have chicken, what can I make" -- grounded in
+         the real recipe library, same pattern as FitChat (built earlier
+         this session for exercises). Confirmed buildable and worth
+         doing.
+      3. STRETCH, lower confidence: photo of the fridge -> AI identifies
+         visible items -> suggests recipes. Technically possible (Claude
+         vision), but told Ted directly this will NOT be reliably
+         accurate -- containers, packaging, and partial visibility make
+         fridge photos genuinely hard to read. Fun bonus feature, not a
+         dependable primary path. Build the text-based version first;
+         treat this as optional/later, not core to launch.
+      Not started. Needs its own scoping pass (probably alongside the
+      1,319 remaining Coach's Table recipes, since this is most useful
+      once the library is bigger) rather than being squeezed in.
+
 ### VERIFY LIVE — built and deployed tonight, not yet confirmed working by Ted
 - [x] CONFIRMED July 10: worker-v34.js redeploy landed correctly. Verified
       directly against live Cloudflare via the Developer Platform
