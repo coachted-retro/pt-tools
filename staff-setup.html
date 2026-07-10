@@ -678,7 +678,14 @@ async function shareAppForEmployee(emp, statusEl){
   if (!confirm('Reset ' + emp.name + "'s login PIN and email new credentials to " + personalEmail + '?')) return;
 
   if (statusEl) statusEl.textContent = 'Setting up login...';
-  const newPin = String(Math.floor(1000 + Math.random()*9000));
+  // PIN standard: last 4 digits of the staff member's cell phone, same
+  // rule as the new-employee autoGeneratePin() flow -- this reset path
+  // was generating a genuinely random 4-digit PIN instead, which is very
+  // likely how several of the current accounts ended up inconsistent with
+  // what staff would naturally assume their PIN is. Only fall back to
+  // random if there's truly no phone number on file to derive it from.
+  const phoneDigits = (emp.phone || '').replace(/\D/g, '');
+  const newPin = phoneDigits.length >= 4 ? phoneDigits.slice(-4) : String(Math.floor(1000 + Math.random()*9000));
   try {
     const pr = await fetch(WORKER + '/staff/provision', {
       method:'POST', headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},
