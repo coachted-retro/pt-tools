@@ -131,7 +131,9 @@ mapping happens — that is exactly the pattern that created tonight's mess.
      detailed breakdown only needed at initial consultation, not monthly.
    - Needs Ted's sign-off on which fields are truly "core" before building
      -- this is a judgment call about what he actually needs to see live
-     vs what he can review from Coach's notes/history instead.
+     vs what he can review from Coach's notes/history instead. TED WILL
+     PROVIDE MORE REFINED ANSWERS ON THIS WHEN HE CAN LOG IN -- do not
+     finalize the field list without checking for that input first.
 
 0b. SPEC: Appointment/session email reminders with reply-confirmation.
    Ted's request (verbatim intent): email 24 hours before a scheduled
@@ -146,12 +148,15 @@ mapping happens — that is exactly the pattern that created tonight's mess.
    skip it -- surface a notification/reminder to staff so they can add one
    and send that reminder manually.
    OPEN QUESTIONS, must resolve before building (do not guess):
-   - Which table(s) count as "a scheduled event" for this purpose? Found
-     three candidates in the codebase: pt_appointments (consultations/
-     follow-ups/tours), scheduled_sessions (coach-crm.html's recurring
-     training program), clubos_appointments (synced from Club OS, no
-     client_id link typically). Confirm with Ted which of these -- likely
-     more than one -- should get reminders.
+   - SCOPE CONFIRMED BY TED (July 9, late session): reminders apply to
+     Initial Consultations, Sessions, and Appointments (6-week follow-ups
+     and monthly check-ins fall under "appointments" here) -- NOT Club
+     tours/intakes. So this points at pt_appointments and/or
+     scheduled_sessions, not clubos_appointments. Still need to confirm
+     exactly which table(s) hold "sessions" vs "appointments" as Ted means
+     them -- likely scheduled_sessions for recurring training sessions and
+     pt_appointments for consultations/follow-ups/check-ins, but verify
+     field-by-field before building rather than assuming.
    - Does the Resend account on this project support INBOUND email
      (receiving + parsing a reply), or only outbound send (confirmed
      working today for other notifications)? This is a different Resend
