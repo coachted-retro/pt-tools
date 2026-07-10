@@ -199,7 +199,12 @@ textarea{resize:vertical;min-height:72px}
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
-const TODAY = new Date().toISOString().slice(0,10);
+// UTC-based "today" (new Date().toISOString()) breaks every evening after
+// 8pm Eastern, once UTC has rolled to the next calendar day while it's
+// still "today" here -- consultations/follow-ups/check-ins logged earlier
+// the same day stop showing up because the date comparison no longer
+// matches. Compute the actual Eastern calendar date instead.
+const TODAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 const notes = [];
 let allClients = [];
 let allScans = [];
@@ -297,7 +302,7 @@ function toggleInlineNote(id) {
 
 async function loadData() {
   try {
-    const today = new Date().toISOString().slice(0,10);
+    const today = TODAY;
     const [clientsRes, consultRes, followupRes, checkinRes] = await Promise.all([
       fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({op:'select', table:'clients', orderBy:'last_name asc', limit:200})}),
@@ -321,7 +326,7 @@ function isDismissedToday(flagType, clientId) {
 }
 
 async function dismissFlag(flagType, clientId) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = TODAY;
   try {
     await fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({op:'insert', table:'eod_flag_dismissals', values:{flag_type: flagType, client_id: clientId, dismissed_at: today, dismissed_by: 'Ted Scholl'}})});
@@ -331,7 +336,7 @@ async function dismissFlag(flagType, clientId) {
 }
 
 async function dismissAllFlags(flagType, clientIds) {
-  const today = new Date().toISOString().slice(0,10);
+  const today = TODAY;
   try {
     await Promise.all(clientIds.map(function(id) {
       return fetch(WORKER + '/db', {method:'POST', headers:{'Content-Type':'application/json'},
