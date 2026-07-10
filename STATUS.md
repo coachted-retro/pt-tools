@@ -62,12 +62,27 @@ via the Cloudflare Developer Platform connector, not just code reading:
       fixed until Ted grants him access via portal-admin.html. His
       workouts fix from earlier will work correctly once he has an actual
       account to log into.
-- [ ] STILL TO AUDIT: this was one focused pass on the login flow
-      specifically, driven by Ted's exact complaint (coaches/members
-      unable to log in, landing on wrong pages). Broader audit of other
-      user flows (nutrition tracking, class booking, coach touchpoints,
-      etc.) has not been done yet -- do not assume the rest of the app is
-      clean just because login is now solid
+- [ ] STILL TO AUDIT: nutrition tracking, coach touchpoints, meal plan
+      generation, InBody scan display. Broader audit of other user flows
+      is ongoing -- do not assume the rest of the app is clean just
+      because login and class booking are now checked
+
+### CLASS BOOKING AUDIT, July 10 -- checked, no code bugs found
+- RSVP flow (toggleGoing/classes/rsvp) and social-proof display
+  (classes/going) both reviewed end to end, logic is correct
+- class_rsvps and guest_pass_log both have ZERO rows ever, but the code
+  paths are correct -- consistent with "nobody could reliably log in
+  until tonight," not a feature bug. Worth re-checking usage in a week
+  once login fixes have had time to actually matter
+- REAL GAP FOUND, action item not a code bug: the AI-generated rotating
+  class-content system (group_class_sessions, feeds the "See Tonight's
+  Workout" button and class-agenda.html) has only ever been run for
+  Boot Camp. Ignite Core (Ted's own Tuesday 5:30pm class) has zero
+  session rows -- the button shows for it but clicking through always
+  says "may not be generated yet," which will never resolve on its own
+  since nobody has run the generator for that class. Needs Ted (or
+  whoever runs it) to actually generate Ignite Core content, not a code
+  fix
 
 ### NEEDS TED'S INPUT before building — do not guess at these
 - [ ] Monthly check-in intake condensing: which fields are truly "core"
