@@ -313,6 +313,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
 const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
 const GYM_ID = parseInt(new URLSearchParams(location.search).get('gym_id')) || 1;
@@ -453,7 +454,7 @@ function renderOverview() {
       latestScans[s.client_id] = s.scan_date;
     }
   });
-  const sixtyDaysAgo = new Date(Date.now() - 60*24*60*60*1000).toISOString().slice(0,10);
+  const sixtyDaysAgo = (() => { const d = new Date(todayET() + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 60); return d.toISOString().slice(0,10); })();
   const overdue = active.filter(c => {
     const last = latestScans[c.id];
     return !last || last < sixtyDaysAgo;
@@ -585,9 +586,9 @@ function renderClientTab() {
 
 // ── EOD FEED ──────────────────────────────────────────────────
 function changeDate(delta) {
-  const d = new Date(eodDate);
-  d.setDate(d.getDate() + delta);
-  if (d > new Date()) return;
+  const d = new Date(eodDate + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + delta);
+  if (d.toISOString().slice(0,10) > todayET()) return;
   eodDate = d.toISOString().slice(0,10);
   loadEODFeed();
 }
@@ -658,7 +659,7 @@ function buildPulse() {
   // Flag clients whose inbody scan is 60+ days old
   const latestScans = {};
   allScans.forEach(s => { if (!latestScans[s.client_id] || s.scan_date > latestScans[s.client_id]) latestScans[s.client_id] = s.scan_date; });
-  const sixtyAgo = new Date(Date.now()-60*24*60*60*1000).toISOString().slice(0,10);
+  const sixtyAgo = (() => { const d = new Date(todayET() + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - 60); return d.toISOString().slice(0,10); })();
   active.filter(c => !latestScans[c.id] || latestScans[c.id] < sixtyAgo).slice(0,3).forEach(c =>
     pulse.push({icon:'⚠️',color:'dot-amber',name:name(c),note:'No InBody scan in 60+ days — progress monitoring overdue',type:'monitoring'}));
 
