@@ -148,17 +148,23 @@ separated by design, not a bug.
       digest
 
 ### NEEDS BUILDING — scoped, waiting on the above inputs or on time
-- [ ] AI note composition for appointment outcomes (Consultations, 6-Week
-      Follow-Ups, Monthly Check-Ins). Confirmed via full codebase search:
-      does not exist anywhere, despite being described as an intended
-      standard. Spec: coach writes a brief note about the appointment: AI
-      pulls that note + the appointment's structured outcome data (scores
-      for check-ins; outcome/assessment_summary for consultations/
-      follow-ups) and composes an enhanced caption. That composed caption
-      is what should show in the EOD auto-pulled rows and in Today's Notes
-      Summary / what goes to Keelin. Model the API call on existing working
-      patterns in worker-v34.js (search 'aiResp = await fetch' — closest
-      are /recipes/generate, /coach/draft-reply, /coach/draft-outreach)
+- [x] BUILT July 10: AI appointment summary composer. Ted gave the full,
+      precise spec: for each Consultation/Follow-Up/Check-In, combine the
+      appointment's own intake/assessment data with the coach's own notes
+      logged that day (from the coach-crm.html agenda, coach_touchpoints
+      table) into one short caption, per client, per appointment. Built
+      as /coach/compose-appointment-summary in worker-v34.js -- pulls the
+      right fields per appointment type (assessment_summary/outcome/
+      advisor_notes for consultations and follow-ups; assessment_summary/
+      wins/scores for check-ins), pulls today's coach_touchpoints for that
+      client, has Claude compose the caption, saves it straight into
+      coach_notes with the correct EOD tag (same table/tag Today's Notes
+      Summary already reads, so no separate display wiring needed). Added
+      a purple "Compose" button to each row in ted-eod.html.
+      NOT YET TESTED WITH A REAL APPOINTMENT -- needs Ted to run it
+      against an actual consultation/follow-up/check-in once one exists
+      today, confirm the composed caption reads right and actually shows
+      up correctly in Today's Notes Summary and on submit.
 - [ ] Nutrition/macro/InBody pipeline mapping. Ted's words tonight: "awkward,
       clunky, pieces everywhere and in the wrong places, missing pieces,
       pieces not connecting properly." Built in disconnected pieces across
