@@ -1,0 +1,1355 @@
+# Coach's Table Recipe Build Tracker
+
+Total unique base recipes identified: 1344
+Built and committed so far (batch 1): 23
+Remaining: 1321
+
+Recipes are added to worker-v34.js MEAL_LIBRARY, tagged 'coaches_table', matching the existing schema (name/calories/macros/tags/recipe.ingredients/recipe.steps). No rush — working through this in batches over multiple sessions.
+
+## DONE (batch 1)
+- Mediterranean Breakfast Pita
+- Hash Brown Omelette
+- Texas Omelette Sandwich
+- Persian Omelette
+- Greek Omelette
+- Chimichurri Chicken with Couscous Bowl
+- Caprese Chicken Pasta Salad Bowl
+- Salmon with Brown Rice Salad
+- Pineapple Shrimp Bowl
+- Creamy Spinach Chicken
+- Teriyaki Chicken with Veggies and Quinoa
+- Greek Shrimp
+- Beef Lettuce Taco
+- Zucchini Lasagna
+- Mediterranean Fish
+- Salmon Tomato Stew
+- Creamy Chicken Curry
+- Cranberry Feta Turkey Meatballs
+- Savory Yogurt Bowl
+- Pumpkin Protein Balls
+- Cottage Cheese With Pomegranate and Chocolate Chips
+- Roasted Chickpeas
+- Roasted Mushrooms
+
+## REMAINING (not yet built)
+- Chocolate Cheesecake | snacks | 246 Cal / serving
+- 1 cup of raspberries | dinner, lunch, breakfast | 64 Cal / serving
+- 1 cup of Blueberries | dinner, breakfast, lunch | 83 Cal / serving
+- 1 cup of strawberries | dinner, lunch, breakfast | 50 Cal / serving
+- Medium Orange | dinner, lunch, breakfast | 74 Cal / serving
+- Small Orange | dinner, lunch, breakfast | 69 Cal / serving
+- Medium Banana | lunch, dinner, breakfast | 105 Cal / serving
+- Small Banana | dinner, lunch, breakfast | 90 Cal / serving
+- Medium Apple | dinner, lunch, breakfast | 72 Cal / serving
+- Small Apple | dinner, lunch, breakfast | 55 Cal / serving
+- Potato Egg Wrap | breakfast, lunch, dinner | 451 Cal / serving
+- Omelette Quesadilla | lunch, dinner, breakfast | 456 Cal / serving
+- Salmon Lettuce Boats | lunch, dinner, lunch, dinner | 452 Cal / serving
+- Cottage Crepes | breakfast | 496 Cal / serving
+- Chocolate Cheesecake Pudding | snacks | 209 Cal / serving
+- Asian Noodle Salad | lunch, dinner | 509 Cal / serving
+- Tuna Salad With Crispy Rice | lunch, dinner | 527 Cal / serving
+- Shrimp With Udon Noodles | dinner, lunch | 541 Cal / serving
+- Breaded Chicken With Crunchy Salad | lunch, dinner | 468 Cal / serving
+- Potato Salad With Shrimp | lunch, dinner | 472 Cal / serving
+- Creamy Cucumber Salad | snacks | 224 Cal / serving
+- Insalata di Patate | lunch, dinner | 512 Cal / serving
+- Quinoa Soup With Tofu | dinner, lunch | 500 Cal / serving
+- Apple Chicken Salad | lunch, dinner | 522 Cal / serving
+- Green Quinoa Tuna Salad | lunch, dinner | 487 Cal / serving
+- Tofu Nuggets | lunch, dinner | 542 Cal / serving
+- Oriental Chicken Salad | lunch, dinner | 485 Cal / serving
+- Southern Beans | lunch, dinner | 527 Cal / serving
+- Rainbow Tuna Sandwich | lunch, dinner, breakfast | 542 Cal / serving
+- Hummus Tuna Sandwich | lunch, dinner, breakfast | 532 Cal / serving
+- Cream Cheese Sandwich | lunch, breakfast, dinner | 498 Cal / serving
+- Curry Chicken Sandwich | lunch, dinner | 517 Cal / serving
+- Crunchy Chicken Sandwich | lunch, dinner | 525 Cal / serving
+- Curried Tofu Sandwich | lunch, dinner | 523 Cal / serving
+- Crunchy Tuna Wrap | lunch, dinner | 464 Cal / serving
+- Oriental Chicken Sandwich | lunch, dinner | 547 Cal / serving
+- Fast Thai Wrap | lunch, dinner | 456 Cal / serving
+- Tuna Steak Tacos | lunch, dinner | 485 Cal / serving
+- Easy Fish Tacos | lunch, dinner | 492 Cal / serving
+- Tofu Lettuce Cups | lunch, dinner | 488 Cal / serving
+- Cajun Chicken With Zucchini Salad | lunch, dinner | 518 Cal / serving
+- Avocado Chicken Wrap | lunch, dinner | 489 Cal / serving
+- Tuna and Rice Frittata | breakfast | 536 Cal / serving
+- Mexican Chicken Wrap | lunch, dinner | 495 Cal / serving
+- Scrambled Eggs With Corn Tortilla | breakfast, lunch, dinner | 471 Cal / serving
+- Broccoli Cottage Quiche | lunch, dinner, breakfast | 482 Cal / serving
+- Spinach Cottage Quiche | lunch, dinner, lunch, dinner | 505 Cal / serving
+- Paradise Vibes Smoothie | breakfast | 451 Cal / serving
+- Chinese Shrimp Omelette | breakfast, breakfast | 486 Cal / serving
+- Creamy Egg Wrap | lunch, dinner, breakfast | 453 Cal / serving
+- Beef Sweet Potato Hash Wrap | lunch, dinner | 460 Cal / serving
+- Lemon Garlic Shrimp | lunch, dinner | 454 Cal / serving
+- Chicken Breast With Caprese Salad | lunch, dinner | 531 Cal / serving
+- Mexican Steak Wrap | lunch, dinner | 453 Cal / serving
+- Mexican Creamy Corn With Shrimp | lunch, dinner | 482 Cal / serving
+- Salmon Quinoa Bowl | lunch, dinner | 527 Cal / serving
+- Power Muffin Sandwich | breakfast, lunch, dinner | 431 Cal / serving
+- Avocado Toast With Pico de Gallo | lunch, dinner | 493 Cal / serving
+- Grilled Pesto Sandwich | lunch, dinner | 510 Cal / serving
+- Tuscan Egg White Sandwich | breakfast | 500 Cal / serving
+- Egg Breakfast Tacos | breakfast | 550 Cal / serving
+- Egg White Breakfast Tacos | breakfast, breakfast | 467 Cal / serving
+- Steak and Blue Cheese Salad | dinner, lunch | 534 Cal / serving
+- Shrimp Wrap | lunch, dinner | 515 Cal / serving
+- Cabbage Egg Sandwich | lunch, dinner | 460 Cal / serving
+- Avotuna Bagel | lunch, breakfast, dinner | 545 Cal / serving
+- Sproud Salad Breakfast | breakfast | 453 Cal / serving
+- English Muffin Sandwich | snacks | 245 Cal / serving
+- Skinny Muffin Sandwich | snacks | 249 Cal / serving
+- French Rice Cake Toast | snacks | 249 Cal / serving
+- Rice Cake Treat | snacks | 248 Cal / serving
+- Spicy Chicken Rice Cake | snacks | 246 Cal / serving
+- Chicken Alfredo Rice Cake Toast | snacks | 249 Cal / serving
+- Tuna Melt Rice Cake Toast | snacks | 240 Cal / serving
+- Shrimp, Broccoli & Quinoa Salad | snacks | 243 Cal / serving
+- Crunchy Wraps | snacks | 225 Cal / serving
+- Mexican Creamy Tuna Salad | lunch, dinner | 490 Cal / serving
+- Summer Salad | lunch, dinner | 524 Cal / serving
+- Mexican Corn Salad | lunch, dinner | 460 Cal / serving
+- Tofu Tacos | lunch, dinner | 505 Cal / serving
+- Steak Salad With Corn | lunch, dinner | 477 Cal / serving
+- Black Rice Salad | lunch, dinner | 549 Cal / serving
+- Chicken Chickpea Bowl | lunch, dinner | 496 Cal / serving
+- Salmon Rolls | snacks | 202 Cal / serving
+- Italian Breakfast Bowl | breakfast | 458 Cal / serving
+- Breakfast Bagel Sandwich | lunch, breakfast, dinner | 476 Cal / serving
+- Strawberry Cheesecake Jars | breakfast | 518 Cal / serving
+- Mexican Breakfast Tostada | breakfast | 506 Cal / serving
+- Sandwich with Grilled Veggies | lunch, dinner, breakfast | 478 Cal / serving
+- Egg Breakfast Toast | lunch, dinner | 491 Cal / serving
+- Quinoa Breakfast Wrap | lunch, dinner, breakfast | 521 Cal / serving
+- Mexican Breakfast Bowl | breakfast | 462 Cal / serving
+- Ground Beef Breakfast Bowl | breakfast, lunch, dinner | 515 Cal / serving
+- Breakfast Pita | breakfast | 477 Cal / serving
+- Apple Cinnamon Cottage Bowl | breakfast | 463 Cal / serving
+- Breakfast Hash | breakfast | 491 Cal / serving
+- Baked Egg Bowl | breakfast | 462 Cal / serving
+- Omelette With Smoked Salmon | breakfast | 458 Cal / serving
+- Cranberry Chicken Bake | lunch, dinner | 472 Cal / serving
+- Rotisserie Chicken Bowl | lunch, dinner | 503 Cal / serving
+- Cheeseburger Wrap | lunch, dinner | 535 Cal / serving
+- Edamame Avocado Salmon Sandwich | breakfast, lunch, dinner | 480 Cal / serving
+- Savory Sandwich | breakfast, lunch, dinner | 542 Cal / serving
+- Quick Cajun Fish Tacos | lunch, dinner | 521 Cal / serving
+- Creamy Cauliflower Garlic Rice | lunch, dinner | 451 Cal / serving
+- Pumpkin Protein Cookies | snacks | 208 Cal / serving
+- Carrot & Lentil Soup | lunch, dinner | 486 Cal / serving
+- Italian Lentil Stew | lunch, dinner | 499 Cal / serving
+- Creamy Sun-Dried Tomato Lentils | dinner, lunch | 544 Cal / serving
+- Risalamande | snacks | 244 Cal / serving
+- Glazed Tofu | snacks | 248 Cal / serving
+- Artichoke Creamy Dip | snacks | 219 Cal / serving
+- Golden Cabbage Soup With Chicken | lunch, dinner | 465 Cal / serving
+- Mushroom and Lentil Soup | dinner, lunch | 480 Cal / serving
+- Creamy Cod With Potatoes | lunch, dinner | 539 Cal / serving
+- Ricotta Prosciutto Toast | breakfast, lunch, dinner | 503 Cal / serving
+- Creamy Corn Casserole | dinner, lunch | 493 Cal / serving
+- Cranberry Salmon Bites | snacks | 178 Cal / serving
+- Tomato Shrimp Soup | lunch, dinner | 452 Cal / serving
+- Apple Cinnamon Cheese Bake | snacks | 224 Cal / serving
+- Sweet Chicken and Butternut Bake | lunch, dinner | 542 Cal / serving
+- Pomegranate Pork Belly | lunch, dinner | 515 Cal / serving
+- Salmon Bruschetta | snacks | 211 Cal / serving
+- Pea Salad With Bacon | lunch, dinner | 453 Cal / serving
+- Edamame Kale Salad | lunch, dinner | 458 Cal / serving
+- Broccoli Bacon Salad | snacks | 246 Cal / serving
+- Festive Smoked Salmon Crown | snacks | 242 Cal / serving
+- Cranberry Edamame Bowl | lunch, dinner | 544 Cal / serving
+- Cheesy Green Casserole | lunch, dinner | 536 Cal / serving
+- Sourdough Stuffing | lunch, dinner | 493 Cal / serving
+- Carrot Protein Bites | snacks | 243 Cal / serving
+- Stuffed Cabbage Rolls | lunch, dinner | 499 Cal / serving
+- Bean Soup With Ground Turkey | lunch, dinner | 464 Cal / serving
+- Cabbage Soup With Ground Beef | lunch, dinner | 463 Cal / serving
+- Potato Soup With Chicken and Bacon | lunch, dinner | 540 Cal / serving
+- Mexican Bean Soup With Chorizo | lunch, dinner | 503 Cal / serving
+- Mexican Black Bean Soup | lunch, dinner | 513 Cal / serving
+- Hearty Pumpkin Soup | lunch, dinner | 462 Cal / serving
+- Bacon & Chicken Comfort Soup | lunch, dinner | 507 Cal / serving
+- Sweet Potato Turkey Bake | lunch, dinner | 499 Cal / serving
+- Feta, Cranberry Chickpea Salad | dinner, lunch | 533 Cal / serving
+- Stuffed Butternut Squash | lunch, dinner | 487 Cal / serving
+- Holiday Potato Toast | snacks | 235 Cal / serving
+- Pineapple Skewers | snacks | 244 Cal / serving
+- Creamy Holiday Spread | snacks | 196 Cal / serving
+- Holiday Leftover Wrap | lunch, dinner | 467 Cal / serving
+- Quinoa Bites | snacks | 180 Cal / serving
+- Greek Artichoke Casserole | lunch, dinner | 543 Cal / serving
+- Comfort Turkey Noodle Soup | lunch, dinner | 459 Cal / serving
+- Brussels Sprouts Casserole | lunch, dinner | 457 Cal / serving
+- Ground Chicken and Sweet Brussels Sprouts | lunch, dinner | 514 Cal / serving
+- Pumpkin Chili | lunch, dinner | 469 Cal / serving
+- Winter Lentils With Sausage | lunch, dinner | 465 Cal / serving
+- Creamy Zucchini Rice | lunch, dinner | 548 Cal / serving
+- Creamy Butternut Squash Pasta | lunch, dinner | 540 Cal / serving
+- Cheesy Cauliflower Pumpkin Casserole | dinner, lunch | 466 Cal / serving
+- Pumpkin Mousse | snacks | 225 Cal / serving
+- Pumpkin and Sweet Potato Soup With Chicken | lunch, dinner | 451 Cal / serving
+- Pumpkin Egg Pie | snacks | 173 Cal / serving
+- Braciole | lunch, dinner | 497 Cal / serving
+- Butternut Chickpea Soup | lunch, dinner | 470 Cal / serving
+- Harvest Tortilla Quiche | lunch, dinner | 524 Cal / serving
+- Savory Squash Tortilla Quiche | lunch, dinner | 550 Cal / serving
+- Savory Beef & Kale Tart | snacks | 247 Cal / serving
+- Rustic Meat Pie | lunch, dinner | 454 Cal / serving
+- Winter Baked Bites | snacks | 212 Cal / serving
+- Potato Cream | lunch, dinner | 492 Cal / serving
+- Crunch & Sweet Chicken Bowl | lunch, dinner | 547 Cal / serving
+- Crustless Pumpkin Cheesecake | snacks | 210 Cal / serving
+- Creamed Peas With Chicken | snacks | 240 Cal / serving
+- Cozy Butternut Squash Chicken Salad | lunch, dinner | 532 Cal / serving
+- Sformato di Melanzane | snacks | 151 Cal / serving
+- Butter Squash, Ground Turkey and Rice Casserole | lunch, dinner | 544 Cal / serving
+- Turkey Wild Rice Stuffing | lunch, dinner | 540 Cal / serving
+- Tuscan Winter Salad | lunch, dinner | 518 Cal / serving
+- Cauliflower Bake With Chicken | lunch, dinner | 538 Cal / serving
+- Stuffed Chicken Breast With Brie & Apple | lunch, dinner | 504 Cal / serving
+- Orange Rice Chicken Casserole | lunch, dinner | 513 Cal / serving
+- Roasted Pumpkin With Greek Yogurt Dip | snacks | 213 Cal / serving
+- Scalloped Potatoes | snacks | 247 Cal / serving
+- Turkey Wild Rice | lunch, dinner | 468 Cal / serving
+- Minestrone Soup With Chicken | lunch, dinner | 541 Cal / serving
+- Sweet Carrot Crepes | breakfast | 468 Cal / serving
+- Ginger Cinnamon Roll Ups | breakfast | 476 Cal / serving
+- Gingerbread Pancakes | breakfast | 469 Cal / serving
+- Parmesan Bread With Sun Dried Tomato | snacks | 239 Cal / serving
+- Carrot Oatmeal | snacks | 249 Cal / serving
+- Apple Pie Protein Smoothie | snacks | 230 Cal / serving
+- Cherry Almond Protein Smoothie | snacks | 246 Cal / serving
+- Date Cinnamon Protein Smoothie | snacks | 188 Cal / serving
+- Pumpkin Pie Protein Smoothie | snacks | 210 Cal / serving
+- Brussels Sprouts With Cinnamon Spread and Pomegranate | snacks | 161 Cal / serving
+- Brussels Sprouts Salad With Salmon Bites | lunch, dinner | 534 Cal / serving
+- Brussels Sprouts With Sausage & Squash | lunch, dinner | 539 Cal / serving
+- Almond Brussels Sprouts | snacks | 249 Cal / serving
+- Brussels Sprouts Tempeh Bowl | lunch, dinner | 534 Cal / serving
+- Brussels Sprouts Skewers | snacks | 205 Cal / serving
+- Crusted Salmon With Cherry Chia Jam | lunch, dinner | 540 Cal / serving
+- Cauliflower Mash | snacks | 187 Cal / serving
+- Stuffed Acorn Squash | lunch, dinner | 544 Cal / serving
+- Simple Chicken Corn Chowder | lunch, dinner | 476 Cal / serving
+- Chicken Sriracha Rice Roll Ups | snacks | 248 Cal / serving
+- Potato Zucchini Cream | lunch, dinner | 493 Cal / serving
+- Pumpkin Bread | snacks | 223 Cal / serving
+- Eggnog Protein Smoothie | snacks | 232 Cal / serving
+- Sweet Potato With Yogurt Sauce | lunch, dinner | 549 Cal / serving
+- Rasperry With Hazelnut Spread Roll Up | snacks | 232 Cal / serving
+- Cottage Cheese Breakfast Bake | breakfast | 549 Cal / serving
+- Sauerkraut Soup | lunch, dinner | 463 Cal / serving
+- Carrot Ginger Creamy Soup | lunch, dinner | 464 Cal / serving
+- Asian Bowl | lunch, dinner | 522 Cal / serving
+- Beef and Kimchi Rice | lunch | 500 Cal / serving
+- Kimchi Noodle Salad | lunch, dinner | 532 Cal / serving
+- Peach Tofu Pudding With Blueberries | snacks | 246 Cal / serving
+- Peach Blueberry Smoothie | snacks | 249 Cal / serving
+- Burger Quesadilla | lunch, dinner | 508 Cal / serving
+- Summer Roll Bowl | lunch, dinner | 538 Cal / serving
+- Grilled Chicken with Peaches and Pesto | lunch, dinner | 461 Cal / serving
+- Watermelon Farro Crunch Salad | lunch, dinner | 520 Cal / serving
+- Piadina con Carciofi | snacks | 196 Cal / serving
+- Creamy Carrot Pistachio Sandwich | breakfast, lunch, dinner | 471 Cal / serving
+- Easy Beef Tomato Pasta | lunch, dinner | 548 Cal / serving
+- Orzo Salad | lunch, dinner | 535 Cal / serving
+- Mexican Lettuce Wrap | lunch, dinner | 459 Cal / serving
+- Salmon Pasta Salad | lunch, dinner | 534 Cal / serving
+- Tex-Mex Pasta Salad | lunch, dinner | 538 Cal / serving
+- Grilled Chicken Fajita Salad | lunch, dinner | 452 Cal / serving
+- Farro Salad with Bresaola & Grilled Eggplant | lunch, dinner | 513 Cal / serving
+- Rice Salad With Grilled Chicken & Avocado | lunch, dinner | 529 Cal / serving
+- Antipasto Salad | lunch, dinner | 521 Cal / serving
+- Chicken Pasta Salad | lunch, dinner | 533 Cal / serving
+- Corn Tostada With Canned Tuna and Pico de Gallo | lunch, dinner | 495 Cal / serving
+- Edamame Tuna Wrap | lunch, dinner | 546 Cal / serving
+- Asian Beef and Broccoli Skewers | lunch, dinner | 530 Cal / serving
+- Grilled Peach Salad With Salmon | snacks | 242 Cal / serving
+- Peach Italian Salad | lunch, dinner | 532 Cal / serving
+- Easy Pasta | lunch, dinner | 545 Cal / serving
+- Pasta With Grilled Zucchini & Chicken | lunch, dinner | 548 Cal / serving
+- Tuna Cabbage Cup | snacks | 184 Cal / serving
+- Salmon Cabbage Cups | lunch, dinner | 478 Cal / serving
+- Greek Chicken Lettuce Wraps | lunch, dinner | 488 Cal / serving
+- Quinoa Shrimp Lettuce Wraps | lunch, dinner | 462 Cal / serving
+- Orzo Salad With Shrimps | lunch, dinner | 530 Cal / serving
+- Grilled Steak Potato Mushrooms Skewers | lunch, dinner | 477 Cal / serving
+- Grilled Romaine Salad | lunch, dinner | 525 Cal / serving
+- Grilled Parmesan Cauliflower | lunch, dinner | 469 Cal / serving
+- Shrimp Blackberry Skewers | lunch, dinner | 545 Cal / serving
+- Salmon Caesar Salad Wrap | lunch, dinner | 455 Cal / serving
+- Tropical Tuna Skewers | lunch, dinner | 521 Cal / serving
+- Grilled Salmon Skewers | lunch, dinner | 514 Cal / serving
+- Grilled Tuna Skewer | lunch, dinner | 486 Cal / serving
+- Pineapple Ceviche with Shrimps | lunch, dinner | 486 Cal / serving
+- Mediterranean Salad | lunch, dinner | 534 Cal / serving
+- Tuna Ceviche | lunch, dinner | 512 Cal / serving
+- Plum Yogurt Bowl | snacks | 246 Cal / serving
+- Clean Avocado Toast | snacks | 199 Cal / serving
+- Cucumber Summer Salad | snacks | 176 Cal / serving
+- Pineapple Fresh Salad | snacks | 236 Cal / serving
+- Sweet Potato Toast With Scramble Eggs | snacks | 249 Cal / serving
+- Grilled Sweet Potato Toast | snacks | 198 Cal / serving
+- Spicy Lettuce Boats | snacks | 250 Cal / serving
+- Cottage Boats | snacks | 150 Cal / serving
+- Cantaloup Bowl | snacks | 195 Cal / serving
+- Croissant Toast | snacks | 213 Cal / serving
+- Piadina With Prosciutto | snacks | 184 Cal / serving
+- Turkey Rolls With Creamy Kale Salad | snacks | 249 Cal / serving
+- Cheesy Mini Bell Peppers | snacks | 179 Cal / serving
+- Shrimp Salad Crackers | snacks | 225 Cal / serving
+- Grilled Eggplant Bites | snacks | 206 Cal / serving
+- Caprese Chicken Skewer | snacks | 248 Cal / serving
+- Melon, Prosciutto Skewers | snacks | 248 Cal / serving
+- Tropical Skewers | snacks | 243 Cal / serving
+- Asparagus with Shredded Boiled Egg Salad | snacks | 203 Cal / serving
+- Orange Mocktail | snacks | 246 Cal / serving
+- Pineapple Mint Mocktail | snacks | 244 Cal / serving
+- Coconut Watermelon Mocktail | snacks | 236 Cal / serving
+- Watermelon Coconut Water | snacks | 198 Cal / serving
+- Pesto Egg Toast | breakfast | 545 Cal / serving
+- Cheesy Sunny Eggs With Chickpeas | breakfast | 499 Cal / serving
+- Breakfast Grilled Sandwich | breakfast | 517 Cal / serving
+- Egg Shrimp Bagel Toast | breakfast | 507 Cal / serving
+- Earth Breakfast Bowl | breakfast | 483 Cal / serving
+- Cilbir | breakfast | 491 Cal / serving
+- Parmesan Baked Eggs | breakfast | 505 Cal / serving
+- Mediterranean Cottage Cheese Wrap | breakfast, lunch, dinner | 474 Cal / serving
+- Quinoa Bowl | breakfast, dinner, lunch | 458 Cal / serving
+- Salmon Breakfast Bowl | breakfast | 538 Cal / serving
+- Sweet Cottage Cheese Bowl | snacks | 249 Cal / serving
+- Dream Cottage Cheese Bowl | breakfast | 531 Cal / serving
+- Eggplant Rolls | dinner, lunch | 518 Cal / serving
+- Grilled Salmon Sandwich | breakfast, lunch, dinner | 528 Cal / serving
+- Green Sandwich | breakfast, lunch, dinner | 549 Cal / serving
+- Tuna Omelette Sandwich | breakfast, lunch, dinner | 546 Cal / serving
+- Spinach Corn Sandwich With Chicken | breakfast, lunch, dinner | 544 Cal / serving
+- Avocado Tuna Sandwich | breakfast, lunch, dinner | 539 Cal / serving
+- Artichoke Omelette Sandwich | breakfast | 512 Cal / serving
+- Hashbrown Sandwich | snacks | 242 Cal / serving
+- Avo Toast With Shrimp | breakfast, lunch, dinner | 467 Cal / serving
+- Avocado Tomato Wrap | breakfast, lunch, dinner | 530 Cal / serving
+- Spinach Feta Egg Wrap | breakfast, lunch, dinner | 522 Cal / serving
+- Curry Egg Salad Wrap | breakfast, lunch, dinner | 484 Cal / serving
+- Chocolate Chip Cookie Smoothie | breakfast | 533 Cal / serving
+- Overnigth Strawberry Chia Pudding | breakfast | 546 Cal / serving
+- Date Chia Pudding | breakfast | 497 Cal / serving
+- Kiwi Chia Pudding Plant-Based | breakfast | 544 Cal / serving
+- Yogurt Cloud Green Smoothie | breakfast | 450 Cal / serving
+- Apple Kiwi Smoothie | breakfast | 502 Cal / serving
+- Kiwi Chia Pudding | breakfast | 504 Cal / serving
+- Chicken and Lentil | lunch, dinner | 532 Cal / serving
+- Blueberry Avo Protein Smoothie | breakfast | 478 Cal / serving
+- Snicker Smoothie | breakfast, dinner | 535 Cal / serving
+- Green Goddess Smoothie | breakfast, dinner | 460 Cal / serving
+- Blue Tropical Smoothie | breakfast | 539 Cal / serving
+- Coconut Banana Smoothie | breakfast | 542 Cal / serving
+- Peanut Butter Chocolate Monkey - Smoothie | breakfast | 534 Cal / serving
+- Liquid Carrot Cake | breakfast | 518 Cal / serving
+- Tropical Smoothie | breakfast | 456 Cal / serving
+- Papaya Smoothie | breakfast | 503 Cal / serving
+- Power Green Smoothie | breakfast | 467 Cal / serving
+- Pumpkin Pie Smoothie | breakfast | 473 Cal / serving
+- Strawberry Smoothie with Cacao Nibs | breakfast | 546 Cal / serving
+- Smoothie Bowl | breakfast | 486 Cal / serving
+- Raspberry Banana Smoothie | breakfast, lunch | 452 Cal / serving
+- Mango Blueberry Smoothie | breakfast | 526 Cal / serving
+- Raspberry - Avocado Smoothie | breakfast, dinner | 506 Cal / serving
+- Cacao - Avocado Smoothie | breakfast | 550 Cal / serving
+- Tofu Coconut Banana Smoothie | breakfast | 548 Cal / serving
+- Golden Peach Smoothie | snacks | 249 Cal / serving
+- Pineapple Carrot Smoothie | snacks | 246 Cal / serving
+- Caribbean Smoothie | snacks | 231 Cal / serving
+- Beet Juice | breakfast | 450 Cal / serving
+- Chocolate Almond Butter Smoothie | breakfast | 506 Cal / serving
+- Flat Tummy Smoothie | snacks | 234 Cal / serving
+- Caribbean Carrot Smoothie | snacks | 247 Cal / serving
+- Caribbean Carrot Juice | snacks | 187 Cal / serving
+- Tomato Lentil Soup - Instant Pot | lunch, dinner | 531 Cal / serving
+- Steak Rolls | lunch, dinner | 482 Cal / serving
+- Mango Chia Pudding | breakfast | 549 Cal / serving
+- Apple Pie Chia Pudding | breakfast | 529 Cal / serving
+- Chicken Avocado Salad Toast | snacks | 218 Cal / serving
+- Sausage, Potato & Sauerkraut | lunch, dinner, breakfast | 464 Cal / serving
+- Beef Lettuce Tacos | lunch, dinner | 502 Cal / serving
+- Kimchi Tofu Noodles | lunch, dinner | 530 Cal / serving
+- Smoked Sausage Salad | dinner, lunch | 497 Cal / serving
+- Kimchi Noodles | lunch, dinner | 512 Cal / serving
+- Roasted Veggies Bowl With Tofu Dressing | lunch, dinner | 522 Cal / serving
+- Creamy Veggie Soup With Chicken | lunch, dinner | 464 Cal / serving
+- Salmon With Potatoes & Asparagus | lunch, dinner | 541 Cal / serving
+- Bagel Smoked Salmon Salad Bowl | lunch, dinner | 477 Cal / serving
+- Salmon Quinoa and Veggies Bowl | lunch, dinner | 514 Cal / serving
+- Lemon Chicken Tenders and Aparagus with Quinoa | lunch, dinner | 450 Cal / serving
+- Edamame-Shiitake Salad With Noodles | lunch, dinner | 527 Cal / serving
+- Zen Bowl | lunch, dinner | 499 Cal / serving
+- Tofu Noodle Bowl | lunch, dinner | 526 Cal / serving
+- Hummus Bowl | lunch, dinner | 535 Cal / serving
+- Asian Veggie Bowl | lunch, dinner | 462 Cal / serving
+- Ginger Miso Soup With Noodles | dinner, lunch | 504 Cal / serving
+- Miso Soup | dinner, lunch | 473 Cal / serving
+- Quinoa Salad with Raspberry Salmon and Avocado | lunch, dinner | 496 Cal / serving
+- Kale Salad With Tofu | lunch, dinner | 461 Cal / serving
+- Kale Salad With Chicken | lunch, dinner | 497 Cal / serving
+- Golden Milk Mousse | breakfast | 529 Cal / serving
+- Sauteed Bok Choy | snacks | 242 Cal / serving
+- Spicy Eggplant Stir Fry | snacks | 196 Cal / serving
+- Carrot Tuna Salad | lunch, dinner | 532 Cal / serving
+- Green Beans With Mushrooms | snacks | 242 Cal / serving
+- Vanilla Chai Smoothie | snacks | 238 Cal / serving
+- Almond Mousse With Cherries | snacks | 245 Cal / serving
+- Cherry Chia Pudding | snacks | 250 Cal / serving
+- Kimchi Scramble Tofu With Rice | breakfast, lunch, dinner | 455 Cal / serving
+- Kimchi Scramble Eggs and Rice | breakfast | 462 Cal / serving
+- Eggs and Kimchi Bowl | breakfast, lunch, dinner | 462 Cal / serving
+- Chai Overnight Bowl | breakfast | 526 Cal / serving
+- Cocoa Power Overnight Bowl | breakfast | 481 Cal / serving
+- Blue Smoothie Bowl | breakfast | 545 Cal / serving
+- Pineapple Smoothie Bowl | breakfast | 549 Cal / serving
+- Breakfast Banana With Chia Pudding | breakfast | 522 Cal / serving
+- Kefir Overnight Oats With Blueberrys | breakfast | 546 Cal / serving
+- Cocoa Smoothie Bowl | breakfast | 538 Cal / serving
+- Kale Smoothie | breakfast | 492 Cal / serving
+- Red Lentil Nuggets | snacks | 238 Cal / serving
+- Tuna Avocado Cups | snacks | 234 Cal / serving
+- Sandwich Salad Skewer | snacks | 239 Cal / serving
+- Pasta with Stracchino, Bresaola and Cherry Tomatoes | lunch, dinner | 496 Cal / serving
+- Greek Potato Salad With Salmon | lunch, dinner | 499 Cal / serving
+- Potato Soup | lunch, dinner | 522 Cal / serving
+- Cottage Cheese Pasta | lunch, dinner | 535 Cal / serving
+- Pizza Rolls | snacks | 247 Cal / serving
+- Cauliflower & Macaroni Cheese | lunch, dinner | 495 Cal / serving
+- Chicken Pesto Wrap | lunch, dinner | 505 Cal / serving
+- Veggies, Potatoes and Sausage Skillet | lunch, dinner | 500 Cal / serving
+- Burrito with Cheesy Egg Whites and Chorizo | lunch, dinner, breakfast | 529 Cal / serving
+- Cabbage Roll Skillet | lunch, dinner | 537 Cal / serving
+- Shrimp Curry Bowl | lunch, dinner | 522 Cal / serving
+- Greek Chicken Tacos | lunch, dinner | 483 Cal / serving
+- Easy Fish Potato Pie | lunch, dinner | 516 Cal / serving
+- Mexican Quinoa | lunch, dinner | 506 Cal / serving
+- Chocolate Peanut Butter Protein Balls | snacks | 207 Cal / serving
+- Stuffed Portobello - Instant Pot | dinner, lunch | 490 Cal / serving
+- Buffalo Pasta Salad | lunch, dinner | 543 Cal / serving
+- Italian Omelette | breakfast | 456 Cal / serving
+- Cottage Cheese, Berries and Honey | snacks | 249 Cal / serving
+- Tuna Tropical Skewers | snacks | 243 Cal / serving
+- Chocolate Raspberry Cookie | snacks | 239 Cal / serving
+- Pina Colada Overnight Oats | breakfast | 502 Cal / serving
+- Berry Cottage Bowl | breakfast | 522 Cal / serving
+- Chicken Picatta | lunch, dinner | 485 Cal / serving
+- Strawberry Cucumber Salad With Salmon Bites | dinner, lunch | 471 Cal / serving
+- Crusted Tuna With Mango Salad | lunch, dinner | 541 Cal / serving
+- Fish and Chips | lunch, dinner | 487 Cal / serving
+- Beetroot Salmon Salad With Quinoa | lunch, dinner | 506 Cal / serving
+- Sweet Beetroot Salmon Breakfast | breakfast | 473 Cal / serving
+- Fish With Rice and Broccoli | lunch, dinner | 541 Cal / serving
+- Salmon with Crunchy Salad | lunch, dinner | 549 Cal / serving
+- Apple Breakfast Bowl | breakfast | 544 Cal / serving
+- Tuna Rice Cake Toast | snacks | 190 Cal / serving
+- Cookies and Cream Mousse | breakfast, dinner | 542 Cal / serving
+- Easy Cheesecake | breakfast, dinner | 541 Cal / serving
+- Cottage Cheese Cookie Dough | breakfast | 541 Cal / serving
+- Pork With Carrot Arugula Salad | lunch, dinner | 537 Cal / serving
+- Grilled Nopales | dinner, breakfast, lunch | 484 Cal / serving
+- Simple Egg White Bacon Sandwich | breakfast | 456 Cal / serving
+- Skillet Nacho Dip | lunch, dinner | 547 Cal / serving
+- Cabbage Wedges With Spicy Garlic Dip | snacks | 242 Cal / serving
+- Sirlon With Air Fryer Potatoes And Salad | lunch, dinner | 541 Cal / serving
+- Pesto Chicken Salad | dinner, lunch | 527 Cal / serving
+- Italian Chicken Salad | lunch, dinner | 467 Cal / serving
+- Cottage Watermelon Salad | lunch, dinner, breakfast | 488 Cal / serving
+- Tilapia With Quinoa Salad | lunch, dinner | 524 Cal / serving
+- Salmon Salad With Raspberry Vinaigrette | lunch, dinner | 497 Cal / serving
+- Salmon Bites Bowl | lunch, dinner | 543 Cal / serving
+- Shrimp Mango Cabbage Cups | lunch, dinner | 511 Cal / serving
+- Cheesy Dip With Veggies | lunch, dinner | 549 Cal / serving
+- Tuna Salad Wrap | lunch, dinner | 548 Cal / serving
+- Asian Pork Tenderloin Lettuce Tacos | lunch, dinner | 522 Cal / serving
+- Stuffed Chicken with Sun Dried Tomatoes and Cottage | lunch, dinner | 534 Cal / serving
+- Tuna Sushi Bake | lunch, dinner | 547 Cal / serving
+- Tuna Sushi Wrap | lunch, dinner | 545 Cal / serving
+- Elote Chicken Salad | lunch, dinner | 539 Cal / serving
+- Tuna Carnitas Tacos | lunch, dinner | 498 Cal / serving
+- Baked Beef Tacos | lunch, dinner | 550 Cal / serving
+- Easy Cabbage Rolls | lunch, dinner | 514 Cal / serving
+- Creamy Chicken Broccoli | dinner, lunch | 547 Cal / serving
+- Easy Tuna Quiche | dinner, breakfast, lunch | 451 Cal / serving
+- Power Cucumber Salad | lunch, dinner | 549 Cal / serving
+- Yogurt Marinated Chicken | lunch, dinner | 539 Cal / serving
+- Salmon Bites With Cottage Spinach Dip and Brown Rice | lunch, dinner | 500 Cal / serving
+- Grilled Chicken Sandwich | breakfast, lunch, dinner | 455 Cal / serving
+- Tuna Zucchini Boats | lunch, dinner | 506 Cal / serving
+- Cactus Rolls With Chicken | lunch, dinner | 547 Cal / serving
+- Stuffed Eggplant | lunch, dinner | 495 Cal / serving
+- Shrimp Ceviche | dinner, lunch | 469 Cal / serving
+- Tuna Cucumber Boats | lunch, dinner | 533 Cal / serving
+- Tuna Cottage Cheese Salad | lunch, dinner | 539 Cal / serving
+- Mexican Tostadas | lunch, dinner | 458 Cal / serving
+- Creamy Chicken Pesto | lunch, dinner | 538 Cal / serving
+- Beef and Cheese Rolls | dinner, lunch | 545 Cal / serving
+- Zucchini Sandwich | lunch, dinner | 453 Cal / serving
+- Taco Bowl | lunch, dinner | 535 Cal / serving
+- Caesar Chicken Skewers | lunch, dinner | 492 Cal / serving
+- Supreme Breakfast Tacos | breakfast, dinner, lunch | 451 Cal / serving
+- Tortilla Egg Muffin | breakfast | 479 Cal / serving
+- Peanut Butter Milkshake | breakfast | 468 Cal / serving
+- Italian Morning Toast | breakfast | 532 Cal / serving
+- Crustless Salmon Quiche | breakfast | 497 Cal / serving
+- Thai Beef With Veggies & Rice | lunch, dinner | 550 Cal / serving
+- Green Beans, Tuna Salad | lunch, dinner | 550 Cal / serving
+- Garlic Butter Pork Bites | lunch, dinner | 511 Cal / serving
+- Bread Pizza | dinner, lunch | 531 Cal / serving
+- Tuna Avocado Bruschetta | lunch, dinner | 549 Cal / serving
+- Shrimp Bowl With Cucumber- Avocado Salad | lunch, dinner | 550 Cal / serving
+- Pork Salad | lunch, dinner | 471 Cal / serving
+- Burger Bowl | lunch, dinner | 497 Cal / serving
+- Creamy Curry Chicken | dinner, lunch | 492 Cal / serving
+- Chicken Stew | lunch, dinner | 500 Cal / serving
+- Bean Soup | lunch, dinner | 479 Cal / serving
+- Bruschetta Chicken | lunch, dinner | 550 Cal / serving
+- Tuna Avocado Tower | lunch, dinner | 463 Cal / serving
+- Pork Stew With Chickpeas | lunch, dinner | 540 Cal / serving
+- Chocolate Cottage Cheese Flat Bread | dinner, breakfast | 531 Cal / serving
+- Gourmet Sandwich | lunch, dinner | 484 Cal / serving
+- Beef Rolls | lunch, dinner | 538 Cal / serving
+- Kale Chickpea Salad | lunch, dinner | 527 Cal / serving
+- Sun Dried Tomato Chicken Sandwich | lunch, dinner | 464 Cal / serving
+- Mediterranean Fillet | lunch, dinner | 477 Cal / serving
+- Easy Spring Rolls | lunch, dinner | 452 Cal / serving
+- Shrimp Quesadillas | lunch, dinner | 549 Cal / serving
+- Asian Tuna Tartare | lunch, dinner | 465 Cal / serving
+- Cranberry Salad With Chicken | lunch, dinner | 471 Cal / serving
+- Beef and Lentil Soup | lunch, dinner | 490 Cal / serving
+- Tuna Bowl With Chipotle Mayo | lunch, dinner | 501 Cal / serving
+- Lemon Chicken Soup | lunch, dinner | 516 Cal / serving
+- Ground Beef Soup With Vegetables | lunch, dinner | 465 Cal / serving
+- Frittata with Ricotta, Spinach and Sun Dried Tomatoes | lunch, dinner | 457 Cal / serving
+- Cucumber Smoked Salmon Salad | lunch, dinner | 526 Cal / serving
+- Ham Rolls Filled With Potato Salad | lunch, dinner | 528 Cal / serving
+- Shrimp, Asparagus and Rice | lunch, dinner | 528 Cal / serving
+- Creamy Chicken Soup | lunch, dinner | 534 Cal / serving
+- Cheesy Hot Beef Sandwich | lunch, dinner | 544 Cal / serving
+- Easy Chicken Soup | lunch, dinner | 455 Cal / serving
+- Steak and Cheese Sandwich. | lunch, dinner | 519 Cal / serving
+- Tomato Soup With Cottage Cheese | lunch, dinner | 469 Cal / serving
+- Simple Tuna Steak Bowl | lunch, dinner | 534 Cal / serving
+- Bell Pepper Sandwich | lunch, dinner | 469 Cal / serving
+- Broccoli Cheddar Soup | lunch, dinner | 456 Cal / serving
+- Sushi Avocado Salad | lunch, dinner | 535 Cal / serving
+- Pork Tenderloin | lunch, dinner | 528 Cal / serving
+- Sushi Cottage Cheese Bowl | lunch, dinner | 469 Cal / serving
+- Fall Chicken Bowl | lunch, dinner | 503 Cal / serving
+- Italian Rice Tuna Salad | lunch, dinner | 548 Cal / serving
+- Pizza Grilled Cheese Sandwich | lunch, dinner | 499 Cal / serving
+- Kale Salad with Roasted Chicken and Quinoa | lunch, dinner | 549 Cal / serving
+- Air Fryer Meatloaf | lunch, dinner | 473 Cal / serving
+- BBQ Chicken Bowl | lunch, dinner | 499 Cal / serving
+- Blackberry Tuna Steak Salad | lunch, dinner | 494 Cal / serving
+- Bbq Chicken Tacos | lunch, dinner | 529 Cal / serving
+- Ground Beef Quesadilla | dinner, lunch | 550 Cal / serving
+- Salmon with Potatoes & Veggies | lunch, dinner | 476 Cal / serving
+- Orange Teriyaki Beef | lunch, dinner | 513 Cal / serving
+- Tuna Tostadas | dinner, lunch | 547 Cal / serving
+- Pork Salad with Mango Dressing | lunch, dinner | 545 Cal / serving
+- Tuna Melt | lunch, dinner | 543 Cal / serving
+- Piadina with ricotta, black beans and veggies | lunch, dinner | 470 Cal / serving
+- Chicken, Lentil and Feta Salad | dinner, lunch | 401 Cal / serving
+- Cheesy Ground Beef with Potatoes | lunch, dinner | 546 Cal / serving
+- Pasta with Shrimps | lunch, dinner | 549 Cal / serving
+- Pan Seared Pork Chops With Sweet Potato Pure and Broccoli | dinner, lunch | 545 Cal / serving
+- Vitel Tone | dinner, lunch | 550 Cal / serving
+- Stuffed Mushrooms Bites | snacks | 187 Cal / serving
+- Holiday Left Over Sandwich | lunch, dinner, breakfast | 549 Cal / serving
+- Rosemary Chicken with Cranberries | lunch, dinner | 531 Cal / serving
+- Holiday Charcuterie Skewers | snacks | 243 Cal / serving
+- Stuffed Dates Bites | snacks | 244 Cal / serving
+- Cranberry Baked Brie | snacks | 249 Cal / serving
+- Festive Potato Salad | lunch, dinner | 540 Cal / serving
+- Salami Cups | snacks | 180 Cal / serving
+- Shredded Brussel Sprout Salad | lunch, dinner | 544 Cal / serving
+- Pear Carpaccio Salad | lunch, dinner | 525 Cal / serving
+- Sweet Potato Salad | lunch, dinner | 547 Cal / serving
+- Roasted Beetroot & Walnut Salad | lunch, dinner | 499 Cal / serving
+- Pork Tenderloin with Blackberry Sauce | lunch, dinner | 547 Cal / serving
+- Smoked Pork Chops With Cherry Sauce | lunch, dinner | 541 Cal / serving
+- Baked Cranberry Cream Cheese Dip | snacks | 227 Cal / serving
+- Crispy Potato Wedges | snacks | 245 Cal / serving
+- Bacon Wrapped Brussels | snacks | 216 Cal / serving
+- Smoked Salmon Terrine | lunch, dinner | 547 Cal / serving
+- Hasselback Sweet Potato | lunch, dinner | 488 Cal / serving
+- Broccoli and Blue Cheese Souffle | lunch, dinner | 488 Cal / serving
+- Holiday Broccoli and Asparagus Cream Soup for Sharing | snacks | 228 Cal / serving
+- Easy Brazilian Cheese Bread Bites | snacks | 210 Cal / serving
+- Roasted Onion Soup | dinner, lunch | 476 Cal / serving
+- Cream Cheese Bites | snacks | 211 Cal / serving
+- Prosciutto, Apple and Blue Cheese Appetizer | snacks | 207 Cal / serving
+- Goulash - Instant Pot | dinner, lunch | 547 Cal / serving
+- Chicken and Lemon Pasta | lunch, dinner | 518 Cal / serving
+- Open Faced Sandwich Toast | lunch, dinner | 534 Cal / serving
+- Pigs in Blankets | snacks | 248 Cal / serving
+- Cottage Cheese with Rice Cakes | lunch, dinner | 486 Cal / serving
+- Cinnamon Apple Pork - Chop | lunch, dinner | 542 Cal / serving
+- Holiday Meatballs | lunch, dinner | 527 Cal / serving
+- Cinnamon Apple Cream Cheese Dip | snacks | 225 Cal / serving
+- Corn Poblano Pudding | lunch, dinner | 485 Cal / serving
+- Apricot Bites | snacks | 159 Cal / serving
+- Crostini with Fruit and Prosciutto | snacks | 226 Cal / serving
+- Prosciutto Rolls | snacks | 242 Cal / serving
+- Caprese Grilled Chicken Salad | lunch, dinner | 524 Cal / serving
+- Tangerine Kale Salad | lunch, dinner | 460 Cal / serving
+- Pear Sandwich | breakfast, lunch, dinner | 468 Cal / serving
+- Quick Turkey Sandwich | dinner, lunch, breakfast | 519 Cal / serving
+- Blueberry Baked Oats | breakfast | 450 Cal / serving
+- Asparagus Salad | lunch, dinner | 545 Cal / serving
+- Ham and Butternut Squash Breakfast Bowl | breakfast, lunch | 508 Cal / serving
+- Back Bacon and Apple | snacks | 205 Cal / serving
+- Portobello Sandwich - Instant Pot | lunch, dinner | 515 Cal / serving
+- Bell Pepper Egg Bites | breakfast | 514 Cal / serving
+- Potato Chowder with Shrimp | lunch, dinner | 499 Cal / serving
+- Banh Mi Bowls | lunch, dinner | 529 Cal / serving
+- Breakfast Casserole | breakfast | 465 Cal / serving
+- Ham Egg Cups and Fruit Salad | breakfast | 481 Cal / serving
+- Melon and Prosciutto | snacks | 213 Cal / serving
+- Mediterranean Salad With Tofu | lunch, dinner | 543 Cal / serving
+- Cookie Dough Overnigth Oats | breakfast | 504 Cal / serving
+- Carrot Cake Overnight Oats | breakfast | 541 Cal / serving
+- Pumpkin Pie Chia Pudding | breakfast | 455 Cal / serving
+- Pumpkin Treats | snacks | 218 Cal / serving
+- Pumpkin Yogurt Parfait | breakfast | 534 Cal / serving
+- Pumpkin Waffles | breakfast | 489 Cal / serving
+- Pumpkin Smoothie | breakfast | 492 Cal / serving
+- Curried Hummus & Tempeh Sandwich | dinner, lunch, breakfast | 498 Cal / serving
+- Greek Chicken Pitas | dinner, lunch | 491 Cal / serving
+- Mexican Chicken Bowl | lunch, dinner | 491 Cal / serving
+- Pumpkin Latte Protein Shake | breakfast | 493 Cal / serving
+- Cottage Cheese Banana Pudding | breakfast | 480 Cal / serving
+- Cookie Cheesecake | breakfast | 548 Cal / serving
+- Chocolate Protein Cookies | breakfast | 1051 Cal / serving
+- Pumpkin Yogurt Bowl | breakfast | 522 Cal / serving
+- Microwave Scrambled Eggs | breakfast | 476 Cal / serving
+- Cottage Egg Bowl | breakfast | 482 Cal / serving
+- Toast with Roast Beef and Hard Boiled Egg | breakfast | 477 Cal / serving
+- Vanilla Date Smoothie | breakfast | 546 Cal / serving
+- Cucumber and Cream Cheese Wrap | breakfast, lunch, dinner | 524 Cal / serving
+- Blueberry Protein Baked | breakfast | 535 Cal / serving
+- Strawberry Cottage Cheese Muffins | breakfast | 546 Cal / serving
+- Breakfast Taco Bowl | breakfast | 450 Cal / serving
+- Roast Beef Wrap | breakfast, lunch, dinner | 480 Cal / serving
+- Ham and Cheese Croissant | breakfast, lunch, dinner | 541 Cal / serving
+- Lemon Blueberry Muffins | breakfast | 460 Cal / serving
+- Egg Breakfast Wrap | breakfast | 522 Cal / serving
+- Breakfast Quesadilla | breakfast | 544 Cal / serving
+- Breakfast Stuffed Potato | breakfast | 494 Cal / serving
+- Breakfast Salmon Sandwich | breakfast | 537 Cal / serving
+- Blackberry Grilled Cheese | breakfast | 492 Cal / serving
+- Strawberry Cheesecake Quesadilla | breakfast | 499 Cal / serving
+- Breakfast Tacos | breakfast | 479 Cal / serving
+- Scrambled Eggs with Sausage | breakfast | 516 Cal / serving
+- Stuffed Sweet Potato | breakfast | 539 Cal / serving
+- Bacon Egg Wrap | breakfast | 567 Cal / serving
+- Smoked Salmon and Cream Cheese Wrap | lunch, dinner, breakfast | 544 Cal / serving
+- Sun - Dried Tomato Chicken Wrap | breakfast, lunch, dinner | 452 Cal / serving
+- Omelette Croissant | breakfast | 547 Cal / serving
+- Mediterranean Wrap | breakfast, lunch, dinner | 479 Cal / serving
+- Sweet Potato Breakfast Bowl | breakfast | 507 Cal / serving
+- Beet Sweet Toast | breakfast | 530 Cal / serving
+- Cottage Avocado Toast | breakfast | 1049 Cal / serving
+- Easy French Toast | breakfast | 485 Cal / serving
+- Cheesecake Parfait | breakfast | 540 Cal / serving
+- Italian Toast | breakfast | 526 Cal / serving
+- Grilled Peach With Ricotta | breakfast | 506 Cal / serving
+- Creamy Tuna Rice Cake Toast | lunch, dinner | 490 Cal / serving
+- Creamy Shrimp Salad | lunch, dinner | 547 Cal / serving
+- Salmon Farro Salad | lunch, dinner | 521 Cal / serving
+- Parisian Steak and Cheese Croissant | dinner, lunch | 510 Cal / serving
+- Flourless Easy Muffins | breakfast | 513 Cal / serving
+- Mediterranean Breakfast Bowl | breakfast | 550 Cal / serving
+- Creamy Glow Smoothie | breakfast | 460 Cal / serving
+- Fig & Beet Smoothie | breakfast | 480 Cal / serving
+- Creamy Scramble Eggs | breakfast | 460 Cal / serving
+- Creamy Kiwi Smoothie | breakfast | 536 Cal / serving
+- Breakfast Bagel | breakfast, lunch, dinner | 523 Cal / serving
+- Creamy Blueberry Smoothie | breakfast | 469 Cal / serving
+- Raspberry Coconut Smoothie | breakfast | 492 Cal / serving
+- Cocoa Peanut Butter Parfait | breakfast | 522 Cal / serving
+- Mango Coconut Parfait | breakfast | 480 Cal / serving
+- Toast with Blueberries | breakfast | 472 Cal / serving
+- Noodle Salad | lunch, dinner | 465 Cal / serving
+- Tuscan Pasta With Plant-Based Sausage | lunch, dinner | 543 Cal / serving
+- Plant - Based Quesadilla | lunch, dinner | 535 Cal / serving
+- Golden Milk Parfait | breakfast | 479 Cal / serving
+- Peach Parfait | breakfast | 533 Cal / serving
+- Berry Parfait | breakfast | 549 Cal / serving
+- Peanut Butter & Jelly Oats | breakfast | 531 Cal / serving
+- Creamy Chocolate Overnight Oats | breakfast | 509 Cal / serving
+- Stuffed Sweet Potato With Tofu | lunch, dinner | 543 Cal / serving
+- Farro Salad And Asparagus | lunch, dinner | 450 Cal / serving
+- Blueberry Salad and Chicken | dinner, lunch | 513 Cal / serving
+- Chicken Omelette | breakfast | 507 Cal / serving
+- Chicken Panini Sandwich | breakfast, lunch, dinner | 466 Cal / serving
+- Mediterranean Chicken Wrap | lunch, breakfast, dinner | 470 Cal / serving
+- Roasted Chicken Quesadilla | lunch, dinner, breakfast | 498 Cal / serving
+- Sheet Pan Steak and Potatoes | dinner, lunch | 515 Cal / serving
+- Southwest Burrito | lunch, breakfast, dinner | 540 Cal / serving
+- Ham and Cheddar Roll Ups | snacks | 213 Cal / serving
+- Beef Jerky | snacks | 240 Cal / serving
+- Goulash- Instant Pot | lunch, dinner | 544 Cal / serving
+- Steak and Egg with Hashbrowns | dinner, lunch, breakfast | 502 Cal / serving
+- Chicken "Chorizo" Tacos | lunch, dinner | 510 Cal / serving
+- Chicken Salad Bento Box | lunch, dinner | 485 Cal / serving
+- Asian Style Noodle Soup | lunch, dinner | 528 Cal / serving
+- Okonomiyaki - Japanese Pancake | breakfast | 498 Cal / serving
+- Greek Meatballs Bowl | lunch, dinner | 519 Cal / serving
+- Date Banana Cream | breakfast | 547 Cal / serving
+- Tahini Smoothie | breakfast | 509 Cal / serving
+- Broccoli Sausage Pasta | lunch, dinner | 547 Cal / serving
+- Tempeh Quinoa Pesto Bowl | lunch, dinner | 547 Cal / serving
+- Nacho Bowl | lunch, dinner | 543 Cal / serving
+- Creamy Matcha Overnight Oats | breakfast | 537 Cal / serving
+- Cookie Dough Balls | snacks | 234 Cal / serving
+- Protein Balls | snacks | 191 Cal / serving
+- Avo Rice Cake Toast | snacks | 245 Cal / serving
+- Tahini Veggie Bowl | lunch, dinner | 519 Cal / serving
+- Green Goddess Sandwich | lunch, dinner | 535 Cal / serving
+- Farro Salad | lunch, dinner | 548 Cal / serving
+- Orange - Chocolate Mousse | breakfast | 473 Cal / serving
+- Pasta Fredda With Plant Based Sausage | lunch, dinner | 550 Cal / serving
+- Earth Bowl | lunch, dinner | 529 Cal / serving
+- Vegetable and Sausage Bowl | lunch, dinner | 550 Cal / serving
+- Matcha Pudding | breakfast | 539 Cal / serving
+- Golden Chia Pudding | breakfast | 534 Cal / serving
+- Tofu Lemon Mousse | snacks | 232 Cal / serving
+- Creamy Red Pepper Pasta | lunch, dinner | 539 Cal / serving
+- Easy Tzatiki Plant Based Bowl | dinner, lunch | 528 Cal / serving
+- Havana Style Bowl | lunch, dinner | 542 Cal / serving
+- Kale Tomato Corn Salad | dinner, lunch | 466 Cal / serving
+- Kale and Quinoa Salad with Black Beans | lunch, dinner | 536 Cal / serving
+- Mac and Cheese Silken Tofu | dinner, breakfast | 522 Cal / serving
+- Pasta with Special Pesto | lunch, dinner | 536 Cal / serving
+- Thai Salad - Instant Pot | lunch, dinner | 546 Cal / serving
+- Burrito Bowls | lunch | 518 Cal / serving
+- Plant Based Wrap | lunch, dinner | 470 Cal / serving
+- Soy Tacos | lunch, dinner | 548 Cal / serving
+- Fresh Easy Bowl | lunch, dinner | 507 Cal / serving
+- Lentil Spread Wrap | lunch, dinner | 473 Cal / serving
+- Smashed Chickpea Salad Wrap | lunch, dinner | 529 Cal / serving
+- Easy Rice Bowl | lunch, dinner | 510 Cal / serving
+- Cucumber Salad | snacks | 242 Cal / serving
+- Matcha Overnight Oats Pudding | breakfast | 491 Cal / serving
+- Avocado Tofu Wrap | lunch, dinner | 530 Cal / serving
+- Veggies with Red Pepper Sauce | snacks | 247 Cal / serving
+- Vegan Fruit Dip | snacks | 246 Cal / serving
+- Silken Tofu Matcha | snacks | 250 Cal / serving
+- Celery Sticks with Tofu Ranch | snacks | 250 Cal / serving
+- Tofu Protein Balls | snacks | 203 Cal / serving
+- Vanilla Peach Dream | breakfast | 508 Cal / serving
+- Tropical Turmeric Smoothie | breakfast, dinner | 468 Cal / serving
+- Apricot Coconut Smoothie | breakfast | 519 Cal / serving
+- Peach - Arugula Smoothie | breakfast | 547 Cal / serving
+- Avocado - Cacao Bowl | breakfast | 542 Cal / serving
+- Sirloin Steak, Creamy Spinach and Potatoes | lunch, dinner | 486 Cal / serving
+- Ginger Smoothie | breakfast | 534 Cal / serving
+- Shrimp Broccoli Bowl | lunch | 497 Cal / serving
+- Egg Sandwich with Alfalfa | dinner, breakfast, lunch | 464 Cal / serving
+- Veggie Panini | lunch, dinner | 548 Cal / serving
+- Pear Omelette | breakfast | 521 Cal / serving
+- Cottage Cheese Carrot Bowl | breakfast | 479 Cal / serving
+- Zucchini Oats | breakfast | 535 Cal / serving
+- Zucchini Farro Salad | lunch, dinner | 549 Cal / serving
+- Shrimp Tacos | lunch, dinner | 549 Cal / serving
+- Shrimp and Mango Salad | lunch, dinner | 545 Cal / serving
+- Any Time Breakfast | lunch, dinner, breakfast | 491 Cal / serving
+- Bresaola and Arugula Salad | lunch, dinner | 522 Cal / serving
+- Steak with Corn | lunch, dinner | 519 Cal / serving
+- Green Chia Pudding | breakfast | 504 Cal / serving
+- Cottage Cheese with Peaches and Walnuts | snacks | 235 Cal / serving
+- Avocado Mousse | breakfast | 547 Cal / serving
+- Avocado Smoothie | breakfast | 529 Cal / serving
+- Zucchini - Ricotta Salad | dinner, lunch | 478 Cal / serving
+- Happy Bowl - Instant Pot | lunch, dinner | 542 Cal / serving
+- Carrot Noodles with Shrimps | lunch, dinner | 470 Cal / serving
+- Cucumber Raspberry Salad | lunch, dinner | 477 Cal / serving
+- Avocado Chicken Sandwich | lunch, dinner | 467 Cal / serving
+- Shredded Chicken Baguette | lunch, dinner | 549 Cal / serving
+- Easy Steak Salad | lunch, dinner | 529 Cal / serving
+- Ricotta Spinach Sandwich | lunch, dinner | 457 Cal / serving
+- Simple Garlic Shrimps with Broccoli and Mashed Potato | lunch, dinner | 527 Cal / serving
+- Grilled Chicken and Asparagus Pesto | lunch, dinner | 521 Cal / serving
+- Chicken Pesto Baguette | lunch, dinner | 546 Cal / serving
+- Chicken Minestrone Soup | lunch, dinner | 458 Cal / serving
+- Tuna Steak Toast | lunch, dinner | 510 Cal / serving
+- Tuna Toast | lunch, dinner | 549 Cal / serving
+- Rice Cake Cottage Toast | lunch, dinner | 536 Cal / serving
+- Mediterranean Farro Salad | lunch, dinner | 543 Cal / serving
+- Pesto Pasta Salad | lunch, dinner | 533 Cal / serving
+- Easy Thai Pineapple Rice | lunch, dinner | 548 Cal / serving
+- Rice Cake Salmon Toast | lunch, dinner, breakfast | 493 Cal / serving
+- Farro Caprese Salad | lunch, dinner | 530 Cal / serving
+- Pesto Steak Sandwich | dinner, lunch | 513 Cal / serving
+- Bresaola Panini | lunch, dinner | 543 Cal / serving
+- Steak Cheese Sandwich | lunch, dinner, breakfast | 548 Cal / serving
+- Picadillo | lunch, dinner | 537 Cal / serving
+- Beef and Quinoa Chili | dinner, lunch | 532 Cal / serving
+- Olivier Salad | lunch, dinner | 492 Cal / serving
+- Easy Lasagna Soup | dinner, lunch | 543 Cal / serving
+- Lentil Carrot Cream | lunch, dinner | 513 Cal / serving
+- Roast Beef Sandwich | lunch, dinner | 496 Cal / serving
+- Beef in Creamy Mushroom Sauce | lunch, dinner | 548 Cal / serving
+- Easy Stuffed Potato | lunch, dinner | 549 Cal / serving
+- Creamy Chicken | dinner | 484 Cal / serving
+- Shirazi Salad and Fish Fillet | lunch, dinner | 453 Cal / serving
+- Arugula Bowl with Steak | lunch, dinner | 519 Cal / serving
+- Arugula With Steak | lunch, dinner | 526 Cal / serving
+- Insalata di Farro | lunch, dinner | 540 Cal / serving
+- Steak and Brussels Sprouts | dinner, lunch | 546 Cal / serving
+- Curry Chicken Salad | lunch, dinner | 511 Cal / serving
+- Creamy Mushroom Ground Beef | lunch, dinner | 542 Cal / serving
+- Fit Italian Meatballs | lunch | 541 Cal / serving
+- Panini | lunch, dinner | 544 Cal / serving
+- Asian Ground Beef Lettuce Wraps | lunch, dinner | 549 Cal / serving
+- Tuna Croissant | lunch, dinner | 520 Cal / serving
+- Ground Beef And Mushroom Skillet | lunch, dinner | 468 Cal / serving
+- Mediterranean Roasted Vegetable Pasta | lunch, dinner | 502 Cal / serving
+- Spicy Ground Beef with Green Beans | lunch, dinner | 506 Cal / serving
+- Pasta Fredda | lunch, dinner | 518 Cal / serving
+- Strawberry Tofu Mousse | snacks | 242 Cal / serving
+- Tofu Red Dip | snacks | 248 Cal / serving
+- Rice Cake Toast with Scramble Eggs | snacks | 229 Cal / serving
+- Ricotta Roasted Mushrooms | snacks | 246 Cal / serving
+- Mediterranean Salad Inspo | snacks | 214 Cal / serving
+- Cottage Cheese Scramble Egg | snacks | 203 Cal / serving
+- Eggs with Tuna | breakfast, lunch, dinner | 455 Cal / serving
+- Shrimp Salad | dinner | 519 Cal / serving
+- Cabbage Salmon Salad | lunch, dinner | 533 Cal / serving
+- Salmon Salad | lunch, dinner | 497 Cal / serving
+- Corn Chicken Salad | lunch, dinner | 503 Cal / serving
+- Shrimp Poke Bowl | lunch | 542 Cal / serving
+- Rice Cake Anti - Craving | lunch, dinner | 521 Cal / serving
+- Simple Protein Shake | snacks | 185 Cal / serving
+- Apple - Cinnamon Mousse | snacks | 245 Cal / serving
+- Tofu Bites | snacks | 243 Cal / serving
+- Minced Meat and Lentil Bolognese | lunch, dinner | 547 Cal / serving
+- Blue Smoothie | breakfast | 489 Cal / serving
+- Glow Skin Juice | breakfast | 538 Cal / serving
+- Pina Colada Smoothie | breakfast | 512 Cal / serving
+- Summer Salad Snack | snacks | 211 Cal / serving
+- Sweet Avocado Mousse | snacks | 228 Cal / serving
+- Sweet Omelette | breakfast | 462 Cal / serving
+- Spiced Plantains and Cod | lunch, dinner | 512 Cal / serving
+- Salmon Power Bowl | lunch, dinner | 472 Cal / serving
+- Shrimp Roll in a Bowl | lunch, dinner | 454 Cal / serving
+- Glazed Salmon | lunch | 462 Cal / serving
+- Mexican Meatball Soup | dinner | 465 Cal / serving
+- Mediterranean Chicken Stew | dinner | 491 Cal / serving
+- Hawaiian-Style Pineapple Chicken Skewers | dinner | 537 Cal / serving
+- Chorizo, Apple and Kale Bowl | breakfast | 546 Cal / serving
+- Sausage - Veggie Skillet | breakfast | 508 Cal / serving
+- Cookie Smoothie | breakfast | 541 Cal / serving
+- Power Smoothie | breakfast | 470 Cal / serving
+- Autumn Pudding | breakfast | 510 Cal / serving
+- Chocolate Protein Shake | breakfast | 542 Cal / serving
+- Golden Milk Smoothie | snacks | 198 Cal / serving
+- Peanut Butter Pudding | snacks | 246 Cal / serving
+- Chocolate Avocado Pudding | snacks | 232 Cal / serving
+- Almond Easy Mug Cake | snacks | 233 Cal / serving
+- Celery Boats | snacks | 246 Cal / serving
+- Tuna Deep with Celery Sticks | snacks | 245 Cal / serving
+- Oatmeal Mug Cake | snacks | 156 Cal / serving
+- Papaya Protein Smoothie | snacks | 243 Cal / serving
+- Egg White Toast | snacks | 227 Cal / serving
+- Mushroom Baked Egg | snacks | 215 Cal / serving
+- Green Collagen Smoothie | snacks | 228 Cal / serving
+- Spirulina Shake | snacks | 231 Cal / serving
+- Fit Frappe | snacks | 237 Cal / serving
+- Carrot Cake | snacks | 242 Cal / serving
+- Healthy Cheesecake | snacks | 209 Cal / serving
+- Spinach Roll | snacks | 198 Cal / serving
+- Anti Hunger Snack | snacks | 215 Cal / serving
+- Strawberry Shake | snacks | 221 Cal / serving
+- Creamy Grated Carrot | snacks | 222 Cal / serving
+- Tuna Pate | snacks | 237 Cal / serving
+- Tofu Strawberry Mousse | breakfast | 485 Cal / serving
+- Strawberry Coconut Smoothie | breakfast | 537 Cal / serving
+- Coconut Papaya Smoothie | breakfast | 501 Cal / serving
+- Zucchini Smoothie | breakfast | 516 Cal / serving
+- Broccoli Salad | breakfast, lunch, dinner | 469 Cal / serving
+- Pesto Cauliflower Rice | lunch, dinner, breakfast | 544 Cal / serving
+- Bacon Cauliflower Breakfast | breakfast | 526 Cal / serving
+- Carrot Overnight | breakfast | 525 Cal / serving
+- Salted Caramel Pudding | breakfast | 539 Cal / serving
+- Egg White Frittata | breakfast | 546 Cal / serving
+- Golden Banana Smoothie | breakfast | 533 Cal / serving
+- Cashew Smoothie | breakfast | 550 Cal / serving
+- Sweet Egg with Blueberries | breakfast | 507 Cal / serving
+- Stuffed Pepper with Egg Salad | breakfast | 547 Cal / serving
+- Breakfast Fried Rice | breakfast | 455 Cal / serving
+- Savory Salad | breakfast | 538 Cal / serving
+- Sweet Beef Casserole Breakfast | breakfast | 517 Cal / serving
+- Salmon Hash | breakfast | 531 Cal / serving
+- Apple Smoothie | breakfast | 478 Cal / serving
+- Russian Salmon Potato Salad | breakfast | 480 Cal / serving
+- Scramble Egg Whites With Salmon | breakfast | 549 Cal / serving
+- Special Pancakes | breakfast | 455 Cal / serving
+- Breakfast Cauliflower Rice | breakfast | 478 Cal / serving
+- Cookie Monster Overnight Oats | breakfast | 544 Cal / serving
+- Golden Milk Overnight Oats | breakfast | 512 Cal / serving
+- Portobello Sandwich | breakfast, lunch, dinner | 549 Cal / serving
+- High Protein Bowl | breakfast | 546 Cal / serving
+- Shrimp Skewers | lunch, dinner | 545 Cal / serving
+- Cauliflower Fried Rice | lunch, dinner | 474 Cal / serving
+- Fried Rice with Tofu | dinner | 510 Cal / serving
+- Creamy Sausage Soup | dinner | 547 Cal / serving
+- Creamy Cauliflower Rice | lunch, dinner | 517 Cal / serving
+- Blackberry Salmon | breakfast | 548 Cal / serving
+- Coconut Curry Salmon Bowl | dinner | 540 Cal / serving
+- Vegan Smoked Salmon | breakfast, dinner, lunch | 517 Cal / serving
+- Scramble Eggs With Salmon | breakfast | 524 Cal / serving
+- Teriyaki Salmon | lunch, dinner | 504 Cal / serving
+- "Green-A-Colada" Smoothie | lunch | 476 Cal / serving
+- Blue Smoothie Jar | breakfast, lunch | 539 Cal / serving
+- Carrot Cake Smoothie | breakfast | 493 Cal / serving
+- Quinoa Breakfast Bowl | breakfast | 512 Cal / serving
+- Energy Boosting Pudding | breakfast | 468 Cal / serving
+- Carrot Protein Balls | snacks | 242 Cal / serving
+- Coconut Protein Balls | snacks | 210 Cal / serving
+- Peanut Protein Bites | snacks | 247 Cal / serving
+- Overnight Quinoa | breakfast | 487 Cal / serving
+- Blue Coconut Pudding | breakfast, dinner | 542 Cal / serving
+- Coconut Overnight Pudding | breakfast | 519 Cal / serving
+- Sweet Potato Muffin | breakfast | 505 Cal / serving
+- Smoked Salmon Scramble Eggs | breakfast | 514 Cal / serving
+- Green Special Omelette | breakfast | 515 Cal / serving
+- Banana Pancakes | breakfast | 530 Cal / serving
+- Glowing Skin Smoothie | breakfast | 466 Cal / serving
+- Chocolate Smoothie | breakfast | 450 Cal / serving
+- Quinoa Egg Cups | breakfast, dinner | 487 Cal / serving
+- Ground Beef Chorizo Inspo | breakfast | 471 Cal / serving
+- Pumpkin Pudding | breakfast | 480 Cal / serving
+- Chicken Breast, Sweet Potato and Broccoli | lunch, dinner | 526 Cal / serving
+- Aubergine with Whipped Tofu | lunch, dinner | 523 Cal / serving
+- Green Smoothie | snacks | 219 Cal / serving
+- Tempeh Tacos | lunch, dinner | 530 Cal / serving
+- Easy Beef Bulgogi Bowl | dinner | 504 Cal / serving
+- Instant Pot Salsa Chicken | lunch, dinner | 454 Cal / serving
+- Supreme Toast | breakfast, lunch, dinner | 517 Cal / serving
+- Greek Yogurt Parfait | breakfast | 485 Cal / serving
+- Turkey Veggie Stew | lunch, dinner | 510 Cal / serving
+- Sweet Potato Chili | lunch, dinner | 501 Cal / serving
+- Egg Plant Chicken Sandwich | breakfast, lunch, dinner | 532 Cal / serving
+- Protein Pancakes | breakfast | 517 Cal / serving
+- Golden Milk Bowl | breakfast | 517 Cal / serving
+- Sweet Tofu Pie | lunch, dinner | 522 Cal / serving
+- Shrimp and Cocktail Sauce | snacks | 212 Cal / serving
+- Smoked Salmon Bagels | breakfast | 462 Cal / serving
+- Quick Turkey Burger and Oven Fries | dinner, lunch | 512 Cal / serving
+- Saag Paneer (Spinach Stew with Paneer) | dinner | 535 Cal / serving
+- Garlic Butter Pasta with Shrimp | dinner, lunch | 517 Cal / serving
+- Lentil and Vegetable Soup with Parmesan | lunch, dinner | 484 Cal / serving
+- Buffalo Salad | lunch, dinner | 481 Cal / serving
+- Balsamic Tomato Chicken Pasta (Balanced | lunch, dinner | 494 Cal / serving
+- Balsamic Tomato Chicken Pasta | lunch, dinner | 536 Cal / serving
+- Chicken Burrito Bowl | lunch, dinner | 533 Cal / serving
+- Mediterranean Shrimp and Couscous | lunch | 502 Cal / serving
+- Holiday Stew | lunch, dinner | 473 Cal / serving
+- Portobello Stuffed-Instant Pot | dinner, lunch | 493 Cal / serving
+- Lemon Pie Overnight Oats | breakfast | 540 Cal / serving
+- Strawberry Cheesecake Overnight Oats | breakfast | 487 Cal / serving
+- Ginger Mousse | breakfast | 510 Cal / serving
+- Avocado Deep and Bell Peppers | snacks | 232 Cal / serving
+- French Toast Casserole | breakfast | 505 Cal / serving
+- Sheet Pan Veggie Omelette Sandwich | breakfast | 477 Cal / serving
+- Pumpkin Mug Cake | breakfast | 506 Cal / serving
+- Anti - Craving Oatmeal | breakfast | 548 Cal / serving
+- Chia Pudding | breakfast | 515 Cal / serving
+- Whey Protein Cauliflower Oatmeal | breakfast | 516 Cal / serving
+- Carrot Smoothie | breakfast | 544 Cal / serving
+- Wild Rice Soup - Instant Pot | lunch, dinner | 535 Cal / serving
+- Mint Chocolate Smoothie | breakfast, lunch | 529 Cal / serving
+- Stuffed Zucchini | lunch, dinner | 477 Cal / serving
+- Stuffed Bell Peppers | dinner, lunch | 520 Cal / serving
+- Scrambled Pancakes | breakfast | 534 Cal / serving
+- Coffee Tofu Smoothie | breakfast, dinner | 487 Cal / serving
+- Scramble Sweet Potato Pancakes | breakfast | 490 Cal / serving
+- Ground Beef and Vegetable Skillet | dinner | 544 Cal / serving
+- Zucchini Soup - Instant Pot | lunch, dinner | 521 Cal / serving
+- Spicy Chicken, Yam, and Bean Skillet | breakfast, dinner, lunch | 542 Cal / serving
+- Sweet Cottage Wrap | breakfast | 543 Cal / serving
+- Spiced Shrimp Pasta Salad | lunch | 550 Cal / serving
+- Mushroom Chicken Cream - Instant Pot | lunch, dinner | 662 Cal / serving
+- No Egg Scrambled | breakfast | 543 Cal / serving
+- Reuben Sandwich | lunch, dinner | 493 Cal / serving
+- Cajun Shrimp Cauliflower Rice - Instant Pot | lunch, dinner | 550 Cal / serving
+- Chicken Tortilla Soup - Instant Pot | lunch, dinner | 547 Cal / serving
+- Salmon Patties | lunch, dinner | 544 Cal / serving
+- Sheet Pan Tofu Bowl | lunch, dinner | 531 Cal / serving
+- Sardines with Crispbreads | lunch, dinner | 510 Cal / serving
+- Tofu Pesto Toast | lunch, breakfast, dinner | 548 Cal / serving
+- Cottage Bowl with Beetroot | lunch, dinner | 482 Cal / serving
+- Buffalo Chicken Wraps | lunch | 544 Cal / serving
+- Turkey "Sausage" Pasta with Fennel | dinner, lunch | 532 Cal / serving
+- Pesto Chicken Quesadilla | lunch, breakfast, dinner | 464 Cal / serving
+- Shredded Wheat Cereal with Soy Milk and Flax | breakfast | 509 Cal / serving
+- Silken Tofu Chocolate Mousse | snacks | 202 Cal / serving
+- Smoked Turkey and Swiss Crepes | breakfast | 522 Cal / serving
+- Cafe Mocha Protein Shake | breakfast | 509 Cal / serving
+- Pizza Omelette | breakfast, lunch | 540 Cal / serving
+- Protein Yogurt with Toast | breakfast | 492 Cal / serving
+- Creamy Pasta | lunch, dinner | 533 Cal / serving
+- Taco Stuffed Peppers | lunch, dinner | 469 Cal / serving
+- Bbq Burrito | breakfast, lunch, dinner | 506 Cal / serving
+- Arugula Salad - Instant Pot | lunch, dinner | 546 Cal / serving
+- Sriracha Pineapple Salad - Instant Pot | lunch, dinner | 500 Cal / serving
+- Instant Pot Chicken Pho | lunch, dinner | 526 Cal / serving
+- Chorizo Tacos | breakfast, lunch | 541 Cal / serving
+- Hummus Chicken Burrito | lunch, dinner | 504 Cal / serving
+- Breakfast Burrito | breakfast | 538 Cal / serving
+- One-Pan Moroccan Chicken | dinner | 492 Cal / serving
+- One-Pan Moroccan Chicken Couscous | dinner, lunch | 538 Cal / serving
+- Egg Salad Sandwich | dinner, lunch | 524 Cal / serving
+- Veggie Scramble and Toast | breakfast | 489 Cal / serving
+- Tropical Ceviche | dinner | 526 Cal / serving
+- Pasta "Bolognese" | lunch, dinner | 508 Cal / serving
+- Gnocchi and Chicken | lunch, dinner | 514 Cal / serving
+- Nordic Wrap | dinner, lunch, breakfast | 453 Cal / serving
+- Blue Yogurt | snacks | 217 Cal / serving
+- Dirty Banana Pudding | breakfast, lunch | 496 Cal / serving
+- Breakfast Portobello | breakfast | 511 Cal / serving
+- Pumpkin Soup - Instant Pot | dinner, lunch | 516 Cal / serving
+- Tofu Scramble with Rice | lunch, breakfast | 479 Cal / serving
+- Cashew Chicken Lettuce Wraps | lunch | 538 Cal / serving
+- Coconut Cauliflower Oatmeal | breakfast | 458 Cal / serving
+- Coconut Crusted Fish-Instant Pot | lunch, dinner | 533 Cal / serving
+- Coconut Crusted Fish - Instant Pot | lunch, dinner | 531 Cal / serving
+- Flaxseed Oatmeal | breakfast | 545 Cal / serving
+- Chocolate Protein Oatmeal | breakfast | 525 Cal / serving
+- Baklava Overnight Oats | breakfast | 495 Cal / serving
+- Protein Yogurt Parfait | breakfast | 488 Cal / serving
+- Asparagus Tofu Salad - Instant Pot | lunch, dinner | 550 Cal / serving
+- Asian Beef Noodle Salad | lunch | 527 Cal / serving
+- Protein Pancakes with Almond Butter | breakfast | 540 Cal / serving
+- Seitan Fajitas | lunch, dinner | 549 Cal / serving
+- 15-Minute Chicken Veggie Brown Rice Stir Fry | lunch, dinner | 492 Cal / serving
+- Mediterranean Grilled Chicken Salad | lunch, dinner | 511 Cal / serving
+- Steak and Vegetable Skillet | dinner, lunch | 545 Cal / serving
+- Pad Thai | dinner | 489 Cal / serving
+- Easy Pan Pork Tenderloin with Apples and Onion | dinner | 461 Cal / serving
+- Za'atar Salmon with Lemon Tahini Sauce, Roasted Broccoli, Brown Rice | dinner | 475 Cal / serving
+- Za'atar Salmon with Lemon Tahini Sauce Roasted Broccoli, Brown Rice | dinner, lunch | 500 Cal / serving
+- Chicken Caesar Salad Wrap | lunch | 468 Cal / serving
+- Ground Beef in a Jar | lunch, dinner | 519 Cal / serving
+- Chicken Fajita Wrap - Instant Pot | dinner, lunch | 509 Cal / serving
+- Chocolate Bowl | breakfast | 527 Cal / serving
+- Quick Chocolate Protein Pudding | breakfast, lunch | 501 Cal / serving
+- Protein Oatmeal with Peanut Butter | breakfast | 540 Cal / serving
+- Italian Soup - Instant Pot | lunch, dinner | 543 Cal / serving
+- French Toast | breakfast | 542 Cal / serving
+- Berry Cheesecake Overnight Oats | breakfast | 458 Cal / serving
+- Chocolate Pudding | breakfast, dinner | 500 Cal / serving
+- Mocha Overnight Pudding | breakfast | 483 Cal / serving
+- Zucchini Overnight Oats | breakfast | 492 Cal / serving
+- Pumpkin Latte Overnight Oats | breakfast | 516 Cal / serving
+- String Cheese | snacks | 180 Cal / serving
+- Blue Coconut Oats | breakfast | 488 Cal / serving
+- Macchiato Overnight Oats | breakfast | 454 Cal / serving
+- Baked Oatmeal | breakfast | 523 Cal / serving
+- Carrot Porridge | breakfast | 457 Cal / serving
+- Zucchini Noodles with Chicken | lunch, dinner | 499 Cal / serving
+- Parmesan Chicken | lunch | 531 Cal / serving
+- Hard Boiled Eggs with Nori and Soy Sauce | snacks | 185 Cal / serving
+- Teriyaki Tofu Bowl | dinner, lunch | 475 Cal / serving
+- Creamy Shredded Chicken | lunch, dinner | 513 Cal / serving
+- Fast Chicken Soup | lunch, dinner | 524 Cal / serving
+- Shredded Chicken Salad | lunch, dinner | 526 Cal / serving
+- Tzatziki Bowl | lunch, dinner | 533 Cal / serving
+- Shawarma Salad | lunch, dinner | 538 Cal / serving
+- Hummus Tuna Wrap | lunch, dinner, breakfast | 461 Cal / serving
+- Herb Chicken Breast with Couscous | lunch, dinner | 456 Cal / serving
+- Chicken and Couscous | lunch, dinner | 472 Cal / serving
+- Apple Rosemary Braised Chicken | dinner | 515 Cal / serving
+- Rainy Day Chicken Noodle Soup | lunch | 537 Cal / serving
+- Rainy Day Chicken Noodle | lunch, dinner | 479 Cal / serving
+- "BLT" Sandwich | lunch, dinner, breakfast | 483 Cal / serving
+- Tomato Soup and Grilled Cheese | lunch, dinner | 528 Cal / serving
+- Egg Avocado Breakfast Sandwich | breakfast | 485 Cal / serving
+- Turkey Bacon, Eggs, and Toast | breakfast | 507 Cal / serving
+- Shredded Chicken Bowl | lunch, dinner | 522 Cal / serving
+- Pork Tenderloin with French Carrot Salad, and Corn | lunch, dinner | 464 Cal / serving
+- Curry with Seitan | lunch, dinner | 491 Cal / serving
+- Crunchy Orange Chicken Salad | lunch | 482 Cal / serving
+- Baked Beans | lunch, dinner, breakfast | 506 Cal / serving
+- Blueberry Turkey Sausage | breakfast, lunch | 516 Cal / serving
+- Seitan Kebabs | lunch, dinner | 533 Cal / serving
+- Veggie Soup | dinner, lunch | 535 Cal / serving
+- Stuffed Potato | lunch, breakfast, dinner | 540 Cal / serving
+- Egg White Quesadilla | dinner, lunch | 450 Cal / serving
+- Seitan Wrap | breakfast, lunch, dinner | 547 Cal / serving
+- Sausage Egg Wrap | dinner, breakfast, lunch | 469 Cal / serving
+- Tuna Pate Wrap - Instant Pot | lunch, dinner | 537 Cal / serving
+- Seitan Chorizo Wrap | breakfast, lunch | 528 Cal / serving
+- Strawberry Fields Jar | lunch, dinner | 466 Cal / serving
+- Caesar Salad | lunch | 467 Cal / serving
+- Roasted Beetroot, Salad and Chicken | lunch, dinner | 488 Cal / serving
+- Strawberry Chicken Bowl | lunch, dinner | 519 Cal / serving
+- Chicken with Garlic Mushrooms | lunch, dinner | 526 Cal / serving
+- Cottage Cheese Stuffed Tomato | dinner, lunch | 538 Cal / serving
+- Vegetarian Ramen | dinner | 468 Cal / serving
+- Asian Chicken Salad | lunch, dinner | 499 Cal / serving
+- Sweet Potato Mushroom Breakfast Hash | breakfast | 466 Cal / serving
+- Turkey Vegetable Soup | dinner, lunch | 544 Cal / serving
+- Breakfast Skillet | breakfast | 526 Cal / serving
+- Turkey Egg Bites and Fruit Salad | breakfast | 499 Cal / serving
+- Sheet Pan Jerk Chicken with Sweet Potato Wedges | dinner | 532 Cal / serving
+- Shakshuka | breakfast | 545 Cal / serving
+- Chile with Veggie Crumble | dinner | 497 Cal / serving
+- Philly Cheesesteak Hash | breakfast | 524 Cal / serving
+- Chorizo-Mushroom Soup | dinner, lunch | 529 Cal / serving
+- Creamy Parmesan Oatmeal | breakfast | 478 Cal / serving
+- Soy Ceviche | lunch, dinner | 546 Cal / serving
+- Eggplant Stew, Rice and Chicken | lunch, dinner | 532 Cal / serving
+- Chicken Breakfast Sandwich | breakfast | 458 Cal / serving
+- Turkey Roll Ups | snacks | 208 Cal / serving
+- Mexican Cauliflower Rice with Sausage | dinner | 516 Cal / serving
+- Chicken Edamame | lunch, dinner | 481 Cal / serving
+- Curried Chicken | lunch, dinner | 518 Cal / serving
+- Vietnamese Salad Rolls | snacks | 188 Cal / serving
+- Sushi in a Jar | lunch, dinner | 484 Cal / serving
+- Strawberry Smoothie with Cacao nibs | breakfast | 483 Cal / serving
+- Strawberry Smoothie With Cacao Nibs | breakfast | 463 Cal / serving
+- Herb Crusted Cod with Mediterranean Salad | dinner | 518 Cal / serving
+- Raspberry Protein Yogurt Bowl | breakfast | 547 Cal / serving
+- Chicken Avocado Salad | lunch, dinner | 500 Cal / serving
+- BBQ Shredded Chicken | lunch, dinner | 521 Cal / serving
+- Chicken Breakfast Bowl | breakfast | 525 Cal / serving
+- Fried Rice | dinner, lunch | 510 Cal / serving
+- Quick Steak and Broccoli with Garlic Butter Mashed Potato | dinner | 530 Cal / serving
+- Mango Smoothie Bowl | breakfast, dinner | 473 Cal / serving
+- Indian Chicken Curry | dinner | 474 Cal / serving
+- Mexican Stew | lunch, dinner | 548 Cal / serving
+- Chipotle Steak Tacos | lunch | 533 Cal / serving
+- Asian-Style Turkey Lettuce Wraps | lunch, dinner | 513 Cal / serving
+- Soba Noodle Salad | dinner | 506 Cal / serving
+- Cheesy Broccoli Casserole | lunch, dinner | 535 Cal / serving
+- Savory Muffins | lunch, dinner, breakfast | 458 Cal / serving
+- Soy Chicken with Edamame and Couscous | lunch | 469 Cal / serving
+- Meatball Bowl | lunch, dinner | 531 Cal / serving
+- Chicken Texas Bowl | lunch, dinner | 512 Cal / serving
+- Microwave Chai Mug Cake | breakfast | 538 Cal / serving
+- Burgers with Sweet Potato Hashbrowns | breakfast | 486 Cal / serving
+- Curry Salmon Bowl | dinner | 532 Cal / serving
+- Cajun Tofu Salad - Instant Pot | dinner, lunch | 462 Cal / serving
+- Spanish Scrambled Tofu | lunch, dinner, breakfast | 549 Cal / serving
+- Vizcaina Canned Tuna - Instant Pot | lunch, dinner | 519 Cal / serving
+- Mango Chicken Bowl | dinner, lunch | 543 Cal / serving
+- Cauliflower Rice | dinner, lunch | 539 Cal / serving
+- Beans Rancheros | breakfast | 525 Cal / serving
+- Lime Pie Smoothie | breakfast | 476 Cal / serving
+- Pesto Chicken Bowl | lunch, dinner | 505 Cal / serving
+- Spicy Shrimp Caesar Salad | lunch, dinner | 515 Cal / serving
+- Vegetable Egg White Frittata | breakfast | 483 Cal / serving
+- The Boss Smoothie | breakfast | 550 Cal / serving
+- Quick Egg Salad Bagel | lunch, breakfast | 486 Cal / serving
+- Turkey Swiss Sandwich | lunch | 470 Cal / serving
+- Protein Cereal with Almonds | breakfast | 548 Cal / serving
+- Zucchini Cream | dinner, lunch | 487 Cal / serving
+- Pina Colada - Overnight Oats | breakfast | 528 Cal / serving
+- Zucchini Egg Nest | breakfast | 467 Cal / serving
+- Coconut Curry Fish - Instant Pot | lunch, dinner | 543 Cal / serving
+- Coconut Shrimp and Mango Salsa | snacks | 198 Cal / serving
+- Tilapia Bowl | dinner, lunch | 479 Cal / serving
+- Tropical Veg Overnight Oats | breakfast | 499 Cal / serving
+- Rice Cakes with Almond Butter | snacks | 233 Cal / serving
+- Tempeh Wrap | lunch, dinner | 522 Cal / serving
+- Cream Cheese Toast | breakfast, lunch | 498 Cal / serving
+- Shrimp Stuffed Avocado | lunch, dinner | 475 Cal / serving
+- Quick Cottage Salad | lunch, dinner, breakfast | 543 Cal / serving
+- Chicken and Corn Salad | lunch, dinner | 543 Cal / serving
+- Black Bean and Cauliflower Rice Bowl | dinner, lunch | 520 Cal / serving
+- Brownie Bites | breakfast | 527 Cal / serving
+- Protein Cereal | breakfast | 491 Cal / serving
+- Banana Whey Shake | snacks | 218 Cal / serving
+- Chicken Breakfast | breakfast | 455 Cal / serving
+- Peanut Yogurt Oatmeal | breakfast | 526 Cal / serving
+- Stuffed Peppers | lunch, dinner | 531 Cal / serving
+- Zucchini Soup | lunch, dinner | 544 Cal / serving
+- Coffee-Tofu-Smoothie | breakfast, dinner | 543 Cal / serving
+- Ground Chicken Bowl | lunch, dinner | 545 Cal / serving
+- Savory Steel Cut Oatmeal | breakfast, lunch, dinner | 550 Cal / serving
+- Morning Bowl | lunch, dinner, breakfast | 503 Cal / serving
+- Chicken Breast with Salted Spinach | lunch, dinner | 541 Cal / serving
+- Chicken, Green Beans and Potato | lunch, dinner | 535 Cal / serving
+- Ground Chicken, Spinach Stew and Sweet Potato | lunch, dinner | 519 Cal / serving
+- Chicken, Asparagus and Chickpeas | lunch, dinner | 532 Cal / serving
+- Chicken Meatballs | lunch, dinner | 532 Cal / serving
+- Chicken, Instant Rice, and Broccoli | lunch, dinner | 481 Cal / serving
+- Pork Chop with Sweet Potato and Applesauce | dinner, lunch | 524 Cal / serving
+- 12-Minute Salmon with Lemon Couscous | lunch, dinner | 522 Cal / serving
+- Cobb Salad | lunch, dinner | 455 Cal / serving
+- Teriyaki Tempeh and Broccoli | lunch, dinner | 529 Cal / serving
+- Sheet Pan Sausage and Brussels Sprout Bake | breakfast, lunch, dinner | 511 Cal / serving
+- Scallion Pancake with Fried Egg | breakfast | 538 Cal / serving
+- Spinach Crepes | dinner, breakfast, lunch | 475 Cal / serving
+- Tuna-Mango Jar | lunch, dinner | 481 Cal / serving
+- Tuna-Mango Salad Jar | lunch, dinner | 525 Cal / serving
+- Hard Boiled Eggs with Chili Butter and Garlic Yogurt | lunch, dinner | 475 Cal / serving
+- Scrambled Eggs with Salsa and Potato | breakfast, lunch | 478 Cal / serving
+- Chicken Bruschetta - Instant Pot | lunch, dinner | 511 Cal / serving
+- Lazy Lasagna - Instant Pot | lunch, dinner | 539 Cal / serving
+- Mexican Ground Beef - Instant Pot | lunch, dinner | 463 Cal / serving
+- Beef Stroganoff - Instant Pot | lunch, dinner | 509 Cal / serving
+- Zucchini Baked Patties | dinner, lunch | 469 Cal / serving
+- Scrambled Eggs with Potato and Salsa | breakfast, lunch | 509 Cal / serving
+- Seitan Chorizo Quesadilla | lunch, dinner | 540 Cal / serving
+- Zucchini Stew | dinner, lunch | 542 Cal / serving
+- Egg Salad | dinner, lunch | 453 Cal / serving
+- Kale Shrimp Skillet | lunch, dinner | 542 Cal / serving
+- Honey Garlic Salmon | dinner, lunch | 531 Cal / serving
+- Thai Shrimp Curry | lunch, dinner | 473 Cal / serving
+- Salmon Poke Bowl | lunch | 470 Cal / serving
+- Pork Chop with Potatoes O'Brien | breakfast, lunch | 478 Cal / serving
+- Chicken Breakfast 'Sausage' with Fruit Salad | breakfast | 526 Cal / serving
+- Steak and Potato Breakfast Hash | lunch, breakfast | 463 Cal / serving
+- Pork and Brussel Sprout Breakfast Hash | breakfast, lunch | 467 Cal / serving
+- Burger | dinner, lunch | 535 Cal / serving
+- Anti - Craving Muffin | dinner, breakfast, lunch | 497 Cal / serving
+- Boiled Eggs with Apples | breakfast | 525 Cal / serving
+- Steak Hash | breakfast, dinner, lunch | 527 Cal / serving
+- Loco Moco | breakfast, lunch, dinner | 532 Cal / serving
+- Chicken Curry with Quinoa | lunch, dinner | 530 Cal / serving
+- Scrambled Eggs with Seitan Chorizo | breakfast | 497 Cal / serving
+- Tofu Pesto Sandwich | lunch, dinner | 549 Cal / serving
+- Microwave Carrot Oatmeal Mug | breakfast | 523 Cal / serving
+- Sausages with Cinnamon Sweet Potato Mash and Mixed Veggies | dinner | 523 Cal / serving
+- Strawberry Cheesecake Overnight | breakfast | 509 Cal / serving
+- Green Omelette | breakfast | 548 Cal / serving
+- Asparagus Omelette | breakfast | 469 Cal / serving
+- Peanut Butter and Celery Sticks | snacks | 169 Cal / serving
+- Mediterranean Cottage Salad | dinner, lunch | 452 Cal / serving
+- Creamy Egg Sandwich | dinner | 454 Cal / serving
+- Cottage Breakfast Bowl | breakfast | 508 Cal / serving
+- Avocado Egg Salad | lunch, dinner | 539 Cal / serving
+- Tuna Pasta Salad | lunch, dinner | 525 Cal / serving
+- Steak Fajita Bowls | lunch, dinner | 528 Cal / serving
+- Steak Salad | lunch, dinner | 470 Cal / serving
+- Egg White and Sweet Potato Bowls | breakfast, lunch, dinner | 518 Cal / serving
+- Stuffed Potato - Instant Pot | lunch, dinner | 521 Cal / serving
+- Stuffed Potato- Instant Pot | lunch, dinner | 545 Cal / serving
+- Asparagus Salad with Salmon | lunch, dinner | 534 Cal / serving
+- Cajun Tilapia and Cucumber Salad - Instant Pot | lunch, dinner | 541 Cal / serving
+- Creamy Zucchini Soup | dinner, lunch | 466 Cal / serving
+- Creamy Matcha Bowl | breakfast | 478 Cal / serving
+- Asian Steak and Green Beans | dinner, lunch | 517 Cal / serving
+- One-Pan Roasted Chicken and Vegetables | dinner | 496 Cal / serving
+- Beef and Plantain Bowls with Green Salsa | lunch, dinner | 503 Cal / serving
+- Avocado Chicken Lettuce Wraps | lunch, dinner | 488 Cal / serving
+- Savory Cottage Cheese | dinner | 523 Cal / serving
+- Ground Turkey Bowl | breakfast, lunch | 511 Cal / serving
+- Smoked Salmon and Cauliflower Bowl | breakfast | 511 Cal / serving
+- Shrimp Fajitas | lunch, dinner | 536 Cal / serving
+- Healthier French Toast | breakfast | 542 Cal / serving
+- Spinach, Feta, and Sun-Dried Tomato Omelette and Potatoes | breakfast | 498 Cal / serving
+- Grilled Steak with Chimichurri, Brown Rice, and Zucchini | dinner | 491 Cal / serving
+- Chicken Salad with Apple and Cranberry | lunch | 529 Cal / serving
+- Cottage Sweet Salad | dinner, lunch | 476 Cal / serving
+- Cottage Salad in Iceberg Leaves | dinner | 459 Cal / serving
+- Sesame Pineapple Steak Bites | dinner | 477 Cal / serving
+- Peach Overnight Pudding | breakfast | 508 Cal / serving
+- Cinnamon Roll Smoothie | breakfast | 486 Cal / serving
+- Chicken Shawarma Bowls | lunch, dinner | 518 Cal / serving
+- 5-Minute Egg and Rice with Soy Sauce | lunch, dinner | 529 Cal / serving
+- Microwave Mug Omelette | breakfast | 468 Cal / serving
+- Spiced Mixed Nuts | snacks | 206 Cal / serving
+- Veggies and Tzatziki | snacks | 240 Cal / serving
+- Sweet Potato Chips | snacks | 196 Cal / serving
+- Air Popped Popcorn | snacks | 206 Cal / serving
+- Blueberry Frozen Yogurt Popsicles | snacks | 213 Cal / serving
+- Kale Chips | snacks | 202 Cal / serving
+- Edamame with Sesame Seeds | snacks | 208 Cal / serving
+- Lemon Dill Salmon Salad | lunch | 502 Cal / serving
+- Instant Pot Beef and Broccoli | dinner, lunch | 525 Cal / serving
+- Avocado Toast with Smoked Salmon | breakfast | 539 Cal / serving
+- Ahi Tuna Poke Bowl | lunch | 505 Cal / serving
+- 2-Ingredient Protein Crepes | breakfast | 487 Cal / serving
+- Turkey Pepperoni and Fruit | snacks | 222 Cal / serving
+- Tuna Salad with Crackers | snacks | 248 Cal / serving
+- Tuna Quinoa Bowl | lunch, dinner | 533 Cal / serving
+- Swiss Cheese and Apple | snacks | 233 Cal / serving
+- Smoked Salmon with Crackers and Cream Cheese | snacks | 224 Cal / serving
+- Simple Charcuterie - Olives, Cheese, and Meat | snacks | 207 Cal / serving
+- Raspberry Cheesecake Smoothie | breakfast | 487 Cal / serving
+- Peanut Edamame Salad | dinner, lunch | 478 Cal / serving
+- Egg Salad Open Faced Sandwich | snacks | 203 Cal / serving
+- Cottage Cheese on Toast | snacks | 237 Cal / serving
+- Chickpea Edible Cookie Dough | snacks | 232 Cal / serving
+- Chocolate Whey Pudding with Strawberries | snacks | 223 Cal / serving
+- Coleslaw Bowl | dinner, lunch | 477 Cal / serving
+- Celery with Almond Butter | snacks | 199 Cal / serving
+- Turkey Swiss Roll Ups | snacks | 241 Cal / serving
+- Tuna with Rice and Broccoli | lunch, dinner | 524 Cal / serving
+- Toaster Waffle with Greek Yogurt and Berries | snacks | 184 Cal / serving
+- Sweetened Vanilla Greek Yogurt | snacks | 195 Cal / serving
+- Steamed Edamame Beans | snacks | 193 Cal / serving
+- Soy Milk | snacks | 200 Cal / serving
+- Smoked Salmon Scrambled Eggs | lunch, breakfast | 476 Cal / serving
+- Smoked Salmon and Sliced Veggies | snacks | 198 Cal / serving
+- Seitan 'Bacon' | snacks | 200 Cal / serving
+- Salted Dark Chocolate Dipped Oranges | snacks | 198 Cal / serving
+- Protein Bar | snacks | 200 Cal / serving
+- Plant-Based Jerky | snacks | 213 Cal / serving
+- Pea Milk and Fruit | snacks | 205 Cal / serving
+- Microwave Potato with Salsa and Cottage Cheese | dinner, lunch | 508 Cal / serving
+- Cheese and Crackers | snacks | 208 Cal / serving
+- Breakfast "Bento" Box | breakfast | 532 Cal / serving
+- Boiled Eggs with Salt and Pepper | snacks | 249 Cal / serving
+- Boiled Eggs with Hot Sauce | snacks | 227 Cal / serving
+- Strawberries and Dark Chocolate | snacks | 204 Cal / serving
+- Berries with Light Whipped Cream | snacks | 176 Cal / serving
+- Banana Nice Cream | snacks | 210 Cal / serving
+- Baby Carrots and Low Cal Dressing | snacks | 198 Cal / serving
+- Avocado Toast | snacks | 200 Cal / serving
+- Apple and Peanut Butter | snacks | 200 Cal / serving
+- Scrambled Oatmeal Pancakes | breakfast | 468 Cal / serving
+- Beetroot Salad | dinner, lunch | 544 Cal / serving
+- Egg Plant Stew | dinner, lunch | 549 Cal / serving
+- Chorizo Hash | breakfast | 548 Cal / serving
+- Tuscan Shrimp Soup | lunch, dinner | 541 Cal / serving
+- Shrimp Stir Fry | lunch, dinner | 533 Cal / serving
+- Spiced Mexican Tuna Steak | lunch, dinner | 539 Cal / serving
+- Thai Chicken Curry - Instant Pot | lunch, dinner | 527 Cal / serving
+- Turkey & Potato Stew - Instant Pot | lunch, dinner | 508 Cal / serving
+- Moussaka - Instant Pot | lunch, dinner | 531 Cal / serving
+- Ramen with Chicken - Instant Pot | lunch, dinner | 537 Cal / serving
+- Autumn Salad - Instant Pot | lunch, dinner | 550 Cal / serving
+- Tilapia and Confetti Salad - Instant Pot | lunch, dinner | 482 Cal / serving
+- Turkey Chili - Instant Pot | lunch, dinner | 540 Cal / serving
+- Caponata with Ground Turkey - Instant Pot | lunch, dinner | 542 Cal / serving
+- Pizza Casserole - Instant Pot | lunch, dinner | 548 Cal / serving
+- Pizza Casserole-Instant Pot | lunch, dinner | 541 Cal / serving
+- Egg Plant Tofu Stew - Instant Pot | lunch, dinner | 550 Cal / serving
+- Shrimp & Rice Bowl | dinner, lunch | 491 Cal / serving
+- Red Pepper Egg Bites with Salsa | snacks | 209 Cal / serving
+- Ginger Chicken and Veggie Bowls | lunch, dinner | 534 Cal / serving
+- Teriyaki Beef and Sweet Potato | dinner | 523 Cal / serving
+- Pesto Chicken Stir Fry | dinner | 537 Cal / serving
+- Cauliflower Pork Fried Rice | lunch, dinner | 530 Cal / serving
+- Mediterranean Sheet Pan Chicken | lunch | 503 Cal / serving
+- Peanut Chicken Meal Prep Bowls | dinner, lunch | 515 Cal / serving
+- Beef and Broccoli | lunch, dinner | 509 Cal / serving
+- Baked Chicken Taquitos | dinner | 550 Cal / serving
+- Chicken and Veggie Oven Kebabs | lunch, dinner | 496 Cal / serving
+- Cottage BlackBerry Overnight Oats | breakfast | 522 Cal / serving
+- Pepper Steak Stir Fry | lunch, dinner | 513 Cal / serving
+- Shrimp Taco Salad | lunch, dinner | 534 Cal / serving
+- Greek Chicken Salad Bowls | dinner, lunch | 475 Cal / serving
+- Honey Chili Chicken Meal Prep | lunch, dinner | 530 Cal / serving
+- Sheet Pan Miso Ginger Tofu | dinner | 456 Cal / serving
+- Quick Turkey Sloppy Joes | dinner, lunch | 511 Cal / serving
+- Plant Based Hash with Brussels Sprouts | lunch, dinner | 493 Cal / serving
+- Elote - Mexican Street Corn | snacks | 215 Cal / serving
+- Sheet Pan Veggie Omelette | breakfast | 489 Cal / serving
+- 20-Minute Egg Roll Bowls | dinner, lunch | 502 Cal / serving
+- Sheet Pan Fajita Shrimp | lunch, dinner | 496 Cal / serving
+- One Pot Garlic Shrimp and Quinoa | dinner, lunch | 497 Cal / serving
+- Black Bean Spaghetti with Quick Tomato Sauce | lunch, dinner | 525 Cal / serving
+- Veggies and Hummus | snacks | 195 Cal / serving
