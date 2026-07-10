@@ -2786,9 +2786,9 @@ function _showTermsLegacy() {
 }
 
 function showThinkingAboutIt() {
-  var today = new Date();
+  var today = new Date(todayET() + 'T00:00:00Z');
   var callbackDate = new Date(today);
-  callbackDate.setDate(today.getDate() + 3);
+  callbackDate.setUTCDate(today.getUTCDate() + 3);
   var opts = { year:'numeric', month:'long', day:'numeric' };
 
   document.getElementById('followup-details').innerHTML =
@@ -2830,9 +2830,9 @@ function showDeclineFromPackages() {
 }
 
 function showDecline() {
-  const today = new Date();
+  const today = new Date(todayET() + 'T00:00:00Z');
   const followDate = new Date(today);
-  followDate.setDate(today.getDate() + 42);
+  followDate.setUTCDate(today.getUTCDate() + 42);
   const opts = { year:'numeric', month:'long', day:'numeric' };
   const gender = gv('gender');
   const listName = gender === 'Female' ? 'Female Follow-Ups' : 'Male Follow-Ups';
@@ -2935,8 +2935,8 @@ function buildIntakeRow(decision, freq, length, followUpDays) {
   var consultDate = gv('consult-date');
   var followUpDate = '';
   if (consultDate) {
-    var d = new Date(consultDate + 'T12:00:00');
-    d.setDate(d.getDate() + (followUpDays || 42));
+    var d = new Date(consultDate + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + (followUpDays || 42));
     followUpDate = d.toISOString().split('T')[0];
   }
   var outcome = decision + (freq ? ' - ' + freq + ', ' + length : '');
@@ -3198,9 +3198,9 @@ async function finalizeDecline() {
   if (!reason) { alert('Please select a reason for the decline.'); return; }
   showLoading('Saving follow-up and sending email...');
 
-  const today = new Date();
+  const today = new Date(todayET() + 'T00:00:00Z');
   const followDate = new Date(today);
-  followDate.setDate(today.getDate() + 42);
+  followDate.setUTCDate(today.getUTCDate() + 42);
   const followDateStr = followDate.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
   const gender = gv('gender');
   const tabName = gender === 'Female' ? 'Female Follow-Ups' : 'Male Follow-Ups';
@@ -3413,9 +3413,9 @@ function copyThankYou(){
 // ===========================================
 async function sendNotificationEmail(decision, freq, length) {
   const notifyEmails = 'tedscholl@gmail.com,healthylifewithdani1@gmail.com';
-  const today = new Date();
+  const today = new Date(todayET() + 'T00:00:00Z');
   const followDate = new Date(today);
-  followDate.setDate(today.getDate() + 42);
+  followDate.setUTCDate(today.getUTCDate() + 42);
 
   var body = 'FITNESS CONSULTATION RESULTS\n' +
     '=============================\n' +
