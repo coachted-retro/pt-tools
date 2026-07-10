@@ -88,6 +88,28 @@ for the next session. Do not add more features to this pipeline before that
 mapping happens — that is exactly the pattern that created tonight's mess.
 
 ## NEXT SESSION SHOULD START WITH
+0. MISSING FEATURE, CONFIRMED NEVER BUILT (Ted flagged this July 9, ~9:33pm,
+   and is frustrated this keeps getting dropped): AI note composition for
+   appointment outcomes. Standard was supposed to apply to ALL THREE:
+   Initial Consultations, 6-Week Follow-Ups, Monthly Check-Ins. The intended
+   flow: Ted (or another coach) writes a BRIEF note about the appointment
+   somewhere on the client's profile/the appointment record. AI should pull
+   that brief note + the appointment's structured outcome data (for
+   check-ins: session/diet/energy/sleep/stress scores; for consultations/
+   follow-ups: the outcome field + assessment_summary/program details) and
+   COMPOSE an enhanced, polished caption/note automatically. That composed
+   caption is what should show in the EOD's auto-pulled rows (currently
+   just shows raw scores + an empty manual "Add a note..." box, screenshot
+   confirms this — ted-eod.html Monthly Check-Ins section, July 9 session)
+   and is what should end up in Today's Notes Summary / what goes to
+   Keelin. CONFIRMED via full codebase search: no such feature exists
+   anywhere. Not broken — never built, despite Ted saying it was meant to
+   be standard. Worker already has 17+ working Anthropic API call patterns
+   to model this on (search 'aiResp = await fetch' in worker-v34.js for
+   examples — /recipes/generate, /coach/draft-reply, /coach/draft-outreach
+   are probably the closest existing patterns to follow for style/format).
+   This should be scoped and built as a real, connected feature — not
+   another isolated add-on — as part of the pipeline mapping work below.
 1. Read this file in full.
 2. Map the full nutrition/macro/InBody pipeline end to end: every file that
    touches calories, macros, meal_profiles, or inbody_scans; what each one
@@ -101,6 +123,14 @@ mapping happens — that is exactly the pattern that created tonight's mess.
 5. coach-client-profile.html's EXERCISE_DB is still out of sync (137 vs 292
    in the other two files) — a pre-existing issue, not caused by tonight,
    still unresolved.
+6. TIMEZONE BUG PATTERN — audit other files for the same issue found and
+   fixed tonight in ted-eod.html: `new Date().toISOString().slice(0,10)`
+   returns UTC, not Eastern, and breaks "today" comparisons every evening
+   after 8pm Eastern (UTC rolls to next day while it's still today here).
+   Also check for worker endpoints that fall back to their own
+   `new Date().toISOString()` when a date param isn't passed (found and
+   fixed one case: /coach/notes-today) — there may be others. Grep both
+   client html files and worker-v34.js for this exact pattern.
 
 ## STANDING RULES (Ted has stated these explicitly, more than once)
 - Paste full code directly in chat responses. Never a download link, never
