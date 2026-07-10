@@ -2459,7 +2459,7 @@ Rules:
         const classesRes = await env.DB.prepare('SELECT * FROM group_classes WHERE gym_id=? AND active=1').bind(gymId).all();
         const classes = classesRes.results || [];
         const occurrences = [];
-        const today = new Date(); today.setHours(0,0,0,0);
+        const today = new Date(todayET() + 'T00:00:00Z');
         for (let i = 0; i <= days; i++) {
           const d = new Date(today); d.setDate(d.getDate() + i);
           const dow = d.getDay();
@@ -3059,10 +3059,10 @@ Rules:
         ).bind(...(showAll ? [] : [coach])).all();
         const clients = rows.results || [];
 
-        const now = new Date();
-        const since30 = new Date(now - 30*86400000).toISOString().slice(0,10);
-        const since56 = new Date(now - 56*86400000).toISOString().slice(0,10);
-        const since14 = new Date(now - 14*86400000).toISOString().slice(0,10);
+        const anchorDay = new Date(todayET() + 'T00:00:00Z');
+        const since30 = (() => { const d = new Date(anchorDay); d.setUTCDate(d.getUTCDate()-30); return d.toISOString().slice(0,10); })();
+        const since56 = (() => { const d = new Date(anchorDay); d.setUTCDate(d.getUTCDate()-56); return d.toISOString().slice(0,10); })();
+        const since14 = (() => { const d = new Date(anchorDay); d.setUTCDate(d.getUTCDate()-14); return d.toISOString().slice(0,10); })();
 
         for (const c of clients) {
           // --- Workout completion: logged activity vs what's actually scheduled, last 30 days ---
@@ -3080,7 +3080,7 @@ Rules:
           c.workout_completion_pct = c.workout_scheduled_30d > 0 ? Math.min(100, Math.round(100 * logged30 / c.workout_scheduled_30d)) : null;
           const weekCounts = new Array(8).fill(0);
           for (const d of loggedDates) {
-            const diffDays = Math.floor((now - new Date(d + 'T00:00:00')) / 86400000);
+            const diffDays = Math.floor((anchorDay - new Date(d + 'T00:00:00Z')) / 86400000);
             const weekIdx = 7 - Math.floor(diffDays / 7);
             if (weekIdx >= 0 && weekIdx < 8) weekCounts[weekIdx]++;
           }
