@@ -209,6 +209,11 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
       <div class="field"><label>Progress Monitoring Notes</label>
         <textarea id="pt-monitoring" placeholder="Notes on overdue or upcoming progress scans..." oninput="updateStatus('pt')"></textarea>
       </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Frozen Accounts — who and why</label>
+        <div class="kpi-hint">Auto-pulled list of currently frozen clients. Add the reason and return date so it's on file, not just a count.</div>
+        <div id="frozen-list"></div>
+      </div>
     </div>
   </div>
 
@@ -465,12 +470,57 @@ function renderMyConsultations(consults, checkins) {
 
 function renderPTSection() {
   const active = allClients.filter(c => c.status === 'active_pt').length;
-  const frozen = allClients.filter(c => c.status === 'frozen').length;
+  const frozenClients = allClients.filter(c => c.status === 'frozen');
   const renewals = allClients.filter(c => c.status === 'active_pt' && (c.sessions_remaining||0) === 0).length;
   document.getElementById('pt-active').value = active;
-  document.getElementById('pt-frozen').value = frozen;
+  document.getElementById('pt-frozen').value = frozenClients.length;
   document.getElementById('pt-renewals').value = renewals;
-  updateStatus('pt', `${active} active · ${frozen} frozen · ${renewals} renewals`, 'status-auto');
+  updateStatus('pt', `${active} active · ${frozenClients.length} frozen · ${renewals} renewals`, 'status-auto');
+  renderFrozenList(frozenClients);
+}
+
+// Frozen status is already tracked on the client record, but WHY they're
+// frozen and WHEN they're due back isn't a structured field yet -- Danielle's
+// real EOD tracks that per person. Rather than add new DB columns tonight,
+// this reuses the same coach_notes pattern as everywhere else: an editable
+// note per frozen client, tagged so it's easy to find and doesn't require a
+// schema change to be useful right away.
+async function renderFrozenList(frozenClients) {
+  const el = document.getElementById('frozen-list');
+  if (!frozenClients.length) { el.innerHTML = '<div class="empty-auto">No frozen accounts right now</div>'; return; }
+  el.innerHTML = frozenClients.map(c => {
+    const name = ((c.first_name||'')+' '+(c.last_name||'')).trim() || 'Client #'+c.id;
+    const uid = 'frozen-'+c.id;
+    return `<div class="auto-row" style="margin-bottom:8px">
+      <div class="ar-info" style="width:100%">
+        <div class="ar-name">${esc(name)}</div>
+        <textarea id="note-${uid}" placeholder="Why frozen, until when..." style="width:100%;margin-top:6px;padding:8px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:12px" onblur="saveFrozenNote(${c.id},'${uid}')"></textarea>
+        <div id="save-${uid}" style="font-size:10px;color:var(--muted);margin-top:2px"></div>
+      </div>
+    </div>`;
+  }).join('');
+  // Pull in any note already on file so re-opening the EOD doesn't show blank
+  try {
+    const r = await fetch(WORKER + '/coach/notes-today?coach=' + encodeURIComponent('Danielle Pellegrini') + '&date=' + TODAY);
+    const d = await r.json();
+    (d.notes||[]).filter(n => n.tag === 'EOD - Frozen Account').forEach(n => {
+      const ta = document.getElementById('note-frozen-' + n.client_id);
+      if (ta && !ta.value) ta.value = n.body;
+    });
+  } catch(e) {}
+}
+async function saveFrozenNote(clientId, uid) {
+  const ta = document.getElementById('note-' + uid);
+  const statusEl = document.getElementById('save-' + uid);
+  const val = (ta.value||'').trim();
+  if (!val) return;
+  statusEl.textContent = 'Saving...';
+  try {
+    const r = await fetch(WORKER + '/coach/note', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: clientId, coach_name: 'Danielle Pellegrini', tag: 'EOD - Frozen Account', body: val }) });
+    const d = await r.json();
+    statusEl.textContent = d.ok !== false ? '✓ Saved' : 'Could not save — try again';
+  } catch(e) { statusEl.textContent = 'Could not save — try again'; }
 }
 
 function renderFeed(subs, items) {
