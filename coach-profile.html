@@ -60,6 +60,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 const NEEDS_COVERAGE_ROLES = ['MEA', 'Floor Tech'];
 const params = new URLSearchParams(window.location.search);
 const sessionForFallback = (function(){ try { return JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){ return null; } })();
@@ -193,7 +194,7 @@ function renderShiftCalendar(containerId, shifts) {
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const byDate = {};
   (shifts||[]).forEach(s => { (byDate[s.shift_date] = byDate[s.shift_date]||[]).push(s); });
-  const todayStr = now.toISOString().slice(0,10);
+  const todayStr = todayET();
   const dotColor = s => s.status==='needs_coverage' ? '#D98A0B' : s.status==='pending_swap_approval' ? '#2563EB' : '#1E9E5A';
   let cells = '';
   for (let i=0;i<startWeekday;i++) cells += '<div></div>';

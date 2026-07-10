@@ -601,6 +601,7 @@
 // ── CONFIG ────────────────────────────────────────────────────
 // APPS_SCRIPT removed — check-ins now read from D1 via loadCheckins()
 const WORKER     = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write';
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 const CI_SHEET   = '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
 const PT_PER_SESSION = 250; // estimated monthly revenue per client for risk calc
 
@@ -925,8 +926,7 @@ function renderCalendar() {
 function renderUpcoming() {
   var el = document.getElementById('cal-upcoming');
   if (!el) return;
-  var now = new Date();
-  var today = now.toISOString().slice(0,10);
+  var today = todayET();
 
   var upcoming = scheduledSessions
     .filter(function(s) { return s.date >= today && !s.completed; })
@@ -1413,8 +1413,8 @@ function renderChecklist() {
 }
 
 function getWeekKey() {
-  const d = new Date(); const day = d.getDay();
-  const monday = new Date(d); monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  const d = new Date(todayET() + 'T00:00:00Z'); const day = d.getUTCDay();
+  const monday = new Date(d); monday.setUTCDate(d.getUTCDate() - (day === 0 ? 6 : day - 1));
   return monday.toISOString().slice(0,10);
 }
 
