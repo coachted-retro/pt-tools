@@ -300,8 +300,8 @@ function switchTab(name) {
 }
 
 function changeDate(d) {
-  const dt = new Date(eodDateStr); dt.setDate(dt.getDate()+d);
-  if (dt > new Date()) return;
+  const dt = new Date(eodDateStr + 'T00:00:00Z'); dt.setUTCDate(dt.getUTCDate()+d);
+  if (dt.toISOString().slice(0,10) > todayET()) return;
   eodDateStr = dt.toISOString().slice(0,10);
   loadEOD();
 }
