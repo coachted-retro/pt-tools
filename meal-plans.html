@@ -94,8 +94,18 @@
         <input id="np-excl-protein" placeholder="e.g. shellfish" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
       <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Excluded vegetables</label>
         <input id="np-excl-veg" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
-      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Allergies / conditions</label>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Excluded fruits</label>
+        <input id="np-excl-fruit" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Allergies</label>
         <input id="np-allergies" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Medical conditions</label>
+        <input id="np-conditions" placeholder="the AI meal plan won't design around this, just avoids it" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px"></div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px">Other notes</label>
+      <textarea id="np-notes" rows="2" placeholder="anything else the meal plan generator should know" style="width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;font-family:inherit"></textarea>
     </div>
     <button class="btn red" onclick="saveNutritionProfile()">Save Profile</button>
     <div class="st" id="np-status" style="text-align:left;margin-top:8px"></div>
@@ -210,7 +220,7 @@ function populateClientDropdown(clients){
 // macros/exclusions that are already on file with blanks.
 function prefillProfile(){
   const clientId = document.getElementById('np-client').value;
-  const fields = ['np-package','np-goal','np-calories','np-protein','np-carbs','np-fat','np-excl-protein','np-excl-veg','np-allergies'];
+  const fields = ['np-package','np-goal','np-calories','np-protein','np-carbs','np-fat','np-excl-protein','np-excl-veg','np-excl-fruit','np-allergies','np-conditions','np-notes'];
   if (!clientId) { fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = id==='np-package' ? 'training' : ''; }); return; }
   const existing = ALL_PROFILES.find(p => String(p.client_id) === String(clientId));
   document.getElementById('np-package').value = existing?.package || 'training';
@@ -222,6 +232,9 @@ function prefillProfile(){
   document.getElementById('np-excl-protein').value = existing?.excluded_proteins || '';
   document.getElementById('np-excl-veg').value = existing?.excluded_vegetables || '';
   document.getElementById('np-allergies').value = existing?.allergies || '';
+  document.getElementById('np-excl-fruit').value = existing?.excluded_fruits || '';
+  document.getElementById('np-conditions').value = existing?.conditions || '';
+  document.getElementById('np-notes').value = existing?.notes || '';
 }
 
 async function saveNutritionProfile(){
@@ -240,6 +253,9 @@ async function saveNutritionProfile(){
     excluded_proteins:document.getElementById('np-excl-protein').value.trim(),
     excluded_vegetables:document.getElementById('np-excl-veg').value.trim(),
     allergies:document.getElementById('np-allergies').value.trim(),
+    excluded_fruits:document.getElementById('np-excl-fruit').value.trim(),
+    conditions:document.getElementById('np-conditions').value.trim(),
+    notes:document.getElementById('np-notes').value.trim(),
     updated_at:new Date().toISOString()
   };
   try{
