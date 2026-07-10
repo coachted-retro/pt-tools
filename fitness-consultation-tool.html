@@ -1111,8 +1111,9 @@
 
         <div class="card">
           <div class="card-title"><span class="dot"></span> Member name</div>
-          <div class="field">
-            <input type="text" id="name" placeholder="Full name" oninput="updateWelcome();saveDraftSilent()">
+          <div class="field" style="position:relative">
+            <input type="text" id="name" placeholder="Full name" oninput="updateWelcome();saveDraftSilent();onNameInput()" onblur="onNameBlur()" autocomplete="off">
+            <div id="name-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:20;background:#fff;border:1px solid #E4E7EC;border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.10)"></div>
           </div>
         </div>
 
@@ -3007,6 +3008,63 @@ async function dbCall(body) {
     return JSON.parse(await resp.text());
   } catch(e) { console.error('D1 call failed:', e.message); return { ok:false, error: e.message }; }
 }
+
+// ── NAME AUTOCOMPLETE — matches the same pattern already built in
+// fitness-monthly-checkin.html, ported here so all three intake tools
+// behave identically whether opened from the agenda (pre-filled via
+// ?client=ID) or opened blank from the coach dashboard (type a name,
+// get live matches, select one to auto-fill).
+let CONSULT_CLIENTS_CACHE = null;
+async function getClientsCached(){
+  if (!CONSULT_CLIENTS_CACHE) {
+    const d = await dbCall({ op:'select', table:'clients', orderBy:'last_name asc', limit:1000 });
+    CONSULT_CLIENTS_CACHE = d.results || [];
+  }
+  return CONSULT_CLIENTS_CACHE;
+}
+let nameInputTimer = null;
+function onNameInput(){
+  clearTimeout(nameInputTimer);
+  nameInputTimer = setTimeout(showNameSuggestions, 220);
+}
+async function showNameSuggestions(){
+  const box = document.getElementById('name-suggestions');
+  const q = (document.getElementById('name').value||'').trim().toLowerCase();
+  if (q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const all = await getClientsCached();
+  const matches = all.filter(c => (((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase()).includes(q)).slice(0, 6);
+  if (!matches.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.innerHTML = matches.map((c,i) => `
+    <div onmousedown="selectClientSuggestion(${i})" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #F0F0F0">
+      <div style="font-weight:600">${(c.first_name||'')+' '+(c.last_name||'')}</div>
+      <div style="font-size:11px;color:#888">${c.phone||c.email||''}</div>
+    </div>`).join('');
+  box.style.display = 'block';
+  window._nameSuggestMatches = matches;
+}
+function selectClientSuggestion(i){
+  const c = (window._nameSuggestMatches||[])[i];
+  if (!c) return;
+  document.getElementById('name-suggestions').style.display = 'none';
+  _fillFromClient(c);
+  updateWelcome();
+}
+function onNameBlur(){
+  setTimeout(() => { const b = document.getElementById('name-suggestions'); if (b) b.style.display = 'none'; }, 150);
+}
+function _fillFromClient(c){
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e&&!e.value&&v) e.value=v; };
+  set('name',(((c.first_name||'')+' '+(c.last_name||'')).trim()));
+  set('email',c.email); set('phone',c.phone);
+  if (c.birthday) set('dob', c.birthday);
+}
+(function initConsultClientPull(){
+  try{
+    const q=new URLSearchParams(location.search);
+    const cid=q.get('client');
+    if (cid) { dbCall({op:'select',table:'clients',where:{id:cid},limit:1}).then(d=>{ const c=(d.results||[])[0]; if(c){ _fillFromClient(c); updateWelcome(); } }); }
+  }catch(e){}
+})();
 
 window.EXISTING_CLIENT_ID = null;
 async function loadExistingClientForConsult(id) {

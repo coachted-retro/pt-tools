@@ -833,7 +833,9 @@
             <div class="field"><label>Original consultation date</label><input type="date" id="orig-date"></div>
           </div>
           <div class="grid2">
-            <div class="field"><label>Member name</label><input type="text" id="name" placeholder="Full name"></div>
+            <div class="field" style="position:relative"><label>Member name</label><input type="text" id="name" placeholder="Full name" oninput="onNameInput()" onblur="onNameBlur()" autocomplete="off">
+              <div id="name-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:20;background:#fff;border:1px solid #E4E7EC;border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.10)"></div>
+            </div>
             <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="(555) 000-0000"></div>
           </div>
           <div class="grid2">
@@ -1502,6 +1504,67 @@ async function prefillFromClientId(clientId){
 }
 
 const FFU_WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+
+// ── NAME AUTOCOMPLETE — same pattern as fitness-monthly-checkin.html and
+// fitness-consultation-tool.html, so all three intake tools behave
+// identically whether opened from the agenda (pre-filled via ?client=ID)
+// or opened blank from the coach dashboard.
+let FFU_CLIENTS_CACHE = null;
+async function ffuDbCall(body){
+  try {
+    const r = await fetch(FFU_WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    return await r.json();
+  } catch(e) { return { ok:false, error: e.message }; }
+}
+async function getClientsCached(){
+  if (!FFU_CLIENTS_CACHE) {
+    const d = await ffuDbCall({ op:'select', table:'clients', orderBy:'last_name asc', limit:1000 });
+    FFU_CLIENTS_CACHE = d.results || [];
+  }
+  return FFU_CLIENTS_CACHE;
+}
+let nameInputTimer = null;
+function onNameInput(){
+  clearTimeout(nameInputTimer);
+  nameInputTimer = setTimeout(showNameSuggestions, 220);
+}
+async function showNameSuggestions(){
+  const box = document.getElementById('name-suggestions');
+  const q = (document.getElementById('name').value||'').trim().toLowerCase();
+  if (q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const all = await getClientsCached();
+  const matches = all.filter(c => (((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase()).includes(q)).slice(0, 6);
+  if (!matches.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.innerHTML = matches.map((c,i) => `
+    <div onmousedown="selectClientSuggestion(${i})" style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #F0F0F0">
+      <div style="font-weight:600">${(c.first_name||'')+' '+(c.last_name||'')}</div>
+      <div style="font-size:11px;color:#888">${c.phone||c.email||''}</div>
+    </div>`).join('');
+  box.style.display = 'block';
+  window._nameSuggestMatches = matches;
+}
+function selectClientSuggestion(i){
+  const c = (window._nameSuggestMatches||[])[i];
+  if (!c) return;
+  document.getElementById('name-suggestions').style.display = 'none';
+  _fillFromClient(c);
+}
+function onNameBlur(){
+  setTimeout(() => { const b = document.getElementById('name-suggestions'); if (b) b.style.display = 'none'; }, 150);
+}
+function _fillFromClient(c){
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e&&!e.value&&v) e.value=v; };
+  set('name',(((c.first_name||'')+' '+(c.last_name||'')).trim()));
+  set('email',c.email); set('phone',c.phone);
+}
+(function initFollowupClientPull(){
+  try{
+    const q=new URLSearchParams(location.search);
+    const cid=q.get('client');
+    if (cid) { ffuDbCall({op:'select',table:'clients',where:{id:cid},limit:1}).then(d=>{ const c=(d.results||[])[0]; if(c) _fillFromClient(c); }); }
+  }catch(e){}
+})();
+
 let SELECTED_CLIENT_ID = null;
 let PREV_INTAKE_NOTES = '';
 let searchDebounceTimer = null;
