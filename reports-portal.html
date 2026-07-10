@@ -100,6 +100,7 @@ tr:last-child td{border-bottom:none}
 </div>
 <script>
 const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
 const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
 if (DEMO_VIEW) { const bl = document.getElementById('back-link'); if (bl) bl.href = 'keelin-dashboard.html?demo=1'; }
@@ -127,7 +128,7 @@ function cbDims(){
 
 async function init(){
   const now = new Date();
-  document.getElementById('r-to').value = now.toISOString().slice(0,10);
+  document.getElementById('r-to').value = todayET();
   document.getElementById('r-from').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-01';
   cbDims();
   try {
