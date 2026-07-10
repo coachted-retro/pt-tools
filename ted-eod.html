@@ -459,7 +459,7 @@ async function renderNotesSummary() {
   const el = document.getElementById('notes-summary-list');
   const ALLOWED_TAGS = ['EOD - Consultation', 'EOD - Follow-up', 'EOD - Monthly Check-In'];
   try {
-    const r = await fetch(WORKER + '/coach/notes-today?coach=' + encodeURIComponent('Ted Scholl'));
+    const r = await fetch(WORKER + '/coach/notes-today?coach=' + encodeURIComponent('Ted Scholl') + '&date=' + TODAY);
     const d = await r.json();
     const notes = (d.notes || []).filter(n => ALLOWED_TAGS.includes(n.tag));
     if (!notes.length) {
