@@ -48,6 +48,14 @@ via the Cloudflare Developer Platform connector, not just code reading:
       night is confirmed live and functioning -- Anthony Mango's
       last_login timestamp in client_auth is consistent with the reset
       flow now routing him correctly instead of logging him straight in
+- [x] DECIDED, do not revisit: Ted explicitly chose NOT to mass-reset the
+      17 existing staff PINs to the last-4-of-phone standard, even though
+      the standard itself is now fixed going forward (staff-setup.html).
+      Reason: some staff may have already been through the self-service
+      reset flow and set their own working PIN -- force-resetting everyone
+      would break those people's already-working logins. The PIN
+      inconsistency for existing accounts stays as-is. The fix only
+      applies to NEW provisioning and future resets from here forward.
 - [ ] ACTION NEEDED FROM TED, not a code bug: Sanjay (Bodduluri, client id
       12) has ZERO rows in client_auth -- no login account was ever
       provisioned for him at all. He cannot log in no matter what else is
