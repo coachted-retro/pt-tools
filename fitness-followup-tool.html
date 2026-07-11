@@ -2724,8 +2724,138 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
 
 
 // === FOLLOWUP REPORT TRIGGER ===
+// ============================================================
+// INTERNAL STAFF RECAP ENGINE — added July 11 2026 per Ted's request.
+// Same engine as fitness-consultation-tool.html -- see that file for
+// the full explanation. Staff-only, saved to R2 + client_recaps via
+// /recap/save, emailed to staff, fires every time regardless of outcome.
+// ============================================================
+function buildInternalRecapPDF(intakeLabel, clientName, advisor, sections, assessmentSummary) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const W = 612, margin = 50, contentW = W - margin * 2;
+  let y;
+
+  doc.setFillColor(20, 20, 20);
+  doc.rect(0, 0, W, 80, 'F');
+  doc.setFillColor(180, 0, 0);
+  doc.rect(0, 80, W, 4, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('RETRO FITNESS', margin, 35);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('of Fairless Hills  |  INTERNAL RECAP — STAFF ONLY, NOT FOR CLIENT DISTRIBUTION', margin, 52);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text((intakeLabel || 'INTAKE') + ' — INTERNAL RECAP', margin, 68);
+
+  doc.setFillColor(240, 240, 240);
+  doc.rect(0, 84, W, 36, 'F');
+  doc.setTextColor(30, 30, 30);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold'); doc.text('CLIENT:', margin, 99);
+  doc.setFont('helvetica', 'normal'); doc.text(clientName || 'Member', margin + 48, 99);
+  doc.setFont('helvetica', 'bold'); doc.text('DATE:', margin + 220, 99);
+  doc.setFont('helvetica', 'normal'); doc.text(new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }), margin + 250, 99);
+  doc.setFont('helvetica', 'bold'); doc.text('ADVISOR:', margin + 400, 99);
+  doc.setFont('helvetica', 'normal'); doc.text(advisor || 'Coach Ted Scholl', margin + 448, 99);
+
+  y = 135;
+  function ensureRoom(need) { if (y + need > 730) { doc.addPage(); y = 60; } }
+  function sectionHeader(title) {
+    ensureRoom(28);
+    doc.setFillColor(180, 0, 0);
+    doc.rect(margin, y, contentW, 16, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(title, margin + 6, y + 11);
+    y += 20;
+    doc.setTextColor(30, 30, 30);
+  }
+  function kvRow(label, value, i) {
+    if (!value) return;
+    ensureRoom(16);
+    doc.setFillColor(i % 2 === 0 ? 250 : 245, i % 2 === 0 ? 250 : 245, i % 2 === 0 ? 250 : 245);
+    doc.rect(margin, y, contentW, 15, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    doc.text(String(label), margin + 6, y + 10);
+    doc.setFont('helvetica', 'normal');
+    const wrapped = doc.splitTextToSize(String(value), contentW - 190);
+    doc.text(wrapped[0] || '', margin + 170, y + 10);
+    y += 15;
+  }
+
+  (sections || []).forEach(sec => {
+    const realRows = (sec.rows || []).filter(r => r[1]);
+    if (!realRows.length) return;
+    sectionHeader(sec.title);
+    realRows.forEach((r, i) => kvRow(r[0], r[1], i));
+    y += 8;
+  });
+
+  if (assessmentSummary) {
+    sectionHeader('SESSION SUMMARY / NOTES');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(50, 50, 50);
+    String(assessmentSummary).split('\n').forEach(line => {
+      const wrapped = doc.splitTextToSize(line || ' ', contentW - 10);
+      wrapped.forEach(wl => { ensureRoom(13); doc.text(wl, margin + 6, y + 10); y += 13; });
+    });
+  }
+
+  y += 16;
+  ensureRoom(24);
+  doc.setFillColor(20, 20, 20);
+  doc.rect(margin, y, contentW, 1, 'F');
+  y += 14;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Internal document — not for client distribution.', margin + 10, y);
+
+  const filename = (clientName||'Client').replace(/\s+/g,'_') + '_' + (intakeLabel||'Intake').replace(/\s+/g,'_') + '_InternalRecap_' + todayET() + '.pdf';
+  const base64 = doc.output('datauristring').split(',')[1];
+  return { filename, base64 };
+}
+
+async function triggerInternalRecap(intakeLabel, reportTypeForDb, clientData, sections, assessmentSummary) {
+  try {
+    loadJsPDF(async () => {
+      try {
+        const { filename, base64 } = buildInternalRecapPDF(intakeLabel, clientData.name, clientData.advisor, sections, assessmentSummary);
+        const recapHtml = '<div style="font-family:Arial,sans-serif;max-width:600px">' +
+          '<h2 style="color:#B40000">' + intakeLabel + ' — Internal Recap</h2>' +
+          '<p><b>Client:</b> ' + (clientData.name||'') + '<br><b>Advisor:</b> ' + (clientData.advisor||'') + '</p>' +
+          '<p style="white-space:pre-wrap;font-size:13px;color:#333">' + (assessmentSummary||'').replace(/</g,'&lt;') + '</p>' +
+          '<p style="color:#888;font-size:11px">Full metrics and intake detail attached as PDF. Also saved to this client\'s record.</p></div>';
+        await fetch(getApiUrl().replace(/\/$/,'') + '/recap/save', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientData.id || null,
+            client_name: clientData.name || '',
+            report_type: reportTypeForDb,
+            pdf_base64: base64,
+            pdf_filename: filename,
+            recap_html: recapHtml,
+            subject: intakeLabel + ' Recap: ' + (clientData.name || 'Client'),
+            summary: (assessmentSummary || '').slice(0, 2000),
+            advisor: clientData.advisor || ''
+          })
+        });
+      } catch (e) { /* internal recap failing should never block the client-facing flow */ }
+    });
+  } catch (e) {}
+}
+
 function runFollowupReport(type) {
   var clientData = {
+    id: SELECTED_CLIENT_ID || null,
     name: gv('name') || 'Member',
     email: gv('email') || '',
     advisor: getCfg('advisor') || 'Coach Ted Scholl',
@@ -2746,6 +2876,26 @@ function runFollowupReport(type) {
   var statusId = type === 'welcome' ? 'report-enrolled-status' : 
     (document.getElementById('report-fu-status') ? 'report-fu-status' : 'report-notready-status');
   triggerReportWorkflow(type, clientData, assessmentText || '', statusId);
+
+  // Internal staff recap -- fires every time regardless of outcome.
+  triggerInternalRecap('6-Week Follow-Up', 'followup', clientData, [
+    { title: 'IDENTITY', rows: [['Name', gv('name')], ['Email', gv('email')], ['Phone', gv('phone')], ['Age', gv('age')], ['Gender', gv('gender')]] },
+    { title: 'BODY METRICS — THEN vs NOW', rows: [
+      ['Weight/BMI (prev)', gv('prev-bmi')], ['BMI (now)', gv('now-bmi')],
+      ['Body Fat % (prev)', gv('prev-pbf')], ['Body Fat % (now)', gv('now-pbf')],
+      ['Lean Mass (prev)', gv('prev-lean')], ['Lean Mass (now)', gv('now-lean')],
+      ['Fat Mass (prev)', gv('prev-fat')], ['Fat Mass (now)', gv('now-fat')],
+      ['Water Weight (prev)', gv('prev-water')], ['Water Weight (now)', gv('now-water')],
+      ['Scan Notes', gv('scan-notes')]
+    ]},
+    { title: 'GOALS', rows: [['Original Goals', gv('orig-goals')], ['Goals Now', gv('new-goals') || gv('long-goal')], ['Goals Shifted?', gv('goals-shifted')], ['How Different', gv('goals-different')]] },
+    { title: 'TRAINING SINCE LAST VISIT', rows: [['Been Working Out?', gv('been-working-out')], ['Workout Days', gv('workout-days')], ['Actual Days', gv('actual-days')], ['Exercise Type', gv('exercise-type')], ['Workout Duration', gv('workout-duration')], ['Description', gv('workout-description')]] },
+    { title: 'NUTRITION SINCE LAST VISIT', rows: [['Diet Changes?', gv('diet-changes')], ['Detail', gv('diet-change-detail')]] },
+    { title: 'OBSTACLES & MOTIVATION', rows: [['Biggest Obstacle', gv('biggest-obstacle')], ['Obstacle List', gv('obstacle-list')], ['Tried to Overcome', gv('tried-to-overcome')], ['Commitment', gv('commitment')], ['Commitment Score', gv('commitment-score')], ['Results Score', gv('results-score')], ['Energy Score', gv('energy-score')], ['Overall Feeling', gv('overall-feeling')]] },
+    { title: 'LIFE CONTEXT', rows: [['Home Support', gv('home-support')], ['Life Impact', gv('life-impact')], ['Status Quo Impact', gv('status-quo-impact')], ['Upcoming Event', gv('upcoming-event')], ['Urgency Event', gv('urgency-event')], ['Physical Changes', gv('physical-changes')], ['Trainer Perception', gv('trainer-perception')], ['Stays the Same', gv('stays-same')]] },
+    { title: 'MEDICAL UPDATES', rows: [['New Medical', gv('new-medical')], ['New Medications', gv('new-meds')], ["New Doctor's Guidance", gv('new-doctor-guidance')]] },
+    { title: 'OUTCOME', rows: [['Decision', type === 'welcome' ? 'ENROLLED' : 'NOT READY'], ['Close/Decline Reason', gv('close-reason') || gv('decline-reason')]] }
+  ], assessmentText || '');
 }
 
 // Patch outcome finalizers to show report buttons

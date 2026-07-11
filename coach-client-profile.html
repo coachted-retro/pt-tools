@@ -102,6 +102,7 @@ tr:last-child td{border-bottom:none}
     <button class="tab" data-p="medical" onclick="switchPane('medical')">Medical History</button>
     <button class="tab" data-p="photos" onclick="switchPane('photos')">Photos</button>
     <button class="tab" data-p="touch" onclick="switchPane('touch')">Touchpoints</button>
+    <button class="tab" data-p="recaps" onclick="switchPane('recaps')">Intake Recaps</button>
     <button class="tab" data-p="notes" onclick="switchPane('notes')">Coach Notes</button>
     <button class="tab" data-p="chat" onclick="switchPane('chat')">Chat</button>
   </div>
@@ -146,6 +147,13 @@ tr:last-child td{border-bottom:none}
         <button class="btn" onclick="logTouchpoint()">Log</button>
       </div>
       <div id="tp-list"></div>
+    </div>
+  </div>
+
+  <div class="pane" id="pane-recaps">
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Every Initial Consultation, 6-Week Follow-Up, and Monthly Check-In auto-saves a detailed internal recap here — full metrics plus a condensed summary of what was discussed. Staff-only, not shown to the client.</div>
+      <div id="recap-list">Loading…</div>
     </div>
   </div>
 
@@ -267,6 +275,7 @@ function switchPane(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.p===name));
   document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('active', p.id==='pane-'+name));
   if (name==='chat') markMessagesRead();
+  if (name==='recaps') loadRecaps();
 }
 
 // Ported from client-profile.html's Schedule Appointment modal (pt_appointments
@@ -979,6 +988,30 @@ function renderTouchpoints(){
     <div class="tp-item"><span class="tp-type">${escH(t.type)}</span>${escH(t.body)}
       <div style="font-size:10px;color:var(--muted);margin-top:4px">${escH(t.coach_name)} \\u00B7 ${fmtDate(t.created_at)}</div>
     </div>`).join('') : '<div class="empty">No touchpoints logged yet.</div>';
+}
+
+// ── INTAKE RECAPS — added July 11 2026, saved by the 3 intake tools ──
+let RECAPS_LOADED = false;
+async function loadRecaps(){
+  if (RECAPS_LOADED) return; // lazy-load once per page view, not on every tab click
+  const listEl = document.getElementById('recap-list');
+  try {
+    const r = await fetch(WORKER + `/recap/list?client_id=${CLIENT_ID}`);
+    const d = await r.json();
+    const recaps = d.recaps || [];
+    RECAPS_LOADED = true;
+    if (!recaps.length) { listEl.innerHTML = '<div class="empty">No intake recaps saved yet for this client.</div>'; return; }
+    const labels = { consultation: 'Initial Consultation', followup: '6-Week Follow-Up', monthly_checkin: 'Monthly Check-In' };
+    listEl.innerHTML = recaps.map(rec => `
+      <div class="tp-item">
+        <span class="tp-type">${escH(labels[rec.report_type] || rec.report_type)}</span>
+        <div style="font-size:10px;color:var(--muted);margin:4px 0">${escH(rec.advisor||'')} \\u00B7 ${fmtDate(rec.created_at)}${rec.emailed_to ? ' \\u00B7 emailed to ' + escH(rec.emailed_to) : ''}</div>
+        ${rec.summary ? `<div style="font-size:12px;color:var(--ink);white-space:pre-wrap;max-height:120px;overflow:hidden;margin-bottom:6px">${escH(rec.summary.slice(0,400))}${rec.summary.length>400?'…':''}</div>` : ''}
+        ${rec.pdf_key ? `<a class="btn" style="display:inline-block;text-decoration:none" href="${WORKER}/recap/pdf?key=${encodeURIComponent(rec.pdf_key)}" target="_blank">View PDF</a>` : '<span style="font-size:11px;color:var(--muted)">PDF not available</span>'}
+      </div>`).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div class="empty">Could not load recaps — try reopening this tab.</div>';
+  }
 }
 
 async function logTouchpoint(){

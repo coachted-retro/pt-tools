@@ -144,7 +144,7 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media','followups','eod_flag_dismissals','cardio_logs','pt_leads','scheduled_meals'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media','followups','eod_flag_dismissals','cardio_logs','pt_leads','scheduled_meals','client_recaps'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -180,6 +180,34 @@ async function verifyToken(token, secret) {
   try { const d = JSON.parse(atob(payload)); if (d.exp < Date.now()) return null; return d; } catch(e) { return null; }
 }
 
+// MULTI-CLUB HOSTNAME ROUTING. Added July 11 2026 so this one Worker can
+// serve every pilot club, not just Fairless Hills. Each club gets a
+// subdomain (club01.myretrostrong.com etc, matching the slot numbers in
+// provisioning/CLUB_DATABASE_REGISTRY.md -- NOT a club's real name, since
+// which real club lands on which slot isn't decided yet) and its own D1
+// binding added to this same Worker in Settings > Bindings. Deliberately
+// using slot-number subdomains, not guessed club names, for the same
+// reason the registry does -- see that file for why.
+//
+// To bring a club online: add its D1 database as a binding here named
+// exactly DB_SLOT_01 (through DB_SLOT_11), and add the matching DNS +
+// route for its subdomain. Nothing else in this file changes -- every
+// one of the 605 existing env.DB references below keeps working exactly
+// as-is, they just transparently point at that request's own club data.
+const CLUB_SLOT_MAP = {
+  'club01.myretrostrong.com': 'DB_SLOT_01',
+  'club02.myretrostrong.com': 'DB_SLOT_02',
+  'club03.myretrostrong.com': 'DB_SLOT_03',
+  'club04.myretrostrong.com': 'DB_SLOT_04',
+  'club05.myretrostrong.com': 'DB_SLOT_05',
+  'club06.myretrostrong.com': 'DB_SLOT_06',
+  'club07.myretrostrong.com': 'DB_SLOT_07',
+  'club08.myretrostrong.com': 'DB_SLOT_08',
+  'club09.myretrostrong.com': 'DB_SLOT_09',
+  'club10.myretrostrong.com': 'DB_SLOT_10',
+  'club11.myretrostrong.com': 'DB_SLOT_11',
+};
+
 export default {
   async fetch(request, env) {
     const cors = {
@@ -190,6 +218,22 @@ export default {
     };
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
     const url = new URL(request.url);
+
+    // Any hostname NOT in CLUB_SLOT_MAP (the real myretrostrong.com apex,
+    // the raw workers.dev URL, everything that's ever hit this Worker
+    // before today) falls straight through here completely unchanged --
+    // same env, same env.DB, same behavior as before this change existed.
+    const clubBindingName = CLUB_SLOT_MAP[url.hostname.toLowerCase()];
+    if (clubBindingName) {
+      if (!env[clubBindingName]) {
+        // Recognized club subdomain, but its D1 binding hasn't been added
+        // to this Worker yet. Fail loudly here -- never silently fall
+        // back to Fairless Hills' own DB binding, which would mean an
+        // unconfigured club subdomain showing Ted's real member data.
+        return bad(`This club (${url.hostname}) is not yet set up -- its database binding (${clubBindingName}) hasn't been added to the Worker. Contact Ted Scholl.`, cors);
+      }
+      env = { ...env, DB: env[clubBindingName] };
+    }
 
     // DEMO MODE ROUTING. Pass ?demo=1 on any request, or header
     // X-Demo-Mode: 1, to point every env.DB call at the isolated demo
@@ -203,6 +247,26 @@ export default {
     }
 
     try {
+      // STATIC ASSET PROXY, club subdomains only. GitHub Pages only
+      // recognizes myretrostrong.com (see the repo's CNAME file) -- it has
+      // no idea club01.myretrostrong.com etc exist. So for any GET request
+      // on a recognized club subdomain that looks like a page/asset load
+      // (root path, or a path ending in a real static file extension) this
+      // Worker fetches the actual file from the real GitHub Pages site and
+      // returns it as-is. Every existing API route below (none of which
+      // ever end in a file extension) is completely unaffected by this --
+      // it only ever fires for asset-shaped GET requests on club hosts.
+      if (clubBindingName && request.method === 'GET') {
+        const ASSET_EXT = /\.(html|js|css|json|png|jpg|jpeg|svg|ico|webmanifest|woff2?|ttf|mp3|mp4)$/i;
+        if (url.pathname === '/' || ASSET_EXT.test(url.pathname)) {
+          const assetPath = url.pathname === '/' ? '/index.html' : url.pathname;
+          const originResp = await fetch('https://coachted-retro.github.io/pt-tools' + assetPath + url.search);
+          const headers = new Headers(originResp.headers);
+          headers.set('Access-Control-Allow-Origin', '*');
+          return new Response(originResp.body, { status: originResp.status, headers });
+        }
+      }
+
       if (url.pathname === '/health') return ok({ db: !!env.DB, demo: isDemo }, cors);
 
       if (url.pathname === '/db') {
@@ -3688,6 +3752,85 @@ ${compactIndex.join('\n')}`;
         query += ' ORDER BY e.sent_at DESC LIMIT ' + limit;
         const rows = await env.DB.prepare(query).bind(...binds).all();
         return ok({ log: rows.results || [] }, cors);
+      }
+
+      // ── INTERNAL INTAKE RECAPS (consultation / follow-up / monthly) ──
+      // Added July 11 2026 per Ted's request: after each of the 3 intake
+      // tools finishes generating its client-facing letter, this saves a
+      // detailed INTERNAL recap (full metrics + condensed Q&A, not subject
+      // to the client-letter content restrictions) as a PDF attached to
+      // the client's own record, and emails that same recap + PDF to
+      // staff, in one call.
+      if (url.pathname === '/recap/save' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id) return bad('client_id required', cors);
+        if (!b.report_type) return bad('report_type required', cors);
+        if (!b.pdf_base64 || !b.pdf_filename) return bad('pdf_base64 and pdf_filename required', cors);
+
+        let pdfKey = null;
+        if (env.PHOTOS) {
+          try {
+            const bytes = Uint8Array.from(atob(b.pdf_base64), c => c.charCodeAt(0));
+            pdfKey = 'recaps/' + b.client_id + '/' + b.report_type + '-' + Date.now() + '.pdf';
+            await env.PHOTOS.put(pdfKey, bytes, { httpMetadata: { contentType: 'application/pdf' } });
+          } catch (e) {
+            pdfKey = null; // storage failure should not block the DB row + email below
+          }
+        }
+
+        const staffEmails = (b.staff_emails && b.staff_emails.length) ? b.staff_emails : ['tedscholl@gmail.com', 'healthylifewithdani1@gmail.com'];
+        const ins = await env.DB.prepare(
+          'INSERT INTO client_recaps (client_id,report_type,pdf_key,summary,advisor,emailed_to) VALUES (?,?,?,?,?,?)'
+        ).bind(b.client_id, b.report_type, pdfKey, b.summary || null, b.advisor || null, staffEmails.join(', ')).run();
+        const recapId = ins.meta ? ins.meta.last_row_id : null;
+
+        let emailed = false, emailError = null;
+        if (env.RESEND_KEY && b.recap_html) {
+          try {
+            const mailResp = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from: env.MAIL_FROM || 'onboarding@resend.dev',
+                to: staffEmails,
+                subject: b.subject || ('Intake Recap: ' + (b.client_name || 'Client') + ' — ' + b.report_type),
+                html: b.recap_html,
+                attachments: [{ filename: b.pdf_filename, content: b.pdf_base64 }]
+              })
+            });
+            emailed = mailResp.ok;
+            if (!mailResp.ok) { const d = await mailResp.json().catch(() => ({})); emailError = d.message || ('Resend status ' + mailResp.status); }
+          } catch (e) { emailError = 'Network error calling Resend: ' + e.message; }
+        } else if (!env.RESEND_KEY) {
+          emailError = 'RESEND_KEY not configured on the Worker';
+        }
+
+        // Same touchpoint pattern as /reports/email, so this shows up in
+        // the client's real contact history alongside calls/texts/emails.
+        try {
+          await env.DB.prepare('INSERT INTO coach_touchpoints (coach_name,client_id,type,body) VALUES (?,?,?,?)')
+            .bind(b.advisor || 'System', b.client_id, 'internal_recap', 'Internal ' + b.report_type + ' recap saved' + (emailed ? ' and emailed to staff' : '')).run();
+        } catch (e) {}
+
+        return ok({ saved: true, recap_id: recapId, pdf_key: pdfKey, emailed, email_error: emailError }, cors);
+      }
+
+      if (url.pathname === '/recap/list' && request.method === 'GET') {
+        if (!env.DB) return bad('No DB', cors);
+        const clientId = url.searchParams.get('client_id');
+        if (!clientId) return bad('client_id required', cors);
+        const rows = await env.DB.prepare('SELECT * FROM client_recaps WHERE client_id=? ORDER BY created_at DESC').bind(clientId).all();
+        return ok({ recaps: rows.results || [] }, cors);
+      }
+
+      if (url.pathname === '/recap/pdf' && request.method === 'GET') {
+        if (!env.PHOTOS) return bad('R2 binding "PHOTOS" not found.', cors);
+        const key = url.searchParams.get('key');
+        if (!key) return bad('key required', cors);
+        const obj = await env.PHOTOS.get(key);
+        if (!obj) return bad('Not found', cors);
+        return new Response(obj.body, { headers: { 'Content-Type': 'application/pdf', ...cors } });
       }
 
       // ── BODY SHOPPE BOARD + CELEBRATION LOOP ─────────────────────

@@ -478,6 +478,53 @@ NOT YET STARTED, needs real scoping work before building:
 - [ ] Per-club provisioning steps: exact, numbered, copy-pasteable
       instructions for Ted to create a new club's D1 + Worker in
       Cloudflare, using the template
+- [x] BUILT July 11 (late session): internal staff recap on all 3 intake
+      tools (Initial Consultation, 6-Week Follow-Up, Monthly Check-In),
+      per Ted's request. Separate from the existing client-facing letter
+      -- fires every time regardless of outcome (enrolled/declined/not
+      ready). Each tool now builds a detailed PDF (real captured metrics
+      + full intake Q&A, grouped by section, plus the session's actual
+      assessment/summary text verbatim -- NOT AI-paraphrased, so numbers
+      can't drift from what was actually entered) and calls the new
+      `/recap/save` Worker endpoint, which: saves the PDF to R2, inserts
+      a row into the new `client_recaps` table (migration applied live
+      to Fairless Hills' retro-crm AND all 11 pilot club D1s tonight, not
+      just committed to schema.sql), and emails the recap + PDF to staff
+      via Resend, logging a touchpoint on the client's record either way.
+      New `/recap/list` and `/recap/pdf` endpoints power a new "Intake
+      Recaps" tab on `coach-client-profile.html` so any saved recap can
+      be pulled back up later, per Ted's "recall and look at later" ask.
+      Staff recipients currently default to Ted + Danielle (existing
+      `tedscholl@gmail.com, healthylifewithdani1@gmail.com` pattern
+      already used elsewhere in these 3 tools) -- Ted asked to include
+      Roman too but did not give an email address; DO NOT guess one.
+      Add it to the `staff_emails` default array in all 3 tools' new
+      `triggerInternalRecap()` calls (currently omitted, not defaulted)
+      the moment Ted provides it, and nowhere else -- don't invent it.
+- [x] SOLVED July 11 (late session): the "11 separate Workers" problem is
+      gone. `worker-v34.js` now routes by hostname -- `CLUB_SLOT_MAP` maps
+      `club01.myretrostrong.com` through `club11` to per-club D1 bindings
+      (`DB_SLOT_01` etc), and a static-asset proxy section serves the real
+      app pages for those subdomains too (GitHub Pages itself only knows
+      `myretrostrong.com`, so the Worker fetches from the real Pages site
+      and returns it for any club-subdomain page/asset request). One
+      Worker for everyone now, not one per club. Verified with isolated
+      unit tests before touching the live file: apex/workers.dev traffic
+      completely unaffected, a club subdomain with no binding added yet
+      fails loudly instead of ever silently showing Fairless Hills' real
+      data, asset vs API requests correctly separated. `config.js` updated
+      to call same-origin automatically on club subdomains. Bringing a
+      club online is now: add its D1 binding to the one Worker, confirm
+      the one-time wildcard DNS + Worker route exist, done -- see
+      `provisioning/NEW_CLUB_SETUP.md` for the full rewrite. This does
+      NOT by itself solve Keelin's master-dashboard aggregation view
+      (below) -- that's still a separate, real piece of design work.
+- [ ] NEW GAP from tonight's routing work, not yet solved: the `PHOTOS` R2
+      binding is still singular -- every club sharing the one Worker would
+      currently write photo/video uploads into Fairless Hills' own R2
+      bucket, mixed with real client photos. Needs the same per-slot
+      pattern applied to R2 (`PHOTOS_SLOT_0X`) before any pilot club uses
+      photo upload features for real. Flagged, not fixed.
 - [ ] Keelin's master dashboard: keelin-dashboard.html currently queries
       ONE Worker/D1 (Fairless Hills only). A true master view across 11
       separate per-club Workers/D1s is a different architecture than what

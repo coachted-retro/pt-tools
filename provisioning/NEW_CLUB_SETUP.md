@@ -1,93 +1,63 @@
 # Setting up a new club — step by step
 
-This turns Fairless Hills' proven codebase into a working, blank-slate
-system for a new club. Every club gets its own D1 database and its own
-Worker, running the exact same code. Budget about 20-30 minutes per club
-once you've done the first one.
+## ARCHITECTURE CHANGED July 11, 2026 — read this before anything below
+
+Every pilot club used to need its own separate Worker deployment (create
+Worker, paste code, bind D1, add secrets, one full copy of the app per
+club). As of tonight that's gone: **all clubs now share the single real
+Worker (`broken-cake-e9c2`) that Fairless Hills already runs.** That one
+Worker looks at which subdomain a request came in on (`club01.
+myretrostrong.com` through `club11`) and automatically uses that club's
+own D1 database instead of Fairless Hills' — see `CLUB_SLOT_MAP` near the
+top of `worker-v34.js`. It also now serves the actual app pages for those
+subdomains by proxying them from the real GitHub Pages site, since
+GitHub Pages itself only recognizes `myretrostrong.com` and has no idea
+`club01.myretrostrong.com` exists.
+
+This means bringing a new club online is now genuinely small:
+
+1. Its D1 database already exists (all 11 pilot slots were created and
+   seeded on July 11 — see `CLUB_DATABASE_REGISTRY.md`). Nothing to do
+   here per-club.
+2. Add that database as a new binding on the existing `broken-cake-e9c2`
+   Worker, named exactly `DB_SLOT_01` (or whichever slot number). One
+   click in Settings → Bindings, not a whole new Worker.
+3. In Cloudflare DNS for `myretrostrong.com`, confirm the wildcard `*`
+   record exists (proxied, orange cloud on) — this is a ONE-TIME setup
+   step, not per-club, and only needs doing once ever.
+4. In the Worker's Triggers → Routes, confirm `*.myretrostrong.com/*` is
+   routed to `broken-cake-e9c2` — also one-time, not per-club.
+5. That's it. `club01.myretrostrong.com` (etc) now works — real pages,
+   real API, real data, isolated per club, automatically.
+
+No new secrets/API keys to copy per club (there's only ever one Worker
+now, so its existing `ANTHROPIC_KEY` / `JWT_SECRET` / `ADMIN_KEY` are
+already shared correctly). No `config.js` edit per club — it already
+detects `club0X.myretrostrong.com` hostnames automatically and calls the
+right place.
+
+## ONE REAL GAP THIS INTRODUCES — not solved yet, don't assume it's fine
+
+Photo/video uploads (progress photos, InBody scan images, etc.) go
+through the `PHOTOS` R2 bucket binding, and that binding is still
+singular — every club sharing this one Worker would currently write
+into Fairless Hills' own R2 bucket, mixed together with real Fairless
+Hills client photos. This was NOT addressed by tonight's D1/routing
+work and needs its own real fix (most likely: the same `env[slotName]`
+pattern used for D1, applied to a `PHOTOS_SLOT_0X` R2 binding per club)
+before any pilot club actually uses photo upload features for real.
+Flag this to Ted before any club goes live with real client photos.
 
 ---
 
-## Before you start
+## Steps that are now OBSOLETE, kept here only for history
 
-Decide the club's short internal name — no spaces, all lowercase, e.g.
-`fair-lawn`, `west-chester`. You'll use this consistently in every step
-below so nothing gets mismatched.
-
----
-
-## Step 1: Create the D1 database
-
-In the Cloudflare dashboard: Workers & Pages → D1 → Create database.
-
-Name it: `retro-fitness-{club-name}` (e.g. `retro-fitness-fair-lawn`).
-
-Once created, open it, go to the Console tab, and paste in the full
-contents of `schema.sql` (in this same folder). Run it as-is — no editing
-needed. It deliberately leaves the `gyms` table empty; the club fills in
-their own name, city, director, and everything else themselves the first
-time they log in, via the Club Setup wizard (see Step 9). This is what
-makes the template genuinely reusable rather than needing hand-editing
-for every club.
-
-Confirm it worked: run `SELECT COUNT(*) FROM sqlite_master WHERE type='table';`
-in the console — you should see 93 (94 including SQLite's own internal
-`sqlite_sequence` table).
-
-## Step 2: Create the Worker
-
-Workers & Pages → Create → Worker. Name it something like
-`retro-{club-name}` (e.g. `retro-fair-lawn`).
-
-Paste in the full contents of `worker-v34.js` (the SAME file Fairless
-Hills uses — don't create a club-specific fork of the code, that's how
-bugs get fixed in one place and not another). Deploy it.
-
-## Step 3: Bind the new D1 database to this new Worker
-
-In the new Worker's Settings → Bindings → Add a D1 database binding.
-Variable name must be exactly `DB` (capital letters, matching what the
-code expects). Select the database you created in Step 1. Save.
-
-## Step 4: Add the same secrets/variables as Fairless Hills
-
-In Settings → Variables, add these (copy the values from the Fairless
-Hills worker, broken-cake-e9c2, Settings → Variables):
-
-- `ANTHROPIC_KEY`
-- `JWT_SECRET`
-- `ADMIN_KEY`
-- `RESEND_KEY` (if email features are wanted for this club)
-- `MAIL_FROM` (if using email)
-- Any others you see listed on the Fairless Hills worker's Variables tab
-  that aren't obviously Fairless-Hills-specific
-
-## Step 5: Set up R2 storage for this club (photos, videos, uploads)
-
-R2 → Create bucket → name it `{club-name}-photos`. Bind it to the new
-Worker the same way as the D1 database (Settings → Bindings → R2 bucket,
-variable name `PHOTOS`).
-
-## Step 6: Point the frontend files at the new Worker
-
-As of July 11, 2026 this is a ONE-LINE change, not a 47-file hunt.
-
-Every page loads a single shared file, `config.js`, which is the only
-place the Worker URL is ever defined:
-
-```js
-const RETRO_WORKER_URL = 'https://broken-cake-e9c2.tedscholl.workers.dev';
-```
-
-Open `config.js`, change that one URL to this club's new Worker's URL,
-save. That's it — every one of the 47 pages that talks to the Worker
-reads from this same constant now, so nothing else needs to be touched.
-
-(History: this used to require finding and replacing a hardcoded URL
-across 47 files individually, with 4 different inconsistent constant
-names. That was flagged as the single most error-prone manual step in
-the whole process. It's fixed at the code level now — don't reintroduce
-a hardcoded URL in any new file going forward; always reference
-`RETRO_WORKER_URL` from `config.js` instead.)
+The old process (separate D1 + separate Worker + separate secrets +
+separate R2 + manual `config.js` edit, ~20-30 minutes per club) is fully
+replaced by the 5 steps above. Do not follow a per-club "create a new
+Worker" process anymore — it would create a second, disconnected code
+path that the July 11 fix (Steps 6+ below, historical) was written
+specifically to eliminate.
 
 Still worth a quick spot check after changing it: open a couple of
 different pages and confirm they're hitting the new Worker (Network tab

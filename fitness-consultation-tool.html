@@ -4674,6 +4674,140 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
 
 
 // === CONSULTATION REPORT TRIGGER ===
+// ============================================================
+// INTERNAL STAFF RECAP ENGINE — added July 11 2026 per Ted's request.
+// Separate from the client-facing letter above. This is STAFF-ONLY: no
+// content restrictions (can include specifics the client letter must
+// omit), built from the real captured intake data (not AI-paraphrased,
+// so numbers are never at risk of hallucination), plus the session's own
+// assessment/summary text verbatim. Saved as a PDF attached to the
+// client's record (via /recap/save -> R2 + client_recaps table) AND
+// emailed to staff in the same call. Fires regardless of enrollment
+// outcome, every time an intake is completed.
+// ============================================================
+function buildInternalRecapPDF(intakeLabel, clientName, advisor, sections, assessmentSummary) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const W = 612, margin = 50, contentW = W - margin * 2;
+  let y;
+
+  doc.setFillColor(20, 20, 20);
+  doc.rect(0, 0, W, 80, 'F');
+  doc.setFillColor(180, 0, 0);
+  doc.rect(0, 80, W, 4, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('RETRO FITNESS', margin, 35);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('of Fairless Hills  |  INTERNAL RECAP — STAFF ONLY, NOT FOR CLIENT DISTRIBUTION', margin, 52);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text((intakeLabel || 'INTAKE') + ' — INTERNAL RECAP', margin, 68);
+
+  doc.setFillColor(240, 240, 240);
+  doc.rect(0, 84, W, 36, 'F');
+  doc.setTextColor(30, 30, 30);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold'); doc.text('CLIENT:', margin, 99);
+  doc.setFont('helvetica', 'normal'); doc.text(clientName || 'Member', margin + 48, 99);
+  doc.setFont('helvetica', 'bold'); doc.text('DATE:', margin + 220, 99);
+  doc.setFont('helvetica', 'normal'); doc.text(new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }), margin + 250, 99);
+  doc.setFont('helvetica', 'bold'); doc.text('ADVISOR:', margin + 400, 99);
+  doc.setFont('helvetica', 'normal'); doc.text(advisor || 'Coach Ted Scholl', margin + 448, 99);
+
+  y = 135;
+  function ensureRoom(need) { if (y + need > 730) { doc.addPage(); y = 60; } }
+  function sectionHeader(title) {
+    ensureRoom(28);
+    doc.setFillColor(180, 0, 0);
+    doc.rect(margin, y, contentW, 16, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(title, margin + 6, y + 11);
+    y += 20;
+    doc.setTextColor(30, 30, 30);
+  }
+  function kvRow(label, value, i) {
+    if (!value) return;
+    ensureRoom(16);
+    doc.setFillColor(i % 2 === 0 ? 250 : 245, i % 2 === 0 ? 250 : 245, i % 2 === 0 ? 250 : 245);
+    doc.rect(margin, y, contentW, 15, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    doc.text(String(label), margin + 6, y + 10);
+    doc.setFont('helvetica', 'normal');
+    const wrapped = doc.splitTextToSize(String(value), contentW - 190);
+    doc.text(wrapped[0] || '', margin + 170, y + 10);
+    y += 15;
+  }
+
+  (sections || []).forEach(sec => {
+    const realRows = (sec.rows || []).filter(r => r[1]);
+    if (!realRows.length) return;
+    sectionHeader(sec.title);
+    realRows.forEach((r, i) => kvRow(r[0], r[1], i));
+    y += 8;
+  });
+
+  if (assessmentSummary) {
+    sectionHeader('SESSION SUMMARY / NOTES');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(50, 50, 50);
+    String(assessmentSummary).split('\n').forEach(line => {
+      const wrapped = doc.splitTextToSize(line || ' ', contentW - 10);
+      wrapped.forEach(wl => { ensureRoom(13); doc.text(wl, margin + 6, y + 10); y += 13; });
+    });
+  }
+
+  y += 16;
+  ensureRoom(24);
+  doc.setFillColor(20, 20, 20);
+  doc.rect(margin, y, contentW, 1, 'F');
+  y += 14;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Internal document — not for client distribution.', margin + 10, y);
+
+  const filename = (clientName||'Client').replace(/\s+/g,'_') + '_' + (intakeLabel||'Intake').replace(/\s+/g,'_') + '_InternalRecap_' + todayET() + '.pdf';
+  const base64 = doc.output('datauristring').split(',')[1];
+  return { filename, base64 };
+}
+
+async function triggerInternalRecap(intakeLabel, reportTypeForDb, clientData, sections, assessmentSummary) {
+  try {
+    loadJsPDF(async () => {
+      try {
+        const { filename, base64 } = buildInternalRecapPDF(intakeLabel, clientData.name, clientData.advisor, sections, assessmentSummary);
+        const recapHtml = '<div style="font-family:Arial,sans-serif;max-width:600px">' +
+          '<h2 style="color:#B40000">' + intakeLabel + ' — Internal Recap</h2>' +
+          '<p><b>Client:</b> ' + (clientData.name||'') + '<br><b>Advisor:</b> ' + (clientData.advisor||'') + '</p>' +
+          '<p style="white-space:pre-wrap;font-size:13px;color:#333">' + (assessmentSummary||'').replace(/</g,'&lt;') + '</p>' +
+          '<p style="color:#888;font-size:11px">Full metrics and intake detail attached as PDF. Also saved to this client\'s record.</p></div>';
+        await fetch(getApiUrl().replace(/\/$/,'') + '/recap/save', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: clientData.id || null,
+            client_name: clientData.name || '',
+            report_type: reportTypeForDb,
+            pdf_base64: base64,
+            pdf_filename: filename,
+            recap_html: recapHtml,
+            subject: intakeLabel + ' Recap: ' + (clientData.name || 'Client'),
+            summary: (assessmentSummary || '').slice(0, 2000),
+            advisor: clientData.advisor || ''
+          })
+        });
+      } catch (e) { /* internal recap failing should never block the client-facing flow */ }
+    });
+  } catch (e) {}
+}
+
 function runConsultReport(type) {
   var clientData = {
     id: window.EXISTING_CLIENT_ID || null,
@@ -4694,6 +4828,18 @@ function runConsultReport(type) {
   };
   var statusId = type === 'welcome' ? 'report-enrolled-status' : 'report-decline-status';
   triggerReportWorkflow(type, clientData, assessmentText || '', statusId);
+
+  // Internal staff recap -- fires every time regardless of enrolled/declined outcome.
+  triggerInternalRecap('Initial Consultation', 'consultation', clientData, [
+    { title: 'IDENTITY', rows: [['Name', gv('name')], ['Email', gv('email')], ['Phone', gv('phone')], ['DOB', gv('dob')], ['Age', gv('age')], ['Gender', gv('gender')]] },
+    { title: 'BODY METRICS', rows: [['Weight', gv('weight')], ['Height', gv('height')], ['BMI', gv('bmi')], ['Body Fat %', gv('pbf')], ['Lean Mass', gv('lean-mass')], ['Fat Mass', gv('fat-mass')], ['Water Weight', gv('water-weight')], ['Segmental LA/RA', gv('seg-la') + ' / ' + gv('seg-ra')], ['Segmental Trunk', gv('seg-trunk')], ['Segmental LL/RL', gv('seg-ll') + ' / ' + gv('seg-rl')]] },
+    { title: 'GOALS & READINESS', rows: [['Goals', gv('goals')], ['Original Goals', gv('orig-goals')], ['Timeframe', gv('timeframe')], ['Investment/Outcome', gv('investment-outcome')]] },
+    { title: 'TRAINING BACKGROUND', rows: [['Experience', gv('experience')], ['Current Workout Status', gv('workout-status')], ['Workout Duration', gv('workout-duration')], ['Days/Week Available', gv('days-per-week')]] },
+    { title: 'NUTRITION HABITS', rows: [['Breakfast', gv('breakfast')], ['Lunch', gv('lunch')], ['Dinner', gv('dinner')], ['Snacks', gv('snacks')], ['Coffee Habit', gv('coffee-habit')], ['Dine Out Frequency', gv('dine-out-frequency')], ['Meals/Day', gv('meals-per-day')]] },
+    { title: 'MEDICAL', rows: [['Medical Notes', gv('medical')], ['Medications', gv('medications')], ["Doctor's Recommendation", gv('doctor-rec')]] },
+    { title: 'BUDGET / DECISION', rows: [['Weekly Budget Range', gv('weekly-budget-range')], ['Spending Notes', gv('spending-notes')], ['Decision', type === 'welcome' ? 'ENROLLED' : 'DECLINED'], ['Package', clientData.package]] },
+    { title: 'COACH NOTES', rows: [['Advisor Conversation Notes', gv('advisor-conversation-notes')]] }
+  ], assessmentText || '');
 }
 
 // Show report buttons after finalize
