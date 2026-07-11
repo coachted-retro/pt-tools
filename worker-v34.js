@@ -1655,8 +1655,63 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
             }
           }
         } catch(e) { /* non-fatal -- fall through to whatever's already there */ }
+
+        // Birthdays and gym anniversaries pulled from real client data --
+        // no external API needed, this is already captured on every
+        // consultation (birthday, training_start_date). Checked once per
+        // day per client, de-duplicated so the same birthday doesn't post
+        // twice if the feed gets loaded many times today.
+        try {
+          const today = todayET();
+          const alreadyScannedToday = await env.DB.prepare(
+            "SELECT id FROM feed_posts WHERE category='system_scan_marker' AND created_at >= ? LIMIT 1"
+          ).bind(today + 'T00:00:00').first();
+          // Cheap check first -- only run the full per-client scan once per
+          // day, not on every single feed load. Marker gets written
+          // regardless of whether any birthdays/anniversaries were actually
+          // found today, so a quiet day doesn't re-trigger the expensive
+          // scan on every subsequent load.
+          if (!alreadyScannedToday) {
+          await env.DB.prepare(
+            `INSERT INTO feed_posts (category,title,body,image_url,featured_client_id,featured_staff_id,event_date,pinned,created_by,created_at)
+             VALUES ('system_scan_marker','','',null,null,null,null,0,'system-auto',?)`
+          ).bind(new Date().toISOString()).run();
+          const todayMD = today.slice(5); // 'MM-DD'
+          const activeClients = await env.DB.prepare(
+            "SELECT id, first_name, last_name, birthday, training_start_date FROM clients WHERE status='active_pt' OR status='active'"
+          ).all();
+          for (const c of (activeClients.results || [])) {
+            const name = ((c.first_name||'')+' '+(c.last_name||'')).trim() || 'A member';
+            if (c.birthday && c.birthday.length >= 10 && c.birthday.slice(5) === todayMD) {
+              const dup = await env.DB.prepare(
+                "SELECT id FROM feed_posts WHERE category='birthday' AND featured_client_id=? AND created_at >= ?"
+              ).bind(c.id, today + 'T00:00:00').first();
+              if (!dup) {
+                await env.DB.prepare(
+                  `INSERT INTO feed_posts (category,title,body,image_url,featured_client_id,featured_staff_id,event_date,pinned,created_by,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)`
+                ).bind('birthday', 'Happy Birthday, ' + name + '!', 'Wishing you a great one from the whole gym family.', null, c.id, null, today, 0, 'system-auto', new Date().toISOString()).run();
+              }
+            }
+            if (c.training_start_date && c.training_start_date.length >= 10 && c.training_start_date.slice(5) === todayMD && c.training_start_date.slice(0,4) !== today.slice(0,4)) {
+              const years = parseInt(today.slice(0,4),10) - parseInt(c.training_start_date.slice(0,4),10);
+              if (years >= 1) {
+                const dup = await env.DB.prepare(
+                  "SELECT id FROM feed_posts WHERE category='anniversary' AND featured_client_id=? AND created_at >= ?"
+                ).bind(c.id, today + 'T00:00:00').first();
+                if (!dup) {
+                  await env.DB.prepare(
+                    `INSERT INTO feed_posts (category,title,body,image_url,featured_client_id,featured_staff_id,event_date,pinned,created_by,created_at)
+                     VALUES (?,?,?,?,?,?,?,?,?,?)`
+                  ).bind('anniversary', name + '\u2019s ' + years + '-Year Gym Anniversary!', 'Thank you for being part of the family for ' + years + ' year' + (years===1?'':'s') + '.', null, c.id, null, today, 0, 'system-auto', new Date().toISOString()).run();
+                }
+              }
+            }
+          }
+          } // close if (!alreadyScannedToday)
+        } catch(e) { /* non-fatal */ }
         const postsRes = await env.DB.prepare(
-          'SELECT * FROM feed_posts ORDER BY pinned DESC, created_at DESC LIMIT ?'
+          "SELECT * FROM feed_posts WHERE category != 'system_scan_marker' ORDER BY pinned DESC, created_at DESC LIMIT ?"
         ).bind(limit).all();
         return ok({ posts: postsRes.results || [] }, cors);
       }

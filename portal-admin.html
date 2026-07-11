@@ -187,9 +187,22 @@
     <div id="meal-photos-list"><div class="status">Loading meal library...</div></div>
   </div>
 
+  <div class="panel">
+    <h3>Community Feed — Personal Post</h3>
+    <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Industry news posts automatically. Birthdays and gym anniversaries automatically pull from real client data. This is for the personal, human stuff nothing else can know — a new baby, a member's big life update, a shoutout. Keep it warm, keep it real.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <input id="feed-title" placeholder="Headline, e.g. Welcome to the Jones family's new baby!" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+      <input id="feed-event-date" type="date" placeholder="Date (optional)" style="padding:9px 12px;border:1px solid var(--border);border-radius:8px">
+    </div>
+    <textarea id="feed-body" rows="2" placeholder="A line or two more, optional..." style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:10px;font-family:inherit"></textarea>
+    <button class="btn" onclick="postFeedItem()">Post to Feed</button>
+    <div id="feed-post-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+  </div>
+
 </div>
 
 <script>
+
 const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
 const ADMIN_KEY='retro-admin-2024';
 
@@ -555,6 +568,29 @@ async function saveMealPhoto(btn){
     await fetch(WORKER+'/mealplan/set-photo',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},body:JSON.stringify({item_name:itemName,photo_url:photoUrl||null})});
     btn.textContent='Saved'; setTimeout(()=>{ btn.textContent='Save'; btn.disabled=false; },1200);
   }catch(e){ btn.textContent='Error'; btn.disabled=false; }
+}
+
+async function postFeedItem(){
+  const title = document.getElementById('feed-title').value.trim();
+  const status = document.getElementById('feed-post-status');
+  if (!title) { status.textContent = 'Enter a headline first.'; status.style.color = '#B0121F'; return; }
+  const body = document.getElementById('feed-body').value.trim();
+  const eventDate = document.getElementById('feed-event-date').value || null;
+  status.textContent = 'Posting...'; status.style.color = 'var(--muted)';
+  try {
+    const r = await fetch(WORKER+'/feed/create', { method:'POST', headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},
+      body: JSON.stringify({ category:'personal', title, body, event_date: eventDate, created_by: 'staff' }) });
+    const d = await r.json();
+    if (d.ok === false) throw new Error(d.error || 'Unknown error');
+    status.textContent = '✓ Posted to the feed';
+    status.style.color = '#0F9D6E';
+    document.getElementById('feed-title').value = '';
+    document.getElementById('feed-body').value = '';
+    document.getElementById('feed-event-date').value = '';
+  } catch(e) {
+    status.textContent = 'Could not post — try again.';
+    status.style.color = '#B0121F';
+  }
 }
 
 loadMealPhotos();
