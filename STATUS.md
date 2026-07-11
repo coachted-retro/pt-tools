@@ -420,24 +420,23 @@ NOT YET STARTED, needs real scoping work before building:
       Verified directly against live Cloudflare for at least Forest Hills
       and Rego Park (table count + gyms row), not just trusted from the
       insert response.
-- [ ] BLOCKED: Cloudflare caps this account at 10 D1 databases total.
-      Hit the wall after 7 new clubs (3 pre-existing: retro-crm,
-      retro-crm-demo, relentless-db + 7 new = 10). The remaining 7 clubs
-      (Mt. Olive, Whippany, Park Slope, Astoria, Fair Lawn, Stroudsburg,
-      Sayreville) CANNOT be created until this is resolved. Real options
-      given to Ted: (1) upgrade the Cloudflare plan -- likely fastest,
-      but a billing decision only he can make, unknown what the new D1
-      limit would be, (2) delete retro-crm-demo to free one slot, still
-      short of what's needed, (3) architecture pivot to one shared D1
-      with gym_id partitioning instead of separate D1s per club --
-      there's real precedent for this (Keelin's regional dashboard was
-      originally built this way across 16 locations before tonight's
-      separate-D1 direction), but it's a genuine redesign, not a small
-      change. Ted was still deciding as of end of session. Do NOT create
-      more D1 databases until this is resolved, even if asked to "just
-      try" -- confirm the account limit was actually raised first.
-- [ ] Worker deployment for the 7 already-provisioned clubs' databases
-      hasn't happened yet -- Claude cannot deploy Workers directly (no
+- [x] RESOLVED July 11: Ted upgraded the Cloudflare plan (confirmed via
+      an actual invoice, and confirmed for real by successfully creating
+      a database past the old 10-cap, not just trusting the upgrade
+      happened). Deleted retro-crm-demo first to free a slot before the
+      upgrade confirmed (verified thoroughly before deleting -- zero code
+      references, confirmed Keelin's dashboard doesn't use it, confirmed
+      all its content was fictional demo data). Created and fully seeded
+      4 more club databases (slots 08-11, generic numbered names per
+      Ted's direction rather than guessing specific clubs) to reach all
+      11 needed for the pilot. All 11 slots (7 club-named from the first
+      batch + 4 generically-named) are now provisioned, seeded with the
+      full 93-table schema, and genuinely blank -- verified directly
+      against each database, not just trusted from the creation response.
+      See provisioning/CLUB_DATABASE_REGISTRY.md for the full slot-by-
+      slot index.
+- [ ] Worker deployment for all 11 provisioned clubs' databases still
+      hasn't happened -- Claude cannot deploy Workers directly (no
       tool for it). Ted still needs to do Steps 2-9 of
       provisioning/NEW_CLUB_SETUP.md for each of these 7 clubs by hand
       before they're actually usable, even though their databases are
