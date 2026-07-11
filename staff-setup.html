@@ -200,7 +200,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <input type="hidden" id="editId">
     <div class="field">
       <label>Full Name *</label>
-      <input type="text" id="fName" placeholder="e.g. Sarah Aldrich" oninput="autoGenerateWorkEmail()">
+      <input type="text" id="fName" placeholder="e.g. Sarah Aldrich" oninput="autoGenerateWorkEmail();checkSimilarStaffNames()">
+      <div id="similar-staff-hint" style="display:none;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px 12px;font-size:12px;margin-top:6px"></div>
     </div>
     <div class="field">
       <label>Role *</label>
@@ -469,11 +470,38 @@ function renderRoster() {
   renderGroup('rows-floor', ROLE_GROUPS.floor);
 }
 
+// Same "did you mean" pattern as the client add form -- catches a coach
+// typing "Mike" when "Mike Smith" and "Mike Rogers" are already on the
+// roster, before a duplicate staff record gets created.
+let similarStaffTimer = null;
+function checkSimilarStaffNames(){
+  clearTimeout(similarStaffTimer);
+  similarStaffTimer = setTimeout(runSimilarStaffCheck, 250);
+}
+function runSimilarStaffCheck(){
+  const hint = document.getElementById('similar-staff-hint');
+  const editId = document.getElementById('editId').value;
+  const typed = (document.getElementById('fName').value||'').trim().toLowerCase();
+  if (typed.length < 2) { hint.style.display = 'none'; return; }
+  const firstTyped = typed.split(' ')[0];
+  const matches = roster.filter(s => {
+    if (editId && String(s.id) === String(editId)) return false;
+    const name = (s.name||'').toLowerCase();
+    return name.startsWith(firstTyped) || name.includes(typed);
+  }).slice(0, 5);
+  if (!matches.length) { hint.style.display = 'none'; return; }
+  hint.innerHTML = '<div style="font-weight:700;margin-bottom:4px">⚠ Possible existing match — check before adding new:</div>' +
+    matches.map(s => '<span style="display:inline-block;margin:2px 8px 2px 0;color:#B45309;font-weight:600">'+esc(s.name)+(s.role?' ('+esc(s.role)+')':'')+'</span>').join('') +
+    '<div style="color:#6B7280;margin-top:4px;font-weight:400">If none of these are the same person, it\'s fine to keep adding as new.</div>';
+  hint.style.display = 'block';
+}
+
 function openModal(id) {
   document.getElementById('modalTitle').textContent = id ? 'Edit Employee' : 'Add Employee';
   document.getElementById('editId').value = id || '';
   document.getElementById('shareAppRow').style.display = id ? 'block' : 'none';
   document.getElementById('shareAppStatus').textContent = '';
+  document.getElementById('similar-staff-hint').style.display = 'none';
   if (!id) {
     document.getElementById('fName').value = '';
     document.getElementById('fRole').value = '';

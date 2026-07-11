@@ -370,9 +370,10 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
         </div>
         <div class="panel-body">
           <div class="form-row">
-            <div class="form-group"><label>First Name *</label><input id="f-first" placeholder="First"></div>
-            <div class="form-group"><label>Last Name *</label><input id="f-last" placeholder="Last"></div>
+            <div class="form-group"><label>First Name *</label><input id="f-first" placeholder="First" oninput="checkSimilarProspectNames()"></div>
+            <div class="form-group"><label>Last Name *</label><input id="f-last" placeholder="Last" oninput="checkSimilarProspectNames()"></div>
           </div>
+          <div id="similar-prospect-hint" style="display:none;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:10px"></div>
           <div class="form-row">
             <div class="form-group"><label>Phone *</label><input id="f-phone" placeholder="(215) 555-0000"></div>
             <div class="form-group"><label>Email</label><input id="f-email" placeholder="email@example.com"></div>
@@ -1042,8 +1043,35 @@ function switchTab(tab) {
 // UTILITIES
 // ══════════════════════════════════════════════════
 function openSheet() { window.open(SHEET_LINK, '_blank'); }
-function showAddForm() { document.getElementById('add-form-panel').style.display='block'; }
+function showAddForm() { document.getElementById('add-form-panel').style.display='block'; document.getElementById('similar-prospect-hint').style.display='none'; }
 function hideAddForm() { document.getElementById('add-form-panel').style.display='none'; }
+
+// Same "did you mean" pattern as the client and staff add forms -- catches
+// typing "Mike" when "Mike Smith" and "Mike Rogers" are already in the
+// pipeline, before a duplicate prospect gets created.
+let similarProspectTimer = null;
+function checkSimilarProspectNames(){
+  clearTimeout(similarProspectTimer);
+  similarProspectTimer = setTimeout(runSimilarProspectCheck, 250);
+}
+function runSimilarProspectCheck(){
+  const hint = document.getElementById('similar-prospect-hint');
+  const first = (document.getElementById('f-first').value||'').trim().toLowerCase();
+  const last = (document.getElementById('f-last').value||'').trim().toLowerCase();
+  if (first.length < 2 && last.length < 2) { hint.style.display = 'none'; return; }
+  const typedFull = (first+' '+last).trim();
+  const matches = prospects.filter(p => {
+    const name = (p.name||'').toLowerCase();
+    const firstHit = first.length >= 2 && name.split(' ')[0] && name.split(' ')[0].startsWith(first);
+    const fullHit = typedFull.length >= 2 && name.includes(typedFull);
+    return firstHit || fullHit;
+  }).slice(0, 5);
+  if (!matches.length) { hint.style.display = 'none'; return; }
+  hint.innerHTML = '<div style="font-weight:700;margin-bottom:4px">⚠ Possible existing match — check before adding new:</div>' +
+    matches.map(p => '<span style="display:inline-block;margin:2px 8px 2px 0;color:#B45309;font-weight:600">'+escBiz(p.name)+(p.phone?' · '+escBiz(p.phone):'')+'</span>').join('') +
+    '<div style="color:#6B7280;margin-top:4px;font-weight:400">If none of these are the same person, it\'s fine to keep adding as new.</div>';
+  hint.style.display = 'block';
+}
 function gv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 

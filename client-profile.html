@@ -372,10 +372,43 @@ function checkCancelReason(){
 
 function setF(id,v){ const e=document.getElementById(id); if(e) e.value=(v==null?'':v); }
 function getF(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
+// Live "did you mean" check as a coach types a new client's name -- catches
+// the exact scenario Ted described: typing "Mike" when "Mike Smith" and
+// "Mike Rogers" already exist, before a duplicate record gets created.
+// Never blocks saving, just surfaces existing matches so a coach can jump
+// to the real record instead if that's who they meant.
+let similarNamesTimer = null;
+function checkSimilarClientNames(){
+  clearTimeout(similarNamesTimer);
+  similarNamesTimer = setTimeout(runSimilarNamesCheck, 250);
+}
+function runSimilarNamesCheck(){
+  const hint = document.getElementById('similar-names-hint');
+  const first = (getF('m_first')||'').trim().toLowerCase();
+  const last = (getF('m_last')||'').trim().toLowerCase();
+  if (first.length < 2 && last.length < 2) { hint.style.display = 'none'; return; }
+  const matches = ALL_CLIENTS.filter(c => {
+    if (EDIT_ID && c.id === EDIT_ID) return false; // don't flag the record being edited against itself
+    const cf = (c.first_name||'').toLowerCase(), cl = (c.last_name||'').toLowerCase();
+    const firstHit = first.length >= 2 && (cf === first || cf.startsWith(first) || first.startsWith(cf));
+    const lastHit = last.length >= 2 && cl && (cl === last || cl.startsWith(last));
+    return firstHit || lastHit;
+  }).slice(0, 5);
+  if (!matches.length) { hint.style.display = 'none'; return; }
+  hint.innerHTML = '<div style="font-weight:700;margin-bottom:4px">⚠ Possible existing match — check before adding a new record:</div>' +
+    matches.map(c => {
+      const name = ((c.first_name||'')+' '+(c.last_name||'')).trim();
+      return '<a href="client-profile.html?id='+c.id+'" target="_blank" style="display:inline-block;margin:2px 8px 2px 0;color:var(--red,#E0192B);font-weight:600;text-decoration:underline">'+esc(name)+'</a>';
+    }).join('') +
+    '<div style="color:var(--muted,#6B7280);margin-top:4px;font-weight:400">If none of these are the same person, it\'s fine to keep adding as new.</div>';
+  hint.style.display = 'block';
+}
+
 function openAdd(){
   EDIT_ID=null; document.getElementById('modalTitle').textContent='New Client';
   ['m_first','m_last','m_email','m_phone','m_coach','m_advisor','m_goal','m_start','m_birthday'].forEach(i=>setF(i,''));
   setF('m_gender',''); setF('m_status','active_pt'); setF('m_package','');
+  document.getElementById('similar-names-hint').style.display='none';
   document.getElementById('clientModal').classList.add('open');
 }
 function openEdit(){
@@ -388,6 +421,7 @@ function openEdit(){
   setF('m_birthday',CURRENT.birthday||'');
   setF('m_why',CURRENT.my_why||'');
   setF('m_sessions_pw',CURRENT.sessions_per_week||'');
+  document.getElementById('similar-names-hint').style.display='none';
   document.getElementById('clientModal').classList.add('open');
 }
 function closeModal(){ document.getElementById('clientModal').classList.remove('open'); }
@@ -1700,8 +1734,9 @@ function renderMuscleBalance(scan){
   <div class="box">
     <div class="mh"><h3 id="modalTitle">Edit Client</h3><button class="x" onclick="closeModal()">&times;</button></div>
     <div class="mb">
-      <div class="fld"><label>First name</label><input id="m_first"></div>
-      <div class="fld"><label>Last name</label><input id="m_last"></div>
+      <div class="fld"><label>First name</label><input id="m_first" oninput="checkSimilarClientNames()" autocomplete="off"></div>
+      <div class="fld"><label>Last name</label><input id="m_last" oninput="checkSimilarClientNames()" autocomplete="off"></div>
+      <div id="similar-names-hint" style="display:none;grid-column:1/-1;background:#FFF7ED;border:1px solid #FED7AA;border-radius:8px;padding:10px 12px;font-size:12px;margin-bottom:4px"></div>
       <div class="fld"><label>Email</label><input id="m_email"></div>
       <div class="fld"><label>Phone</label><input id="m_phone"></div>
       <div class="fld"><label>Gender</label><select id="m_gender"><option value="">—</option><option>Male</option><option>Female</option></select></div>
