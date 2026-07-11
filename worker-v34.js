@@ -2994,6 +2994,22 @@ Rules:
             const mp = await env.DB.prepare('SELECT * FROM meal_profiles WHERE client_id=? LIMIT 1').bind(b.client_id).first();
             if (mp && (mp.calories || mp.protein_g)) {
               macroLine = `This client's daily targets: ${mp.calories||'?'} kcal, protein ${mp.protein_g||'?'}g, carbs ${mp.carbs_g||'?'}g, fat ${mp.fat_g||'?'}g. Excluded: proteins ${mp.excluded_proteins||'none'}, vegetables ${mp.excluded_vegetables||'none'}, fruits ${mp.excluded_fruits||'none'}, allergies ${mp.allergies||'none'}.`;
+              // Factor in what they've already eaten today, not just the
+              // static daily target -- a suggestion at 7pm after a big
+              // lunch should look different from the same question at
+              // 8am with nothing logged yet.
+              try {
+                const todayEaten = await env.DB.prepare(
+                  "SELECT COALESCE(SUM(calories),0) cal, COALESCE(SUM(protein_g),0) pro, COALESCE(SUM(carbs_g),0) carb, COALESCE(SUM(fat_g),0) fat FROM meals WHERE client_id=? AND meal_date=?"
+                ).bind(b.client_id, todayET()).first();
+                if (todayEaten && (todayEaten.cal > 0 || todayEaten.pro > 0)) {
+                  const remCal = Math.max(0, (mp.calories||0) - todayEaten.cal);
+                  const remPro = Math.max(0, (mp.protein_g||0) - todayEaten.pro);
+                  const remCarb = Math.max(0, (mp.carbs_g||0) - todayEaten.carb);
+                  const remFat = Math.max(0, (mp.fat_g||0) - todayEaten.fat);
+                  macroLine += ` So far today they've already logged ${todayEaten.cal} kcal, ${todayEaten.pro}g protein, ${todayEaten.carb}g carbs, ${todayEaten.fat}g fat. That leaves roughly ${remCal} kcal, ${remPro}g protein, ${remCarb}g carbs, ${remFat}g fat remaining for the rest of today -- weight the suggestion toward what actually fits in that remaining room, not the full daily target.`;
+                }
+              } catch(e) {}
             }
           } catch(e) {}
         }
@@ -3004,7 +3020,7 @@ Rules:
             compactIndex.push(`${r.name} | ${cat} | ${r.calories}kcal ${r.protein_g}p/${r.carbs_g}c/${r.fat_g}f | tags: ${(r.tags||[]).join(',')||'none'} | key ingredients: ${firstFew}`);
           });
         });
-        const sys = `You are "Chef", a friendly recipe assistant for Retro Fitness's Coach's Table meal library. A member is asking what to make. Suggest 1-3 REAL recipes from the library below by their EXACT name -- never invent a recipe that isn't in this list. If they mention an ingredient they have on hand, prioritize recipes whose key ingredients include it. If they ask something generic like "what should I make tonight," pick something reasonable given any macro targets provided. Keep the reply short and conversational (3-5 sentences), like a friendly chef texting back, not a formal list. Mention the recipe name(s) clearly so they can find it in the app. No emojis, no em dashes, plain punctuation only.
+        const sys = `You are "Chef", a friendly recipe assistant for Retro Fitness's Coach's Table meal library. A member is asking what to make. Suggest 1-3 REAL recipes from the library below by their EXACT name -- never invent a recipe that isn't in this list. If they mention an ingredient they have on hand, prioritize recipes whose key ingredients include it. If they ask something generic like "what should I make tonight," pick something that reasonably fits what they have left for the day, factoring in what they've already eaten if that's provided below, not just their full daily target. Keep the reply short and conversational (3-5 sentences), like a friendly chef texting back, not a formal list. Mention the recipe name(s) clearly so they can find it in the app. No emojis, no em dashes, plain punctuation only.
 
 ${macroLine}
 
