@@ -362,7 +362,7 @@ function syncCalendarToPhone(staffId) {
   const url = WORKER + '/calendar/ics?staff_id=' + staffId;
   const webcalUrl = url.replace(/^https?:\/\//, 'webcal://');
   window.location.href = webcalUrl;
-  setTimeout(() => { alert('If nothing opened, copy this link into your calendar app\'s "Subscribe by URL" option:\n\n' + url); }, 800);
+  setTimeout(() => { alert('Synced. To remove this later: open your phone\'s Calendar app, go to Settings, find "Retro Strong" under your added calendars, and unsubscribe/remove it -- wont touch anything else on your calendar.\n\nIf nothing opened just now, copy this link into your calendar apps Subscribe by URL option instead:\n\n' + url); }, 800);
 }
 
 async function loadGymEventsProfile() {

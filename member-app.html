@@ -627,6 +627,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
           <button class="action-btn" onclick="scheduleMyWorkouts()">Schedule It</button>
           <div id="sched-status" style="font-size:12px;color:var(--ink3);margin-top:8px"></div>
+          <hr class="divider" style="margin:14px 0">
+          <button class="action-btn secondary" onclick="mSyncCalendarToPhone()">📱 Sync My Schedule to My Phone Calendar</button>
+          <div id="calsync-help" style="display:none;font-size:11px;color:var(--ink3);margin-top:8px;line-height:1.5">
+            This adds your training schedule as a live calendar that stays updated automatically. To remove it later: open your phone's Calendar app → Settings → find "Retro Strong" or similar under your added calendars → remove/unsubscribe. It won't touch anything else on your calendar.
+          </div>
         </div></div>
         <div id="upcoming-self-scheduled"></div>
 
@@ -1840,6 +1845,9 @@ function renderStaffHome() {
       <div id="my-shift-calendar" style="margin-bottom:12px"></div>
       <div id="my-shifts-body"><div class="empty-state">Loading...</div></div>
       <button class="wp-swap-btn" style="margin-top:10px" onclick="syncCalendarToPhone()">📱 Sync to My Phone Calendar</button>
+      <div id="staff-calsync-help" style="display:none;font-size:11px;color:var(--ink3);margin-top:8px;line-height:1.5">
+        This adds your shifts and coaching appointments as a live calendar that stays updated automatically. To remove it later: open your phone's Calendar app → Settings → find "Retro Strong" or similar under your added calendars → remove/unsubscribe. It won't touch anything else on your calendar.
+      </div>
     </div></div>
 
     <div class="sec-label" style="margin-top:16px">Open Shifts — Need Coverage</div>
@@ -1911,6 +1919,8 @@ async function loadProfileHeader() {
 function syncCalendarToPhone() {
   const url = WORKER + '/calendar/ics?staff_id=' + STAFF_SESSION.staff_id;
   const webcalUrl = url.replace(/^https?:\/\//, 'webcal://');
+  const help = document.getElementById('staff-calsync-help');
+  if (help) help.style.display = 'block';
   window.location.href = webcalUrl;
   setTimeout(() => { alert('If nothing opened, copy this link into your calendar app\'s "Subscribe by URL" option:\n\n' + url); }, 800);
 }
@@ -3777,6 +3787,18 @@ function setSchedDuration(min, el) {
 function toggleSchedDay(day, el) {
   if (SCHED_DAYS.has(day)) { SCHED_DAYS.delete(day); el.classList.remove('active'); }
   else { SCHED_DAYS.add(day); el.classList.add('active'); }
+}
+
+// Client-facing calendar sync -- adds a live subscription of the
+// client's own scheduled sessions (self-scheduled + coach-assigned).
+// Shows the unsync instructions right after tapping, since that's
+// exactly when someone would want to know how to undo it later.
+function mSyncCalendarToPhone() {
+  const url = WORKER + '/calendar/ics?client_id=' + SESSION.client_id;
+  const webcalUrl = url.replace(/^https?:\/\//, 'webcal://');
+  const help = document.getElementById('calsync-help');
+  if (help) help.style.display = 'block';
+  window.location.href = webcalUrl;
 }
 
 async function scheduleMyWorkouts() {

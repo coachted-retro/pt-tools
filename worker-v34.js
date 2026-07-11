@@ -1422,7 +1422,39 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/calendar/ics' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const staffId = url.searchParams.get('staff_id');
-        if (!staffId) return bad('staff_id required', cors);
+        const clientId = url.searchParams.get('client_id');
+        if (!staffId && !clientId) return bad('staff_id or client_id required', cors);
+
+        if (clientId) {
+          // Client-facing calendar: just their own scheduled sessions,
+          // both coach-assigned and self-scheduled -- kept deliberately
+          // simple (one source, their own sessions) so there's no
+          // confusion about what's on it or why, unlike the staff feed
+          // which pulls from several tables at once.
+          const icsDate2 = (d, t) => (d || '').replace(/-/g, '') + 'T' + ((t || '09:00').replace(':', '') + '00');
+          const esc2 = s => String(s || '').replace(/[\\;,]/g, c => '\\' + c).replace(/\n/g, '\\n');
+          const mySessions = await env.DB.prepare(
+            "SELECT * FROM scheduled_sessions WHERE client_id=? AND status='scheduled' AND scheduled_date >= date('now','-7 day') ORDER BY scheduled_date ASC LIMIT 200"
+          ).bind(clientId).all();
+          let clines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Retro Strong//Member Calendar//EN', 'CALSCALE:GREGORIAN'];
+          for (const s of (mySessions.results || [])) {
+            const dur = s.duration_min || 60;
+            const startMin = 9 * 60; // default 9:00am anchor, same as staff feed, since scheduled_sessions has no time-of-day field
+            const endTotalMin = startMin + dur;
+            const endH = Math.floor(endTotalMin / 60), endM = endTotalMin % 60;
+            const endTime = String(endH).padStart(2,'0') + ':' + String(endM).padStart(2,'0');
+            clines.push('BEGIN:VEVENT');
+            clines.push('UID:myschedsess-' + s.id + '@retrostrong');
+            clines.push('DTSTART:' + icsDate2(s.scheduled_date, '09:00'));
+            clines.push('DTEND:' + icsDate2(s.scheduled_date, endTime));
+            clines.push('SUMMARY:' + esc2((s.source === 'client' ? 'Self-Guided: ' : 'Training: ') + s.program_name));
+            if (s.focus_notes) clines.push('DESCRIPTION:' + esc2(s.focus_notes));
+            clines.push('END:VEVENT');
+          }
+          clines.push('END:VCALENDAR');
+          return new Response(clines.join('\r\n'), { status: 200, headers: { ...cors, 'Content-Type': 'text/calendar; charset=utf-8' } });
+        }
+
         const staffRow = await env.DB.prepare('SELECT name FROM staff_roster WHERE id=?').bind(staffId).first();
         const coachName = staffRow ? staffRow.name : '';
         const shifts = await env.DB.prepare(
