@@ -509,6 +509,18 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
         <div id="home-notif" style="display:none"></div>
         <div id="home-greeting"></div>
         <div id="today-workout-card"></div>
+
+        <div class="card" style="cursor:pointer" onclick="toggleMyCalendar()">
+          <div class="card-body" style="padding-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div class="sec-label" style="margin:0">📅 My Calendar — Self-Planned</div>
+              <div id="my-calendar-chevron" style="font-size:14px;color:var(--ink3)">▾</div>
+            </div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px">Your own scheduled workouts and meals, days/weeks/months ahead. Separate from what your coach has planned for you.</div>
+          </div>
+        </div>
+        <div id="my-calendar-body" style="display:none;margin-bottom:14px"></div>
+
         <div class="sec-label">Community</div>
         <div id="community-feed"></div>
         <div class="kpi-strip" id="home-kpis" style="display:none"></div>
@@ -591,9 +603,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
           <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">For the days you're not training with a coach — set up a recurring schedule so it's on your calendar, not just a someday plan.</div>
 
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:5px">What are you doing</div>
-          <select id="sched-title" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--radius-xs);font-size:14px;background:var(--soft);color:var(--ink);margin-bottom:12px">
+          <select id="sched-title" onchange="previewSchedRoutine()" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--radius-xs);font-size:14px;background:var(--soft);color:var(--ink);margin-bottom:8px">
             <option value="">Custom / open workout</option>
           </select>
+          <div id="sched-routine-preview" style="display:none;background:var(--soft);border-radius:var(--radius-xs);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
 
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:5px">Duration</div>
           <div style="display:flex;gap:8px;margin-bottom:12px" id="sched-duration-row">
@@ -743,6 +756,42 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
           <div style="font-size:12px;color:var(--ink3);margin-bottom:10px">Browse the full recipe library — filters below auto-apply anything you've told your coach you can't or won't eat.</div>
           <div class="recipe-filter-row" id="ct-filters"></div>
           <div id="ct-list"><div class="empty-state">Loading...</div></div>
+        </div></div>
+
+        <div class="sec-label">Schedule Your Own Meals</div>
+        <div class="card"><div class="card-body">
+          <div style="font-size:12px;color:var(--ink3);margin-bottom:12px">Plan meals in advance from Coach's Table — see what's in it before you commit to a day.</div>
+
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:5px">Which meal</div>
+          <select id="mealsched-title" onchange="previewSchedMeal()" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--radius-xs);font-size:14px;background:var(--soft);color:var(--ink);margin-bottom:8px">
+            <option value="">Loading recipes...</option>
+          </select>
+          <div id="mealsched-preview" style="display:none;background:var(--soft);border-radius:var(--radius-xs);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
+
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:5px">Which days</div>
+          <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="mealsched-days-row">
+            <div class="day-pill mealsched-day-pill" data-day="0" onclick="toggleMealSchedDay(0,this)">Sun</div>
+            <div class="day-pill mealsched-day-pill" data-day="1" onclick="toggleMealSchedDay(1,this)">Mon</div>
+            <div class="day-pill mealsched-day-pill" data-day="2" onclick="toggleMealSchedDay(2,this)">Tue</div>
+            <div class="day-pill mealsched-day-pill" data-day="3" onclick="toggleMealSchedDay(3,this)">Wed</div>
+            <div class="day-pill mealsched-day-pill" data-day="4" onclick="toggleMealSchedDay(4,this)">Thu</div>
+            <div class="day-pill mealsched-day-pill" data-day="5" onclick="toggleMealSchedDay(5,this)">Fri</div>
+            <div class="day-pill mealsched-day-pill" data-day="6" onclick="toggleMealSchedDay(6,this)">Sat</div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <div style="flex:1">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:5px">Starting</div>
+              <input id="mealsched-start-date" type="date" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--radius-xs);font-size:14px;background:var(--soft);color:var(--ink);box-sizing:border-box">
+            </div>
+            <div style="flex:1">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:5px">For how many weeks</div>
+              <input id="mealsched-weeks" type="number" min="1" max="26" value="4" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--radius-xs);font-size:14px;background:var(--soft);color:var(--ink);box-sizing:border-box">
+            </div>
+          </div>
+
+          <button class="action-btn" onclick="scheduleMyMeals()">Schedule It</button>
+          <div id="mealsched-status" style="font-size:12px;color:var(--ink3);margin-top:8px"></div>
         </div></div>
       </div>
     </div>
@@ -3497,6 +3546,7 @@ function renderHome() {
 
   // Community feed
   renderCommunityFeed();
+  loadUnifiedCalendar();
 }
 
 function renderCommunityFeed() {
@@ -3761,21 +3811,33 @@ function addSetToEx(exId) {
 // history already pick these up automatically with no extra wiring.
 let SCHED_DURATION = null;
 let SCHED_DAYS = new Set();
-
+let SCHED_ROUTINE_MAP = {};
 function initSchedulingUI() {
   const titleSel = document.getElementById('sched-title');
   if (titleSel && titleSel.options.length <= 1) {
     BUNDLES.forEach(b => {
       b.routines.forEach(r => {
+        const key = r.label + ' (' + b.name + ')';
         const opt = document.createElement('option');
-        opt.value = r.label + ' (' + b.name + ')';
+        opt.value = key;
         opt.textContent = r.label + ' — ' + b.name;
         titleSel.appendChild(opt);
+        SCHED_ROUTINE_MAP[key] = r.exercises;
       });
     });
   }
   const dateEl = document.getElementById('sched-start-date');
   if (dateEl && !dateEl.value) dateEl.value = todayET();
+}
+
+function previewSchedRoutine() {
+  const val = document.getElementById('sched-title').value;
+  const el = document.getElementById('sched-routine-preview');
+  const exercises = SCHED_ROUTINE_MAP[val];
+  if (!val || !exercises) { el.style.display = 'none'; return; }
+  el.innerHTML = '<div style="font-weight:700;margin-bottom:6px">What\'s in this workout:</div>' +
+    exercises.map(ex => `<div style="padding:3px 0;color:var(--ink3)">${esc(ex.name)} — ${ex.sets}x${esc(ex.reps)}${ex.rest?' · '+esc(ex.rest)+' rest':''}</div>`).join('');
+  el.style.display = 'block';
 }
 
 function setSchedDuration(min, el) {
@@ -3836,6 +3898,7 @@ async function scheduleMyWorkouts() {
     statusEl.textContent = '✓ Scheduled ' + dates.length + ' sessions through ' + dates[dates.length-1];
     statusEl.style.color = 'var(--green,#1E9E5A)';
     loadUpcomingSelfScheduled();
+    if (typeof loadUnifiedCalendar === 'function') loadUnifiedCalendar(true);
     SCHED_DAYS.clear();
     document.querySelectorAll('#sched-days-row .day-pill, #sched-duration-row .day-pill').forEach(p => p.classList.remove('active'));
     SCHED_DURATION = null;
@@ -3875,6 +3938,64 @@ async function cancelSelfScheduled(id) {
       body: JSON.stringify({ op:'update', table:'scheduled_sessions', values:{ status:'cancelled' }, where:{ id } }) });
     loadUpcomingSelfScheduled();
   } catch(e) {}
+}
+
+// ── MY CALENDAR — unified view of the client's own self-scheduled
+// workouts AND meals, grouped by date. Deliberately kept separate from
+// today-workout-card (the coach-assigned view), per Ted's direction:
+// "Their coaches planned days will be a separate tool the way it is now."
+// This is purely the client's own forward planning, collapsible so it
+// doesn't clutter Home for anyone who isn't using it.
+let MY_CAL_LOADED = false;
+function toggleMyCalendar() {
+  const body = document.getElementById('my-calendar-body');
+  const chevron = document.getElementById('my-calendar-chevron');
+  const opening = body.style.display === 'none';
+  body.style.display = opening ? 'block' : 'none';
+  chevron.textContent = opening ? '▴' : '▾';
+  if (opening && !MY_CAL_LOADED) loadUnifiedCalendar(true);
+}
+async function loadUnifiedCalendar(forceRender) {
+  if (!SESSION || !SESSION.client_id) return;
+  try {
+    const today = todayET();
+    const [sessRes, mealRes] = await Promise.all([
+      fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ op:'select', table:'scheduled_sessions', where:{ client_id: SESSION.client_id, source:'client' }, orderBy:'scheduled_date asc', limit:150 }) }).then(r=>r.json()),
+      fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ op:'select', table:'scheduled_meals', where:{ client_id: SESSION.client_id }, orderBy:'scheduled_date asc', limit:150 }) }).then(r=>r.json())
+    ]);
+    const sessions = (sessRes.results||[]).filter(s => s.scheduled_date >= today && s.status !== 'cancelled');
+    const meals = (mealRes.results||[]).filter(m => m.scheduled_date >= today && m.status !== 'cancelled');
+    MY_CAL_LOADED = true;
+
+    // Merge and group by date
+    const byDate = {};
+    sessions.forEach(s => { (byDate[s.scheduled_date] = byDate[s.scheduled_date]||[]).push({ kind:'workout', ...s }); });
+    meals.forEach(m => { (byDate[m.scheduled_date] = byDate[m.scheduled_date]||[]).push({ kind:'meal', ...m }); });
+    const dates = Object.keys(byDate).sort();
+
+    if (!forceRender && document.getElementById('my-calendar-body').style.display === 'none') return; // don't bother rendering if still collapsed and not forced
+
+    const body = document.getElementById('my-calendar-body');
+    if (!dates.length) {
+      body.innerHTML = '<div class="card"><div class="card-body"><div class="empty-state">Nothing self-scheduled yet — plan a workout in Training or a meal in Nutrition.</div></div></div>';
+      return;
+    }
+    body.innerHTML = '<div class="card"><div class="card-body">' +
+      dates.slice(0,60).map(dt => {
+        const items = byDate[dt];
+        const dLabel = new Date(dt+'T00:00:00Z').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
+          <div style="font-weight:700;font-size:12px;color:var(--red);margin-bottom:4px">${dLabel}</div>
+          ${items.map(it => it.kind==='workout'
+            ? `<div style="font-size:12px;padding:2px 0">🏋️ ${esc(it.program_name)}${it.duration_min?' · '+it.duration_min+' min':''}</div>`
+            : `<div style="font-size:12px;padding:2px 0">🍽️ ${esc(it.title)}${it.meal_type?' · '+esc(it.meal_type):''}</div>`
+          ).join('')}
+        </div>`;
+      }).join('') +
+      '</div></div>';
+  } catch(e) { /* non-fatal */ }
 }
 
 async function saveSelfLog() {
@@ -4713,7 +4834,74 @@ async function loadCoachsTable() {
     });
     renderCTFilters();
     renderCTList();
+    populateMealSchedDropdown();
   } catch(e) { if (el) el.innerHTML = '<div class="empty-state">Could not load Coach\'s Table</div>'; }
+}
+function populateMealSchedDropdown() {
+  const sel = document.getElementById('mealsched-title');
+  if (!sel || sel.dataset.populated) return;
+  sel.innerHTML = '<option value="">Choose a meal...</option>' +
+    CT_FLAT.map((r,i) => `<option value="${i}">${esc(r.name)} — ${r.meal_type}</option>`).join('');
+  sel.dataset.populated = '1';
+  const dateEl = document.getElementById('mealsched-start-date');
+  if (dateEl && !dateEl.value) dateEl.value = todayET();
+}
+function previewSchedMeal() {
+  const idx = document.getElementById('mealsched-title').value;
+  const el = document.getElementById('mealsched-preview');
+  const r = CT_FLAT[idx];
+  if (idx === '' || !r) { el.style.display = 'none'; return; }
+  const ingredients = (r.recipe && r.recipe.ingredients) || [];
+  el.innerHTML = '<div style="font-weight:700;margin-bottom:6px">' + Math.round(r.calories||0) + ' kcal · ' + Math.round(r.protein_g||0) + 'g protein</div>' +
+    '<div style="font-weight:700;margin-bottom:4px">Ingredients:</div>' +
+    ingredients.map(i => `<div style="padding:2px 0;color:var(--ink3)">${esc(i)}</div>`).join('');
+  el.style.display = 'block';
+}
+let MEALSCHED_DAYS = new Set();
+function toggleMealSchedDay(day, el) {
+  if (MEALSCHED_DAYS.has(day)) { MEALSCHED_DAYS.delete(day); el.classList.remove('active'); }
+  else { MEALSCHED_DAYS.add(day); el.classList.add('active'); }
+}
+async function scheduleMyMeals() {
+  const statusEl = document.getElementById('mealsched-status');
+  const idx = document.getElementById('mealsched-title').value;
+  const r = CT_FLAT[idx];
+  if (!r) { statusEl.textContent = 'Pick a meal first.'; statusEl.style.color = 'var(--red)'; return; }
+  if (!MEALSCHED_DAYS.size) { statusEl.textContent = 'Pick at least one day of the week.'; statusEl.style.color = 'var(--red)'; return; }
+  const startVal = document.getElementById('mealsched-start-date').value;
+  const weeks = parseInt(document.getElementById('mealsched-weeks').value, 10) || 4;
+  if (!startVal) { statusEl.textContent = 'Pick a start date.'; statusEl.style.color = 'var(--red)'; return; }
+
+  const dates = [];
+  const start = new Date(startVal + 'T00:00:00Z');
+  const totalDays = weeks * 7;
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(start);
+    d.setUTCDate(d.getUTCDate() + i);
+    if (MEALSCHED_DAYS.has(d.getUTCDay())) dates.push(d.toISOString().slice(0,10));
+  }
+  if (!dates.length) { statusEl.textContent = 'No matching dates in that range.'; statusEl.style.color = 'var(--red)'; return; }
+
+  statusEl.textContent = 'Scheduling ' + dates.length + ' meals...';
+  statusEl.style.color = 'var(--ink3)';
+  try {
+    for (const dt of dates) {
+      await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ op:'insert', table:'scheduled_meals', values:{
+          client_id: SESSION.client_id, scheduled_date: dt, meal_type: r.meal_type,
+          title: r.name, calories: r.calories||0, protein_g: r.protein_g||0,
+          carbs_g: r.carbs_g||0, fat_g: r.fat_g||0, source: 'coachs_table'
+        }})});
+    }
+    statusEl.textContent = '✓ Scheduled ' + dates.length + ' meals through ' + dates[dates.length-1];
+    statusEl.style.color = 'var(--green,#1E9E5A)';
+    MEALSCHED_DAYS.clear();
+    document.querySelectorAll('#mealsched-days-row .day-pill').forEach(p => p.classList.remove('active'));
+    if (typeof loadUnifiedCalendar === 'function') loadUnifiedCalendar(true);
+  } catch(e) {
+    statusEl.textContent = 'Could not schedule — try again.';
+    statusEl.style.color = 'var(--red)';
+  }
 }
 function ctExcludedTerms() {
   const mp = DATA.mealProfile || {};

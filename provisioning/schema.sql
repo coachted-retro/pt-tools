@@ -274,6 +274,21 @@ CREATE TABLE win_reactions (
 );
 CREATE TABLE workouts (   id INTEGER PRIMARY KEY AUTOINCREMENT,   client_id INTEGER NOT NULL REFERENCES clients(id),   workout_date TEXT,   title TEXT,   file_url TEXT,   exercises_json TEXT,   total_volume REAL,   notes TEXT,   source TEXT,   created_at TEXT DEFAULT (datetime('now')) );
 
+CREATE TABLE scheduled_meals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id INTEGER NOT NULL,
+  scheduled_date TEXT NOT NULL,
+  meal_type TEXT,
+  title TEXT NOT NULL,
+  calories INTEGER,
+  protein_g INTEGER,
+  carbs_g INTEGER,
+  fat_g INTEGER,
+  source_recipe_id INTEGER,
+  source TEXT DEFAULT 'coachs_table',
+  status TEXT DEFAULT 'scheduled',
+  created_at TEXT DEFAULT (datetime('now'))
+);
 -- Seed row for THIS club -- edit the values below before running, or run
 -- as-is and update via portal-admin.html/command-center.html afterward.
 INSERT INTO gyms (id, name, city, state, director, active, is_demo) VALUES (1, 'REPLACE WITH CLUB NAME', 'REPLACE WITH CITY', 'REPLACE WITH STATE', 'REPLACE WITH DIRECTOR NAME', 1, 0);
