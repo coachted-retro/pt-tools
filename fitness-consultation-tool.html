@@ -1821,7 +1821,14 @@
             <textarea id="nutrition-other" rows="2" placeholder="e.g. No cilantro, vegetarian on weekends, kosher..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;resize:vertical;font-family:var(--font);"></textarea>
           </div>
 
-          <button class="btn btn-primary btn-full" onclick="showTerms()">
+          <div style="margin-bottom:16px;padding:12px;background:var(--surface);border:1px solid var(--border2);border-radius:8px;">
+            <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:12px;color:var(--text2);line-height:1.5;">
+              <input type="checkbox" id="nutrition-disclaimer-ack" style="margin-top:2px;flex-shrink:0;">
+              <span>I understand that any meal or nutrition suggestions provided are general guidance only, not medical advice, and I should check with my doctor regarding what's appropriate for my specific body and health.</span>
+            </label>
+          </div>
+
+          <button class="btn btn-primary btn-full" onclick="continueToEnrollmentWithDisclaimerCheck()">
             Continue to Enrollment →
           </button>
         </div>
@@ -3129,6 +3136,8 @@ async function saveNutritionProfileIfApplicable() {
 
   var byCat = getExcludedByCategory();
   var otherNotes = (document.getElementById('nutrition-other') || {}).value || '';
+  var ackEl = document.getElementById('nutrition-disclaimer-ack');
+  var disclaimerNote = (ackEl && ackEl.checked) ? ('Nutrition disclaimer acknowledged ' + new Date().toISOString()) : '';
 
   // Auto-calculate maintenance calories + macros from this consultation's
   // own InBody numbers (Katch-McArdle, uses real lean mass -- same formula
@@ -3160,6 +3169,8 @@ async function saveNutritionProfileIfApplicable() {
 
   // One row per client: replace if a profile already exists, insert if not
   var existingProfile = await dbCall({ op:'select', table:'meal_profiles', where:{ client_id: clientId }, limit:1 });
+  var priorNotes = (existingProfile.results && existingProfile.results[0] && existingProfile.results[0].notes) || '';
+  var combinedNotes = [priorNotes, disclaimerNote].filter(Boolean).join(' | ');
   var profileValues = {
     client_id: clientId,
     package: pkgDbValue(),
@@ -3169,6 +3180,7 @@ async function saveNutritionProfileIfApplicable() {
     excluded_fruits: byCat.fruits.join(', '),
     conditions: byCat.conditions.join(', '),
     allergies: otherNotes,
+    notes: combinedNotes,
     updated_at: new Date().toISOString()
   };
   if (calcCalories) { profileValues.calories = calcCalories; profileValues.protein_g = calcProtein; profileValues.carbs_g = calcCarbs; profileValues.fat_g = calcFat; }
@@ -4248,6 +4260,16 @@ function showPostEnrollConfirmation(clientName) {
 }
 
 // Override showTerms to use new flow
+function continueToEnrollmentWithDisclaimerCheck() {
+  var ack = document.getElementById('nutrition-disclaimer-ack');
+  if (ack && !ack.checked) {
+    alert('Please check the box confirming they understand the nutrition suggestions are general guidance only, not medical advice, before continuing.');
+    ack.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  showTerms();
+}
+
 function showTerms() {
   var tp = document.getElementById('terms-panel');
   if (tp) {
