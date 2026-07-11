@@ -69,30 +69,30 @@ variable name `PHOTOS`).
 
 ## Step 6: Point the frontend files at the new Worker
 
-46 files reference the Fairless Hills worker URL
-(`broken-cake-e9c2.tedscholl.workers.dev`). Most declare it as a
-constant near the top of the `<script>` section — but the constant name
-varies (`WORKER`, `BIZ_WORKER`, `CAL_BASE`, `FFU_WORKER` all exist), and
-two files (`fitness-consultation-tool.html`,
-`fitness-monthly-checkin.html`) have it hardcoded inline with no clean
-constant at all, confirmed by checking directly rather than assuming.
+As of July 11, 2026 this is a ONE-LINE change, not a 47-file hunt.
 
-Don't search for the constant names — search for the literal string
-`broken-cake-e9c2` across every file, and replace every hit with the new
-club's worker URL. That's the only search guaranteed not to miss one:
+Every page loads a single shared file, `config.js`, which is the only
+place the Worker URL is ever defined:
 
+```js
+const RETRO_WORKER_URL = 'https://broken-cake-e9c2.tedscholl.workers.dev';
 ```
-grep -l "broken-cake-e9c2" *.html
-```
-run that first to see the full list (46 files as of tonight), then
-replace the domain in every one of them.
 
-This is the single most error-prone manual step — a missed file means
-that one page silently talks to Fairless Hills' database instead of this
-club's. Worth a careful pass, then a spot check of a few different
-pages afterward to confirm they're hitting the new Worker (check the
-Network tab in browser dev tools, or just confirm the club's own name
-shows up correctly per Step 8).
+Open `config.js`, change that one URL to this club's new Worker's URL,
+save. That's it — every one of the 47 pages that talks to the Worker
+reads from this same constant now, so nothing else needs to be touched.
+
+(History: this used to require finding and replacing a hardcoded URL
+across 47 files individually, with 4 different inconsistent constant
+names. That was flagged as the single most error-prone manual step in
+the whole process. It's fixed at the code level now — don't reintroduce
+a hardcoded URL in any new file going forward; always reference
+`RETRO_WORKER_URL` from `config.js` instead.)
+
+Still worth a quick spot check after changing it: open a couple of
+different pages and confirm they're hitting the new Worker (Network tab
+in browser dev tools), or just confirm the club's own name shows up
+correctly per Step 8.
 
 ## Step 7: One person from the club logs in and runs Club Setup
 

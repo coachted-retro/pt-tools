@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 (function(){
   var session = null;
@@ -56,7 +57,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   </div>
 </div>
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 async function load(){

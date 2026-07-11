@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
@@ -496,7 +497,7 @@ table.log-table .del-btn:hover{color:var(--red)}
 <div class="toast" id="toast"></div>
 
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 const TODAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 const outreachCounts = { call:0, text:0, email:0, floor_pull:0, appt_booked:0 };
 const notes = [];
@@ -988,7 +989,7 @@ async function submitEOD() {
 // Load MEA and Floor Tech from staff_roster D1 table
 async function loadRosterNames() {
   try {
-    const r = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    const r = await fetch(RETRO_WORKER_URL + '/db', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({op:'select', table:'staff_roster', where:{active:1, gym_id:1}, orderBy:'name asc', limit:100})
     });

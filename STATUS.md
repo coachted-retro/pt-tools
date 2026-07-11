@@ -1,4 +1,4 @@
-# PT TOOLS — STATUS (Last updated: July 9-10, 2026, end of session)
+# PT TOOLS — STATUS (Last updated: July 11, 2026, end of session)
 
 ## READ THIS FIRST, BEFORE TOUCHING ANYTHING
 If you are a new Claude session picking this up: do not build, fix, or change
@@ -7,6 +7,20 @@ in full, and read the actual code for whatever you're about to touch, before
 making any change. Ted has been burned repeatedly by sessions that acted on
 partial understanding. If you are not sure what a section below means, say so
 and ask, rather than guessing and building on top of a wrong guess.
+
+## CLOUDFLARE CONNECTOR — WHAT IT CAN AND CANNOT ACTUALLY DO
+Verified directly against the live tool list July 11, 2026 (not assumed, not
+carried over from a chat summary). Ted has a Cloudflare Developer Platform
+connector genuinely connected with real account access. Within that:
+- CAN do directly: create/list/query D1 databases, create/list/get/delete R2
+  buckets, list Workers, read a Worker's live deployed code.
+- CANNOT do, no tool exists for this: deploy or update a Worker's code,
+  create or change a Worker's bindings (D1/R2/KV), or set/change a Worker's
+  environment variables or secrets. These three remain manual steps in the
+  Cloudflare dashboard for a human to do, for every club, every time.
+If a session is ever unsure whether one of these is possible, check the
+actual tool list before promising Ted something that can't be delivered --
+don't assume access has changed since this note without checking first.
 
 ---
 

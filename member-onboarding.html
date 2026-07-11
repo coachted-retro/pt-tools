@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 (function(){
   var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead","MEA"];
@@ -284,7 +285,7 @@ h1, h2, h3, .card-title, .step-title { font-family: var(--font-display); }
 </div>
 
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 let currentPage = 0;
 let clientId = null;
 let selectedTier = null;

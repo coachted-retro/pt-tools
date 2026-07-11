@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coverage Board — Retro Fitness PT</title>
@@ -117,7 +118,7 @@ h3{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:1
 </div>
 
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 let VIEW_MONTH = new Date();
 let SELECTED_DATE = null;
 let STAFF_ROSTER = [];

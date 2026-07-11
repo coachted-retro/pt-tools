@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 (function(){
   var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead"];
@@ -66,7 +67,7 @@ td{padding:8px 10px;font-size:13px;border-bottom:1px solid var(--line)}
   <div class="status" id="status"></div>
 </div>
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 const RELATED_TABLES = ['pt_sales', 'gym_quotas', 'board_notes', 'huddle_messages', 'presence_checkins', 'gym_events', 'pt_reps'];
 let DEMO_GYMS = [];
 let RELATED_COUNTS = {};

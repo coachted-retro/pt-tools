@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Staff Login — Retro Strong</title>
@@ -66,7 +67,7 @@ h1{font-family:'Oswald';font-weight:800;font-size:22px;text-transform:uppercase;
   <div class="footer"><img src="icons-strong/icon-192.png" alt="" onerror="this.style.display='none'"> Powered by <b style="color:var(--red)">Retro Strong</b></div>
 </div>
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 
 // Already logged in? Skip straight through.
 (function() {

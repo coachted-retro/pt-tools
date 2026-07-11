@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 
@@ -1005,7 +1006,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
 // ══════════════════════════════════════════════════
 // CONSTANTS
 // ══════════════════════════════════════════════════
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write';
+const WORKER = RETRO_WORKER_URL + '/sheets-write';
 const APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycby79Hg7mnge7SWS41RsDz9_Wjtx5DkMbQPBrszYaVqiD3eKwxvc1Zo73rInH365E0-2yw/exec';
 const SHEET_LINK = 'https://docs.google.com/spreadsheets/d/1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g/edit';
 const PROSPECT_TAB = 'Prospects';
@@ -1101,7 +1102,7 @@ async function saveLeadToD1(prospect){
     const names = (prospect.name||'').trim().split(' ');
     const first = names.shift() || '';
     const last = names.join(' ');
-    const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    const res = await fetch(RETRO_WORKER_URL + '/db', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ op:'insert', table:'leads', values:{
         business_name: prospect.name, first_name: first, last_name: last,
@@ -1132,7 +1133,7 @@ async function syncFromSheet() {
   try {
     // --- Prospects ---
     // Read from D1 leads table
-    const pResp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    const pResp = await fetch(RETRO_WORKER_URL + '/db', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({op:'select', table:'leads', orderBy:'created_at desc', limit:3000})
     });
@@ -1173,7 +1174,7 @@ async function syncFromSheet() {
     // --- Club OS re-engagement contacts (past trial visitors who never
     // signed up) — imported once into the D1 prospect_log table, never
     // previously read back into this tool since it only read localStorage.
-    const plResp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    const plResp = await fetch(RETRO_WORKER_URL + '/db', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({op:'select', table:'prospect_log', orderBy:'id desc', limit:500})
     });
@@ -1240,7 +1241,7 @@ async function syncFromSheet() {
     try {
       const leadIdSet = new Set(prospects.filter(p=>p._d1_id).map(p=>p._d1_id));
       const plIdSet = new Set(prospects.filter(p=>p._prospect_log_id).map(p=>p._prospect_log_id));
-      const tpResp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+      const tpResp = await fetch(RETRO_WORKER_URL + '/db', {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({op:'select', table:'touchpoints', orderBy:'contact_date desc', limit:2000})
       });
@@ -1436,7 +1437,7 @@ function renderMemberStatus(p) {
 }
 
 async function fetchAllClients() {
-  const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+  const res = await fetch(RETRO_WORKER_URL + '/db', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ op:'select', table:'clients', limit:3000 })
   });
@@ -1484,7 +1485,7 @@ async function updateProspectMemberFields(p, clientId) {
   const table = p._d1_id ? 'leads' : (p._prospect_log_id ? 'prospect_log' : null);
   const id = p._d1_id || p._prospect_log_id;
   if (!table || !id) return { ok:false, error:'This prospect has no linked D1 record (no _d1_id or _prospect_log_id) — cannot save.' };
-  const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+  const res = await fetch(RETRO_WORKER_URL + '/db', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ op:'update', table, values:{ is_member: 1, member_client_id: clientId }, where:{ id } })
   });
@@ -1531,7 +1532,7 @@ async function submitQuickCreateMember() {
   const gender = document.getElementById('mc-gender').value;
   if (!first) { alert('First name is required.'); return; }
   try {
-    const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    const res = await fetch(RETRO_WORKER_URL + '/db', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ op:'insert', table:'clients', values:{
         first_name: first, last_name: last, phone: phone||null, email: email||null,
@@ -1625,7 +1626,7 @@ async function addTouchpoint() {
   let ok = true;
   if (sourceTable && leadId) {
     try {
-      const res = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+      const res = await fetch(RETRO_WORKER_URL + '/db', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ op:'insert', table:'touchpoints', values:{
           lead_id: leadId, source_table: sourceTable, contact_date: loggedAt,
@@ -1997,7 +1998,7 @@ function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
 function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
 
 // ---- Google Calendar (Club OS) feed overlay ----
-const CAL_BASE = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const CAL_BASE = RETRO_WORKER_URL;
 let gcalAppts = [];
 const GCAL_TYPES = [
   {key:'followup', label:'6-Week Follow-Up', file:'fitness-followup-tool.html', rx:/6[\s-]*week|six[\s-]*week|follow[\s-]*up|re[\s-]*engage/i},
@@ -2233,7 +2234,7 @@ syncFromSheet(); // pull Sheet → localStorage on every load
 // business-lead drawer that used to live in command-center.html,
 // consolidated here so People and Businesses share one card.
 // ══════════════════════════════════════════════════
-const BIZ_WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const BIZ_WORKER = RETRO_WORKER_URL;
 let BIZ_LEADS = [];
 let BIZ_SELECTED = null;
 

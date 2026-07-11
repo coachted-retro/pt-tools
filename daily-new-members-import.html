@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 (function(){
   var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead"];
@@ -75,7 +76,7 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 let PARSED_ROWS = [];
 
 // Report rows look like:

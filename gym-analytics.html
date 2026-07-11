@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 (function(){
   var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead"];
@@ -296,7 +297,7 @@ function exportReportCsv() {
   URL.revokeObjectURL(url);
 }
 
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 const CLUB_SLUG = (new URLSearchParams(window.location.search).get('club') || 'fairless-hills').toLowerCase();
 const CLUB_GYM_ID = {
   'fairless-hills': 1, 'forest-hills': 2, 'glendale': 3, 'jersey-city': 4, 'cedar-city': 5,

@@ -2,6 +2,7 @@
 <!-- PT Tools v1779999736 -->
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="version" content="v3-sheets-proxy">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1014,7 +1015,7 @@
       <label>Google Sheets ID</label>
       <input type="text" id="cfg-sheet-id" value="1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g">
       <div class="config-note">Data is saved to Cloudflare D1 via the Worker — no Sheets connection needed.</div>
-      <div style="background:#1a2a1a;border:1px solid #2a4a2a;border-radius:8px;padding:10px 14px;font-size:12px;color:#4ade80;">✓ Connected to D1 database via broken-cake-e9c2.tedscholl.workers.dev</div>
+      <div style="background:#1a2a1a;border:1px solid #2a4a2a;border-radius:8px;padding:10px 14px;font-size:12px;color:#4ade80;">✓ Connected to D1 database</div>
     </div>
 
     <div class="config-field">
@@ -2104,7 +2105,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
 
 
 function getApiUrl() {
-  return getCfg('proxyUrl') || 'https://broken-cake-e9c2.tedscholl.workers.dev';
+  return getCfg('proxyUrl') || RETRO_WORKER_URL;
 }
 
 function getApiHeaders(apiKey) {
@@ -2135,7 +2136,7 @@ function saveConfig() {
     localStorage.setItem(p+'apiKey', 'worker');
     localStorage.setItem(p+'gKey', 'AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE');
     localStorage.setItem(p+'configured', '1');
-    localStorage.setItem(p+'proxyUrl', 'https://broken-cake-e9c2.tedscholl.workers.dev');
+    localStorage.setItem(p+'proxyUrl', RETRO_WORKER_URL);
   });
   var el = document.getElementById('config-overlay');
   if (el) el.style.display = 'none';
@@ -3008,7 +3009,7 @@ async function createClientFolder(name, gKey, assessmentContent) {
 }
 async function dbCall(body) {
   try {
-    var resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev/db', {
+    var resp = await fetch(RETRO_WORKER_URL + '/db', {
       method: 'POST', headers: {'Content-Type': 'text/plain'},
       body: JSON.stringify(body)
     });
@@ -3365,7 +3366,7 @@ async function finalizeDecline() {
         dbCall({ op:'insert', table:'followups', values: { client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' } }).catch(function(){});
         // Actually put it on the coach's calendar, not just the followups log
         var dow = followDate.getDay();
-        fetch('https://broken-cake-e9c2.tedscholl.workers.dev/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
+        fetch(RETRO_WORKER_URL + '/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({
             client_id: clientId, program_name: '6-Week Follow-Up', focus_notes: 'Re-engagement — declined ' + todayET() + ', reason: ' + reason,
             weekdays: [dow], start_date: followDate.toISOString().slice(0,10), end_date: followDate.toISOString().slice(0,10),
@@ -4425,7 +4426,7 @@ Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType ===
   // preflight the Worker did not answer, which surfaced as "Failed to fetch".
   let resp;
   try {
-    resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev', {
+    resp = await fetch(RETRO_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
@@ -4436,7 +4437,7 @@ Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType ===
       })
     });
   } catch (netErr) {
-    throw new Error('Could not reach the report service. Confirm the Cloudflare Worker (broken-cake-e9c2) is deployed and its API key is set in Settings > Variables.');
+    throw new Error('Could not reach the report service. Confirm the Cloudflare Worker is deployed and its API key is set in Settings > Variables.');
   }
   const data = await resp.json();
   if (data.error) throw new Error(data.error.message);

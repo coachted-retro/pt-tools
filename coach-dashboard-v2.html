@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PT Dashboard · Retro Fitness</title>
@@ -600,7 +601,7 @@
 <script>
 // ── CONFIG ────────────────────────────────────────────────────
 // APPS_SCRIPT removed — check-ins now read from D1 via loadCheckins()
-const WORKER     = 'https://broken-cake-e9c2.tedscholl.workers.dev/sheets-write';
+const WORKER     = RETRO_WORKER_URL + '/sheets-write';
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 const CI_SHEET   = '1kHR4xvs1j-_QtWmOu-XodBYpLbtDUCliGRb21XIOxCs';
 const PT_PER_SESSION = 250; // estimated monthly revenue per client for risk calc
@@ -621,7 +622,7 @@ var calCurrentDate = new Date();
 var scheduledSessions = JSON.parse(localStorage.getItem('coach_scheduled_sessions') || '[]');
 
 // ── Google Calendar (Club OS) feed overlay ──
-const CAL_BASE = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const CAL_BASE = RETRO_WORKER_URL;
 var feedAppts = [];
 const FEED_TYPES = [
   {rx:/6[\s-]*week|six[\s-]*week|follow[\s-]*up|re[\s-]*engage/i, file:'fitness-followup-tool.html', kind:'followup'},

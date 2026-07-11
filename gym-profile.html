@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
@@ -79,7 +80,7 @@ tr:last-child td{border-bottom:none}
   <div class="card" id="eod-card"></div>
 </div>
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 const params = new URLSearchParams(location.search);
 const GYM_ID = params.get('gym_id') || '1';
 const MONTH = params.get('month') || new Date().toISOString().slice(0,7);

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 (function(){
   var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead","PT Coach","Floor Tech"];
@@ -555,7 +556,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
    GYM FLOOR — Session 1 core
    Offline-first: every mutation lands in localStorage first, syncs to D1
    ===================================================================== */
-const WORKER='https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER=RETRO_WORKER_URL;
 const LS_QUEUE='gf_sync_queue';
 const LS_ACTIVE='gf_active_session';
 const LS_CLIENTS='gf_clients_cache';

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 (function(){
   var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead","PT Coach"];
@@ -59,7 +60,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 </div>
 
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 const NEEDS_COVERAGE_ROLES = ['MEA', 'Floor Tech'];
 const params = new URLSearchParams(window.location.search);

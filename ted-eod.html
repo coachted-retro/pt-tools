@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
@@ -198,7 +199,7 @@ textarea{resize:vertical;min-height:72px}
 <div class="toast" id="toast"></div>
 
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 // UTC-based "today" (new Date().toISOString()) breaks every evening after
 // 8pm Eastern, once UTC has rolled to the next calendar day while it's
 // still "today" here -- consultations/follow-ups/check-ins logged earlier

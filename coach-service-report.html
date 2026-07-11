@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
@@ -54,7 +55,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="card" id="client-list"><div class="ok">Select a coach above to see this month's engagement.</div></div>
 </div>
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 document.getElementById('month-select').value = new Date().toISOString().slice(0,7);
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 

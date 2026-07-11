@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
@@ -191,7 +192,7 @@ table.log-table input,table.log-table select{background:#fff;padding:5px 7px;fon
 <div class="toast" id="toast"></div>
 
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 const TODAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 const counts = {call:0, text:0, floor_pull:0, appt_booked:0};
 document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});

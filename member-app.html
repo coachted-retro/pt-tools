@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
@@ -886,7 +887,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 </div>
 
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 // Single source of truth for "today" throughout this file. Every prior
 // use of todayET() was silently wrong every
 // evening after 8pm Eastern (UTC rolls to the next calendar day while

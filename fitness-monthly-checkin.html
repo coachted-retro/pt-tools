@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Monthly PT Check-In v1780078195</title>
@@ -636,7 +637,7 @@
 <script>
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 
-function getApiUrl(){ return getCfg('proxyUrl')||'https://broken-cake-e9c2.tedscholl.workers.dev'; }
+function getApiUrl(){ return getCfg('proxyUrl')||RETRO_WORKER_URL; }
 function getApiHeaders(){ return {'Content-Type':'application/json'}; }
 
 const NOTIFY_EMAILS='tedscholl@gmail.com, healthylifewithdani1@gmail.com';
@@ -650,7 +651,7 @@ function saveConfig(){
     localStorage.setItem(p+'apiKey','worker');
     localStorage.setItem(p+'gKey','AIzaSyCkuGQijhzaeSJDRxOHr7wdGeNWcngBEnE');
     localStorage.setItem(p+'configured','1');
-    localStorage.setItem(p+'proxyUrl','https://broken-cake-e9c2.tedscholl.workers.dev');
+    localStorage.setItem(p+'proxyUrl',RETRO_WORKER_URL);
   });
   var el=document.getElementById('config-overlay'); if(el) el.style.display='none';
 }
@@ -1109,7 +1110,7 @@ Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType ===
   // preflight the Worker did not answer, which surfaced as "Failed to fetch".
   let resp;
   try {
-    resp = await fetch('https://broken-cake-e9c2.tedscholl.workers.dev', {
+    resp = await fetch(RETRO_WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
@@ -1120,7 +1121,7 @@ Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType ===
       })
     });
   } catch (netErr) {
-    throw new Error('Could not reach the report service. Confirm the Cloudflare Worker (broken-cake-e9c2) is deployed and its API key is set in Settings > Variables.');
+    throw new Error('Could not reach the report service. Confirm the Cloudflare Worker is deployed and its API key is set in Settings > Variables.');
   }
   const data = await resp.json();
   if (data.error) throw new Error(data.error.message);

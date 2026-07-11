@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="config.js"></script>
 <script>
 (function(){
   var ALLOWED = ["Ted Scholl","Danielle Pellegrini","Bill Zolnowski","Sarah Aldrich"];
@@ -76,7 +77,7 @@
   <div id="cards"></div>
 </div>
 <script>
-const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+const WORKER = RETRO_WORKER_URL;
 
 const DATA = [
   { name:'Anthony Smith',
