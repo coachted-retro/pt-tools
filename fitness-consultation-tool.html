@@ -3130,6 +3130,34 @@ async function saveNutritionProfileIfApplicable() {
   var byCat = getExcludedByCategory();
   var otherNotes = (document.getElementById('nutrition-other') || {}).value || '';
 
+  // Auto-calculate maintenance calories + macros from this consultation's
+  // own InBody numbers (Katch-McArdle, uses real lean mass -- same formula
+  // meal-plans.html's "Suggest from InBody + Intake" button already used,
+  // just run automatically now instead of requiring a coach to come back
+  // and click it manually afterward). Only computed if we actually have
+  // both weight and lean mass on file; otherwise left blank rather than
+  // guessing, same as the manual version already did.
+  var calcCalories = null, calcProtein = null, calcCarbs = null, calcFat = null;
+  var weightLb = parseFloat(gv('weight')), leanLb = parseFloat(gv('lean-mass'));
+  if (weightLb && leanLb) {
+    var leanKg = leanLb * 0.453592;
+    var bmr = 370 + 21.6 * leanKg;
+    var freqTier = FREQ_TIERS[selectedPkg];
+    var daysPerWeek = freqTier ? Math.max(1, Math.round(freqTier.sessions / 4)) : 3;
+    var activityMult = daysPerWeek >= 6 ? 1.65 : daysPerWeek >= 5 ? 1.55 : daysPerWeek >= 3 ? 1.45 : 1.35;
+    var maintenance = Math.round(bmr * activityMult);
+    var goalsText = (gv('goals') || '').toLowerCase();
+    var calories = maintenance, proteinPerLb = 0.8, carbPct = 0.40, fatPct = 0.30;
+    if (/lose|cut|fat loss|shred|lean out/.test(goalsText)) { calories = Math.round(maintenance*0.8); proteinPerLb=1.0; carbPct=0.35; fatPct=0.30; }
+    else if (/build|muscle|gain|bulk|mass/.test(goalsText)) { calories = Math.round(maintenance*1.1); proteinPerLb=0.9; carbPct=0.45; fatPct=0.25; }
+    calcProtein = Math.round(weightLb * proteinPerLb);
+    var proteinCal = calcProtein * 4;
+    var remaining = Math.max(calories - proteinCal, 0);
+    calcCarbs = Math.round((remaining * (carbPct/(carbPct+fatPct))) / 4);
+    calcFat = Math.round((remaining * (fatPct/(carbPct+fatPct))) / 9);
+    calcCalories = calories;
+  }
+
   // One row per client: replace if a profile already exists, insert if not
   var existingProfile = await dbCall({ op:'select', table:'meal_profiles', where:{ client_id: clientId }, limit:1 });
   var profileValues = {
@@ -3143,6 +3171,7 @@ async function saveNutritionProfileIfApplicable() {
     allergies: otherNotes,
     updated_at: new Date().toISOString()
   };
+  if (calcCalories) { profileValues.calories = calcCalories; profileValues.protein_g = calcProtein; profileValues.carbs_g = calcCarbs; profileValues.fat_g = calcFat; }
 
   if (existingProfile.results && existingProfile.results[0]) {
     await dbCall({ op:'update', table:'meal_profiles', values: profileValues, where:{ client_id: clientId } });
