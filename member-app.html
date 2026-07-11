@@ -608,6 +608,15 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
           </select>
           <div id="sched-routine-preview" style="display:none;background:var(--soft);border-radius:var(--radius-xs);padding:10px 12px;margin-bottom:12px;font-size:12px"></div>
 
+          <div onclick="toggleCustomRoutineBuilder()" style="font-size:12px;color:var(--red);font-weight:700;cursor:pointer;margin-bottom:12px">+ Or build your own routine</div>
+          <div id="custom-routine-builder" style="display:none;margin-bottom:12px">
+            <input id="custom-routine-name" type="text" placeholder="Name this routine (optional)" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--radius-xs);font-size:14px;background:var(--soft);color:var(--ink);margin-bottom:8px;box-sizing:border-box">
+            <input id="custom-ex-search" type="text" placeholder="Search exercises..." oninput="searchCustomExercises()" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--radius-xs);font-size:14px;background:var(--soft);color:var(--ink);margin-bottom:6px;box-sizing:border-box">
+            <div id="custom-ex-results" style="max-height:160px;overflow-y:auto;margin-bottom:10px"></div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:6px">Your Routine</div>
+            <div id="custom-routine-list"><div style="font-size:12px;color:var(--ink3)">No exercises added yet — search above to add some.</div></div>
+          </div>
+
           <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--ink3);margin-bottom:5px">Duration</div>
           <div style="display:flex;gap:8px;margin-bottom:12px" id="sched-duration-row">
             <div class="day-pill sched-dur-pill" data-min="30" onclick="setSchedDuration(30,this)">30 min</div>
@@ -3838,6 +3847,64 @@ function previewSchedRoutine() {
   el.innerHTML = '<div style="font-weight:700;margin-bottom:6px">What\'s in this workout:</div>' +
     exercises.map(ex => `<div style="padding:3px 0;color:var(--ink3)">${esc(ex.name)} — ${ex.sets}x${esc(ex.reps)}${ex.rest?' · '+esc(ex.rest)+' rest':''}</div>`).join('');
   el.style.display = 'block';
+  // Picking a canned routine and building custom are mutually exclusive
+  document.getElementById('custom-routine-builder').style.display = 'none';
+  CUSTOM_ROUTINE = [];
+}
+
+// ── CUSTOM ROUTINE BUILDER — same exercise database and sets/reps/rest
+// shape used everywhere else in the app (matches what the coach's AI
+// Program Builder produces), so a client building their own routine and
+// a coach assigning one are built the same way. Sets default to 3,
+// always adjustable, full list always visible at once -- never one
+// exercise at a time.
+let CUSTOM_ROUTINE = [];
+function toggleCustomRoutineBuilder() {
+  const el = document.getElementById('custom-routine-builder');
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? 'block' : 'none';
+  if (opening) {
+    document.getElementById('sched-title').value = '';
+    document.getElementById('sched-routine-preview').style.display = 'none';
+  }
+}
+function searchCustomExercises() {
+  const q = document.getElementById('custom-ex-search').value.trim().toLowerCase();
+  const el = document.getElementById('custom-ex-results');
+  if (q.length < 2) { el.innerHTML = ''; return; }
+  const matches = EXERCISE_DB.filter(e => e.name.toLowerCase().includes(q)).slice(0, 8);
+  if (!matches.length) { el.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:6px 0">No matches</div>'; return; }
+  el.innerHTML = matches.map(e => `<div onclick='addCustomExercise(${JSON.stringify(e.name)})' style="padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px">${esc(e.name)} <span style="color:var(--ink3);font-size:11px">· ${esc(e.body_part)}</span></div>`).join('');
+}
+function addCustomExercise(name) {
+  if (CUSTOM_ROUTINE.some(x => x.name === name)) return;
+  CUSTOM_ROUTINE.push({ name, sets: 3, reps: '8-12', rest: 90 });
+  document.getElementById('custom-ex-search').value = '';
+  document.getElementById('custom-ex-results').innerHTML = '';
+  renderCustomRoutineList();
+}
+function bumpCustomSets(idx, delta) {
+  CUSTOM_ROUTINE[idx].sets = Math.max(1, (CUSTOM_ROUTINE[idx].sets||3) + delta);
+  renderCustomRoutineList();
+}
+function removeCustomExercise(idx) {
+  CUSTOM_ROUTINE.splice(idx, 1);
+  renderCustomRoutineList();
+}
+function renderCustomRoutineList() {
+  const el = document.getElementById('custom-routine-list');
+  if (!CUSTOM_ROUTINE.length) { el.innerHTML = '<div style="font-size:12px;color:var(--ink3)">No exercises added yet — search above to add some.</div>'; return; }
+  el.innerHTML = CUSTOM_ROUTINE.map((ex,i) => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:8px;padding:8px 10px;margin-bottom:6px">
+      <div style="flex:1;font-size:13px">${esc(ex.name)}</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="bumpCustomSets(${i},-1)" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer">−</button>
+        <span style="font-size:13px;font-weight:700;min-width:20px;text-align:center">${ex.sets}</span>
+        <button onclick="bumpCustomSets(${i},1)" style="width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:14px;cursor:pointer">+</button>
+        <span style="font-size:11px;color:var(--ink3)">sets</span>
+      </div>
+      <span onclick="removeCustomExercise(${i})" style="color:var(--red);cursor:pointer;font-size:16px;padding-left:4px">&times;</span>
+    </div>`).join('');
 }
 
 function setSchedDuration(min, el) {
@@ -3870,7 +3937,21 @@ async function scheduleMyWorkouts() {
   const startVal = document.getElementById('sched-start-date').value;
   const weeks = parseInt(document.getElementById('sched-weeks').value, 10) || 4;
   if (!startVal) { statusEl.textContent = 'Pick a start date.'; statusEl.style.color = 'var(--red)'; return; }
-  const title = document.getElementById('sched-title').value || 'Self-Guided Workout';
+
+  // A built custom routine takes priority over the canned-bundle dropdown.
+  // Either way, the same {name,sets,reps,rest} structure gets stored in
+  // exercises_json -- the same field and shape coach-assigned sessions
+  // already use, so both build the same way and both count on the full
+  // exercise list, not a name-only summary.
+  let title, exercisesJson;
+  if (CUSTOM_ROUTINE.length) {
+    title = (document.getElementById('custom-routine-name').value || '').trim() || 'Custom Workout';
+    exercisesJson = JSON.stringify(CUSTOM_ROUTINE);
+  } else {
+    const selVal = document.getElementById('sched-title').value;
+    title = selVal || 'Self-Guided Workout';
+    exercisesJson = selVal && SCHED_ROUTINE_MAP[selVal] ? JSON.stringify(SCHED_ROUTINE_MAP[selVal]) : null;
+  }
 
   // Walk every date from start through (weeks * 7) days, keep the ones
   // whose day-of-week matches what was picked.
@@ -3892,7 +3973,7 @@ async function scheduleMyWorkouts() {
         body: JSON.stringify({ op:'insert', table:'scheduled_sessions', values:{
           client_id: SESSION.client_id, scheduled_date: dt, program_name: title,
           focus_notes: 'Self-scheduled', status: 'scheduled', created_by: 'client',
-          duration_min: SCHED_DURATION, source: 'client'
+          duration_min: SCHED_DURATION, source: 'client', exercises_json: exercisesJson
         }})});
     }
     statusEl.textContent = '✓ Scheduled ' + dates.length + ' sessions through ' + dates[dates.length-1];
@@ -3902,6 +3983,9 @@ async function scheduleMyWorkouts() {
     SCHED_DAYS.clear();
     document.querySelectorAll('#sched-days-row .day-pill, #sched-duration-row .day-pill').forEach(p => p.classList.remove('active'));
     SCHED_DURATION = null;
+    CUSTOM_ROUTINE = [];
+    document.getElementById('custom-routine-builder').style.display = 'none';
+    renderCustomRoutineList();
   } catch(e) {
     statusEl.textContent = 'Could not schedule — try again.';
     statusEl.style.color = 'var(--red)';

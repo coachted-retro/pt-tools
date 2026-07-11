@@ -1948,7 +1948,17 @@ async function saveExercisesAsTemplate(exerciseNames, defaultName){
   const name = prompt('Template name:', defaultName || '');
   if (!name) return;
   const scope = confirm('Make this template available for ALL clients?\nOK = all clients, Cancel = just ' + ((CLIENT.first_name||'')+' '+(CLIENT.last_name||'')).trim());
-  const exs = exerciseNames.map(n => ({name: n, group: null}));
+  // exerciseNames may be plain strings OR structured {name,sets,reps,rest/rest_s,note}
+  // objects -- always normalize to the same shape so sets/reps survive
+  // regardless of which caller passed what, and default sets to 3 when
+  // nothing more specific is known, per the standard used everywhere else.
+  const exs = exerciseNames.map(n => {
+    if (typeof n === 'string') return { name: n, sets: 3, reps: '', rest: 90, note: '', group: null };
+    return {
+      name: n.name || '', sets: n.sets || 3, reps: n.reps || '',
+      rest: n.rest_s || n.rest || 90, note: n.note || '', group: n.group || null
+    };
+  }).filter(x => x.name);
   const row = {name: name.trim(), exercises_json: JSON.stringify(exs), source: 'floor_template', created_at: new Date().toISOString()};
   if (!scope) row.client_id = CLIENT.id;
   try {
@@ -2214,8 +2224,8 @@ function renderProgram(p){
 function saveDayTemplate(i){
   const p=window._PROG;if(!p)return;
   const day=p.days[i];if(!day)return;
-  const names=(day.exercises||[]).map(x=>x.name).filter(Boolean);
-  saveExercisesAsTemplate(names, (p.program_name||'Program')+' — '+(day.name||('Day '+(i+1))));
+  const exs=(day.exercises||[]).map(x=>({name:x.name,sets:x.sets||3,reps:x.reps||'',rest_s:x.rest_s||90,note:x.note||''})).filter(x=>x.name);
+  saveExercisesAsTemplate(exs, (p.program_name||'Program')+' — '+(day.name||('Day '+(i+1))));
 }
 function launchDay(i){
   const p=window._PROG;if(!p)return;
