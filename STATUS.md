@@ -8,6 +8,66 @@ making any change. Ted has been burned repeatedly by sessions that acted on
 partial understanding. If you are not sure what a section below means, say so
 and ask, rather than guessing and building on top of a wrong guess.
 
+## INVESTIGATED July 11 2026: exercise form-check videos "clearly taped
+but couldn't be located." Real diagnosis, not a guess: queried the live
+`exercise_videos` table directly -- ZERO rows, ever, for any client, not
+just Ted. The storage/playback pipeline itself IS fully built and wired
+correctly (R2 upload + `exercise_videos` D1 table + a real "Form Videos"
+card with click-to-play on coach-client-profile.html's Overview tab,
+gated to only show if videos exist so it doesn't clutter an empty
+profile). The actual bug: `mHandleFormVideo()` in member-app.html wrapped
+the real upload call in a silent `try{}catch(e){}` with zero user-facing
+feedback either way -- and referenced `SESSION.client_id` with no guard,
+so if SESSION was null (guest/demo mode, or not fully signed in), the
+whole thing would throw and silently do nothing before ever reaching the
+network. Fixed: added an explicit guard (mirrors the same `IS_DEMO ||
+!SESSION?.client_id` pattern already used elsewhere in this file for
+this exact scenario) that shows a clear "not saved, sign in" message
+instead of silently failing, and the real upload now always shows either
+a green checkmark confirmation or a specific red error message -- never
+silent again either way. NOT yet confirmed live -- Ted needs to retest
+while genuinely signed in as a real client account (not guest/demo mode,
+which legitimately can't save since there's no client record to attach
+to -- that's expected, just needed to stop being invisible).
+
+## FIXED July 11 2026 (late): member-app.html was missing the "show all
+sets up front" fix Ted asked for. Real root cause: this exact request
+was already built and shipped on July 8 -- but only in gym-floor.html
+(the coach's floor app). member-app.html (the client's own self-guided
+logging screen -- confirmed from Ted's screenshot by matching its exact
+"How did that feel?" placeholder text, unique to this file) is a
+SEPARATE, unrelated logging screen with its own duplicate code, and
+never got the same fix. That's why "I've asked several times" felt true
+to Ted and also why nothing seemed to change -- two different screens,
+one fixed, one not. Ported the same working renderer from gym-floor.html
+(`renderSets()`) into member-app.html (`mRenderSetsDone()`, same
+function name that already existed and was already wired into both
+`mOpenExercise()` and `mLogSet()` -- only its body changed): now shows
+every planned set up front (default 3, same fallback gym-floor.html
+uses, since member-app exercises have no stored per-exercise target
+count) with completed sets checked off, the current set highlighted,
+and upcoming sets grayed out with a target preview, plus "+ Add Another
+Set" once the plan is done. Not yet confirmed live by Ted.
+
+## FIXED July 11 2026: Monthly Challenge + Coach's Edge/Daily Content generation
+Ted reported both erroring with "D1_ERROR: table X has no column named Y."
+Real root cause, confirmed by reading actual live schema vs what
+worker-v34.js writes/reads: `challenges` was missing `tagline`, `rules`,
+`points_system`, `badge_label`, `generated_at`; `daily_content` was
+missing `health_tip`, `quote`, `quote_author`, `news_headline`,
+`news_blurb`, `generated_at`. A migration for daily_content already
+existed (`migration-circle-tables.sql`) but used `CREATE TABLE IF NOT
+EXISTS` against a table that already existed with the old thin schema,
+so it silently did nothing -- worth remembering as a pattern: `IF NOT
+EXISTS` on a CREATE TABLE does NOT mean "make sure these columns exist,"
+it means "do literally nothing if the table is already there at all."
+Fixed live via ALTER TABLE ADD COLUMN against Fairless Hills' retro-crm
+AND all 11 pilot club D1s (not just committed to schema.sql), plus a new
+dedicated `migration-challenges-daily-content-columns.sql` documenting
+it. `schema.sql` corrected for any future new club. Not yet re-tested
+live by Ted after the fix -- worth confirming both buttons actually work
+now rather than assuming the schema fix alone closes this out.
+
 ## CLOUDFLARE CONNECTOR — WHAT IT CAN AND CANNOT ACTUALLY DO
 Verified directly against the live tool list July 11, 2026 (not assumed, not
 carried over from a chat summary). Ted has a Cloudflare Developer Platform

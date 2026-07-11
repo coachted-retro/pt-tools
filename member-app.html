@@ -2465,14 +2465,49 @@ function mLogSet(){
   mStartRest(mech === 'Compound' ? 180 : 75);
 }
 
+// Shows the FULL planned set range up front (done + current + upcoming),
+// not just a running list of what's already been logged -- matches the
+// same fix already live on the coach's gym-floor.html. Ted asked for this
+// twice (once per app, since they're two separate logging screens that
+// don't share code) -- this closes the member-app.html side of it.
+// Member-app exercises have no stored per-exercise target set count
+// (unlike coach-assigned scheduled sessions), so this defaults to 3,
+// same fallback gym-floor.html already uses, and "+ Add Another Set"
+// bumps it per-exercise for that session same as there.
 function mRenderSetsDone(){
   const ex = MSESSION.exercises[MEXI];
-  document.getElementById('ll-sets-done').innerHTML = ex.sets.map((s,i) => `
-    <div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:6px">
-      <div style="font-family:'Oswald',sans-serif;font-weight:800;color:var(--ink3,#9CA3AF)">${i+1}</div>
-      <div style="flex:1;font-size:14px">${s.reps} reps @ ${s.weight%1?s.weight.toFixed(1):s.weight} lb</div>
-      <span onclick="mDelSet(${i})" style="color:var(--red);cursor:pointer;font-size:16px">&times;</span>
-    </div>`).join('');
+  const target = ex.targetSets || 3;
+  const totalRows = Math.max(target, ex.sets.length + (ex.sets.length >= target ? 0 : 1));
+  let html = '';
+  for (let i = 0; i < totalRows; i++) {
+    if (i < ex.sets.length) {
+      const s = ex.sets[i];
+      html += `<div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:6px">
+        <div style="font-family:'Oswald',sans-serif;font-weight:800;color:var(--ink3,#9CA3AF);width:22px">${i+1}</div>
+        <div style="flex:1;font-size:14px;font-weight:700">${s.reps} reps @ ${s.weight%1?s.weight.toFixed(1):s.weight} lb</div>
+        <span onclick="mDelSet(${i})" style="color:var(--red);cursor:pointer;font-size:16px">&times;</span>
+      </div>`;
+    } else if (i === ex.sets.length) {
+      html += `<div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:6px;border:2px solid var(--red)">
+        <div style="font-family:'Oswald',sans-serif;font-weight:800;color:var(--red);width:22px">${i+1}</div>
+        <div style="flex:1;font-size:14px;color:var(--red);font-weight:700">Up now — use the steppers above</div>
+      </div>`;
+    } else {
+      html += `<div style="display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:10px 14px;margin-bottom:6px;opacity:.45">
+        <div style="font-family:'Oswald',sans-serif;font-weight:800;color:var(--ink3,#9CA3AF);width:22px">${i+1}</div>
+        <div style="flex:1;font-size:14px">Target: ${mCurR} reps @ ${mCurW%1?mCurW.toFixed(1):mCurW} lb</div>
+      </div>`;
+    }
+  }
+  if (ex.sets.length >= target) {
+    html += `<div style="text-align:center;padding:8px 0"><a href="#" onclick="mBumpTargetSets();return false" style="color:var(--red);font-weight:700;font-size:13px">&#10003; Planned ${target} sets done — + Add Another Set</a></div>`;
+  }
+  document.getElementById('ll-sets-done').innerHTML = html;
+}
+function mBumpTargetSets(){
+  const ex = MSESSION.exercises[MEXI];
+  ex.targetSets = (ex.targetSets || 3) + 1;
+  mRenderSetsDone();
 }
 function mDelSet(i){ MSESSION.exercises[MEXI].sets.splice(i,1); mRenderSetsDone(); }
 
@@ -2550,13 +2585,31 @@ async function mHandleFormVideo(ev){
     ${feedback.observation ? `<div style="font-size:13px;margin-bottom:6px">${esc(feedback.observation)}</div>` : ''}
     ${feedback.cue ? `<div style="font-size:13px;color:var(--ink2)"><b>Try this:</b> ${esc(feedback.cue)}</div>` : ''}
     ${feedback.flag ? `<div style="font-size:13px;color:var(--red);margin-top:6px;font-weight:600">\u26A0 ${esc(feedback.flag)}</div>` : ''}
-    <div style="font-size:10px;color:var(--ink3,#9CA3AF);margin-top:8px">AI coaching note, not a substitute for your coach's eyes. Saving clip...</div>
+    <div id="ll-video-save-status" style="font-size:10px;color:var(--ink3,#9CA3AF);margin-top:8px">AI coaching note, not a substitute for your coach's eyes. Saving clip...</div>
   </div>`;
 
+  // Was previously a silent try/catch here -- if the save failed for any
+  // reason (not signed in, network error, worker error), the person had
+  // no way to know their video never actually persisted anywhere. Real
+  // bug, confirmed by zero rows ever in the exercise_videos table for
+  // any client. Now always shows a clear result either way.
+  const statusEl = () => document.getElementById('ll-video-save-status');
+  if (IS_DEMO || !SESSION?.client_id) {
+    if (statusEl()) statusEl().innerHTML = '<span style="color:var(--red);font-weight:600">\u26A0 Not saved — sign in to your account to save form check videos.</span>';
+    return;
+  }
   try {
     const buf = await file.arrayBuffer();
-    await fetch(WORKER + `/exercise-video/upload?client=${SESSION.client_id}&exercise=${encodeURIComponent(ex.name)}`, {method:'POST', body: buf});
-  } catch(e) {}
+    const upRes = await fetch(WORKER + `/exercise-video/upload?client=${SESSION.client_id}&exercise=${encodeURIComponent(ex.name)}`, {method:'POST', body: buf});
+    const upData = await upRes.json().catch(() => ({}));
+    if (upRes.ok && upData.key) {
+      if (statusEl()) statusEl().innerHTML = '<span style="color:#0F9D6E;font-weight:600">\u2713 Saved to your account — your coach can view it on your profile.</span>';
+    } else {
+      if (statusEl()) statusEl().innerHTML = `<span style="color:var(--red);font-weight:600">\u26A0 Video wasn't saved (${esc(upData.error || 'server error')}). Try again, or show your coach directly.</span>`;
+    }
+  } catch(e) {
+    if (statusEl()) statusEl().innerHTML = '<span style="color:var(--red);font-weight:600">\u26A0 Video wasn\'t saved — connection issue. Try again, or show your coach directly.</span>';
+  }
 }
 
 
@@ -5550,6 +5603,8 @@ if (IS_DEMO) {
     </div>
 
     <div style="flex:1;overflow-y:auto;padding:20px 16px">
+      <div id="ll-sets-done" style="margin-bottom:16px"></div>
+
       <div style="display:flex;gap:16px;margin-bottom:20px">
         <div style="flex:1;background:#fff;border-radius:16px;padding:18px;text-align:center">
           <div style="font-size:11px;color:var(--ink3,#9CA3AF);text-transform:uppercase;font-weight:700;margin-bottom:8px">Weight</div>
@@ -5570,8 +5625,6 @@ if (IS_DEMO) {
       </div>
 
       <button onclick="mLogSet()" style="width:100%;background:var(--red);color:#fff;border:none;border-radius:16px;padding:20px;font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;text-transform:uppercase;letter-spacing:1px;box-shadow:0 6px 20px rgba(224,25,43,.3)">&#10003; Log Set</button>
-
-      <div id="ll-sets-done" style="margin-top:16px"></div>
 
       <div style="display:flex;gap:8px;margin-top:16px">
         <textarea id="ll-note" rows="2" placeholder="How did that feel? Any form notes..." style="flex:1;border:1px solid var(--line3,#E4E7EC);border-radius:12px;padding:10px;font-size:13px;font-family:'Inter',sans-serif"></textarea>
