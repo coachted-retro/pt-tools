@@ -494,13 +494,10 @@ NOT YET STARTED, needs real scoping work before building:
       New `/recap/list` and `/recap/pdf` endpoints power a new "Intake
       Recaps" tab on `coach-client-profile.html` so any saved recap can
       be pulled back up later, per Ted's "recall and look at later" ask.
-      Staff recipients currently default to Ted + Danielle (existing
-      `tedscholl@gmail.com, healthylifewithdani1@gmail.com` pattern
-      already used elsewhere in these 3 tools) -- Ted asked to include
-      Roman too but did not give an email address; DO NOT guess one.
-      Add it to the `staff_emails` default array in all 3 tools' new
-      `triggerInternalRecap()` calls (currently omitted, not defaulted)
-      the moment Ted provides it, and nowhere else -- don't invent it.
+      Staff recipients: Ted, Danielle, and Roman (benedettiroman@gmail.com,
+      given by Ted July 11 and added to the `staff_emails` array explicitly
+      passed in all 3 tools' `/recap/save` calls that same night -- no
+      longer relying on the Worker's Ted+Danielle-only default for these).
 - [x] SOLVED July 11 (late session): the "11 separate Workers" problem is
       gone. `worker-v34.js` now routes by hostname -- `CLUB_SLOT_MAP` maps
       `club01.myretrostrong.com` through `club11` to per-club D1 bindings

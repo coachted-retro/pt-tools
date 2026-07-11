@@ -4800,7 +4800,8 @@ async function triggerInternalRecap(intakeLabel, reportTypeForDb, clientData, se
             recap_html: recapHtml,
             subject: intakeLabel + ' Recap: ' + (clientData.name || 'Client'),
             summary: (assessmentSummary || '').slice(0, 2000),
-            advisor: clientData.advisor || ''
+            advisor: clientData.advisor || '',
+            staff_emails: ['tedscholl@gmail.com', 'healthylifewithdani1@gmail.com', 'benedettiroman@gmail.com']
           })
         });
       } catch (e) { /* internal recap failing should never block the client-facing flow */ }
