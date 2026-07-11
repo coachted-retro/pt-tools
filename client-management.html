@@ -122,7 +122,12 @@
         <div class="gtab" data-gender="male" onclick="setGenderFilter('male')">Men's Program</div>
         <div class="gtab" data-gender="female" onclick="setGenderFilter('female')">Women's Program</div>
       </div>
-      <button class="btn" style="border-color:var(--line);font-size:12px;padding:7px 12px" onclick="generateProgramReport()">📄 Generate Report</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="trainerFilter" onchange="setTrainerFilter(this.value)" style="padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:12px">
+          <option value="">All Trainers</option>
+        </select>
+        <button class="btn" style="border-color:var(--line);font-size:12px;padding:7px 12px" onclick="generateProgramReport()">📄 Generate Report</button>
+      </div>
     </div>
     <table>
       <thead><tr><th>Name</th><th>Status</th><th>Package</th><th>Start Date</th><th>Trainer</th><th></th></tr></thead>
@@ -210,6 +215,19 @@ function setGenderFilter(g){
   CURRENT_GENDER_FILTER = g;
   document.querySelectorAll('.gtab').forEach(x=>x.classList.toggle('active', x.dataset.gender===g));
   renderRoster();
+}
+
+let CURRENT_TRAINER_FILTER = '';
+function setTrainerFilter(t){
+  CURRENT_TRAINER_FILTER = t;
+  renderRoster();
+}
+function populateTrainerFilter(){
+  const sel = document.getElementById('trainerFilter');
+  if (!sel || sel.dataset.populated) return;
+  const trainers = [...new Set(ALL_CLIENTS.filter(c => c.status==='active_pt').map(c => normalizedCoach(c.coach)).filter(Boolean))].sort();
+  trainers.forEach(t => { const opt = document.createElement('option'); opt.value = t; opt.textContent = t; sel.appendChild(opt); });
+  sel.dataset.populated = '1';
 }
 
 async function loadAll(){
@@ -305,8 +323,10 @@ function renderRoster(){
   };
 
   const ptClients = ALL_CLIENTS.filter(c => c.status === 'active_pt').filter(matches)
-    .filter(c => CURRENT_GENDER_FILTER === 'all' || normalizedGender(c.gender) === CURRENT_GENDER_FILTER);
+    .filter(c => CURRENT_GENDER_FILTER === 'all' || normalizedGender(c.gender) === CURRENT_GENDER_FILTER)
+    .filter(c => !CURRENT_TRAINER_FILTER || normalizedCoach(c.coach) === CURRENT_TRAINER_FILTER);
   const members = ALL_CLIENTS.filter(c => c.status !== 'active_pt').filter(matches);
+  populateTrainerFilter();
 
   const membersEl = document.getElementById('membersRows');
   const ptEl = document.getElementById('ptClientsRows');
@@ -349,7 +369,8 @@ function generateProgramReport(){
       .filter(Boolean).join(' ').toLowerCase();
     return blob.includes(q);
   };
-  const base = ALL_CLIENTS.filter(c => c.status === 'active_pt').filter(matches);
+  const base = ALL_CLIENTS.filter(c => c.status === 'active_pt').filter(matches)
+    .filter(c => !CURRENT_TRAINER_FILTER || normalizedCoach(c.coach) === CURRENT_TRAINER_FILTER);
   const programs = CURRENT_GENDER_FILTER === 'all' ? ['male','female'] : [CURRENT_GENDER_FILTER];
   let bodyHtml = '';
   const allRows = [];
