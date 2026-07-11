@@ -2434,6 +2434,23 @@ function mPaintSteppers(){
   document.getElementById('ll-rval').textContent = mCurR;
 }
 function mBump(k,d){ if(k==='w'){mCurW=Math.max(0,mCurW+d);}else{mCurR=Math.max(0,mCurR+d);} mPaintSteppers(); mVib(10); }
+
+// Tap the weight or reps number directly to type an exact value --
+// the +/- steppers only move in fixed jumps, which doesn't cover real
+// odd numbers (157 lb, etc). Same prompt-based pattern used elsewhere
+// in this file for quick manual entry.
+function mEditWeight() {
+  const val = prompt('Enter exact weight (lb):', mCurW);
+  if (val === null) return;
+  const num = parseFloat(val);
+  if (!isNaN(num) && num >= 0) { mCurW = num; mPaintSteppers(); mVib(10); }
+}
+function mEditReps() {
+  const val = prompt('Enter exact reps:', mCurR);
+  if (val === null) return;
+  const num = parseInt(val, 10);
+  if (!isNaN(num) && num >= 0) { mCurR = num; mPaintSteppers(); mVib(10); }
+}
 function mHoldStart(k,d){ mBump(k,d); mHoldTimer=setTimeout(()=>{mHoldIv=setInterval(()=>mBump(k,d),120);},450); }
 function mHoldEnd(){ clearTimeout(mHoldTimer); clearInterval(mHoldIv); mHoldTimer=mHoldIv=null; }
 
@@ -4061,9 +4078,39 @@ async function loadUnifiedCalendar(forceRender) {
 
     if (!forceRender && document.getElementById('my-calendar-body').style.display === 'none') return; // don't bother rendering if still collapsed and not forced
 
+    // Weekly shopping list: aggregate ingredients across every scheduled
+    // meal in the next 7 days, looked up against the real Coach's Table
+    // recipe (not guessed), de-duplicated so nothing's listed twice.
+    const weekEnd = new Date(today+'T00:00:00Z'); weekEnd.setUTCDate(weekEnd.getUTCDate()+6);
+    const weekEndStr = weekEnd.toISOString().slice(0,10);
+    const weekMeals = meals.filter(m => m.scheduled_date <= weekEndStr);
+    let shoppingHtml = '';
+    if (weekMeals.length) {
+      if (!CT_FLAT.length) { try { await loadCoachsTable(); } catch(e) {} }
+      const seen = new Set(); const ingredients = [];
+      weekMeals.forEach(m => {
+        const recipe = CT_FLAT.find(r => r.name === m.title);
+        const list = (recipe && recipe.recipe && recipe.recipe.ingredients) || [];
+        list.forEach(i => { const key = i.toLowerCase().trim(); if (!seen.has(key)) { seen.add(key); ingredients.push(i); } });
+      });
+      const rangeLabel = new Date(today+'T00:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + weekEnd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      shoppingHtml = `<div class="card" style="margin-top:10px;cursor:pointer" onclick="toggleShoppingWeekList()">
+        <div class="card-body" style="padding-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="sec-label" style="margin:0">🛒 Shopping List — ${esc(rangeLabel)}</div>
+            <div id="shop-week-chevron" style="font-size:14px;color:var(--ink3)">▾</div>
+          </div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px">${ingredients.length} ingredients for ${weekMeals.length} meal${weekMeals.length===1?'':'s'} this week</div>
+        </div>
+      </div>
+      <div id="shop-week-list" style="display:none;background:#fff;border-radius:0 0 12px 12px;margin-top:-10px;padding:4px 16px 12px;border:1px solid var(--line);border-top:none">
+        ${ingredients.map(i => `<div style="padding:4px 0;font-size:13px;color:var(--ink)">• ${esc(i)}</div>`).join('')}
+      </div>`;
+    }
+
     const body = document.getElementById('my-calendar-body');
     if (!dates.length) {
-      body.innerHTML = '<div class="card"><div class="card-body"><div class="empty-state">Nothing self-scheduled yet — plan a workout in Training or a meal in Nutrition.</div></div></div>';
+      body.innerHTML = '<div class="card"><div class="card-body"><div class="empty-state">Nothing self-scheduled yet — plan a workout in Training or a meal in Nutrition.</div></div></div>' + shoppingHtml;
       return;
     }
     body.innerHTML = '<div class="card"><div class="card-body">' +
@@ -4073,13 +4120,38 @@ async function loadUnifiedCalendar(forceRender) {
         return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
           <div style="font-weight:700;font-size:12px;color:var(--red);margin-bottom:4px">${dLabel}</div>
           ${items.map(it => it.kind==='workout'
-            ? `<div style="font-size:12px;padding:2px 0">🏋️ ${esc(it.program_name)}${it.duration_min?' · '+it.duration_min+' min':''}</div>`
-            : `<div style="font-size:12px;padding:2px 0">🍽️ ${esc(it.title)}${it.meal_type?' · '+esc(it.meal_type):''}</div>`
+            ? `<div onclick='startScheduledSession(${JSON.stringify(it)})' style="font-size:12px;padding:5px 6px;cursor:pointer;border-radius:6px;background:var(--soft)">🏋️ <span style="text-decoration:underline;color:var(--red)">${esc(it.program_name)}</span>${it.duration_min?' · '+it.duration_min+' min':''}</div>`
+            : `<div onclick='jumpToScheduledMeal(${JSON.stringify(it.title)})' style="font-size:12px;padding:5px 6px;cursor:pointer;border-radius:6px;background:var(--soft);margin-top:4px">🍽️ <span style="text-decoration:underline;color:var(--red)">${esc(it.title)}</span>${it.meal_type?' · '+esc(it.meal_type):''}</div>`
           ).join('')}
         </div>`;
       }).join('') +
-      '</div></div>';
+      '</div></div>' + shoppingHtml;
   } catch(e) { /* non-fatal */ }
+}
+function toggleShoppingWeekList() {
+  const el = document.getElementById('shop-week-list');
+  const chevron = document.getElementById('shop-week-chevron');
+  const opening = el.style.display === 'none';
+  el.style.display = opening ? 'block' : 'none';
+  chevron.textContent = opening ? '▴' : '▾';
+}
+
+// Tap a scheduled workout on the calendar -> starts it directly, same
+// live-logging flow as Today's Workout, no navigating around to find it.
+function startScheduledSession(session) {
+  let exNames = [];
+  try { exNames = JSON.parse(session.exercises_json||'[]').map(e => e.name || e); } catch(e) {}
+  mOpenLiveLog(exNames, session.program_name || 'Workout');
+}
+
+// Tap a scheduled meal on the calendar -> jumps straight to its real
+// recipe detail in Coach's Table, same modal as browsing normally.
+async function jumpToScheduledMeal(title) {
+  if (!CT_FLAT.length) await loadCoachsTable();
+  const idx = CT_FLAT.findIndex(r => r.name === title);
+  if (idx === -1) { alert('Could not find this recipe — it may have been removed from Coach\'s Table.'); return; }
+  switchTab('nutrition');
+  setTimeout(() => openCTRecipeDetail(idx), 150);
 }
 
 async function saveSelfLog() {
@@ -5480,7 +5552,7 @@ if (IS_DEMO) {
       <div style="display:flex;gap:16px;margin-bottom:20px">
         <div style="flex:1;background:#fff;border-radius:16px;padding:18px;text-align:center">
           <div style="font-size:11px;color:var(--ink3,#9CA3AF);text-transform:uppercase;font-weight:700;margin-bottom:8px">Weight</div>
-          <div style="font-family:'Oswald',sans-serif;font-size:32px;font-weight:800" id="ll-wval">135<span style="font-size:14px;color:var(--ink3,#9CA3AF)"> lb</span></div>
+          <div style="font-family:'Oswald',sans-serif;font-size:32px;font-weight:800;cursor:pointer" id="ll-wval" onclick="mEditWeight()">135<span style="font-size:14px;color:var(--ink3,#9CA3AF)"> lb</span></div>
           <div style="display:flex;gap:8px;margin-top:12px">
             <button ontouchstart="event.preventDefault();mHoldStart('w',-5)" ontouchend="mHoldEnd()" onmousedown="mHoldStart('w',-5)" onmouseup="mHoldEnd()" onmouseleave="mHoldEnd()" style="flex:1;height:44px;border-radius:10px;border:none;background:var(--soft,#F5F6F8);font-size:20px;font-weight:700">&minus;</button>
             <button ontouchstart="event.preventDefault();mHoldStart('w',5)" ontouchend="mHoldEnd()" onmousedown="mHoldStart('w',5)" onmouseup="mHoldEnd()" onmouseleave="mHoldEnd()" style="flex:1;height:44px;border-radius:10px;border:none;background:var(--soft,#F5F6F8);font-size:20px;font-weight:700">+</button>
@@ -5488,7 +5560,7 @@ if (IS_DEMO) {
         </div>
         <div style="flex:1;background:#fff;border-radius:16px;padding:18px;text-align:center">
           <div style="font-size:11px;color:var(--ink3,#9CA3AF);text-transform:uppercase;font-weight:700;margin-bottom:8px">Reps</div>
-          <div style="font-family:'Oswald',sans-serif;font-size:32px;font-weight:800" id="ll-rval">8</div>
+          <div style="font-family:'Oswald',sans-serif;font-size:32px;font-weight:800;cursor:pointer" id="ll-rval" onclick="mEditReps()">8</div>
           <div style="display:flex;gap:8px;margin-top:12px">
             <button ontouchstart="event.preventDefault();mHoldStart('r',-1)" ontouchend="mHoldEnd()" onmousedown="mHoldStart('r',-1)" onmouseup="mHoldEnd()" onmouseleave="mHoldEnd()" style="flex:1;height:44px;border-radius:10px;border:none;background:var(--soft,#F5F6F8);font-size:20px;font-weight:700">&minus;</button>
             <button ontouchstart="event.preventDefault();mHoldStart('r',1)" ontouchend="mHoldEnd()" onmousedown="mHoldStart('r',1)" onmouseup="mHoldEnd()" onmouseleave="mHoldEnd()" style="flex:1;height:44px;border-radius:10px;border:none;background:var(--soft,#F5F6F8);font-size:20px;font-weight:700">+</button>
