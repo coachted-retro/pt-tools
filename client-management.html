@@ -41,6 +41,8 @@
   .tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line);}
   .tab{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:13px;padding:10px 16px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;}
   .tab.active{color:var(--ink);border-color:var(--red);}
+  .gtab{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:600;font-size:13px;padding:10px 16px;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;}
+  .gtab.active{color:var(--ink);border-color:var(--red);}
   .view{display:none;}
   .view.active{display:block;}
 
@@ -97,7 +99,7 @@
     </div>
   </div>
 
-  <input id="rosterSearch" type="text" placeholder="Search by name, phone, email, advisor, or agreement #..." oninput="renderRoster()" style="width:100%;margin:14px 0;padding:11px 14px;border:1px solid var(--line,#E4E7EC);border-radius:10px;font-size:14px;font-family:inherit">
+  <input id="rosterSearch" type="text" placeholder="Search by name, phone, email, advisor, trainer, or agreement #..." oninput="renderRoster()" style="width:100%;margin:14px 0;padding:11px 14px;border:1px solid var(--line,#E4E7EC);border-radius:10px;font-size:14px;font-family:inherit">
 
   <div id="dupeBanner" class="dupe-banner">Checking for duplicates...</div>
 
@@ -114,12 +116,32 @@
   </div>
 
   <div id="view-ptclients" class="view">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div class="tabs" style="margin:0">
+        <div class="gtab active" data-gender="all" onclick="setGenderFilter('all')">All PT Clients</div>
+        <div class="gtab" data-gender="male" onclick="setGenderFilter('male')">Men's Program</div>
+        <div class="gtab" data-gender="female" onclick="setGenderFilter('female')">Women's Program</div>
+      </div>
+      <button class="btn" style="border-color:var(--line);font-size:12px;padding:7px 12px" onclick="generateProgramReport()">📄 Generate Report</button>
+    </div>
     <table>
-      <thead><tr><th>Name</th><th>Status</th><th>Package</th><th>Start Date</th><th>Advisor</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Status</th><th>Package</th><th>Start Date</th><th>Trainer</th><th></th></tr></thead>
       <tbody id="ptClientsRows"></tbody>
     </table>
   </div>
 </div>
+
+<div id="reportModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center" onclick="if(event.target===this)closeReportModal()">
+  <div style="background:#fff;border-radius:12px;padding:24px;max-width:560px;width:92%;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 id="reportModalTitle" style="margin:0">Program Report</h3>
+      <span onclick="closeReportModal()" style="cursor:pointer;font-size:20px;color:var(--muted,#6B7280)">&times;</span>
+    </div>
+    <div id="reportModalBody" style="font-size:13px;line-height:1.6"></div>
+    <button class="btn red" style="margin-top:14px;width:100%" onclick="downloadReportCSV()">Download as CSV</button>
+  </div>
+</div>
+
 
 <!-- MERGE MODAL -->
 <div class="merge-overlay" id="mergeOverlay">
@@ -167,6 +189,27 @@ function setTab(t){
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===t));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+t).classList.add('active');
+}
+
+// Real client records have a few known name variants for the same coach
+// (typos, missing last names) -- normalized here for display/grouping only,
+// the underlying data is untouched. Worth an actual data cleanup pass later,
+// but this keeps the Men's/Women's program view from fragmenting a coach's
+// clients across two different-looking names in the meantime.
+const COACH_ALIASES = { 'Marin': 'Marin Harwood', 'Roaman Benedetti': 'Roman Benedetti' };
+function normalizedCoach(c){ return COACH_ALIASES[c] || c; }
+function normalizedGender(g){
+  const v = (g||'').trim().toLowerCase();
+  if (v === 'male' || v === 'm') return 'male';
+  if (v === 'female' || v === 'f') return 'female';
+  return '';
+}
+
+let CURRENT_GENDER_FILTER = 'all';
+function setGenderFilter(g){
+  CURRENT_GENDER_FILTER = g;
+  document.querySelectorAll('.gtab').forEach(x=>x.classList.toggle('active', x.dataset.gender===g));
+  renderRoster();
 }
 
 async function loadAll(){
@@ -246,21 +289,23 @@ function renderRoster(){
     return blob.includes(q);
   };
 
-  const rowHtml = c => {
+  const rowHtml = (c, showTrainer) => {
     const name = ((c.first_name||'')+' '+(c.last_name||'')).trim() || '(no name)';
     const statusClass = ['active_pt','prospect','not_interested'].includes(c.status) ? c.status : 'default';
     const isDupe = dupeIds.has(c.id);
+    const personCol = showTrainer ? normalizedCoach(c.coach) : c.advisor;
     return '<tr'+(isDupe?' class="flagged"':'')+'>'+
       '<td style="font-weight:600">'+esc(name)+(isDupe?' <span style="color:#92400e;font-size:11px;font-weight:700">⚠ likely duplicate</span>':'')+'</td>'+
       '<td><span class="pill '+statusClass+'">'+esc((c.status||'—').replace('_',' '))+'</span></td>'+
       '<td>'+esc(c.package||'—')+'</td>'+
       '<td>'+esc(c.training_start_date||'—')+'</td>'+
-      '<td>'+esc(c.advisor||'—')+'</td>'+
+      '<td>'+esc(personCol||'—')+'</td>'+
       '<td><a class="btn" href="client-profile.html?id='+c.id+'" style="padding:5px 10px;font-size:10.5px;">View</a></td>'+
     '</tr>';
   };
 
-  const ptClients = ALL_CLIENTS.filter(c => c.status === 'active_pt').filter(matches);
+  const ptClients = ALL_CLIENTS.filter(c => c.status === 'active_pt').filter(matches)
+    .filter(c => CURRENT_GENDER_FILTER === 'all' || normalizedGender(c.gender) === CURRENT_GENDER_FILTER);
   const members = ALL_CLIENTS.filter(c => c.status !== 'active_pt').filter(matches);
 
   const membersEl = document.getElementById('membersRows');
@@ -270,8 +315,8 @@ function renderRoster(){
     ptEl.innerHTML = '<tr><td colspan="6" class="empty">No clients yet.</td></tr>';
     return;
   }
-  membersEl.innerHTML = members.length ? members.map(rowHtml).join('') : '<tr><td colspan="6" class="empty">No members match'+(q?' "'+esc(q)+'"':'')+'.</td></tr>';
-  ptEl.innerHTML = ptClients.length ? ptClients.map(rowHtml).join('') : '<tr><td colspan="6" class="empty">No PT clients match'+(q?' "'+esc(q)+'"':'')+'.</td></tr>';
+  membersEl.innerHTML = members.length ? members.map(c => rowHtml(c, false)).join('') : '<tr><td colspan="6" class="empty">No members match'+(q?' "'+esc(q)+'"':'')+'.</td></tr>';
+  ptEl.innerHTML = ptClients.length ? ptClients.map(c => rowHtml(c, true)).join('') : '<tr><td colspan="6" class="empty">No PT clients match'+(q?' "'+esc(q)+'"':'')+(CURRENT_GENDER_FILTER!=='all'?' in this program':'')+'.</td></tr>';
 
   // Merge buttons only make sense against the full duplicate set, not the
   // filtered view, so they stay based on `dupes` regardless of search text.
@@ -293,6 +338,53 @@ function renderRoster(){
   window._dupeGroups = dupes;
 }
 
+
+let LAST_REPORT_ROWS = [];
+let LAST_REPORT_LABEL = '';
+function generateProgramReport(){
+  const q = (document.getElementById('rosterSearch')||{}).value?.trim().toLowerCase() || '';
+  const matches = c => {
+    if (!q) return true;
+    const blob = [c.first_name, c.last_name, c.phone, c.email, c.advisor, c.coach, c.agreement_number, c.membership_tier, c.status, c.tags]
+      .filter(Boolean).join(' ').toLowerCase();
+    return blob.includes(q);
+  };
+  const base = ALL_CLIENTS.filter(c => c.status === 'active_pt').filter(matches);
+  const programs = CURRENT_GENDER_FILTER === 'all' ? ['male','female'] : [CURRENT_GENDER_FILTER];
+  let bodyHtml = '';
+  const allRows = [];
+  programs.forEach(prog => {
+    const list = base.filter(c => normalizedGender(c.gender) === prog)
+      .sort((a,b) => normalizedCoach(a.coach||'').localeCompare(normalizedCoach(b.coach||'')));
+    const label = prog === 'male' ? "Men's Program" : "Women's Program";
+    bodyHtml += '<div style="font-family:\'Oswald\';font-weight:700;text-transform:uppercase;font-size:13px;color:var(--red);margin:14px 0 8px">'+label+' ('+list.length+')</div>';
+    if (!list.length) { bodyHtml += '<div style="color:var(--muted);font-size:12px">No clients in this program.</div>'; }
+    let lastCoach = null;
+    list.forEach(c => {
+      const coach = normalizedCoach(c.coach) || 'Unassigned';
+      if (coach !== lastCoach) { bodyHtml += '<div style="font-weight:700;margin-top:8px;font-size:12px">'+esc(coach)+'</div>'; lastCoach = coach; }
+      const name = ((c.first_name||'')+' '+(c.last_name||'')).trim();
+      bodyHtml += '<div style="padding:2px 0 2px 10px">'+esc(name)+' — '+esc(c.package||'—')+' · since '+esc(c.training_start_date||'—')+'</div>';
+      allRows.push({ program: label, coach, name, package: c.package||'', start_date: c.training_start_date||'', status: c.status||'' });
+    });
+  });
+  LAST_REPORT_ROWS = allRows;
+  LAST_REPORT_LABEL = programs.length === 2 ? 'All Programs' : (programs[0]==='male'?"Men's Program":"Women's Program");
+  document.getElementById('reportModalTitle').textContent = LAST_REPORT_LABEL + ' Report';
+  document.getElementById('reportModalBody').innerHTML = bodyHtml;
+  document.getElementById('reportModal').style.display = 'flex';
+}
+function closeReportModal(){ document.getElementById('reportModal').style.display = 'none'; }
+function downloadReportCSV(){
+  const header = 'Program,Coach,Client Name,Package,Start Date,Status\n';
+  const rows = LAST_REPORT_ROWS.map(r => [r.program,r.coach,r.name,r.package,r.start_date,r.status]
+    .map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([header+rows], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = LAST_REPORT_LABEL.replace(/\s+/g,'-').toLowerCase() + '-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
 
 function openCompareTool(){
   const sorted = [...ALL_CLIENTS].sort((a,b) => {
