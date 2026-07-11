@@ -395,7 +395,12 @@ async function loadSocialLinksAdmin(){
       body: JSON.stringify({ op:'select', table:'gyms', where:{ id: 1 }, limit:1 }) });
     const d = await r.json();
     const gym = (d.results||[])[0];
-    if (!gym) return;
+    if (!gym) {
+      // Brand new club deployment, nothing set up yet -- send them to the
+      // setup wizard instead of showing a blank/broken Command Center.
+      window.location.href = 'club-setup.html';
+      return;
+    }
     if (document.getElementById('soc-fb')) document.getElementById('soc-fb').value = gym.facebook_url || '';
     if (document.getElementById('soc-ig')) document.getElementById('soc-ig').value = gym.instagram_url || '';
     if (document.getElementById('soc-tt')) document.getElementById('soc-tt').value = gym.tiktok_url || '';

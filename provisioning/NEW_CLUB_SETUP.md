@@ -22,12 +22,16 @@ In the Cloudflare dashboard: Workers & Pages → D1 → Create database.
 Name it: `retro-fitness-{club-name}` (e.g. `retro-fitness-fair-lawn`).
 
 Once created, open it, go to the Console tab, and paste in the full
-contents of `schema.sql` (in this same folder). Before running it, edit
-the last line — the `INSERT INTO gyms` statement — with this club's real
-name, city, state, and director name. Run it.
+contents of `schema.sql` (in this same folder). Run it as-is — no editing
+needed. It deliberately leaves the `gyms` table empty; the club fills in
+their own name, city, director, and everything else themselves the first
+time they log in, via the Club Setup wizard (see Step 9). This is what
+makes the template genuinely reusable rather than needing hand-editing
+for every club.
 
-Confirm it worked: run `SELECT * FROM gyms;` in the console — you should
-see one row with this club's real info, not "REPLACE WITH CLUB NAME."
+Confirm it worked: run `SELECT COUNT(*) FROM sqlite_master WHERE type='table';`
+in the console — you should see 93 (94 including SQLite's own internal
+`sqlite_sequence` table).
 
 ## Step 2: Create the Worker
 
@@ -90,26 +94,49 @@ pages afterward to confirm they're hitting the new Worker (check the
 Network tab in browser dev tools, or just confirm the club's own name
 shows up correctly per Step 8).
 
-## Step 7: Add the staff roster and PIN access
+## Step 7: One person from the club logs in and runs Club Setup
 
-Use `staff-setup.html` (or `portal-admin.html`) against the new site to
-add this club's real staff, matching the same process already used for
-Fairless Hills. Nobody can log in until this is done — the whole system
-requires a real staff_auth row per person.
+This replaces what used to be several manual steps. The very first time
+anyone opens `command-center.html` on the new site, it detects there's no
+club info on file yet and automatically sends them to `club-setup.html`
+instead. That wizard walks them through, in order:
+
+1. **Club info** — name, city, state, director, social links. Saved to
+   the `gyms` table.
+2. **Trainers & staff** — add everyone who needs to log in. Saved to
+   `staff_roster`. (Note: this creates the roster row, not full login
+   access with a PIN — that's still granted the normal way afterward,
+   see the note below.)
+3. **Clients** — either add PT clients one at a time, or upload a CSV for
+   a bulk import if they're bringing over an existing roster of dozens
+   or hundreds of clients. The wizard shows the exact column headers
+   expected (`first_name,last_name,phone,email,coach,package,training_start_date`)
+   before they upload anything.
+
+This is genuinely self-service — you shouldn't need to walk someone
+through it live, though it's worth being available the first time in
+case something's unclear.
+
+**Still needs you or them separately:** actual login access (PIN for
+staff, password for clients) isn't part of this wizard — that's granted
+the normal way through `staff-setup.html` / `portal-admin.html` after
+the roster exists. The wizard gets their *data* in; login access is a
+distinct, deliberate step so nobody gets access by accident.
 
 ## Step 8: Confirm the club's own name shows correctly
 
 Check `member-app.html`'s header, `coach-crm.html`, and any other page
-that displays the gym name — confirm it's pulling this club's real name
-from the `gyms` table (Step 1), not showing "Fairless Hills" anywhere.
+that displays the gym name — confirm it's showing the real name they
+entered in Club Setup, not "Fairless Hills" or blank.
 
 ## Step 9: Smoke test before handing it off
 
 At minimum, before calling a club "ready":
-- [ ] A staff member can actually log in
-- [ ] A test client can log in (create one via portal-admin.html first)
-- [ ] The client app loads without errors and shows this club's name
-- [ ] A coach can open coach-crm.html and see an empty (not Fairless
+- [ ] Club Setup wizard completed without errors
+- [ ] A staff member can actually log in (after granting PIN access)
+- [ ] A test client can log in (after granting portal access)
+- [ ] The client app loads without errors and shows this club's real name
+- [ ] A coach can open coach-crm.html and see their real (not Fairless
       Hills') client list
 - [ ] Submitting a test EOD works and doesn't error
 
@@ -124,10 +151,9 @@ been used," but "the basic path works and nothing crashes."
   knows how to query ONE Worker/D1. Aggregating across 11+ separate
   clubs needs real work — not done yet. Until then, Keelin checks each
   club's dashboard individually.
-- No self-service way yet for a club director to do Steps 1-8 without
-  you walking through it with them the first time.
 - Anything genuinely new tonight (Coach's Table, Ask the Chef, PT Leads
   tracker) has had almost no real usage anywhere, including Fairless
+
   Hills. Treat these as fine to include, but don't be surprised if they
   need a fix or two once real people touch them for the first time —
   that's expected of a pilot, not a sign something's broken.

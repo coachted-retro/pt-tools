@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Club Setup — Retro Fitness PT</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
+  .topbar{display:flex;align-items:center;gap:14px;background:var(--ink);color:#fff;border-bottom:3px solid var(--red);padding:16px 24px}
+  .topbar .t{font-family:'Oswald';font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:1px}
+  .topbar .t span{color:var(--red)}
+  .wrap{max-width:760px;margin:0 auto;padding:28px 20px 60px}
+  .steps{display:flex;gap:6px;margin-bottom:24px}
+  .step-pill{flex:1;text-align:center;padding:10px 6px;border-radius:8px;background:var(--card);border:1.5px solid var(--line);font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  .step-pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .step-pill.done{background:var(--green);color:#fff;border-color:var(--green)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px;margin-bottom:16px}
+  h2{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-size:21px;margin:0 0 6px}
+  p.sub{color:var(--muted);line-height:1.5;margin:0 0 20px}
+  label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:5px;margin-top:14px}
+  label:first-child{margin-top:0}
+  input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:var(--soft)}
+  textarea{resize:vertical}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .btn{font-family:'Oswald';text-transform:uppercase;letter-spacing:.5px;font-weight:700;font-size:13px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);padding:12px 20px;border-radius:9px;cursor:pointer}
+  .btn.red{background:var(--red);border-color:var(--red);color:#fff}
+  .btn.red:hover{background:var(--red-dk)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-row{display:flex;justify-content:space-between;margin-top:22px}
+  .staff-row,.client-row{display:flex;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+  .staff-row:last-child,.client-row:last-child{border-bottom:none}
+  .pill-remove{color:var(--red);cursor:pointer;font-size:18px;padding:0 6px}
+  .tabs2{display:flex;gap:8px;margin-bottom:16px}
+  .tab2{flex:1;text-align:center;padding:10px;border-radius:8px;border:1.5px solid var(--line);cursor:pointer;font-weight:700;font-size:12px;text-transform:uppercase}
+  .tab2.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .csv-drop{border:2px dashed var(--line);border-radius:10px;padding:28px;text-align:center;cursor:pointer;background:var(--soft)}
+  .csv-drop:hover{border-color:var(--red)}
+  .log{background:#0E1013;color:#CDE3D2;border-radius:10px;padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.6;max-height:280px;overflow:auto;white-space:pre-wrap;margin-top:14px}
+  .log .ok{color:#7BE0A3}.log .warn{color:#E8C06A}.log .err{color:#F08A8A}.log .head{color:#8FB7F0}
+  .empty-hint{font-size:12px;color:var(--muted);text-align:center;padding:16px}
+  .done-screen{text-align:center;padding:40px 20px}
+  .done-screen .check{width:64px;height:64px;border-radius:50%;background:var(--green);color:#fff;font-size:32px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="t">Club <span>Setup</span></div>
+</div>
+
+<div class="wrap">
+  <div class="steps">
+    <div class="step-pill active" id="pill-1">1 · Club Info</div>
+    <div class="step-pill" id="pill-2">2 · Trainers</div>
+    <div class="step-pill" id="pill-3">3 · Clients</div>
+    <div class="step-pill" id="pill-4">4 · Done</div>
+  </div>
+
+  <!-- STEP 1: CLUB INFO -->
+  <div class="card" id="step-1">
+    <h2>Tell us about your club</h2>
+    <p class="sub">This is the information that'll show up across your app — client-facing pages, staff tools, and reports.</p>
+    <label>Club name *</label>
+    <input id="club-name" placeholder="e.g. Retro Fitness of Fair Lawn">
+    <div class="row2">
+      <div><label>City *</label><input id="club-city" placeholder="Fair Lawn"></div>
+      <div><label>State *</label><input id="club-state" placeholder="NJ" maxlength="2"></div>
+    </div>
+    <label>Director / General Manager</label>
+    <input id="club-director" placeholder="Name (can add later)">
+    <div class="row2">
+      <div><label>Instagram (optional)</label><input id="club-ig" placeholder="https://instagram.com/..."></div>
+      <div><label>Facebook (optional)</label><input id="club-fb" placeholder="https://facebook.com/..."></div>
+    </div>
+    <div class="btn-row" style="justify-content:flex-end">
+      <button class="btn red" onclick="saveClubInfo()">Next: Add Trainers →</button>
+    </div>
+    <div id="step1-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
+  </div>
+
+  <!-- STEP 2: TRAINERS -->
+  <div class="card" id="step-2" style="display:none">
+    <h2>Add your trainers &amp; staff</h2>
+    <p class="sub">Add everyone who'll need to log in — coaches, front desk, management. You can always add more later from Staff Setup.</p>
+    <div class="row2">
+      <div><label>Full name</label><input id="staff-name" placeholder="e.g. Jamie Rivera"></div>
+      <div><label>Role</label>
+        <select id="staff-role">
+          <option>PT Coach</option>
+          <option>Men's Training Lead</option>
+          <option>Director of Fitness</option>
+          <option>General Manager</option>
+          <option>MEA</option>
+          <option>Front Desk</option>
+          <option>Franchise Owner</option>
+        </select>
+      </div>
+    </div>
+    <label>Email (optional, for their login)</label>
+    <input id="staff-email" placeholder="name@yourclub.com">
+    <button class="btn" style="margin-top:14px;width:100%" onclick="addStaffRow()">+ Add to List</button>
+    <div id="staff-list" style="margin-top:16px"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(1)">← Back</button>
+      <button class="btn red" onclick="goStep(3)">Next: Add Clients →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: CLIENTS -->
+  <div class="card" id="step-3" style="display:none">
+    <h2>Add your PT clients</h2>
+    <p class="sub">Got a handful of clients? Add them one at a time. Got hundreds already training with you? Upload a spreadsheet and bring them all in at once.</p>
+    <div class="tabs2">
+      <div class="tab2 active" id="tab-individual" onclick="switchClientTab('individual')">Add Individually</div>
+      <div class="tab2" id="tab-bulk" onclick="switchClientTab('bulk')">Bulk Upload (CSV)</div>
+    </div>
+
+    <div id="client-individual">
+      <div class="row2">
+        <div><label>First name</label><input id="ci-first"></div>
+        <div><label>Last name</label><input id="ci-last"></div>
+      </div>
+      <div class="row2">
+        <div><label>Phone</label><input id="ci-phone"></div>
+        <div><label>Email</label><input id="ci-email"></div>
+      </div>
+      <div class="row2">
+        <div><label>Trainer</label><select id="ci-coach"></select></div>
+        <div><label>Package</label>
+          <select id="ci-package">
+            <option value="weekly_1x">1x / week</option>
+            <option value="weekly_2x">2x / week</option>
+            <option value="weekly_3x">3x / week</option>
+            <option value="weekly_4x">4x / week</option>
+            <option value="biweekly">Biweekly</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" style="margin-top:14px;width:100%" onclick="addClientRow()">+ Add to List</button>
+    </div>
+
+    <div id="client-bulk" style="display:none">
+      <p class="sub" style="margin-bottom:12px">Your file needs these column headers in the first row (order doesn't matter, extra columns are ignored):</p>
+      <div class="log" style="max-height:none;margin-bottom:14px">first_name,last_name,phone,email,coach,package,training_start_date
+Mike,Smith,215-555-0100,mike@email.com,Jamie Rivera,weekly_2x,2026-01-15</div>
+      <div class="csv-drop" onclick="document.getElementById('csv-file').click()">
+        <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleCsvFile(event)">
+        <div style="font-size:28px;margin-bottom:8px">📄</div>
+        <div style="font-weight:700">Click to choose a CSV file</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">or drag one here</div>
+      </div>
+      <div id="csv-preview" style="margin-top:14px"></div>
+    </div>
+
+    <div id="client-list" style="margin-top:16px"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="goStep(2)">← Back</button>
+      <button class="btn red" onclick="finishSetup()">Finish Setup →</button>
+    </div>
+    <div id="step3-status" style="font-size:12px;color:var(--muted);margin-top:10px"></div>
+  </div>
+
+  <!-- STEP 4: DONE -->
+  <div class="card" id="step-4" style="display:none">
+    <div class="done-screen">
+      <div class="check">✓</div>
+      <h2 style="margin-bottom:10px">You're set up</h2>
+      <p class="sub" id="done-summary">Your club is ready to go.</p>
+      <a class="btn red" href="command-center.html" style="text-decoration:none;display:inline-block">Go to Command Center →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER = 'https://broken-cake-e9c2.tedscholl.workers.dev';
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function db(body){
+  const r = await fetch(WORKER+'/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  return r.json();
+}
+
+let staffList = [];
+let clientList = [];
+
+function goStep(n){
+  for (let i=1;i<=4;i++){
+    document.getElementById('step-'+i).style.display = i===n ? 'block' : 'none';
+    const pill = document.getElementById('pill-'+i);
+    pill.classList.toggle('active', i===n);
+    pill.classList.toggle('done', i<n);
+  }
+  if (n === 3) populateCoachDropdown();
+}
+
+async function saveClubInfo(){
+  const status = document.getElementById('step1-status');
+  const name = document.getElementById('club-name').value.trim();
+  const city = document.getElementById('club-city').value.trim();
+  const state = document.getElementById('club-state').value.trim();
+  if (!name || !city || !state) { status.textContent = 'Club name, city, and state are required.'; status.style.color = 'var(--red)'; return; }
+  status.textContent = 'Saving...'; status.style.color = 'var(--muted)';
+  try {
+    const existing = await db({ op:'select', table:'gyms', where:{ id:1 }, limit:1 });
+    const values = {
+      name, city, state,
+      director: document.getElementById('club-director').value.trim(),
+      instagram_url: document.getElementById('club-ig').value.trim() || null,
+      facebook_url: document.getElementById('club-fb').value.trim() || null,
+      active: 1, is_demo: 0
+    };
+    if (existing.results && existing.results.length) {
+      await db({ op:'update', table:'gyms', values, where:{ id:1 } });
+    } else {
+      await db({ op:'insert', table:'gyms', values:{ id:1, ...values } });
+    }
+    status.textContent = ''; goStep(2);
+  } catch(e) { status.textContent = 'Could not save — try again.'; status.style.color = 'var(--red)'; }
+}
+
+function addStaffRow(){
+  const name = document.getElementById('staff-name').value.trim();
+  const role = document.getElementById('staff-role').value;
+  const email = document.getElementById('staff-email').value.trim();
+  if (!name) return;
+  staffList.push({ name, role, email });
+  document.getElementById('staff-name').value = '';
+  document.getElementById('staff-email').value = '';
+  renderStaffList();
+}
+function removeStaffRow(i){ staffList.splice(i,1); renderStaffList(); }
+function renderStaffList(){
+  const el = document.getElementById('staff-list');
+  if (!staffList.length) { el.innerHTML = '<div class="empty-hint">No trainers added yet</div>'; return; }
+  el.innerHTML = staffList.map((s,i) => `
+    <div class="staff-row">
+      <div style="flex:1"><strong>${esc(s.name)}</strong> — ${esc(s.role)}${s.email?' · '+esc(s.email):''}</div>
+      <span class="pill-remove" onclick="removeStaffRow(${i})">&times;</span>
+    </div>`).join('');
+}
+
+function populateCoachDropdown(){
+  const sel = document.getElementById('ci-coach');
+  sel.innerHTML = '<option value="">Unassigned</option>' + staffList.map(s => `<option>${esc(s.name)}</option>`).join('');
+}
+
+function switchClientTab(which){
+  document.getElementById('tab-individual').classList.toggle('active', which==='individual');
+  document.getElementById('tab-bulk').classList.toggle('active', which==='bulk');
+  document.getElementById('client-individual').style.display = which==='individual' ? 'block' : 'none';
+  document.getElementById('client-bulk').style.display = which==='bulk' ? 'block' : 'none';
+}
+
+function addClientRow(){
+  const first = document.getElementById('ci-first').value.trim();
+  const last = document.getElementById('ci-last').value.trim();
+  if (!first) return;
+  clientList.push({
+    first_name: first, last_name: last,
+    phone: document.getElementById('ci-phone').value.trim(),
+    email: document.getElementById('ci-email').value.trim(),
+    coach: document.getElementById('ci-coach').value,
+    package: document.getElementById('ci-package').value
+  });
+  ['ci-first','ci-last','ci-phone','ci-email'].forEach(id => document.getElementById(id).value = '');
+  renderClientList();
+}
+function removeClientRow(i){ clientList.splice(i,1); renderClientList(); }
+function renderClientList(){
+  const el = document.getElementById('client-list');
+  if (!clientList.length) { el.innerHTML = '<div class="empty-hint">No clients added yet</div>'; return; }
+  el.innerHTML = '<div style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">' + clientList.length + ' client(s) ready to import</div>' +
+    clientList.map((c,i) => `
+    <div class="client-row">
+      <div style="flex:1">${esc(c.first_name)} ${esc(c.last_name)}${c.coach?' — '+esc(c.coach):''}${c.package?' · '+esc(c.package):''}</div>
+      <span class="pill-remove" onclick="removeClientRow(${i})">&times;</span>
+    </div>`).join('');
+}
+
+// Simple CSV parser -- handles quoted fields with commas inside them
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i=0;i<text.length;i++){
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else { inQuotes = false; } }
+      else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n' || c === '\r') { if (field !== '' || row.length) { row.push(field); rows.push(row); row = []; field = ''; } }
+      else field += c;
+    }
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(c => c.trim() !== ''));
+}
+
+function handleCsvFile(evt){
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const rows = parseCSV(reader.result);
+    if (rows.length < 2) { document.getElementById('csv-preview').innerHTML = '<div class="empty-hint" style="color:var(--red)">Could not find any data rows in that file.</div>'; return; }
+    const headers = rows[0].map(h => h.trim().toLowerCase());
+    const idx = (name) => headers.indexOf(name);
+    const fi = idx('first_name'), li = idx('last_name'), ph = idx('phone'), em = idx('email'), co = idx('coach'), pk = idx('package'), sd = idx('training_start_date');
+    if (fi === -1) { document.getElementById('csv-preview').innerHTML = '<div class="empty-hint" style="color:var(--red)">No "first_name" column found — check the header row matches the format above.</div>'; return; }
+    let added = 0;
+    for (let r=1; r<rows.length; r++){
+      const row = rows[r];
+      const first = (row[fi]||'').trim();
+      if (!first) continue;
+      clientList.push({
+        first_name: first, last_name: li>-1 ? (row[li]||'').trim() : '',
+        phone: ph>-1 ? (row[ph]||'').trim() : '', email: em>-1 ? (row[em]||'').trim() : '',
+        coach: co>-1 ? (row[co]||'').trim() : '', package: pk>-1 ? (row[pk]||'').trim() : '',
+        training_start_date: sd>-1 ? (row[sd]||'').trim() : ''
+      });
+      added++;
+    }
+    document.getElementById('csv-preview').innerHTML = '<div style="color:var(--green);font-weight:700">✓ ' + added + ' clients loaded from the file</div>';
+    renderClientList();
+  };
+  reader.readAsText(file);
+}
+
+async function finishSetup(){
+  const status = document.getElementById('step3-status');
+  status.textContent = 'Setting up your club...'; status.style.color = 'var(--muted)';
+  let staffOk = 0, clientOk = 0, errors = 0;
+  try {
+    for (const s of staffList) {
+      const r = await db({ op:'insert', table:'staff_roster', values:{ name:s.name, role:s.role, email:s.email||null, gym_id:1, active:1 } });
+      if (r && r.ok !== false) staffOk++; else errors++;
+    }
+    for (const c of clientList) {
+      const r = await db({ op:'insert', table:'clients', values:{
+        first_name:c.first_name, last_name:c.last_name, phone:c.phone||null, email:c.email||null,
+        coach:c.coach||null, package:c.package||null, training_start_date:c.training_start_date||null,
+        status:'active_pt', gym_id:1
+      }});
+      if (r && r.ok !== false) clientOk++; else errors++;
+    }
+    document.getElementById('done-summary').textContent =
+      staffOk + ' trainer' + (staffOk===1?'':'s') + ' and ' + clientOk + ' client' + (clientOk===1?'':'s') + ' added.' +
+      (errors ? ' (' + errors + ' had an issue and may need a manual check.)' : '');
+    goStep(4);
+  } catch(e) { status.textContent = 'Something went wrong partway through — check Client Management to see what made it in before retrying.'; status.style.color = 'var(--red)'; }
+}
+
+renderStaffList();
+renderClientList();
+</script>
+</body>
+</html>

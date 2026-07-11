@@ -291,4 +291,8 @@ CREATE TABLE scheduled_meals (
 );
 -- Seed row for THIS club -- edit the values below before running, or run
 -- as-is and update via portal-admin.html/command-center.html afterward.
-INSERT INTO gyms (id, name, city, state, director, active, is_demo) VALUES (1, 'REPLACE WITH CLUB NAME', 'REPLACE WITH CITY', 'REPLACE WITH STATE', 'REPLACE WITH DIRECTOR NAME', 1, 0);
+-- Deliberately NO seed row here. Leaving gyms genuinely empty is what
+-- triggers the Club Setup wizard (club-setup.html) on first login --
+-- the new club fills in their own name, city, director, and everything
+-- else themselves, rather than a hardcoded placeholder that has to be
+-- found and edited manually. See NEW_CLUB_SETUP.md Step 9.
