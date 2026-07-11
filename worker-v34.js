@@ -1622,6 +1622,39 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/feed/list' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const limit = Math.min(parseInt(url.searchParams.get('limit')||'30',10), 100);
+        // Auto-generate fresh AI content when the feed is stale, so nobody
+        // has to manually curate what shows up. Real events (birthdays,
+        // anniversaries, recognition, coming-up dates) still need an actual
+        // person to enter them -- AI can't know those -- so this only ever
+        // creates 'industry_news' posts, refreshed roughly weekly, capped
+        // at 3 live posts at a time so the feed doesn't get flooded.
+        try {
+          const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString();
+          const recentAi = await env.DB.prepare(
+            "SELECT COUNT(*) n FROM feed_posts WHERE category='industry_news' AND created_by='ai-auto' AND created_at >= ?"
+          ).bind(weekAgo).first();
+          if ((recentAi?.n || 0) < 1 && env.ANTHROPIC_KEY) {
+            const sys = 'You write short, engaging fitness-industry content snippets for a gym member app feed. Return ONLY valid JSON, no markdown: {"posts":[{"title":"short punchy headline, under 10 words","body":"one or two sentence real, current, general fitness/nutrition/training insight, 20-35 words, conversational tone, no hype, no fake statistics"}]}. Give exactly 3 posts, each on a different topic (e.g. training science, nutrition, recovery, motivation, industry trend) so the feed feels varied.';
+            const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+              body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, system: sys, messages: [{ role: 'user', content: 'Give me this week\'s feed content.' }] })
+            });
+            const aiData = await aiResp.json();
+            const text = (aiData.content && aiData.content[0] && aiData.content[0].text) || '{}';
+            let parsed;
+            try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); } catch(e) { parsed = null; }
+            if (parsed && Array.isArray(parsed.posts)) {
+              for (const p of parsed.posts.slice(0,3)) {
+                if (!p.title) continue;
+                await env.DB.prepare(
+                  `INSERT INTO feed_posts (category,title,body,image_url,featured_client_id,featured_staff_id,event_date,pinned,created_by,created_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)`
+                ).bind('industry_news', p.title, p.body||'', null, null, null, null, 0, 'ai-auto', new Date().toISOString()).run();
+              }
+            }
+          }
+        } catch(e) { /* non-fatal -- fall through to whatever's already there */ }
         const postsRes = await env.DB.prepare(
           'SELECT * FROM feed_posts ORDER BY pinned DESC, created_at DESC LIMIT ?'
         ).bind(limit).all();
