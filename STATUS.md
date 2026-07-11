@@ -471,6 +471,19 @@ NOT YET STARTED, needs real scoping work before building:
       exists today — needs real design work (does her dashboard make 11
       separate API calls, one to each club's Worker? does each club's
       Worker need a way to report summary data back to a central place?)
+- [x] BUILT July 11: provisioning/CLUB_DATABASE_REGISTRY.md -- the
+      human-readable index Ted asked for, mapping numbered slots to
+      Cloudflare database UUIDs to (once registered) real club names.
+      Important: this is a STATIC file, not a live feed. It solves "how
+      do I look at Cloudflare and know which database is which club" via
+      documentation. It does NOT make club data show up live in Keelin's
+      dashboard -- that's still the exact same aggregation gap above,
+      unchanged by this registry. Don't conflate the two: the registry is
+      for humans checking Cloudflare; the dashboard gap is a real build.
+      No D1 rename API exists, confirmed via tool_search -- the 7 already-
+      created club-named databases can't be relabeled to generic slot
+      names, so the registry file is the actual source of truth for "slot
+      03 is really Jersey City," not the Cloudflare name itself.
 - [ ] Self-service staff/PT-client account creation per club: confirm the
       existing portal-admin.html "Grant Access" flow is enough for a new
       club's own staff to provision their own people, or whether it needs
