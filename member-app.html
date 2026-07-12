@@ -3297,7 +3297,7 @@ async function loadCircle() {
         ${tierLabel ? `<div style="font-size:10px;color:var(--red);font-weight:800;text-transform:uppercase;margin-top:6px">${esc(tierLabel)}</div>` : ''}
         <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
           ${reactionRow}
-          <button class="circle-react-btn" style="margin-left:auto" onclick='shareWin(${JSON.stringify(w.headline)})'>&#8599; Share</button>
+          <button class="circle-react-btn" style="margin-left:auto" onclick='shareWin(${escOnclick(JSON.stringify(w.headline))})'>&#8599; Share</button>
         </div>
       </div></div>`;
     }).join('');
@@ -3763,7 +3763,7 @@ function renderTraining() {
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--red);margin-bottom:4px;">${isToday ? 'Assigned by ' + esc(shown.assigned_coach||'your coach') + ' — Today' : 'Coming up ' + fmtShortDate(shown.scheduled_date)}</div>
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:2px;">🎯 ${esc(shown.program_name||'Training Day')}</div>
           ${shown.focus_notes ? `<div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">${esc(shown.focus_notes)}</div>` : ''}
-          ${isToday ? `<button class="action-btn" onclick='mOpenLiveLog(${JSON.stringify(exNames)}, ${JSON.stringify(shown.program_name||"Today's Workout")})'>Start Your Workout →</button>` : `<div style="font-size:12px;color:var(--ink3)">Check back on ${fmtShortDate(shown.scheduled_date)} to start it</div>`}
+          ${isToday ? `<button class="action-btn" onclick='mOpenLiveLog(${escOnclick(JSON.stringify(exNames))}, ${escOnclick(JSON.stringify(shown.program_name||"Today's Workout"))})'>Start Your Workout →</button>` : `<div style="font-size:12px;color:var(--ink3)">Check back on ${fmtShortDate(shown.scheduled_date)} to start it</div>`}
         </div></div>`;
     } else if (todaysUpload) {
       let exNames = [];
@@ -3773,7 +3773,7 @@ function renderTraining() {
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--red);margin-bottom:4px;">Assigned by your coach — Today</div>
           <div style="font-weight:700;font-size:16px;color:var(--ink);margin-bottom:2px;">🎯 ${esc(todaysUpload.title||"Today's Workout")}</div>
           ${todaysUpload.notes ? `<div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">${esc(todaysUpload.notes)}</div>` : ''}
-          <button class="action-btn" onclick='mOpenLiveLog(${JSON.stringify(exNames)}, ${JSON.stringify(todaysUpload.title||"Today's Workout")})'>Start Your Workout →</button>
+          <button class="action-btn" onclick='mOpenLiveLog(${escOnclick(JSON.stringify(exNames))}, ${escOnclick(JSON.stringify(todaysUpload.title||"Today's Workout"))})'>Start Your Workout →</button>
         </div></div>`;
     } else {
       document.getElementById('training-today-card').innerHTML = `
@@ -3805,7 +3805,7 @@ function renderTraining() {
                 <div style="font-weight:700;font-size:13px;color:var(--ink)">${esc(w.title||'Workout')}</div>
                 <div style="font-size:11px;color:var(--ink3)">${fmtShortDate(w.workout_date)}${exCount ? ' · ' + exCount + ' exercises' : ''}</div>
               </div>
-              <button class="action-btn" style="width:auto;padding:8px 14px;font-size:12px" onclick='mOpenLiveLog(${JSON.stringify(exNames)}, ${JSON.stringify(w.title||"Workout")})'>Start →</button>
+              <button class="action-btn" style="width:auto;padding:8px 14px;font-size:12px" onclick='mOpenLiveLog(${escOnclick(JSON.stringify(exNames))}, ${escOnclick(JSON.stringify(w.title||"Workout"))})'>Start →</button>
             </div>
           </div></div>`;
         }).join('');
@@ -3987,7 +3987,7 @@ function searchCustomExercises() {
   if (q.length < 2) { el.innerHTML = ''; return; }
   const matches = EXERCISE_DB.filter(e => e.name.toLowerCase().includes(q)).slice(0, 8);
   if (!matches.length) { el.innerHTML = '<div style="font-size:12px;color:var(--ink3);padding:6px 0">No matches</div>'; return; }
-  el.innerHTML = matches.map(e => `<div onclick='addCustomExercise(${JSON.stringify(e.name)})' style="padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px">${esc(e.name)} <span style="color:var(--ink3);font-size:11px">· ${esc(e.body_part)}</span></div>`).join('');
+  el.innerHTML = matches.map(e => `<div onclick='addCustomExercise(${escOnclick(JSON.stringify(e.name))})' style="padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px">${esc(e.name)} <span style="color:var(--ink3);font-size:11px">· ${esc(e.body_part)}</span></div>`).join('');
 }
 function addCustomExercise(name) {
   if (CUSTOM_ROUTINE.some(x => x.name === name)) return;
@@ -4216,8 +4216,8 @@ async function loadUnifiedCalendar(forceRender) {
         return `<div style="padding:8px 0;border-bottom:1px solid var(--line)">
           <div style="font-weight:700;font-size:12px;color:var(--red);margin-bottom:4px">${dLabel}</div>
           ${items.map(it => it.kind==='workout'
-            ? `<div onclick='startScheduledSession(${JSON.stringify(it)})' style="font-size:12px;padding:5px 6px;cursor:pointer;border-radius:6px;background:var(--soft)">🏋️ <span style="text-decoration:underline;color:var(--red)">${esc(it.program_name)}</span>${it.duration_min?' · '+it.duration_min+' min':''}</div>`
-            : `<div onclick='jumpToScheduledMeal(${JSON.stringify(it.title)})' style="font-size:12px;padding:5px 6px;cursor:pointer;border-radius:6px;background:var(--soft);margin-top:4px">🍽️ <span style="text-decoration:underline;color:var(--red)">${esc(it.title)}</span>${it.meal_type?' · '+esc(it.meal_type):''}</div>`
+            ? `<div onclick='startScheduledSession(${escOnclick(JSON.stringify(it))})' style="font-size:12px;padding:5px 6px;cursor:pointer;border-radius:6px;background:var(--soft)">🏋️ <span style="text-decoration:underline;color:var(--red)">${esc(it.program_name)}</span>${it.duration_min?' · '+it.duration_min+' min':''}</div>`
+            : `<div onclick='jumpToScheduledMeal(${escOnclick(JSON.stringify(it.title))})' style="font-size:12px;padding:5px 6px;cursor:pointer;border-radius:6px;background:var(--soft);margin-top:4px">🍽️ <span style="text-decoration:underline;color:var(--red)">${esc(it.title)}</span>${it.meal_type?' · '+esc(it.meal_type):''}</div>`
           ).join('')}
         </div>`;
       }).join('') +
@@ -5528,6 +5528,16 @@ function shareWorkout() {
 
 // ── UTILS ────────────────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+// HTML-escapes single quotes (and &) in a JSON.stringify() result so it can
+// be safely embedded inside a single-quoted onclick='...' attribute. Plain
+// JSON.stringify() only escapes double quotes, so any program name or
+// exercise name containing an apostrophe (e.g. "Gage's Monday Session",
+// "World's Greatest Stretch") would prematurely close the attribute and
+// silently break the whole button -- this was the root cause of coach-
+// assigned workouts appearing "hung up" (no click, no set advance, nothing
+// saved) while self-guided workouts, which call mOpenLiveLog() as a real
+// JS function instead of string-embedding it in HTML, worked fine.
+function escOnclick(jsonStr){ return jsonStr.replace(/&/g,'&amp;').replace(/'/g,'&#39;'); }
 function fmtShortDate(d){ if(!d) return ''; return new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
 function showReset(e) { if (e) e.preventDefault(); document.getElementById('reset-box').style.display = 'block'; const le = document.getElementById('l-email').value.trim(); if (le) document.getElementById('r-email').value = le; }
 function hideReset(e) { if (e) e.preventDefault(); document.getElementById('reset-box').style.display = 'none'; document.getElementById('reset-step2').style.display = 'none'; document.getElementById('reset-step1').style.display = 'block'; document.getElementById('r-err').style.display = 'none'; }
