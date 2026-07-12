@@ -1993,7 +1993,14 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           // /schedule/create) — this was never actually being returned here even
           // though the client app has always expected it, so assigned programs
           // silently never appeared in the Training tab for any client.
-          env.DB.prepare("SELECT * FROM scheduled_sessions WHERE client_id=? AND scheduled_date >= date('now','-1 day') ORDER BY scheduled_date ASC LIMIT 60").bind(client_id).all(),
+          // status='scheduled' matters here -- without it, a cancelled session
+          // for the same date as a real one can come back first (the client
+          // picks whichever sorts first, not necessarily the live one),
+          // pointing the client at a cancelled/empty session with no
+          // exercises attached. That's what crashed the live-log screen on
+          // July 12: a cancelled leftover session with null exercises_json
+          // got picked over the real "Full Body A" session for the same day.
+          env.DB.prepare("SELECT * FROM scheduled_sessions WHERE client_id=? AND scheduled_date >= date('now','-1 day') AND status='scheduled' ORDER BY scheduled_date ASC LIMIT 60").bind(client_id).all(),
           // Coach-assigned/extracted workout documents (source: gym_floor,
           // trainerize_screenshot, etc.) -- a DIFFERENT thing from
           // scheduled_sessions above. Confirmed via direct D1 query this is
@@ -2947,8 +2954,10 @@ Rules:
         const clientId = url.searchParams.get('client_id');
         if (!clientId) return bad('client_id required', cors);
         const today = todayET();
+        // status='scheduled' -- same fix as /portal/me (July 12): don't let a
+        // cancelled session show up on the calendar as something tappable.
         const rows = await env.DB.prepare(
-          'SELECT * FROM scheduled_sessions WHERE client_id=? AND scheduled_date >= ? ORDER BY scheduled_date ASC LIMIT 30'
+          "SELECT * FROM scheduled_sessions WHERE client_id=? AND scheduled_date >= ? AND status='scheduled' ORDER BY scheduled_date ASC LIMIT 30"
         ).bind(clientId, today).all();
         return ok({ upcoming: rows.results||[] }, cors);
       }

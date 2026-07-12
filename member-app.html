@@ -2380,7 +2380,19 @@ function mStartStretchRoutine(kind){
 function mVib(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
 
 function mOpenLiveLog(exerciseNames, title){
-  MSESSION = { title: title || 'Workout', exercises: exerciseNames.map(n => ({name:n, sets:[], note:''})), startedAt: Date.now() };
+  // Guard against a session with no exercises attached (e.g. a coach-
+  // scheduled session saved with an empty or malformed exercises_json).
+  // Without this, MSESSION.exercises[0] is undefined and every button in
+  // the logging screen (Log Set, Next Exercise, Save Note) throws a
+  // silent TypeError the moment it's clicked -- exactly the "hung up,
+  // nothing responds" bug reported July 12. Now it fails loudly and
+  // clearly instead of opening a broken screen.
+  const cleanNames = (exerciseNames || []).filter(n => n && String(n).trim());
+  if (!cleanNames.length) {
+    alert("This workout doesn't have any exercises attached yet. Ask your coach to add exercises to this session, then try again.");
+    return;
+  }
+  MSESSION = { title: title || 'Workout', exercises: cleanNames.map(n => ({name:n, sets:[], note:''})), startedAt: Date.now() };
   MEXI = 0;
   document.getElementById('live-log-screen').style.display = 'flex';
   mOpenExercise();
