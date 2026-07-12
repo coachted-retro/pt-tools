@@ -597,7 +597,14 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
           <div class="day-pill" onclick="setBundleFilter('recovery', this)">Recovery</div>
         </div>
         <div id="bundle-grid"></div>
-        <div id="bundle-detail" style="display:none"></div>
+
+  <div id="bundle-preview-screen" style="display:none;position:fixed;inset:0;background:var(--soft, #F5F6F8);z-index:80;flex-direction:column">
+    <div style="background:#fff;border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+      <button onclick="closeBundlePreview()" style="border:none;background:var(--soft);border-radius:10px;width:36px;height:36px;font-size:18px;cursor:pointer;flex-shrink:0">←</button>
+      <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.3px">Back to Programs</div>
+    </div>
+    <div id="bundle-preview-body" style="flex:1;overflow-y:auto;padding:16px"></div>
+  </div>
 
         <div class="sec-label">Schedule Your Own Workouts</div>
         <div class="card"><div class="card-body">
@@ -3863,28 +3870,30 @@ function renderBundles() {
 
 function selectBundle(id) {
   selectedBundle = id;
-  renderBundles(); // refresh selection state
+  renderBundles(); // refresh selection state on the card grid underneath
   const bundle = BUNDLES.find(b => b.id === id);
   if (!bundle) return;
-  const el = document.getElementById('bundle-detail');
-  el.style.display = 'block';
-  el.innerHTML = `
+  // Full-screen preview instead of an inline panel the client has to
+  // scroll down to find -- tapping a card should take them straight to
+  // what's in it, with an unmissable way back. Flagged July 12: the old
+  // inline-expand-and-scroll pattern looked like the card "went nowhere."
+  document.getElementById('bundle-preview-body').innerHTML = `
     <div class="card" style="border-top:3px solid ${bundle.accent}">
       <div class="card-head">
-        <h3>${bundle.icon} ${bundle.name}</h3>
-        <div class="card-sub">${bundle.desc} · ${bundle.days}</div>
+        <h3>${bundle.icon} ${esc(bundle.name)}</h3>
+        <div class="card-sub">${esc(bundle.desc)} · ${esc(bundle.days)}</div>
       </div>
       <div class="card-body">
         ${bundle.routines.map((r, ri) => `
           <div style="margin-bottom:${ri<bundle.routines.length-1?'16px':'0'}">
-            <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:${bundle.accent};margin-bottom:8px;letter-spacing:.3px">${r.label}</div>
+            <div style="font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;color:${bundle.accent};margin-bottom:8px;letter-spacing:.3px">${esc(r.label)}</div>
             ${r.exercises.map((ex, i) => `
               <div class="ex-row" style="flex-direction:column;align-items:stretch;padding:0">
                 <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
                   <div class="ex-num" style="background:${bundle.accent}">${i+1}</div>
                   <div style="flex:1">
                     <div class="ex-name">${esc(ex.name)}</div>
-                    <div class="ex-meta">${ex.sets} sets × ${ex.reps} · Rest ${ex.rest}</div>
+                    <div class="ex-meta">${esc(ex.sets)} sets × ${esc(ex.reps)} · Rest ${esc(ex.rest)}</div>
                   </div>
                   <button class="info-btn" onclick="toggleExCue(this)" title="Form cues & video">ℹ</button>
                   <button class="ex-log-btn" onclick="this.classList.toggle('logged');this.textContent=this.classList.contains('logged')?'✓ Done':'Log'">Log</button>
@@ -3901,7 +3910,11 @@ function selectBundle(id) {
           </div>`).join('<div style="height:1px;background:var(--line);margin:16px 0"></div>')}
       </div>
     </div>`;
-  el.scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('bundle-preview-screen').style.display = 'flex';
+}
+
+function closeBundlePreview(){
+  document.getElementById('bundle-preview-screen').style.display = 'none';
 }
 
 function startBundleWorkout(routineIdx) {
