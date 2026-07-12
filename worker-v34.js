@@ -368,13 +368,13 @@ export default {
         const gymId = url.searchParams.get('gym_id');
         if (!gymId) return bad('gym_id required', cors);
         const month = url.searchParams.get('month') || new Date().toISOString().slice(0,7);
-        return ok(await getGymDetail(env, gymId, month), cors);
+        return ok(await getGymDetail(env.DB, gymId, month), cors);
       }
 
       if (url.pathname === '/region/forecast' && request.method === 'GET') {
         if (!env.DB) return bad('No DB', cors);
         const gymId = url.searchParams.get('gym_id'); // omit for region-wide forecast
-        return ok(await getForecast(env, gymId), cors);
+        return ok(await getForecast(env.DB, gymId), cors);
       }
 
       // Real cross-club rollup for Keelin's dashboard (built July 12 2026,
@@ -425,6 +425,63 @@ export default {
           }
         }
         return ok({ month, clubs }, cors);
+      }
+
+      // Full Overview tab data across every club, built July 12 2026 as
+      // part of retiring the old single-club-only Overview panels
+      // (revenue chart, forecast, funnel, sale type mix, rep leaderboard).
+      // Reuses the exact same getGymDetail/getForecast logic that already
+      // works correctly for one club -- just calls it once per club slot
+      // and merges the results, instead of duplicating that logic here.
+      if (url.pathname === '/region/rollup-full' && request.method === 'GET') {
+        const month = url.searchParams.get('month') || todayET().slice(0,7);
+        const slotKeys = ['DB',
+          'DB_SLOT_01','DB_SLOT_02','DB_SLOT_03','DB_SLOT_04','DB_SLOT_05',
+          'DB_SLOT_06','DB_SLOT_07','DB_SLOT_08','DB_SLOT_09','DB_SLOT_10','DB_SLOT_11'];
+        const clubDetails = [];
+        const monthlyTotals = {}; // month -> summed actual across every club, for the region-wide forecast
+        for (const slotKey of slotKeys) {
+          const db = env[slotKey];
+          if (!db) continue;
+          try {
+            const gym = await db.prepare('SELECT * FROM gyms ORDER BY id LIMIT 1').first();
+            if (!gym) continue;
+            const detail = await getGymDetail(db, gym.id, month);
+            const forecast = await getForecast(db, gym.id);
+            clubDetails.push({ slot: slotKey, ...detail, forecast_history: forecast.history });
+            for (const h of forecast.history) {
+              monthlyTotals[h.month] = (monthlyTotals[h.month] || 0) + h.actual;
+            }
+          } catch(e) { /* skip a club that errors rather than failing the whole rollup */ }
+        }
+
+        // Re-run the same linear-trend projection used for a single club,
+        // but on the region-wide summed monthly totals.
+        const historyMonths = Object.keys(monthlyTotals).sort();
+        const history = historyMonths.map(m => ({ month: m, actual: monthlyTotals[m] }));
+        const withData = history.filter(h => h.actual > 0);
+        let slope = 0, intercept = 0, hasTrend = false;
+        if (withData.length >= 2) {
+          const n = withData.length;
+          const xs = withData.map((_,i)=>i);
+          const ys = withData.map(h=>h.actual);
+          const xMean = xs.reduce((a,b)=>a+b,0)/n, yMean = ys.reduce((a,b)=>a+b,0)/n;
+          let num=0, den=0;
+          for (let i=0;i<n;i++){ num += (xs[i]-xMean)*(ys[i]-yMean); den += (xs[i]-xMean)**2; }
+          slope = den !== 0 ? num/den : 0;
+          intercept = yMean - slope*xMean;
+          hasTrend = true;
+        }
+        const now = new Date();
+        const projection = [];
+        for (let i = 1; i <= 3; i++) {
+          const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+          const m = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+          projection.push({ month: m, projected: hasTrend ? Math.max(0, Math.round(intercept + slope*(withData.length-1+i))) : null });
+        }
+        const regionForecast = { history, projection, confidence: withData.length >= 4 ? 'moderate' : withData.length >= 2 ? 'low' : 'insufficient_data', months_of_data: withData.length };
+
+        return ok({ month, clubs: clubDetails, region_forecast: regionForecast }, cors);
       }
 
       if (url.pathname === '/quota/set' && request.method === 'POST') {
@@ -4538,31 +4595,31 @@ async function getRegionSummary(env, month, includeDemo){
     region_pct: totalGoal>0 ? Math.round((totalActual/totalGoal)*100) : null };
 }
 
-async function getGymDetail(env, gymId, month){
-  const gym = await env.DB.prepare('SELECT * FROM gyms WHERE id=?').bind(gymId).first();
-  const reps = await env.DB.prepare('SELECT * FROM pt_reps WHERE gym_id=? AND active=1 ORDER BY name ASC').bind(gymId).all();
+async function getGymDetail(db, gymId, month){
+  const gym = await db.prepare('SELECT * FROM gyms WHERE id=?').bind(gymId).first();
+  const reps = await db.prepare('SELECT * FROM pt_reps WHERE gym_id=? AND active=1 ORDER BY name ASC').bind(gymId).all();
   const repRows = [];
   for (const rep of (reps.results||[])) {
-    const sales = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total, COUNT(*) n FROM pt_sales WHERE gym_id=? AND sold_by=? AND substr(sale_date,1,7)=?").bind(gymId, rep.name, month).first();
+    const sales = await db.prepare("SELECT COALESCE(SUM(amount),0) total, COUNT(*) n FROM pt_sales WHERE gym_id=? AND sold_by=? AND substr(sale_date,1,7)=?").bind(gymId, rep.name, month).first();
     repRows.push({ rep_id: rep.id, name: rep.name, role: rep.role, total: sales?.total||0, sale_count: sales?.n||0 });
   }
   repRows.sort((a,b) => b.total - a.total);
-  const quota = await env.DB.prepare('SELECT tcv_goal FROM gym_quotas WHERE gym_id=? AND month=?').bind(gymId, month).first();
-  const monthSales = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total, COUNT(*) n FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, month).first();
-  const recent = await env.DB.prepare('SELECT * FROM pt_sales WHERE gym_id=? ORDER BY sale_date DESC, id DESC LIMIT 10').bind(gymId).all();
+  const quota = await db.prepare('SELECT tcv_goal FROM gym_quotas WHERE gym_id=? AND month=?').bind(gymId, month).first();
+  const monthSales = await db.prepare("SELECT COALESCE(SUM(amount),0) total, COUNT(*) n FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, month).first();
+  const recent = await db.prepare('SELECT * FROM pt_sales WHERE gym_id=? ORDER BY sale_date DESC, id DESC LIMIT 10').bind(gymId).all();
   const trend = [];
   const now = new Date();
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
     const m = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-    const s = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, m).first();
-    const q = await env.DB.prepare('SELECT tcv_goal FROM gym_quotas WHERE gym_id=? AND month=?').bind(gymId, m).first();
+    const s = await db.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, m).first();
+    const q = await db.prepare('SELECT tcv_goal FROM gym_quotas WHERE gym_id=? AND month=?').bind(gymId, m).first();
     trend.push({ month: m, total: s?.total||0, goal: q?.tcv_goal||0 });
   }
   // Welcome Workout funnel for this club, this month
   const monthStart = month + '-01';
   const monthEnd = month + '-31';
-  const funnelRows = (await env.DB.prepare(
+  const funnelRows = (await db.prepare(
     "SELECT welcome_workout_outcome o, COUNT(*) n FROM members WHERE gym_id=? AND join_date >= ? AND join_date <= ? GROUP BY welcome_workout_outcome"
   ).bind(gymId, monthStart, monthEnd).all()).results || [];
   const fc = {}; let fTotal = 0;
@@ -4579,29 +4636,29 @@ async function getGymDetail(env, gymId, month){
   };
 
   // Sale type split this month
-  const typeRows = (await env.DB.prepare(
+  const typeRows = (await db.prepare(
     "SELECT COALESCE(sale_type,'new') t, COUNT(*) n, COALESCE(SUM(amount),0) total FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=? GROUP BY t"
   ).bind(gymId, month).all()).results || [];
   const saleTypes = {}; for (const r of typeRows) saleTypes[r.t] = { count: r.n, total: r.total };
 
   // Recent EOD log for this club
-  const eodLog = (await env.DB.prepare(
+  const eodLog = (await db.prepare(
     'SELECT id, author_name, author_role, log_date, submitted_at, ask_keelin FROM eod_submissions WHERE gym_id=? ORDER BY submitted_at DESC LIMIT 15'
   ).bind(gymId).all()).results || [];
 
   // Open help requests for this club
-  const openHelp = (await env.DB.prepare(
+  const openHelp = (await db.prepare(
     "SELECT COUNT(*) n FROM help_requests WHERE gym_id=? AND status='open'"
   ).bind(gymId).first());
 
-  const note = await env.DB.prepare('SELECT note, emoji FROM board_notes WHERE gym_id=? AND month=?').bind(gymId, month).first();
+  const note = await db.prepare('SELECT note, emoji FROM board_notes WHERE gym_id=? AND month=?').bind(gymId, month).first();
 
   return { gym, month, goal: quota?.tcv_goal||0, actual: monthSales?.total||0, sale_count: monthSales?.n||0,
     reps: repRows, recent_sales: recent.results||[], trend, funnel, sale_types: saleTypes,
     eod_log: eodLog, open_help_count: openHelp?.n||0, note: note?.note||'', emoji: note?.emoji||'' };
 }
 
-async function getForecast(env, gymId){
+async function getForecast(db, gymId){
   const monthsBack = 6;
   const history = [];
   const now = new Date();
@@ -4610,10 +4667,10 @@ async function getForecast(env, gymId){
     const m = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     let total;
     if (gymId) {
-      const s = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, m).first();
+      const s = await db.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gymId, m).first();
       total = s?.total||0;
     } else {
-      const s = await env.DB.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE substr(sale_date,1,7)=?").bind(m).first();
+      const s = await db.prepare("SELECT COALESCE(SUM(amount),0) total FROM pt_sales WHERE substr(sale_date,1,7)=?").bind(m).first();
       total = s?.total||0;
     }
     history.push({ month: m, actual: total });

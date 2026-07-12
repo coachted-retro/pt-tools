@@ -498,14 +498,26 @@ async function renderOverview() {
   document.getElementById('revenue-chart-month').textContent = monthLabel + ' · sorted by % to goal';
   document.getElementById('saletype-month').textContent = 'New / Renewal / Upgrade, ' + monthLabel;
   document.getElementById('rep-month').textContent = 'Individual PT rep performance, ' + monthLabel;
-  const summary = await (await fetch(WORKER+'/region/summary?month='+OVERVIEW_MONTH)).json();
-  const gyms = (summary.gyms || []).slice().sort((a,b) => (b.pct||0) - (a.pct||0));
+
+  // Single call now gets everything for every real club -- replaces the
+  // old /region/summary + /region/forecast + one /region/gym call per
+  // club (July 12 2026, same day the rollup itself was built).
+  const full = await (await fetch(WORKER+'/region/rollup-full?month='+OVERVIEW_MONTH)).json();
+  const clubDetails = full.clubs || [];
+  const gyms = clubDetails.map(d => ({
+    slot: d.slot, gym_id: d.gym?.id, name: d.gym?.name || 'Unnamed club', director: d.gym?.director,
+    goal: d.goal||0, actual: d.actual||0, sale_count: d.sale_count||0,
+    pct: d.goal>0 ? Math.round(d.actual/d.goal*100) : null
+  })).sort((a,b) => (b.pct||0) - (a.pct||0));
 
   // ── KPI strip ──
   const safeZone = gyms.filter(g => (g.pct||0) >= 90).length;
   const totalSales = gyms.reduce((s,g) => s + (g.sale_count||0), 0);
-  document.getElementById('k-region-actual').textContent = fmtMoney(summary.region_actual);
-  document.getElementById('k-region-pct').textContent = (summary.region_pct==null?'—':summary.region_pct+'%') + ' of ' + fmtMoney(summary.region_goal) + ' goal';
+  const regionGoal = gyms.reduce((s,g) => s + (g.goal||0), 0);
+  const regionActual = gyms.reduce((s,g) => s + (g.actual||0), 0);
+  const regionPct = regionGoal>0 ? Math.round(regionActual/regionGoal*100) : null;
+  document.getElementById('k-region-actual').textContent = fmtMoney(regionActual);
+  document.getElementById('k-region-pct').textContent = (regionPct==null?'—':regionPct+'%') + ' of ' + fmtMoney(regionGoal) + ' goal';
   document.getElementById('k-safe-zone').textContent = safeZone + '/' + gyms.length;
   if (gyms.length) {
     const top = gyms[0], bottom = gyms[gyms.length-1];
@@ -513,11 +525,11 @@ async function renderOverview() {
     document.getElementById('k-top-club-pct').textContent = (top.pct||0) + '% to goal · click to view';
     document.getElementById('k-attention').textContent = bottom.name;
     document.getElementById('k-attention-pct').textContent = (bottom.pct||0) + '% to goal · click to view';
-    document.getElementById('k-top-club-card').onclick = () => goToGym(top.gym_id);
-    document.getElementById('k-attention-card').onclick = () => goToGym(bottom.gym_id);
+    document.getElementById('k-top-club-card').onclick = () => goToGym(top.slot);
+    document.getElementById('k-attention-card').onclick = () => goToGym(bottom.slot);
   }
   document.getElementById('k-sale-count').textContent = totalSales;
-  document.getElementById('k-aov').textContent = totalSales ? fmtMoney(Math.round(summary.region_actual/totalSales)) : '—';
+  document.getElementById('k-aov').textContent = totalSales ? fmtMoney(Math.round(regionActual/totalSales)) : '—';
 
   // ── Gym table ──
   document.getElementById('gym-rows').innerHTML = gyms.map(g => {
@@ -530,7 +542,7 @@ async function renderOverview() {
       <td style="color:${color};font-weight:700">${g.pct==null?'—':g.pct+'%'}</td>
       <td>${g.sale_count||0}</td>
     </tr>`;
-  }).join('') || '<tr><td colspan="6" class="empty-state">No gym data.</td></tr>';
+  }).join('') || '<tr><td colspan="6" class="empty-state">No club data yet.</td></tr>';
 
   // ── Revenue vs Goal chart — click a bar to drill into that club ──
   destroyChart('revenue');
@@ -550,7 +562,7 @@ async function renderOverview() {
       onClick: (evt, elements) => {
         if (!elements.length) return;
         const g = gyms[elements[0].index];
-        if (g) goToGym(g.gym_id);
+        if (g) goToGym(g.slot);
       },
       onHover: (evt, elements) => { evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; }
     }
@@ -562,42 +574,42 @@ async function renderOverview() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:6px">Top 5</div>
-        ${top5.map((g,i) => `<div onclick="goToGym(${g.gym_id})" style="cursor:pointer;display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
+        ${top5.map((g,i) => `<div onclick="goToGym('${g.slot}')" style="cursor:pointer;display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
           <span>${i+1}. ${escH(g.name)}</span><span style="font-weight:700;color:var(--green)">${g.pct||0}%</span></div>`).join('')}
       </div>
       <div>
         <div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:6px">Needs Attention</div>
-        ${bottom5.map((g,i) => `<div onclick="goToGym(${g.gym_id})" style="cursor:pointer;display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
+        ${bottom5.map((g,i) => `<div onclick="goToGym('${g.slot}')" style="cursor:pointer;display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:13px">
           <span>${i+1}. ${escH(g.name)}</span><span style="font-weight:700;color:var(--red)">${g.pct||0}%</span></div>`).join('')}
       </div>
     </div>`;
 
-  // ── Region forecast ──
-  const fc = await (await fetch(WORKER+'/region/forecast')).json();
+  // ── Region forecast — already merged region-wide by the endpoint ──
+  const fc = full.region_forecast || { history: [], projection: [], confidence: 'insufficient_data', months_of_data: 0 };
   const confLabel = { insufficient_data:'Insufficient data', low:'Low confidence', moderate:'Moderate confidence' }[fc.confidence] || '';
-  document.getElementById('forecast-sub').textContent = 'Trend from ' + fc.months_of_data + ' month' + (fc.months_of_data===1?'':'s') + ' of actual sales · ' + confLabel;
+  document.getElementById('forecast-sub').textContent = 'Trend from ' + fc.months_of_data + ' month' + (fc.months_of_data===1?'':'s') + ' of actual sales across all clubs · ' + confLabel;
   const histLabels = fc.history.map(h => new Date(h.month+'-15').toLocaleDateString('en-US',{month:'short'}));
   const projLabels = fc.projection.map(p => new Date(p.month+'-15').toLocaleDateString('en-US',{month:'short'}));
   destroyChart('forecast');
-  _charts.forecast = new Chart(document.getElementById('forecastChart'), {
-    type: 'line',
-    data: {
-      labels: [...histLabels, ...projLabels],
-      datasets: [
-        { label: 'Actual', data: [...fc.history.map(h=>h.actual), ...projLabels.map(()=>null)], borderColor:'#E0192B', backgroundColor:'#E0192B', tension:.3 },
-        { label: 'Projected', data: [...fc.history.map(()=>null).slice(0,-1), fc.history[fc.history.length-1].actual, ...fc.projection.map(p=>p.projected)], borderColor:'#9CA3AF', borderDash:[6,4], backgroundColor:'#9CA3AF', tension:.3 }
-      ]
-    },
-    options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+(v/1000)+'k' } } } }
-  });
+  if (fc.history.length) {
+    _charts.forecast = new Chart(document.getElementById('forecastChart'), {
+      type: 'line',
+      data: {
+        labels: [...histLabels, ...projLabels],
+        datasets: [
+          { label: 'Actual', data: [...fc.history.map(h=>h.actual), ...projLabels.map(()=>null)], borderColor:'#E0192B', backgroundColor:'#E0192B', tension:.3 },
+          { label: 'Projected', data: [...fc.history.map(()=>null).slice(0,-1), fc.history[fc.history.length-1].actual, ...fc.projection.map(p=>p.projected)], borderColor:'#9CA3AF', borderDash:[6,4], backgroundColor:'#9CA3AF', tension:.3 }
+        ]
+      },
+      options: { responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ callback:v=>'$'+(v/1000)+'k' } } } }
+    });
+  }
 
-  // ── Aggregate per-gym detail (funnel, sale types, reps) region-wide ──
-  const details = await Promise.all(gyms.map(g => fetch(WORKER+'/region/gym?gym_id='+g.gym_id+'&month='+OVERVIEW_MONTH).then(r=>r.json())));
-
+  // ── Funnel, sale type mix, rep leaderboard — aggregated across every club, already fetched above ──
   let fTotal=0, fBooked=0, fShowed=0, fClosed=0;
   const saleTypeAgg = {};
   const allReps = [];
-  details.forEach(d => {
+  clubDetails.forEach(d => {
     if (d.funnel) {
       fTotal += d.funnel.total_joins||0;
       fBooked += Math.round((d.funnel.booked_pct||0)/100 * (d.funnel.total_joins||0));
