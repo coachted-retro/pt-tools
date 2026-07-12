@@ -516,30 +516,6 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
 
 const WORKER=RETRO_WORKER_URL;
 
-// ── DEMO MODE ── (see command-center.html for the matching shim)
-(function(){
-  const params = new URLSearchParams(location.search);
-  if (params.get('demo') === '1') sessionStorage.setItem('retro_demo_mode', '1');
-  const isDemo = sessionStorage.getItem('retro_demo_mode') === '1';
-  if (isDemo) {
-    const realFetch = window.fetch;
-    window.fetch = function(input, init){
-      if (typeof input === 'string' && input.indexOf(WORKER) === 0 && input.indexOf('demo=') === -1) {
-        input += (input.indexOf('?') === -1 ? '?' : '&') + 'demo=1';
-      }
-      return realFetch(input, init);
-    };
-  }
-  window._retroDemoMode = isDemo;
-  if (isDemo) {
-    document.addEventListener('DOMContentLoaded', function(){
-      document.title = 'Retro Fitness, The Body Shoppe, Member Portal';
-      const t = document.getElementById('pageTitle');
-      if (t && t.textContent.trim() === 'Body Shoppe') t.textContent = 'Retro Fitness, The Body Shoppe';
-    });
-  }
-})();
-
 let SESSION=null;
 
 // ── AUTH ─────────────────────────────────────────────────────────────────────

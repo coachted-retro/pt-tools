@@ -102,9 +102,9 @@ tr:last-child td{border-bottom:none}
 <script>
 const WORKER = RETRO_WORKER_URL;
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
-const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
-const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
-if (DEMO_VIEW) { const bl = document.getElementById('back-link'); if (bl) bl.href = 'keelin-dashboard.html?demo=1'; }
+// Demo mode retired July 12 2026 -- every club is a real database now, see
+// /region/rollup-full on the Worker.
+const DEMO_Q = '';
 const DIMS = {
   members: { club:'Club', outcome:'WW Outcome', membership_type:'Membership Type', month:'Month', week:'Week' },
   pt_sales: { club:'Club', coach:'Coach', package:'Package', sale_type:'Sale Type', month:'Month', week:'Week' },

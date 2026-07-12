@@ -84,9 +84,8 @@ const WORKER = RETRO_WORKER_URL;
 const params = new URLSearchParams(location.search);
 const GYM_ID = params.get('gym_id') || '1';
 const MONTH = params.get('month') || new Date().toISOString().slice(0,7);
-const DEMO_VIEW = params.get('demo') === '1';
-const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
-if (DEMO_VIEW) { const bl = document.getElementById('back-link'); if (bl) bl.href = 'keelin-dashboard.html?demo=1'; }
+// Demo mode retired July 12 2026 -- every club is a real database now.
+const DEMO_Q = '';
 
 function fmtMoney(n){ return '$' + Number(n||0).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

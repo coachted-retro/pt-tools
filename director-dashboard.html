@@ -315,8 +315,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <script>
 const WORKER = RETRO_WORKER_URL;
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
-const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
-const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
+// Demo mode retired July 12 2026 -- every club is a real database now. This
+// page itself is reached via a club's own subdomain (club01.myretrostrong.com
+// etc), same file, own real data automatically -- no demo flag needed.
+const DEMO_Q = '';
 const GYM_ID = parseInt(new URLSearchParams(location.search).get('gym_id')) || 1;
 
 // Some directors also coach (Danielle does, at Fairless Hills) -- this just
