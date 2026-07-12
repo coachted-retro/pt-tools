@@ -1,0 +1,95 @@
+name = "broken-cake-e9c2"
+main = "worker-v34.js"
+compatibility_date = "2026-07-12"
+account_id = "e3507901699c196c82b78ea540a58612"
+
+# ── SECRETS -- do NOT put these here. This file is committed to GitHub.
+# ANTHROPIC_KEY, JWT_SECRET, ADMIN_KEY, RESEND_KEY, and MAIL_FROM are all
+# already set as encrypted Worker secrets on the live Cloudflare Worker,
+# and this file does not touch them. If they ever need to change, do it
+# with `wrangler secret put NAME` from the command line (one-time, asks
+# for the value interactively, never written to any file) -- never add
+# a [vars] block here with a real key value in it.
+
+# ── FAIRLESS HILLS (the real, live production club) ──────────────────
+[[d1_databases]]
+binding = "DB"
+database_name = "retro-crm"
+database_id = "3ded4438-bca8-44fb-82ce-89cdf07f31a7"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "retro-photos"
+
+# ── PILOT CLUB SLOTS (all 11 blank, unclaimed as of July 12 2026 --
+# see provisioning/CLUB_DATABASE_REGISTRY.md for the authoritative
+# slot-to-club mapping once clubs start getting assigned to slots).
+# R2 photo isolation for these needs NO separate binding -- the Worker
+# code itself prefixes every key by club automatically, using the same
+# PHOTOS bucket above. See the clubPrefix wrapper in worker-v34.js.
+[[d1_databases]]
+binding = "DB_SLOT_01"
+database_name = "retro-fitness-forest-hills"
+database_id = "5e84df74-7f0f-4fcd-ac3b-58424f7f99ee"
+
+[[d1_databases]]
+binding = "DB_SLOT_02"
+database_name = "retro-fitness-glendale"
+database_id = "575c1c1e-a638-41db-baae-43cc3e0ecfcb"
+
+[[d1_databases]]
+binding = "DB_SLOT_03"
+database_name = "retro-fitness-jersey-city"
+database_id = "5a31c0f3-04b0-45eb-aec1-42d29cfb0415"
+
+[[d1_databases]]
+binding = "DB_SLOT_04"
+database_name = "retro-fitness-cedar-city"
+database_id = "27db9825-0be1-4f77-9782-7b1ad1fe745c"
+
+[[d1_databases]]
+binding = "DB_SLOT_05"
+database_name = "retro-fitness-rego-park"
+database_id = "738c18af-6c79-49e6-8ade-f3e76fefdfc4"
+
+[[d1_databases]]
+binding = "DB_SLOT_06"
+database_name = "retro-fitness-fairfield"
+database_id = "84308712-2c6d-4e8e-b20e-6b6edabbb20e"
+
+[[d1_databases]]
+binding = "DB_SLOT_07"
+database_name = "retro-fitness-tottenville"
+database_id = "fce60e14-47f5-464d-be7c-93913255c8b0"
+
+[[d1_databases]]
+binding = "DB_SLOT_08"
+database_name = "retro-fitness-club-08"
+database_id = "94a6bf25-46e5-464d-bc1a-174af8705bb1"
+
+[[d1_databases]]
+binding = "DB_SLOT_09"
+database_name = "retro-fitness-club-09"
+database_id = "dc7deb6d-e127-49a5-9a65-72b3565d2e71"
+
+[[d1_databases]]
+binding = "DB_SLOT_10"
+database_name = "retro-fitness-club-10"
+database_id = "782b7313-ac0b-4558-be07-5f2a033c492a"
+
+[[d1_databases]]
+binding = "DB_SLOT_11"
+database_name = "retro-fitness-club-11"
+database_id = "fa689353-5a1a-4bde-9684-d516d64da0a0"
+
+# ── ROUTES: the apex domain plus every club subdomain, all pointing at
+# this one Worker. Confirm in Cloudflare DNS that a wildcard (*) A/CNAME
+# record for myretrostrong.com exists and is proxied (orange cloud on) --
+# that's a one-time manual step this file can't do for you.
+[[routes]]
+pattern = "myretrostrong.com/*"
+zone_name = "myretrostrong.com"
+
+[[routes]]
+pattern = "*.myretrostrong.com/*"
+zone_name = "myretrostrong.com"

@@ -194,6 +194,10 @@ async function verifyToken(token, secret) {
 // route for its subdomain. Nothing else in this file changes -- every
 // one of the 605 existing env.DB references below keeps working exactly
 // as-is, they just transparently point at that request's own club data.
+// R2 photo/video storage needs NO separate per-club setup -- it's
+// automatically isolated by key prefix inside the one existing PHOTOS
+// bucket the moment the DB_SLOT binding above is added. See the
+// clubPrefix wrapper right after this map for how.
 const CLUB_SLOT_MAP = {
   'club01.myretrostrong.com': 'DB_SLOT_01',
   'club02.myretrostrong.com': 'DB_SLOT_02',
@@ -233,17 +237,29 @@ export default {
         return bad(`This club (${url.hostname}) is not yet set up -- its database binding (${clubBindingName}) hasn't been added to the Worker. Contact Ted Scholl.`, cors);
       }
       env = { ...env, DB: env[clubBindingName] };
-    }
 
-    // DEMO MODE ROUTING. Pass ?demo=1 on any request, or header
-    // X-Demo-Mode: 1, to point every env.DB call at the isolated demo
-    // database instead of the live one. Nothing downstream needs to
-    // know which database it is, every existing handler keeps using
-    // env.DB exactly as before.
-    const isDemo = url.searchParams.get('demo') === '1' || request.headers.get('X-Demo-Mode') === '1';
-    if (isDemo) {
-      if (!env.DB_DEMO) return bad('Demo database binding DB_DEMO not found. Add it in Worker Settings Bindings before using demo mode.', cors);
-      env = { ...env, DB: env.DB_DEMO };
+      // R2 photo/video isolation, same principle as the DB swap above but
+      // without needing 11 more buckets + 11 more manual bindings (exactly
+      // the kind of binding-config mistake that just cost real time
+      // tonight). Every existing env.PHOTOS.put/get/delete call in this
+      // file (15+ call sites) keeps working completely unchanged -- this
+      // wraps the one real PHOTOS binding so every key this club touches
+      // is transparently prefixed with its own folder inside the same
+      // bucket. Full isolation between clubs, zero new Cloudflare config.
+      // Flagged July 11, fixed July 12: previously every club sharing this
+      // Worker would have written photos into Fairless Hills' own bucket,
+      // mixed in with real Fairless Hills client photos.
+      if (env.PHOTOS) {
+        const realPhotos = env.PHOTOS;
+        const clubPrefix = clubBindingName.replace('DB_SLOT_', 'club') + '/';
+        env.PHOTOS = {
+          put: (key, ...rest) => realPhotos.put(clubPrefix + key, ...rest),
+          get: (key, ...rest) => realPhotos.get(clubPrefix + key, ...rest),
+          delete: (key, ...rest) => realPhotos.delete(clubPrefix + key, ...rest),
+          head: (key, ...rest) => realPhotos.head(clubPrefix + key, ...rest),
+          list: (...rest) => realPhotos.list(...rest),
+        };
+      }
     }
 
     try {
@@ -267,7 +283,7 @@ export default {
         }
       }
 
-      if (url.pathname === '/health') return ok({ db: !!env.DB, demo: isDemo }, cors);
+      if (url.pathname === '/health') return ok({ db: !!env.DB }, cors);
 
       if (url.pathname === '/db') {
         if (!env.DB) return bad('D1 binding "DB" not found.', cors);

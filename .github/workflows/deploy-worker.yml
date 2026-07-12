@@ -1,0 +1,28 @@
+name: Deploy Worker
+
+# Runs on every push to main that touches the Worker code or its config.
+# This is the missing half of "everything updates automatically" --
+# GitHub Pages already auto-deploys every HTML file on every push with
+# zero manual steps. This workflow makes worker-v34.js work the exact
+# same way: push code, it's live, no dashboard, no copy-paste, no
+# forgetting which file is actually the one that got pasted in last.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker-v34.js'
+      - 'wrangler.toml'
+      - '.github/workflows/deploy-worker.yml'
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
