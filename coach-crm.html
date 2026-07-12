@@ -177,6 +177,12 @@ const WORKER = RETRO_WORKER_URL;
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 
 function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// HTML-escapes single quotes (and &) so a JSON.stringify() result can be
+// safely embedded inside a single-quoted onclick='...' attribute -- see
+// same fix in member-app.html / gym-floor.html / coach-client-profile.html
+// (July 12 2026). Without this, any note, program, or exercise text
+// containing an apostrophe silently breaks the button it's embedded in.
+function escOnclick(jsonStr){ return jsonStr.replace(/&/g,'&amp;').replace(/'/g,'&#39;'); }
 
 const COMMAND_CENTER_ALLOWED = ["Ted Scholl","Danielle Pellegrini","Bill Zolnowski","Sarah Aldrich"];
 (function(){
@@ -657,7 +663,7 @@ async function loadTodaySchedule(){
         ` : `
           <textarea id="note-${it.uid}" rows="2" placeholder="Notes — saved permanently to ${it.clientId?'their':'the'} profile" style="width:100%;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
           <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-            <button onclick='saveInlineNote(${JSON.stringify(it.uid)},${it.clientId||'null'},${JSON.stringify(it.noteFallback)})' style="background:var(--ink);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">Save Note</button>
+            <button onclick='saveInlineNote(${escOnclick(JSON.stringify(it.uid))},${it.clientId||'null'},${escOnclick(JSON.stringify(it.noteFallback))})' style="background:var(--ink);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer">Save Note</button>
             <span id="note-status-${it.uid}" style="font-size:11px;color:var(--green,#1E9E5A);font-weight:700"></span>
           </div>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">

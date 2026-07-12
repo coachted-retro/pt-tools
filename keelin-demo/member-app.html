@@ -2545,7 +2545,7 @@ async function loadCircle() {
         ${tierLabel ? `<div style="font-size:10px;color:var(--red);font-weight:800;text-transform:uppercase;margin-top:6px">${esc(tierLabel)}</div>` : ''}
         <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
           ${reactionRow}
-          <button class="circle-react-btn" style="margin-left:auto" onclick='shareWin(${JSON.stringify(w.headline)})'>&#8599; Share</button>
+          <button class="circle-react-btn" style="margin-left:auto" onclick='shareWin(${escOnclick(JSON.stringify(w.headline))})'>&#8599; Share</button>
         </div>
       </div></div>`;
     }).join('');
@@ -4199,6 +4199,7 @@ function shareWorkout() {
 
 // ── UTILS ────────────────────────────────────────────────────
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escOnclick(jsonStr){ return jsonStr.replace(/&/g,'&amp;').replace(/'/g,'&#39;'); }
 function showReset(e) { if (e) e.preventDefault(); document.getElementById('reset-box').style.display = 'block'; const le = document.getElementById('l-email').value.trim(); if (le) document.getElementById('r-email').value = le; }
 function hideReset(e) { if (e) e.preventDefault(); document.getElementById('reset-box').style.display = 'none'; document.getElementById('reset-step2').style.display = 'none'; document.getElementById('reset-step1').style.display = 'block'; document.getElementById('r-err').style.display = 'none'; }
 async function resetRequest(e) {

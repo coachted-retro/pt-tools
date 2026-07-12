@@ -1456,6 +1456,13 @@
 
 <script>
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
+// HTML-escapes single quotes (and &) so a JSON.stringify() result can be
+// safely embedded inside a single-quoted onclick='...' attribute -- a
+// client name with an apostrophe (e.g. O'Brien, D'Angelo) would otherwise
+// silently break the button it's embedded in. Same root-cause bug fixed
+// across member-app.html, gym-floor.html, coach-crm.html, and
+// coach-client-profile.html (July 12 2026).
+function escOnclick(jsonStr){ return jsonStr.replace(/&/g,'&amp;').replace(/'/g,'&#39;'); }
 
 
 function getApiUrl() {
@@ -1586,7 +1593,7 @@ async function searchMember() {
     const matches = (d.results || []).filter(c => ((c.first_name||'')+' '+(c.last_name||'')).toLowerCase().includes(q.toLowerCase()));
     if (!matches.length) { resultsEl.innerHTML = '<div style="font-size:12px;color:var(--text3,#888);margin-top:8px">No match found — you can still proceed manually.</div>'; return; }
     resultsEl.innerHTML = matches.slice(0,6).map(c => `
-      <div onclick='selectMember(${c.id}, ${JSON.stringify((c.first_name||'')+' '+(c.last_name||''))}, ${JSON.stringify(c.phone||'')}, ${JSON.stringify(c.email||'')})' style="padding:10px 12px;border:1px solid var(--line,#ddd);border-radius:8px;margin-top:6px;cursor:pointer">
+      <div onclick='selectMember(${c.id}, ${escOnclick(JSON.stringify((c.first_name||'')+' '+(c.last_name||'')))}, ${escOnclick(JSON.stringify(c.phone||''))}, ${escOnclick(JSON.stringify(c.email||''))})' style="padding:10px 12px;border:1px solid var(--line,#ddd);border-radius:8px;margin-top:6px;cursor:pointer">
         <div style="font-weight:600">${(c.first_name||'')} ${(c.last_name||'')}</div>
         <div style="font-size:12px;color:var(--text3,#888)">${c.status||''}${c.phone?' · '+c.phone:''}</div>
       </div>`).join('');

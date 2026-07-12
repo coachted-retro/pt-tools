@@ -1064,12 +1064,12 @@ function renderRoutineLibrary(){
       ${OPEN_BUNDLE===b.id ? b.routines.map((r,ri) => `
         <div style="margin-top:8px">
           <div style="display:flex;gap:8px;align-items:stretch">
-            <button class="opt-tile" style="flex:1;margin-top:0" onclick='startRoutineDay(${JSON.stringify(r.exercises)}, "${esc(r.label)}")'>
+            <button class="opt-tile" style="flex:1;margin-top:0" onclick='startRoutineDay(${esc(JSON.stringify(r.exercises))}, "${esc(r.label)}")'>
               <span class="ic">\\u25B6</span>
               <span><span class="t">${esc(r.label)}</span><br><span class="d">${r.exercises.length} exercises</span></span>
             </button>
             <button class="btn sm" style="flex-shrink:0" onclick="toggleRoutinePreview('${b.id}',${ri})">${OPEN_PREVIEW===(b.id+'-'+ri)?'Hide':'Preview'}</button>
-            <button class="btn sm" style="flex-shrink:0" onclick='saveExercisesAsTemplate(${JSON.stringify(r.exercises)}, "${esc(b.name + " - " + r.label)}")'>Save</button>
+            <button class="btn sm" style="flex-shrink:0" onclick='saveExercisesAsTemplate(${esc(JSON.stringify(r.exercises))}, "${esc(b.name + " - " + r.label)}")'>Save</button>
           </div>
           ${OPEN_PREVIEW===(b.id+'-'+ri) ? renderRoutinePreview(r.exercises) : ''}
         </div>`).join('') : ''}

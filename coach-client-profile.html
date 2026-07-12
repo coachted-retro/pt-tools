@@ -221,6 +221,13 @@ let DATA = null;
 })();
 
 function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// HTML-escapes single quotes (and &) so a JSON.stringify() result can be
+// safely embedded inside a single-quoted onclick='...' attribute. Plain
+// JSON.stringify() only escapes double quotes -- an apostrophe in an
+// exercise/program name (e.g. "World's Greatest Stretch") would otherwise
+// prematurely close the attribute and silently break the button. Same
+// root-cause bug fixed across member-app.html and gym-floor.html July 12.
+function escOnclick(jsonStr){ return jsonStr.replace(/&/g,'&amp;').replace(/'/g,'&#39;'); }
 function fmtDate(s){ return s ? new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; }
 
 function renderUpcomingSessions(){
@@ -733,7 +740,7 @@ function scFilterExercises(){
     (!mech || e.mechanics===mech) && (!type || e.type===type)
   ).slice(0,40);
   document.getElementById('sc-ex-results').innerHTML = results.length ? results.map(e => `
-    <div onclick='scAddExercise(${JSON.stringify(e.name)})' style="padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px">
+    <div onclick='scAddExercise(${escOnclick(JSON.stringify(e.name))})' style="padding:8px 10px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px">
       <b>${escH(e.name)}</b> <span style="color:var(--muted);font-size:11px">${e.body_part} &middot; ${e.equipment}</span>
     </div>`).join('') : '<div style="padding:12px;color:var(--muted);font-size:13px">No matches.</div>';
 }

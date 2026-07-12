@@ -1,4 +1,39 @@
-# PT TOOLS — STATUS (Last updated: July 11, 2026, end of session)
+# PT TOOLS — STATUS (Last updated: July 12, 2026)
+
+## STANDING RULE, NON-NEGOTIABLE (Ted has said this repeatedly, July 12 2026):
+NOTHING lives in localStorage as its source of truth. Ever. Full stop.
+D1 is the only source of truth for any real application data -- client
+records, sessions, notes, drafts, prospects, touchpoints, everything.
+localStorage may ONLY be used for a session auth token (staff_session,
+member_session) that lets a browser tab stay logged in between page loads
+-- and even that should degrade safely: if it's missing, stale, wrong, or
+conflicting with another logged-in role in the same browser, the app must
+never behave in a broken or confusing way (see the coach/client redirect
+conflict below -- a real example of this going wrong).
+
+Audited July 12 2026 -- everywhere localStorage currently touches real
+data, not just a session token, across 34 files:
+- `pt_touchpoints`, `pt_prospects` (prospect-tracker.html) -- flagged
+  before, still not migrated. Real prospect data with no D1 backing.
+- `pt_bc`, `pt_bc_tp` (likely body comp / touchpoints in an older tool)
+- `coach_scheduled_sessions` (coach-crm.html) -- caches schedule data
+  client-side; scheduled_sessions in D1 is the real source, this cache
+  should not exist as anything but a short-lived in-memory variable.
+- `checklist_*` (post-close checklists) -- draft/working data, not synced.
+- `sarah_eod_draft_*`, `fct_*`/`ffu_*`/`ptci_*` drafts (consultation,
+  follow-up, monthly check-in tools) -- these are IN-PROGRESS FORM DRAFTS,
+  arguably the least risky category (nothing lost except an unsaved form
+  if the browser is cleared), but still against the rule as written and
+  should eventually write to D1 as a draft row instead.
+- `coach_crm_name` -- looks like a display-name cache, should just read
+  from the real staff/coach record every time instead of caching it.
+
+This is a real, multi-file remediation project, not a one-line fix --
+flagging honestly rather than claiming it's done. Next session picking
+this up: do NOT start silently converting files one at a time without
+telling Ted the plan first, since this touches 34 files and some (the
+consultation/follow-up/check-in draft tools) have real workflow
+implications for what "in progress, not yet submitted" means.
 
 ## READ THIS FIRST, BEFORE TOUCHING ANYTHING
 If you are a new Claude session picking this up: do not build, fix, or change
