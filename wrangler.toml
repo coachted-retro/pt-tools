@@ -3,6 +3,16 @@ main = "worker-v34.js"
 compatibility_date = "2026-07-12"
 account_id = "e3507901699c196c82b78ea540a58612"
 
+# CRITICAL: without this explicitly set to true, adding [[routes]] below
+# causes Cloudflare to silently disable the free broken-cake-e9c2.
+# tedscholl.workers.dev subdomain on deploy. Several tools (confirmed:
+# client-management.html) call that exact URL directly, not through
+# myretrostrong.com -- disabling it broke their ability to load or save
+# any data on July 12, even though the D1 database itself was completely
+# untouched. Keep this true unless every single caller of this Worker is
+# confirmed to go through the custom domain instead.
+workers_dev = true
+
 # ── SECRETS -- do NOT put these here. This file is committed to GitHub.
 # ANTHROPIC_KEY, JWT_SECRET, ADMIN_KEY, RESEND_KEY, and MAIL_FROM are all
 # already set as encrypted Worker secrets on the live Cloudflare Worker,
