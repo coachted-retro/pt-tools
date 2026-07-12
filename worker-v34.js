@@ -377,6 +377,56 @@ export default {
         return ok(await getForecast(env, gymId), cors);
       }
 
+      // Real cross-club rollup for Keelin's dashboard (built July 12 2026,
+      // replacing the old single-database/gym_id approach that could only
+      // ever see Fairless Hills). Every pilot club is now its own fully
+      // separate D1 database (DB_SLOT_01 through DB_SLOT_11), so this
+      // endpoint queries each one individually and merges the results --
+      // there is no shared table to just SELECT across anymore, this is
+      // the actual bridge. Gracefully skips any slot whose binding hasn't
+      // been added yet (most won't be until a club is assigned), and
+      // gracefully flags -- rather than crashing the whole rollup -- any
+      // club whose Club Setup wizard hasn't been run yet (no gyms row).
+      if (url.pathname === '/region/rollup' && request.method === 'GET') {
+        const month = url.searchParams.get('month') || todayET().slice(0,7);
+        const slotKeys = ['DB',
+          'DB_SLOT_01','DB_SLOT_02','DB_SLOT_03','DB_SLOT_04','DB_SLOT_05',
+          'DB_SLOT_06','DB_SLOT_07','DB_SLOT_08','DB_SLOT_09','DB_SLOT_10','DB_SLOT_11'];
+        const clubs = [];
+        for (const slotKey of slotKeys) {
+          const db = env[slotKey];
+          if (!db) continue; // binding not attached to this Worker yet
+          try {
+            const gym = await db.prepare('SELECT * FROM gyms ORDER BY id LIMIT 1').first();
+            if (!gym) { clubs.push({ slot: slotKey, setup_complete: false }); continue; }
+            const quota = await db.prepare('SELECT tcv_goal FROM gym_quotas WHERE gym_id=? AND month=?').bind(gym.id, month).first();
+            const sales = await db.prepare("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as cnt FROM pt_sales WHERE gym_id=? AND substr(sale_date,1,7)=?").bind(gym.id, month).first();
+            const staff = await db.prepare('SELECT name, role FROM staff_roster WHERE gym_id=? AND active=1 ORDER BY role, name').bind(gym.id).all();
+            const clientCount = await db.prepare("SELECT COUNT(*) as n FROM clients WHERE status IN ('active_pt','active','active_member')").first();
+            const note = await db.prepare('SELECT note, emoji FROM board_notes WHERE gym_id=? AND month=?').bind(gym.id, month).first();
+            clubs.push({
+              slot: slotKey,
+              setup_complete: true,
+              gym_id: gym.id,
+              name: gym.name,
+              city: gym.city,
+              state: gym.state,
+              director: gym.director,
+              goal: quota ? quota.tcv_goal : 0,
+              mtd: sales ? sales.total : 0,
+              sale_count: sales ? sales.cnt : 0,
+              active_clients: clientCount ? clientCount.n : 0,
+              staff: staff.results || [],
+              note: note ? note.note : null,
+              emoji: note ? note.emoji : null
+            });
+          } catch(e) {
+            clubs.push({ slot: slotKey, setup_complete: false, error: String(e && e.message || e) });
+          }
+        }
+        return ok({ month, clubs }, cors);
+      }
+
       if (url.pathname === '/quota/set' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const body = await request.json();
@@ -3881,19 +3931,25 @@ ${compactIndex.join('\n')}`;
       }
 
       if (url.pathname === '/board/set-goal' && request.method === 'POST') {
-        if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
+        // slot lets Keelin's rollup target a specific club's own database --
+        // gym_id alone is ambiguous now that every club has its own DB and
+        // is almost always gym_id=1 locally. Defaults to the main DB so
+        // every pre-existing caller (single-club, no slot) keeps working.
+        const targetDb = (b.slot && env[b.slot]) ? env[b.slot] : env.DB;
+        if (!targetDb) return bad('No DB', cors);
         if (!b.gym_id || !b.month || b.tcv_goal == null) return bad('gym_id, month, tcv_goal required', cors);
-        await env.DB.prepare('INSERT INTO gym_quotas (gym_id,month,tcv_goal) VALUES (?,?,?) ON CONFLICT(gym_id,month) DO UPDATE SET tcv_goal=excluded.tcv_goal')
+        await targetDb.prepare('INSERT INTO gym_quotas (gym_id,month,tcv_goal) VALUES (?,?,?) ON CONFLICT(gym_id,month) DO UPDATE SET tcv_goal=excluded.tcv_goal')
           .bind(b.gym_id, b.month, b.tcv_goal).run();
         return ok({ saved: true }, cors);
       }
 
       if (url.pathname === '/board/set-note' && request.method === 'POST') {
-        if (!env.DB) return bad('No DB', cors);
         const b = await request.json();
+        const targetDb = (b.slot && env[b.slot]) ? env[b.slot] : env.DB;
+        if (!targetDb) return bad('No DB', cors);
         if (!b.gym_id || !b.month) return bad('gym_id, month required', cors);
-        await env.DB.prepare("INSERT INTO board_notes (gym_id,month,note,emoji,author,updated_at) VALUES (?,?,?,?,?,datetime('now')) ON CONFLICT(gym_id,month) DO UPDATE SET note=excluded.note, emoji=excluded.emoji, author=excluded.author, updated_at=datetime('now')")
+        await targetDb.prepare("INSERT INTO board_notes (gym_id,month,note,emoji,author,updated_at) VALUES (?,?,?,?,?,datetime('now')) ON CONFLICT(gym_id,month) DO UPDATE SET note=excluded.note, emoji=excluded.emoji, author=excluded.author, updated_at=datetime('now')")
           .bind(b.gym_id, b.month, b.note||'', b.emoji||'', b.author||'Keelin').run();
         return ok({ saved: true }, cors);
       }

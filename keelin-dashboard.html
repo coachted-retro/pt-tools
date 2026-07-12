@@ -270,17 +270,20 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <script>
 const WORKER = RETRO_WORKER_URL;
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
-const DEMO_VIEW = new URLSearchParams(location.search).get('demo') === '1';
-const DEMO_Q = DEMO_VIEW ? '&demo=1' : '';
-function withDemo(url) {
-  if (!DEMO_VIEW) return url;
-  return url + (url.includes('?') ? '&demo=1' : '?demo=1');
+// Demo mode retired July 12 2026 -- no more fictional/seeded clubs. Every
+// pilot club is now a real, isolated database (see /region/rollup on the
+// Worker), so there's nothing left to demo-flag or filter. This dashboard
+// only ever shows real data now.
+function goToGym(slot) {
+  if (!slot) return;
+  // Each club is its own subdomain now (club01.myretrostrong.com etc),
+  // running the exact same director-dashboard.html against its own real
+  // database -- no gym_id query param needed, the whole subdomain IS
+  // that club. Fairless Hills itself (slot 'DB') stays on the main site.
+  if (slot === 'DB') { location.href = 'director-dashboard.html?month=' + OVERVIEW_MONTH; return; }
+  const clubNum = slot.replace('DB_SLOT_', '').toLowerCase();
+  location.href = 'https://club' + clubNum + '.myretrostrong.com/director-dashboard.html?month=' + OVERVIEW_MONTH;
 }
-function goToGym(gymId) {
-  if (gymId == null) return;
-  location.href = withDemo('director-dashboard.html?gym_id=' + gymId + '&month=' + OVERVIEW_MONTH);
-}
-if (DEMO_VIEW) { const rl = document.getElementById('reports-link'); if (rl) rl.href = 'reports-portal.html?demo=1'; }
 // Same UTC-vs-Eastern bug as ted-eod.html (fixed July 9, 2026) — this
 // dashboard was defaulting to tomorrow's date every evening after 8pm
 // Eastern, which meant Keelin could open it the same night an EOD was
@@ -308,11 +311,11 @@ function changeDate(d) {
 }
 
 async function db(payload) {
-  const r = await fetch(withDemo(WORKER+'/db'), {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  const r = await fetch(WORKER+'/db', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
   return (await r.json()).results||[];
 }
 
-const CURRENT_MONTH = DEMO_VIEW ? '2026-06' : new Date().toISOString().slice(0,7);
+const CURRENT_MONTH = new Date().toISOString().slice(0,7);
 let OVERVIEW_MONTH = new URLSearchParams(location.search).get('month') || CURRENT_MONTH;
 
 function shiftMonth(monthStr, delta) {
@@ -336,7 +339,7 @@ function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 
 async function loadHelpQueue(){
   try {
-    const r = await fetch(withDemo(WORKER+'/help-requests?status=open'));
+    const r = await fetch(WORKER+'/help-requests?status=open');
     const d = await r.json();
     const list = d.requests || [];
     const badge = document.getElementById('help-count-badge');
@@ -359,52 +362,57 @@ async function loadHelpQueue(){
 
 async function resolveHelp(id){
   const note = prompt('Any note on how you helped? (optional)','');
-  await fetch(withDemo(WORKER+'/help-requests/resolve'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, note})});
+  await fetch(WORKER+'/help-requests/resolve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, note})});
   loadHelpQueue();
 }
 
 async function loadBoard(){
-  const r = await fetch(withDemo(WORKER+'/region/summary?month='+CURRENT_MONTH));
+  const r = await fetch(WORKER+'/region/rollup?month='+CURRENT_MONTH);
   boardData = await r.json();
-  document.getElementById('board-month').textContent = new Date(CURRENT_MONTH+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'}) + ' · Region ' + (boardData.region_pct==null?'':boardData.region_pct+'% to goal');
+  const clubs = (boardData.clubs||[]).filter(c => c.setup_complete);
+  const notReady = (boardData.clubs||[]).filter(c => !c.setup_complete);
+  const totalGoal = clubs.reduce((s,c)=>s+(c.goal||0),0);
+  const totalMtd = clubs.reduce((s,c)=>s+(c.mtd||0),0);
+  const regionPct = totalGoal>0 ? Math.round(totalMtd/totalGoal*100) : null;
+  document.getElementById('board-month').textContent = new Date(CURRENT_MONTH+'-15').toLocaleDateString('en-US',{month:'long',year:'numeric'}) + ' · Region ' + (regionPct==null?'':regionPct+'% to goal') + ' · ' + clubs.length + ' club' + (clubs.length===1?'':'s') + ' live';
   const tb = document.getElementById('board-rows');
-  if (!boardData.gyms || !boardData.gyms.length){ tb.innerHTML = '<tr><td colspan="7" class="empty-state">No gyms yet. Run the seed or onboard a club.</td></tr>'; return; }
-  tb.innerHTML = boardData.gyms.map((g,i)=>{
-    const pct = g.pct==null?0:g.pct;
+  if (!clubs.length){ tb.innerHTML = '<tr><td colspan="7" class="empty-state">No clubs are live yet. A club shows up here automatically once its Club Setup wizard is completed.</td></tr>'; return; }
+  tb.innerHTML = clubs.map((g,i)=>{
+    const pct = g.goal>0 ? Math.round(g.mtd/g.goal*100) : 0;
     const color = pct>=90?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
     return `<tr>
       <td style="font-family:'Oswald';font-weight:800;color:var(--muted)">${i+1}</td>
-      <td><a href="director-dashboard.html?gym_id=${g.gym_id}&month=${OVERVIEW_MONTH}${DEMO_Q}" style="text-decoration:none;color:inherit"><div class="gym-name" style="text-decoration:underline dotted">${escH(g.name)}</div><div class="gym-manager">${escH(g.director||'')}</div></a></td>
-      <td><span style="cursor:pointer;border-bottom:1px dashed var(--muted)" onclick="editGoal(${g.gym_id},${g.goal})">${fmtMoney(g.goal)}</span></td>
-      <td style="font-family:'Oswald';font-weight:700">${fmtMoney(g.actual)}</td>
+      <td onclick="goToGym('${g.slot}')" style="text-decoration:none;color:inherit;cursor:pointer"><div class="gym-name" style="text-decoration:underline dotted">${escH(g.name)}</div><div class="gym-manager">${escH(g.director||'')}${g.city?' · '+escH(g.city)+', '+escH(g.state||''):''}</div></td>
+      <td><span style="cursor:pointer;border-bottom:1px dashed var(--muted)" onclick="editGoal('${g.slot}',${g.gym_id},${g.goal})">${fmtMoney(g.goal)}</span></td>
+      <td style="font-family:'Oswald';font-weight:700">${fmtMoney(g.mtd)}</td>
       <td><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${color}"></div></div></td>
-      <td><span class="pct-badge" style="color:${color}">${g.pct==null?'—':g.pct+'%'}</span></td>
-      <td style="max-width:220px"><span style="cursor:pointer" onclick="editNote(${g.gym_id},this)">${g.note?escH(g.note)+' '+(g.emoji||''):'<span style=&quot;color:var(--muted)&quot;>+ add note</span>'}</span></td>
+      <td><span class="pct-badge" style="color:${color}">${g.goal>0?pct+'%':'—'}</span></td>
+      <td style="max-width:220px"><span style="cursor:pointer" onclick="editNote('${g.slot}',${g.gym_id},this)">${g.note?escH(g.note)+' '+(g.emoji||''):'<span style=&quot;color:var(--muted)&quot;>+ add note</span>'}</span></td>
     </tr>`;
-  }).join('');
+  }).join('') + (notReady.length ? `<tr><td colspan="7" style="padding:10px 8px;font-size:11px;color:var(--muted)">${notReady.length} more club slot${notReady.length===1?'':'s'} assigned but not yet set up by the club (${notReady.map(c=>c.slot).join(', ')})</td></tr>` : '');
 }
 
-async function editGoal(gymId, current){
+async function editGoal(slot, gymId, current){
   const v = prompt('Set monthly TCV goal for this club:', current||'');
   if (v==null) return;
   const goal = parseFloat(String(v).replace(/[^0-9.]/g,''));
   if (isNaN(goal)) return alert('Enter a number.');
-  await fetch(withDemo(WORKER+'/board/set-goal'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,tcv_goal:goal})});
+  await fetch(WORKER+'/board/set-goal',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:slot,gym_id:gymId,month:CURRENT_MONTH,tcv_goal:goal})});
   loadBoard();
 }
 
-async function editNote(gymId){
-  const g = (boardData.gyms||[]).find(x=>x.gym_id===gymId) || {};
+async function editNote(slot, gymId, el){
+  const g = (boardData.clubs||[]).find(x=>x.slot===slot) || {};
   const note = prompt('Board note for '+(g.name||'this club')+':', g.note||'');
   if (note==null) return;
   const pick = prompt('Emoji (type a number): 1 \uD83D\uDD25  2 \uD83D\uDCAA  3 \uD83D\uDC4F  4 \uD83C\uDF89  5 \uD83D\uDE4C  6 \u2764\uFE0F  (blank = none)','1');
   const emoji = pick && EMOJIS[parseInt(pick)-1] ? EMOJIS[parseInt(pick)-1] : '';
-  await fetch(withDemo(WORKER+'/board/set-note'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({gym_id:gymId,month:CURRENT_MONTH,note:note,emoji:emoji,author:'Keelin'})});
+  await fetch(WORKER+'/board/set-note',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:slot,gym_id:gymId,month:CURRENT_MONTH,note:note,emoji:emoji,author:'Keelin'})});
   loadBoard();
 }
 
 async function loadWins(){
-  const r = await fetch(withDemo(WORKER+'/huddle/feed?channel=wins'));
+  const r = await fetch(WORKER+'/huddle/feed?channel=wins');
   const d = await r.json();
   const el = document.getElementById('wins-feed');
   const msgs = (d.messages||[]).filter(m=>m.author==='system' || !m.thread_ref);
@@ -420,7 +428,7 @@ async function openThread(ref, title){
   if (!ref) return;
   activeThread = ref;
   document.getElementById('thread-title').textContent = title || 'Sale Thread';
-  const r = await fetch(withDemo(WORKER+'/huddle/feed?thread_ref='+encodeURIComponent(ref)));
+  const r = await fetch(WORKER+'/huddle/feed?thread_ref='+encodeURIComponent(ref));
   const d = await r.json();
   const box = document.getElementById('thread-box');
   box.innerHTML = (d.messages||[]).map(m=>`
@@ -438,7 +446,7 @@ async function postShout(ref, channel, fromThread){
   const input = document.getElementById(fromThread?'thread-input':'win-input');
   const body = (input?.value||'').trim();
   if (!body) return;
-  await fetch(withDemo(WORKER+'/huddle/post'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:channel||'wins',author:'Keelin',body:body,thread_ref:ref||''})});
+  await fetch(WORKER+'/huddle/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel:channel||'wins',author:'Keelin',body:body,thread_ref:ref||''})});
   if (input) input.value='';
   if (fromThread && ref) openThread(ref, document.getElementById('thread-title').textContent);
   else loadWins();
@@ -446,7 +454,7 @@ async function postShout(ref, channel, fromThread){
 
 async function loadBell(){
   try {
-    const r = await fetch(withDemo(WORKER+'/notifications?recipient=keelin'));
+    const r = await fetch(WORKER+'/notifications?recipient=keelin');
     const d = await r.json();
     const badge = document.getElementById('bell-badge');
     if (d.unread>0){ badge.style.display='inline-block'; badge.textContent=d.unread; } else badge.style.display='none';
@@ -468,7 +476,7 @@ function toggleBell(){
 }
 
 async function bellTap(id, threadRef){
-  await fetch(withDemo(WORKER+'/notifications/read'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})});
+  await fetch(WORKER+'/notifications/read',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})});
   document.getElementById('bell-drop').style.display='none';
   loadBell();
   if (threadRef){ switchTab('board'); setTimeout(()=>openThread(threadRef,'Celebrate this sale'),400); }
@@ -490,7 +498,7 @@ async function renderOverview() {
   document.getElementById('revenue-chart-month').textContent = monthLabel + ' · sorted by % to goal';
   document.getElementById('saletype-month').textContent = 'New / Renewal / Upgrade, ' + monthLabel;
   document.getElementById('rep-month').textContent = 'Individual PT rep performance, ' + monthLabel;
-  const summary = await (await fetch(withDemo(WORKER+'/region/summary?month='+OVERVIEW_MONTH))).json();
+  const summary = await (await fetch(WORKER+'/region/summary?month='+OVERVIEW_MONTH)).json();
   const gyms = (summary.gyms || []).slice().sort((a,b) => (b.pct||0) - (a.pct||0));
 
   // ── KPI strip ──
@@ -565,7 +573,7 @@ async function renderOverview() {
     </div>`;
 
   // ── Region forecast ──
-  const fc = await (await fetch(withDemo(WORKER+'/region/forecast'))).json();
+  const fc = await (await fetch(WORKER+'/region/forecast')).json();
   const confLabel = { insufficient_data:'Insufficient data', low:'Low confidence', moderate:'Moderate confidence' }[fc.confidence] || '';
   document.getElementById('forecast-sub').textContent = 'Trend from ' + fc.months_of_data + ' month' + (fc.months_of_data===1?'':'s') + ' of actual sales · ' + confLabel;
   const histLabels = fc.history.map(h => new Date(h.month+'-15').toLocaleDateString('en-US',{month:'short'}));
@@ -584,7 +592,7 @@ async function renderOverview() {
   });
 
   // ── Aggregate per-gym detail (funnel, sale types, reps) region-wide ──
-  const details = await Promise.all(gyms.map(g => fetch(withDemo(WORKER+'/region/gym?gym_id='+g.gym_id+'&month='+OVERVIEW_MONTH)).then(r=>r.json())));
+  const details = await Promise.all(gyms.map(g => fetch(WORKER+'/region/gym?gym_id='+g.gym_id+'&month='+OVERVIEW_MONTH).then(r=>r.json())));
 
   let fTotal=0, fBooked=0, fShowed=0, fClosed=0;
   const saleTypeAgg = {};
@@ -634,7 +642,7 @@ async function loadEOD() {
   disp.textContent = new Date(eodDateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   el.innerHTML = '<div class="empty-state">Loading...</div>';
   try {
-    const r = await fetch(withDemo(WORKER+`/eod/feed?date=${eodDateStr}`));
+    const r = await fetch(WORKER+`/eod/feed?date=${eodDateStr}`);
     const d = await r.json();
     const subs = d.submissions||[];
     if (!subs.length) { el.innerHTML = '<div class="empty-state">No submissions for this date.</div>'; return; }
