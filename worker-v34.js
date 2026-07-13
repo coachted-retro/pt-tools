@@ -530,7 +530,7 @@ export default {
       if (url.pathname === '/mealplan/set-photo' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const b = await request.json();
         if (!b.item_name) return bad('item_name required', cors);
         await env.DB.prepare('INSERT INTO meal_photos (item_name,photo_url,updated_at) VALUES (?,?,?) ON CONFLICT(item_name) DO UPDATE SET photo_url=excluded.photo_url, updated_at=excluded.updated_at')
@@ -780,7 +780,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/auth/provision' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const { client_id, email, password } = await request.json();
         if (!client_id || !email || !password) return bad('client_id, email, password required', cors);
         const hash = await sha256(password);
@@ -792,7 +792,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/auth/revoke' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const { email } = await request.json();
         await env.DB.prepare('UPDATE client_auth SET active=0 WHERE email=?').bind(email.toLowerCase().trim()).run();
         return ok({ revoked: true }, cors);
@@ -864,7 +864,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/staff/provision' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const { staff_id, email, pin } = await request.json();
         if (!staff_id || !email || !pin) return bad('staff_id, email, pin required', cors);
         if (!/^\d{4,6}$/.test(pin)) return bad('PIN must be 4-6 digits', cors);
@@ -895,7 +895,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/staff/revoke' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const { email } = await request.json();
         await env.DB.prepare('UPDATE staff_auth SET active=0 WHERE email=?').bind(email.toLowerCase().trim()).run();
         return ok({ revoked: true }, cors);
@@ -1409,7 +1409,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/daily/generate' && request.method === 'POST') {
         if (!env.DB || !env.ANTHROPIC_KEY) return bad('Missing bindings', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const today = todayET();
         const row = await generateDailyContent(env, today, true);
         return ok({ content: row }, cors);
@@ -1734,7 +1734,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/wins/post' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const body = await request.json();
         if (!body.headline) return bad('headline required', cors);
         const ins = await env.DB.prepare(
@@ -1746,7 +1746,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/wins/hide' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const { id } = await request.json();
         if (!id) return bad('id required', cors);
         await env.DB.prepare('UPDATE client_wins SET visible=0 WHERE id=?').bind(id).run();
@@ -1756,7 +1756,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/wins/detect' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         return ok(await detectAutoWins(env), cors);
       }
 
@@ -1782,7 +1782,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/events/post' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const body = await request.json();
         if (!body.title) return bad('title required', cors);
         const ins = await env.DB.prepare(
@@ -1794,7 +1794,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/events/hide' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const { id } = await request.json();
         if (!id) return bad('id required', cors);
         await env.DB.prepare('UPDATE gym_events SET visible=0 WHERE id=?').bind(id).run();
@@ -1906,7 +1906,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/feed/create' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const b = await request.json();
         if (!b.category || !b.title) return bad('category and title required', cors);
         const ins = await env.DB.prepare(
@@ -1919,7 +1919,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/feed/delete' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const { id } = await request.json();
         if (!id) return bad('id required', cors);
         await env.DB.prepare('DELETE FROM feed_posts WHERE id=?').bind(id).run();
@@ -1929,7 +1929,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/feed/run-auto-scan' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const result = await populateDailyFeedItems(env, todayET());
         return ok(result, cors);
       }
@@ -1939,7 +1939,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/followup/run-drip-scan' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const result = await sendDeclineDripEmails(env);
         return ok(result, cors);
       }
@@ -1949,7 +1949,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/followup/run-reminder-scan' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const result = await sendAppointmentReminders(env);
         return ok(result, cors);
       }
@@ -2142,7 +2142,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
       if (url.pathname === '/feed/generate-news-draft' && request.method === 'POST') {
         if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';
-        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        if (!env.ADMIN_KEY || authHeader !== env.ADMIN_KEY) return bad('Unauthorized', cors);
         const prompt = `Write a short fitness-industry news item for a gym's internal community feed — the kind of thing a gym owner would want their staff and members to know about: a trend in strength training, nutrition science, gym equipment, or the fitness business generally. Return ONLY valid JSON, no markdown: {"title":"short headline, 8-12 words","body":"2-3 sentences, confident and informative, written for people who already train seriously"}. No emojis, no em dashes.`;
         const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
