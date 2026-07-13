@@ -135,7 +135,6 @@ function renderView(staff, profile, isMine) {
       <div id="open-work-shifts-body"><div class="empty-state">Loading...</div></div>
     </div>
     <a href="coach-crm.html?coach=${encodeURIComponent(staff.name)}&locked=1" class="action-btn" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Open Coach CRM — My Clients</a>
-    <a href="${(function(n){ n=(n||'').toLowerCase(); if(n.includes('ted')) return 'ted-eod.html'; if(n.includes('dani')) return 'dani-eod.html'; if(n.includes('sarah')) return 'sarah-eod.html'; return 'eod-picker.html'; })(staff.name)}" class="action-btn secondary" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Submit End of Day Report</a>
     <div class="card">
       <div class="sec-label" style="margin-top:0">Upcoming at the Gym</div>
       <div id="gym-events-body"><div class="empty-state">Loading...</div></div>

@@ -124,9 +124,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <button onclick="shiftScheduleDay(1)" style="border:1.5px solid var(--line);background:#fff;border-radius:8px;width:30px;height:30px;cursor:pointer">→</button>
     <a href="#" onclick="resetScheduleDay();return false" style="font-size:12px;color:var(--red);font-weight:700;margin-left:4px">Today</a>
   </div>
-  <div id="eod-quick-bar" style="display:none;margin-bottom:12px">
-    <a id="eod-quick-link" href="#" style="display:block;cursor:pointer;background:var(--red);color:#fff;text-align:center;font-family:'Oswald';font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:12px;border-radius:8px;text-decoration:none">Submit End of Day →</a>
-  </div>
   <div id="today-schedule"></div>
   <div id="jeopardy-section"></div>
 
@@ -510,19 +507,8 @@ function resetScheduleDay(){
   loadTodaySchedule();
 }
 
-const EOD_QUICK_PAGES = { 'Ted Scholl': 'ted-eod.html', 'Danielle Pellegrini': 'dani-eod.html' };
-function updateEodQuickBar(coach) {
-  const bar = document.getElementById('eod-quick-bar');
-  const link = document.getElementById('eod-quick-link');
-  if (!bar || !link) return;
-  const page = EOD_QUICK_PAGES[coach];
-  if (page) { link.href = page; bar.style.display = 'block'; }
-  else { bar.style.display = 'none'; }
-}
-
 async function loadTodaySchedule(){
   const coach = document.getElementById('coach-select').value;
-  updateEodQuickBar(coach);
   const box = document.getElementById('today-schedule');
   const dateStr = scheduleDateForOffset(SCHEDULE_DAY_OFFSET);
   const dateLabel = new Date(dateStr+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
