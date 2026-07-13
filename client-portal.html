@@ -586,8 +586,7 @@ async function loadPortalData(){
     renderMealPlan(d.mealPlan);
     renderProgress(d.checkins||[], d.scans||[]);
     renderHabits(d.dailyLogs||[]);
-    const pkg = (d.client && d.client.package || '').toLowerCase();
-    document.getElementById('tab-btn-recipes').style.display = (pkg==='complete'||pkg==='complete_plus') ? '' : 'none';
+    document.getElementById('tab-btn-recipes').style.display = '';
     renderTrainHist([...(d.sessions||[]),...(d.selfWorkouts||[])].sort((a,b)=>(b.session_date||b.workout_date||'').localeCompare(a.session_date||a.workout_date||'')));
   }catch(e){}
 }

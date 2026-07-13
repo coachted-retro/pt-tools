@@ -79,7 +79,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <a href="client-management.html" id="all-clients-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">All Clients</a>
   <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
   <a href="fitness-consultation-tool.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700" title="Opens blank — type a name to pull up an existing client, or start fresh for a new prospect">Consultation</a>
-  <a href="fitness-followup-tool.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700" title="Opens blank — type a name to pull up an existing client">6-Wk Follow-Up</a>
+
   <a href="fitness-monthly-checkin.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700" title="Opens blank — type a name to pull up an existing client">Monthly Check-In</a>
   <a href="#" id="my-shifts-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">My Shifts &amp; Time Off</a>
   <a href="command-center.html" id="command-center-link" style="display:none;margin-left:12px">&larr; Command Center</a>
@@ -1531,7 +1531,7 @@ async function saveQuickAddClient(){
   status.textContent = 'Saving...';
   try {
     const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ op:'insert', table:'clients', values:{ first_name: first, last_name: last, phone: phone||null, email: email||null, birthday: birthday||null, status: 'active_pt', coach: coach||null } }) });
+      body: JSON.stringify({ op:'insert', table:'clients', values:{ first_name: first, last_name: last, phone: phone||null, email: email||null, birthday: birthday||null, status: 'prospect', coach: coach||null } }) });
     const d = await r.json();
     if (d.ok === false) { status.textContent = d.error || 'Could not save.'; return; }
     const newClientId = d.id;

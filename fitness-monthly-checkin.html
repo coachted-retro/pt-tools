@@ -1701,7 +1701,7 @@ async function rememberStartDate(){
     } else {
       const parts=(name||'').trim().split(' '); const first=parts.shift()||''; const last=parts.join(' ');
       if(!first && !email && !phone) return;
-      await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,status:'active',advisor:(getCfg('advisor')||''),coach:coach||'',training_start_date:start||null}});
+      await _db({op:'insert',table:'clients',values:{first_name:first,last_name:last,email:(email||'').trim().toLowerCase(),phone:phone,status:'active_pt',advisor:(getCfg('advisor')||''),coach:coach||'',training_start_date:start||null}});
     }
   }catch(e){}
 }
@@ -1786,11 +1786,28 @@ async function _saveCheckinToD1(){
     try{
       const ex=await _db({op:'select',table:'checkins',where:{client_id:clientId},limit:500});
       const existing=(ex.results||[]).find(r=>r.checkin_date===vals.checkin_date);
-      if(existing){ await _db({op:'update',table:'checkins',values:vals,where:{id:existing.id}}); return true; }
+      if(existing){ await _db({op:'update',table:'checkins',values:vals,where:{id:existing.id}}); await _scheduleNextCheckin(clientId, vals); return true; }
     }catch(e){}
     await _db({op:'insert',table:'checkins',values:vals});
+    await _scheduleNextCheckin(clientId, vals);
     return true;
   }catch(e){ console.warn('D1 checkin save failed', e); return false; }
+}
+// Writes the next monthly check-in straight onto the calendar instead of
+// leaving it sitting in the next_checkin text field where nobody sees it.
+// Uses the advisor's typed date if given, otherwise defaults to 30 days out.
+async function _scheduleNextCheckin(clientId, vals){
+  try{
+    var d = vals.next_checkin ? new Date(vals.next_checkin) : (function(){ var t=new Date(vals.checkin_date||todayET()); t.setDate(t.getDate()+30); return t; })();
+    var dateStr = d.toISOString().slice(0,10);
+    var existing = await _db({op:'select', table:'scheduled_sessions', where:{client_id:clientId, focus_notes:'monthly_checkin', scheduled_date:dateStr}, limit:1});
+    if(existing.results && existing.results[0]) return; // already scheduled for that date
+    await _db({op:'insert', table:'scheduled_sessions', values:{
+      client_id: clientId, scheduled_date: dateStr, program_name: 'Monthly Check-In',
+      focus_notes: 'monthly_checkin', source: 'coach', status: 'scheduled',
+      created_by: 'monthly_checkin_tool', assigned_coach: vals.advisor || ''
+    }});
+  }catch(e){ console.warn('Could not auto-schedule next check-in:', e.message); }
 }
 async function _fillPrevFromLastCheckin(clientId){
   if(!clientId) return;

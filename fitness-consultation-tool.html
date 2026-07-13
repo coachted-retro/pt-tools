@@ -3105,12 +3105,11 @@ async function loadExistingClientForConsult(id) {
 }
 
 // Writes a clients row (if one doesn't already exist for this email) and a
-// meal_profiles row, but ONLY when the selected package has nutrition enabled
-// (Complete / Complete+). Every other package skips this entirely, no row
-// is created and the client never appears on the meal plan tool.
+// meal_profiles row. Runs for every enrolled client regardless of package --
+// nutrition is now included on every program, not an add-on gate. (Was
+// previously gated behind nutritionAddon; removed July 13 2026 per Ted:
+// every package includes meals now, this needs to run every time.)
 async function saveNutritionProfileIfApplicable() {
-  if (!nutritionAddon) return; // nutrition add-on not selected, nothing to save
-
   var email = (gv('email') || '').toLowerCase().trim();
   if (!email) { console.warn('No email on file, skipping meal_profiles save.'); return; }
 
@@ -3125,12 +3124,12 @@ async function saveNutritionProfileIfApplicable() {
   if (!clientId) {
     var ins = await dbCall({ op:'insert', table:'clients', values: {
       first_name: firstName, last_name: lastName, email: email, phone: gv('phone') || '',
-      status: 'active', goal_primary: gv('goals') || '', age: gv('age') || '', gender: gv('gender') || ''
+      status: 'active_pt', goal_primary: gv('goals') || '', age: gv('age') || '', gender: gv('gender') || ''
     }});
     clientId = ins.id || null;
   } else {
     // Keep status current on the existing client record
-    await dbCall({ op:'update', table:'clients', values:{ status:'active' }, where:{ id: clientId } });
+    await dbCall({ op:'update', table:'clients', values:{ status:'active_pt' }, where:{ id: clientId } });
   }
 
   if (!clientId) { console.warn('Could not resolve a client_id, skipping meal_profiles save.'); return; }
@@ -3214,7 +3213,9 @@ async function finalizeAccept() {
       goal_primary: gv('goals') || null,
       package: pkgDbValue(),
       training_start_date: gv('consult-date') || todayET(),
-      status: 'active',
+      package_start_date: gv('consult-date') || todayET(),
+      package_end_date: (function(){ var d = new Date(gv('consult-date') || todayET()); d.setMonth(d.getMonth()+1); return d.toISOString().slice(0,10); })(),
+      status: 'active_pt',
       gym_id: CLUB_GYM_ID,
       notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Medical: ' + (gv('medical')||'none') + '. Assessment: ' + (assessmentText||'').substring(0,400)
     };
@@ -3272,8 +3273,29 @@ async function finalizeAccept() {
       saveInBodyScan(window._enrolledClientId, 'consultation_accept');
     }
 
-    // 3. Save nutrition profile if Complete package
+    // 3. Save nutrition profile -- runs for every enrolled client now
     await saveNutritionProfileIfApplicable();
+
+    // 3b. Auto-schedule the first monthly check-in, 30 days from today.
+    // Writes into scheduled_sessions same as everything else on the
+    // client's and coach's calendars, tagged so fitness-monthly-checkin.html
+    // and coach-calendar.html both pick it up automatically.
+    if (window._enrolledClientId) {
+      try {
+        var checkinDate = new Date(gv('consult-date') || todayET());
+        checkinDate.setDate(checkinDate.getDate() + 30);
+        await dbCall({ op:'insert', table:'scheduled_sessions', values: {
+          client_id: window._enrolledClientId,
+          scheduled_date: checkinDate.toISOString().slice(0,10),
+          program_name: 'Monthly Check-In',
+          focus_notes: 'monthly_checkin',
+          source: 'coach',
+          status: 'scheduled',
+          created_by: 'consultation_tool',
+          assigned_coach: gv('advisor-name') || getCfg('advisor') || 'Coach Ted Scholl'
+        }});
+      } catch(e) { console.warn('Could not auto-schedule monthly check-in:', e.message); }
+    }
 
     // 4. Fire Sheets write as silent fallback (non-blocking)
     var row = buildIntakeRow('ACCEPTED');
@@ -3321,6 +3343,7 @@ async function finalizeDecline() {
       status: 'prospect',
       coach: advisorName || null,
       gym_id: CLUB_GYM_ID,
+      decline_date: todayET(),
       notes: 'Declined PT on ' + todayET() + '. Reason: ' + reason + '. Follow-up scheduled: ' + followDateStr + '. Medical: ' + (gv('medical')||'none') + '. ' + (document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '')
     };
     Object.keys(declinePayload).forEach(function(k){ if(declinePayload[k]==null) delete declinePayload[k]; });
@@ -3364,14 +3387,11 @@ async function finalizeDecline() {
           outcome: 'declined'
         }}).catch(function(){});
         dbCall({ op:'insert', table:'followups', values: { client_id: clientId, followup_date: followDate.toISOString().slice(0,10), reason: reason, notes: document.getElementById('decline-notes') ? document.getElementById('decline-notes').value : '', source: 'consultation_decline' } }).catch(function(){});
-        // Actually put it on the coach's calendar, not just the followups log
-        var dow = followDate.getDay();
-        fetch(RETRO_WORKER_URL + '/schedule/create', {method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({
-            client_id: clientId, program_name: '6-Week Follow-Up', focus_notes: 'Re-engagement — declined ' + todayET() + ', reason: ' + reason,
-            weekdays: [dow], start_date: followDate.toISOString().slice(0,10), end_date: followDate.toISOString().slice(0,10),
-            coach_name: advisorName, assigned_coach: advisorName
-          })}).catch(function(){});
+        // No appointment gets scheduled here anymore. The 42-day mark is
+        // handled by the nightly drip email scan (sendDeclineDripEmails in
+        // the worker), keyed off clients.decline_date set above -- nothing
+        // shows up on anyone's calendar unless the person actually replies
+        // and a coach books a real follow-up with them at that point.
       }
     }).catch(function(){});
   } catch(e) {}

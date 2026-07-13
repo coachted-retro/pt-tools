@@ -5182,9 +5182,7 @@ const FPLINK_URL = 'https://1stphorm.com/?a_aid=coachted';
 let RECIPE_ALL = [], RECIPE_FILTER = { meal:'all', prep:'all' };
 
 async function loadRecipes() {
-  const pkg = (DATA.client && DATA.client.package || '').toLowerCase();
   const card = document.getElementById('recipe-bank-card');
-  if (pkg !== 'complete' && pkg !== 'complete_plus') { if (card) card.style.display = 'none'; return; }
   if (card) card.style.display = 'block';
   const list = document.getElementById('recipe-list');
   try {

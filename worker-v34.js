@@ -213,7 +213,7 @@ const CLUB_SLOT_MAP = {
 };
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const cors = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST,GET,OPTIONS',
@@ -1934,6 +1934,26 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok(result, cors);
       }
 
+      // Manual trigger for testing the 42-day decline drip scan without
+      // waiting for the nightly cron. Same auth pattern as the feed scan.
+      if (url.pathname === '/followup/run-drip-scan' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const result = await sendDeclineDripEmails(env);
+        return ok(result, cors);
+      }
+
+      // Manual trigger for testing appointment reminders without waiting
+      // for the nightly cron.
+      if (url.pathname === '/followup/run-reminder-scan' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const authHeader = request.headers.get('X-Admin-Key') || '';
+        if (authHeader !== (env.ADMIN_KEY || 'retro-admin-2024')) return bad('Unauthorized', cors);
+        const result = await sendAppointmentReminders(env);
+        return ok(result, cors);
+      }
+
       // ── CLASS ROUTINES (preprogrammed workout per class, e.g. "Boot ──
       // Camp" - tied to the real group_classes record, the same table ──
       // that powers the public class calendar, not a loose text match) ─
@@ -2682,6 +2702,10 @@ Rules:
         } else {
           await env.DB.prepare(`UPDATE pt_appointments SET notes=?, updated_at=? WHERE id=?`)
             .bind(b.notes, new Date().toISOString(), b.id).run();
+        }
+        if (b.status === 'no_show') {
+          const appt = await env.DB.prepare('SELECT * FROM pt_appointments WHERE id=?').bind(b.id).first();
+          if (appt) ctx.waitUntil(sendNoShowEmail(env, appt));
         }
         return ok({ ok: true }, cors);
       }
@@ -4337,10 +4361,159 @@ ${compactIndex.join('\n')}`;
     // deleted generateEODReport() function, for the full removal.
     ctx.waitUntil(populateDailyFeedItems(env, today));
     ctx.waitUntil(detectAutoWins(env));
+    ctx.waitUntil(sendDeclineDripEmails(env));
+    ctx.waitUntil(sendAppointmentReminders(env));
   }
 };
 
 // ---------------- Daily feed auto-population ----------------
+// Single place to swap the reschedule link once the Retro-branded Jotform
+// reschedule form is live. Everything that needs a reschedule link (no-show
+// emails, reminder emails) points here instead of hardcoding a URL.
+const FOLLOWUP_LINKS = {
+  reschedule: 'https://calendar.app.google/z6vifErwUYRPn1vFA'
+};
+
+// ---------------- Shared outbound email helper ----------------
+// One place that actually calls Resend and logs the result, so no-show,
+// reminder, and drip emails don't each reimplement this. Returns
+// {sent: bool, id, error}.
+async function sendPlainEmail(env, { to, subject, html, client_id, context, coach_name }) {
+  if (!env.RESEND_KEY) return { sent: false, error: 'RESEND_KEY not configured' };
+  if (!to) return { sent: false, error: 'no email address' };
+  const payload = { from: env.MAIL_FROM || 'onboarding@resend.dev', to: [to], subject, html };
+  let r, d;
+  try {
+    r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    d = await r.json().catch(() => ({}));
+  } catch (e) {
+    if (env.DB) await env.DB.prepare(
+      'INSERT INTO email_log (to_email,subject,context,client_id,sent,error,sent_at) VALUES (?,?,?,?,0,?,?)'
+    ).bind(to, subject, context || null, client_id || null, 'Network error: ' + e.message, new Date().toISOString()).run().catch(()=>{});
+    return { sent: false, error: 'Network error: ' + e.message };
+  }
+  if (env.DB) {
+    await env.DB.prepare(
+      'INSERT INTO email_log (to_email,subject,context,client_id,sent,error,resend_id,sent_at) VALUES (?,?,?,?,?,?,?,?)'
+    ).bind(to, subject, context || null, client_id || null, r.ok ? 1 : 0, r.ok ? null : (d.message || 'send failed'), d.id || null, new Date().toISOString()).run().catch(()=>{});
+    if (r.ok && client_id) {
+      await env.DB.prepare('INSERT INTO coach_touchpoints (coach_name,client_id,type,body) VALUES (?,?,?,?)')
+        .bind(coach_name || 'System', client_id, 'email', (context ? context + ' — ' : '') + subject).run().catch(()=>{});
+    }
+  }
+  return { sent: r.ok, id: d.id || null, error: r.ok ? null : (d.message || 'send failed') };
+}
+
+// ---------------- Decline drip follow-up ----------------
+// Replaces the old plan of manually calling declined prospects 6 weeks
+// out to book another appointment -- Ted found that approach spooked
+// people ("they think we're gonna sell them again") and calls rarely
+// connected. This runs automatically, no appointment gets scheduled,
+// no one has to remember to call anyone. Every night this checks for
+// prospects who declined exactly 42+ days ago and haven't been sent
+// their drip email yet, and sends one low-pressure, no-pressure email
+// each. A coach only has to act if and when the person actually
+// replies -- that's the entire workload on this end.
+async function sendDeclineDripEmails(env) {
+  if (!env.DB) return { sent: 0, error: 'No DB' };
+  if (!env.RESEND_KEY) return { sent: 0, error: 'RESEND_KEY not configured' };
+
+  const due = await env.DB.prepare(
+    `SELECT id, first_name, last_name, email, goal_primary, coach
+     FROM clients
+     WHERE status = 'prospect' AND decline_date IS NOT NULL
+       AND decline_date <= date('now','-42 day')
+       AND followup_email_sent_at IS NULL
+       AND email IS NOT NULL AND email != ''`
+  ).all();
+
+  let sent = 0, failed = 0;
+  for (const c of (due.results || [])) {
+    const firstName = c.first_name || 'there';
+    const goalLine = c.goal_primary
+      ? `Last time we talked, you mentioned wanting to work on ${c.goal_primary.toLowerCase()}.`
+      : `Last time we talked, you had some goals you wanted to work toward.`;
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
+        <p>Hi ${firstName},</p>
+        <p>It's been a little while since we last talked at Retro Fitness of Fairless Hills. ${goalLine} No pressure at all, just wanted to check in.</p>
+        <p>How's it been going on your own? A few quick things I'm curious about:</p>
+        <ul>
+          <li>Are you still working toward that goal, or has it shifted?</li>
+          <li>Is anything getting in the way right now?</li>
+          <li>Would it help to have someone in your corner, even just for a quick check-in?</li>
+        </ul>
+        <p>If you'd like, just reply to this email and let me know where you're at. If a short conversation would help, you're always welcome to grab a time here: <a href="https://calendar.app.google/z6vifErwUYRPn1vFA">book a quick consult</a>. No obligation either way, just want to help if I can.</p>
+        <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
+      </div>`;
+    const subject = 'Checking in, ' + firstName;
+    const result = await sendPlainEmail(env, { to: c.email, subject, html, client_id: c.id, context: 'Decline drip follow-up (42-day)' });
+    if (result.sent) {
+      await env.DB.prepare('UPDATE clients SET followup_email_sent_at=? WHERE id=?').bind(new Date().toISOString(), c.id).run();
+      sent++;
+    } else { failed++; }
+  }
+  return { sent, failed, checked: (due.results || []).length };
+}
+
+// ---------------- No-show reschedule email ----------------
+// Fires the moment a coach marks an appointment as no_show (see
+// /appointments/status). For now this points at the same general
+// booking link everything else uses -- swap FOLLOWUP_LINKS.reschedule
+// once the Retro-branded Jotform reschedule form is live, that's the
+// only line that needs to change.
+async function sendNoShowEmail(env, appt) {
+  const to = appt.prospect_email || null;
+  if (!to) return { sent: false, error: 'no email on file for this appointment' };
+  const firstName = (appt.prospect_name || '').split(' ')[0] || 'there';
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
+      <p>Hi ${firstName},</p>
+      <p>Looks like we missed you for your appointment at Retro Fitness of Fairless Hills. No worries at all, life happens, we'd just love to get you back on the calendar.</p>
+      <p>Pick whatever time actually works for you: <a href="${FOLLOWUP_LINKS.reschedule}">reschedule here</a>.</p>
+      <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
+    </div>`;
+  return sendPlainEmail(env, { to, subject: 'Missed you today, let\'s reschedule', html, client_id: appt.client_id || null, context: 'No-show reschedule email' });
+}
+
+// ---------------- Appointment reminder ----------------
+// Runs nightly, finds every appointment scheduled for tomorrow that
+// hasn't been reminded yet, sends one reminder each. Deliberately only
+// looks a day ahead rather than trying to guess an ideal lead time --
+// simple and predictable beats clever here.
+async function sendAppointmentReminders(env) {
+  if (!env.DB) return { sent: 0, error: 'No DB' };
+  const due = await env.DB.prepare(
+    `SELECT * FROM pt_appointments
+     WHERE appointment_date = date('now','+1 day') AND status = 'scheduled'
+       AND reminder_sent_at IS NULL`
+  ).all();
+  let sent = 0, failed = 0;
+  for (const a of (due.results || [])) {
+    const to = a.prospect_email || null;
+    if (!to) { continue; }
+    const firstName = (a.prospect_name || '').split(' ')[0] || 'there';
+    const timeStr = a.appointment_time ? ' at ' + a.appointment_time : '';
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
+        <p>Hi ${firstName},</p>
+        <p>Just a friendly reminder about your appointment tomorrow${timeStr} at Retro Fitness of Fairless Hills. Looking forward to seeing you.</p>
+        <p>Need to move it? <a href="${FOLLOWUP_LINKS.reschedule}">reschedule here</a> instead of just not showing up, that way we can hold your spot for someone else.</p>
+        <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
+      </div>`;
+    const result = await sendPlainEmail(env, { to, subject: 'Reminder: your appointment tomorrow' + timeStr, html, client_id: a.client_id || null, context: 'Appointment reminder' });
+    if (result.sent) {
+      await env.DB.prepare('UPDATE pt_appointments SET reminder_sent_at=? WHERE id=?').bind(new Date().toISOString(), a.id).run();
+      sent++;
+    } else { failed++; }
+  }
+  return { sent, failed, checked: (due.results || []).length };
+}
+
 // Runs nightly via cron so birthdays, staff work anniversaries, and
 // client gym anniversaries post themselves to the Community & Industry
 // News feed with zero ongoing admin effort. Also callable on demand via

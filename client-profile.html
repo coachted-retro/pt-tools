@@ -743,9 +743,8 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
 
   // actions
   const q='?client='+encodeURIComponent(nm);
-  const hasNutritionPkg = client.package === 'complete' || client.package === 'complete_plus';
   html+='<div class="actions">'+
-    (hasNutritionPkg ? '<a class="btn" href="meal-plans.html">Build Meal Plan</a>' : '')+
+    '<a class="btn" href="meal-plans.html">Build Meal Plan</a>'+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
     '</div>';
 
