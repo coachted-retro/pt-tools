@@ -103,3 +103,15 @@ zone_name = "myretrostrong.com"
 [[routes]]
 pattern = "*.myretrostrong.com/*"
 zone_name = "myretrostrong.com"
+
+# Daily cron, confirmed via the Cloudflare dashboard's Cron Events log to
+# be the real, already-existing schedule (not something guessed) --
+# 0 1 * * * = 1:00 AM UTC, every day. Runs populateDailyFeedItems
+# (birthday/anniversary auto-posts) and detectAutoWins (client win
+# detection). The AI-generated EOD-report piece that used to also run
+# here was removed July 13 2026 -- Ted tried building that summary out
+# several times and it never produced something worth actually sending
+# Keelin, so that's handled manually now instead. See generateEODReport
+# removal in worker-v34.js for the full story.
+[triggers]
+crons = ["0 1 * * *"]

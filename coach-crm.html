@@ -184,6 +184,44 @@ function escH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g
 // containing an apostrophe silently breaks the button it's embedded in.
 function escOnclick(jsonStr){ return jsonStr.replace(/&/g,'&amp;').replace(/'/g,'&#39;'); }
 
+// Common first-name/nickname groups so "Richard Cooper" in a ClubOS
+// booking correctly matches an existing client saved as "Rick Cooper" --
+// and the same for Christopher/Chris, and everything else in this list.
+// Flagged twice now (July 11, then again July 13) as the same real
+// recurring problem, not a one-off Cooper fix -- this table is the actual
+// fix. Add more groups here as new mismatches turn up; every name in a
+// group is treated as interchangeable with every other name in the group.
+// Last names are deliberately NOT fuzzy-matched anywhere in this file --
+// two different people can have similar-looking last names (Cooper vs
+// Copper, Smith vs Smyth), and silently treating those as "close enough"
+// risks linking an appointment to the wrong person, which is worse than
+// today's problem. Exact last name + flexible first name is the safe
+// middle ground; anything beyond that goes through the manual match
+// picker instead of being auto-guessed.
+const NICKNAME_GROUPS = [
+  ['richard','rick','rich','dick'], ['christopher','chris'], ['william','will','bill','billy'],
+  ['robert','rob','bob','bobby'], ['michael','mike','mikey'], ['james','jim','jimmy','jamie'],
+  ['john','jack','johnny'], ['joseph','joe','joey'], ['daniel','dan','danny'],
+  ['david','dave','davey'], ['matthew','matt'], ['anthony','tony'], ['thomas','tom','tommy'],
+  ['charles','charlie','chuck'], ['edward','ed','eddie','ted'], ['andrew','andy','drew'],
+  ['nicholas','nick','nicky'], ['alexander','alex'], ['benjamin','ben','benny'],
+  ['samuel','sam','sammy'], ['jonathan','jon','jonny'], ['timothy','tim','timmy'],
+  ['gregory','greg'], ['stephen','steve','steven'], ['patrick','pat','paddy'],
+  ['kenneth','ken','kenny'], ['jeffrey','jeff'], ['ronald','ron','ronnie'],
+  ['raymond','ray'], ['zachary','zach','zack'], ['nathaniel','nate','nathan'],
+  ['elizabeth','liz','beth','lizzie','eliza'], ['katherine','kate','katie','kathy','kat'],
+  ['jennifer','jen','jenny'], ['jessica','jess'], ['margaret','maggie','meg','peggy'],
+  ['rebecca','becca','becky'], ['victoria','vicky','tori'], ['patricia','pat','patty','trish'],
+  ['deborah','deb','debbie'], ['cynthia','cindy'], ['stephanie','steph'],
+  ['samantha','sam','sammy'], ['alexandra','alex','alexa'], ['gabriella','gabby'],
+];
+const NICKNAME_LOOKUP = {};
+NICKNAME_GROUPS.forEach(group => group.forEach(n => NICKNAME_LOOKUP[n] = group));
+function firstNameVariants(name) {
+  const n = (name||'').toLowerCase().trim();
+  return NICKNAME_LOOKUP[n] || [n];
+}
+
 const COMMAND_CENTER_ALLOWED = ["Ted Scholl","Danielle Pellegrini","Bill Zolnowski","Sarah Aldrich"];
 (function(){
   var s = null;
@@ -511,6 +549,7 @@ async function loadTodaySchedule(){
     const d2 = isTrainingLead ? await (await fetch(WORKER + '/schedule/clubos-day?date=' + dateStr)).json() : { appointments: [] };
     const d3 = await r3.json();
     const clients = (await clientsRes.json()).results || [];
+    window._loadedClients = clients; // reused by openClubosMatchModal below
     const knownClassRoutines = (await classRoutinesRes.json()).routines || [];
     const rows = d.today || [];
     const clubosRows = d2.appointments || [];
@@ -566,7 +605,12 @@ async function loadTodaySchedule(){
         : status==='cancel' ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled — following up</span>'
         : '';
       const summaryEsc = escH(a.summary||'Booking').replace(/'/g,"");
-      const dt = new Date(a.start_datetime);
+      // A manual time correction (see /schedule/clubos-override-time) takes
+      // priority over whatever ClubOS itself reports -- this is the fix for
+      // "I changed it in ClubOS and it's not showing here," until the next
+      // sync catches up or someone clears the override.
+      const dt = new Date(a.override_start_datetime || a.start_datetime);
+      const hasOverride = !!a.override_start_datetime;
 
       if (isClass) {
         // Class bookings aren't tied to one person - matched against the
@@ -595,13 +639,17 @@ async function loadTodaySchedule(){
         return;
       }
 
-      const resolved = resolveClubOsLinkCrm(a.summary, clients);
+      // A manual link (see /schedule/clubos-link-client) always wins over
+      // the name-guess -- once a coach has confirmed who this really is,
+      // stop re-guessing on every page load.
+      const resolved = a.linked_client_id ? { tool: (resolveClubOsLinkCrm(a.summary, clients)||{}).tool || 'gym-floor.html', clientId: a.linked_client_id }
+        : resolveClubOsLinkCrm(a.summary, clients);
       const noClientMatch = resolved && !resolved.clientId;
       const needsProfile = (!resolved || noClientMatch) && !dimmed;
       const guessedName = (a.summary||'').split(/[-–]/)[0].trim();
       items.push({
         uid: 'cb' + a.id, timeSort: dt.toTimeString().slice(0,5),
-        timeLabel: dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+        timeLabel: dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + (hasOverride ? ' (corrected)' : ''),
         name: a.summary || 'Booking', typeLabel: '', needsProfile, guessedName,
         dimmed, statusBadge, clientId: resolved ? resolved.clientId : null, accent: '#2563EB',
         note: a.notes || null,
@@ -613,6 +661,8 @@ async function loadTodaySchedule(){
         rescheduleBtn: `openClubosRescheduleModal(${a.id},'${summaryEsc}')`,
         cancelBtn: `openClubosCancelModal(${a.id},'${summaryEsc}')`,
         undoBtn: `setClubosStatus(${a.id},'scheduled')`,
+        editTimeBtn: `openClubosEditTimeModal(${a.id},'${escOnclick(JSON.stringify(a.override_start_datetime||a.start_datetime))}')`,
+        matchBtn: needsProfile ? `openClubosMatchModal(${a.id},${escOnclick(JSON.stringify(guessedName))})` : null,
         noteFallback: { endpoint:'/schedule/clubos-status', idValue:a.id }
       });
     });
@@ -647,7 +697,7 @@ async function loadTodaySchedule(){
       <div class="card" style="border-left:4px solid ${it.dimmed?'#D1D5DB':(it.needsProfile?'#D98A0B':it.accent)};flex-direction:column;align-items:stretch;cursor:default;${it.dimmed?'opacity:.6':''}">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="flex:1">
-            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsProfile ? `<a href="#" onclick="openQuickAddClient('${escH(it.guessedName||'').replace(/'/g,"\\'")}');return false" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsClassSetup ? `<a href="gym-floor.html?${it.matchedGroupClassId ? 'setupClassId='+it.matchedGroupClassId : 'setupClass='+encodeURIComponent(it.classNameGuess||it.name)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.startHref ? `<a href="${it.startHref}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name))))}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
+            <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsProfile ? `<a href="#" onclick="${it.matchBtn};return false" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsClassSetup ? `<a href="gym-floor.html?${it.matchedGroupClassId ? 'setupClassId='+it.matchedGroupClassId : 'setupClass='+encodeURIComponent(it.classNameGuess||it.name)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.startHref ? `<a href="${it.startHref}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name))))}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
             <div class="sub">${it.timeLabel}</div>
             ${it.needsProfile ? `<div style="display:inline-block;margin-top:4px;background:#FEF3C7;color:#92400E;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px">&#9888; No client record yet — tap the name to set up their profile</div>` : ''}
             ${it.needsClassSetup ? `<div style="display:inline-block;margin-top:4px;background:#EDE9FE;color:#5B21B6;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px">&#9888; No routine saved for this class yet — tap the name to build and save one</div>` : ''}
@@ -667,11 +717,12 @@ async function loadTodaySchedule(){
             <span id="note-status-${it.uid}" style="font-size:11px;color:var(--green,#1E9E5A);font-weight:700"></span>
           </div>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-            ${it.needsProfile ? `<button onclick="openQuickAddClient('${escH(it.guessedName||'').replace(/'/g,"\\'")}')" style="background:#D98A0B;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Set Up Profile</button>` : (it.needsClassSetup ? `<a href="gym-floor.html?${it.matchedGroupClassId ? 'setupClassId='+it.matchedGroupClassId : 'setupClass='+encodeURIComponent(it.classNameGuess||it.name)}" style="background:#7C3AED;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Build Routine</a>` : (it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''))}
+            ${it.needsProfile ? `<button onclick="${it.matchBtn}" style="background:#D98A0B;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Find or Add Client</button>` : (it.needsClassSetup ? `<a href="gym-floor.html?${it.matchedGroupClassId ? 'setupClassId='+it.matchedGroupClassId : 'setupClass='+encodeURIComponent(it.classNameGuess||it.name)}" style="background:#7C3AED;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Build Routine</a>` : (it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''))}
             <button onclick="${it.doneBtn}" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
             <button onclick="${it.rescheduleBtn}" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
             <button onclick="${it.noShowBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
             <button onclick="${it.cancelBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Cancel</button>
+            ${it.editTimeBtn ? `<button onclick="${it.editTimeBtn}" style="background:none;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">&#9998; Edit Time</button>` : ''}
           </div>
         `) : `<button onclick="${it.undoBtn}" style="background:none;border:none;color:var(--muted);font-size:11px;text-decoration:underline;cursor:pointer;margin-top:4px;align-self:flex-start">Undo</button>`}
       </div>`).join('');
@@ -1017,6 +1068,104 @@ async function saveClubosReschedule(apptId){
   const o = document.getElementById('clubos-resched-overlay'); if (o) o.remove();
 }
 
+// The safety net for anything even the nickname-aware auto-match can't
+// resolve confidently (see NICKNAME_GROUPS / resolveClubOsLinkCrm above).
+// Shows likely candidates (same last name first, then a live search box
+// for anything else) so a coach can positively confirm who this really
+// is with one tap, instead of the old behavior of jumping straight into
+// creating what might turn out to be a duplicate client record.
+function openClubosMatchModal(apptId, guessedName){
+  const clients = window._loadedClients || [];
+  const words = (guessedName||'').trim().split(/\s+/);
+  const guessedLast = words.slice(1).join(' ').toLowerCase();
+  const candidates = guessedLast ? clients.filter(c => (c.last_name||'').toLowerCase() === guessedLast) : [];
+
+  const overlay = document.createElement('div');
+  overlay.id = 'clubos-match-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:440px;width:100%;max-height:80vh;overflow-y:auto">
+    <div style="font-weight:800;font-size:16px;margin-bottom:4px">Who is "${escH(guessedName)}"?</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">This booking's name doesn't exactly match anyone on file. Pick the right person below, or add them as a new client if they're genuinely new.</div>
+    ${candidates.length ? `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Possible matches</div>
+      <div style="margin-bottom:14px">
+        ${candidates.map(c => `
+          <button onclick="linkClubosClient(${apptId},${c.id})" style="display:block;width:100%;text-align:left;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;font-size:14px">
+            ${escH((c.first_name||'')+' '+(c.last_name||''))} <span style="color:var(--muted);font-size:12px">— tap to link this booking to them</span>
+          </button>`).join('')}
+      </div>` : ''}
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Search everyone</div>
+    <input id="clubos-match-search" placeholder="Type a name..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:8px" oninput="renderClubosMatchResults(${apptId})">
+    <div id="clubos-match-results" style="margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px;border-top:1px solid var(--line);padding-top:14px">
+      <button onclick="document.getElementById('clubos-match-overlay').remove();openQuickAddClient('${escH(guessedName).replace(/'/g,"\\'")}')" style="flex:1;background:#D98A0B;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">None of these — add as new client</button>
+      <button onclick="document.getElementById('clubos-match-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  window._clubosMatchClients = clients;
+}
+function renderClubosMatchResults(apptId){
+  const q = document.getElementById('clubos-match-search').value.trim().toLowerCase();
+  const box = document.getElementById('clubos-match-results');
+  if (!q) { box.innerHTML = ''; return; }
+  const clients = window._clubosMatchClients || [];
+  const matches = clients.filter(c => ((c.first_name||'')+' '+(c.last_name||'')).toLowerCase().includes(q)).slice(0,8);
+  box.innerHTML = matches.map(c => `
+    <button onclick="linkClubosClient(${apptId},${c.id})" style="display:block;width:100%;text-align:left;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;font-size:14px">
+      ${escH((c.first_name||'')+' '+(c.last_name||''))}
+    </button>`).join('') || '<div style="font-size:12px;color:var(--muted)">No matches.</div>';
+}
+async function linkClubosClient(apptId, clientId){
+  await fetch(WORKER + '/schedule/clubos-link-client', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id: apptId, client_id: clientId }) });
+  const o = document.getElementById('clubos-match-overlay'); if (o) o.remove();
+  loadTodaySchedule();
+}
+
+// Lets a coach correct a booking's displayed time directly -- ClubOS
+// itself is read-only from this system (no write-back path exists), so
+// if a time changes there, this is the fix until the next sync catches
+// up. Clearing the field removes the override and goes back to trusting
+// whatever ClubOS reports.
+function openClubosEditTimeModal(apptId, currentIso){
+  const d = new Date(currentIso);
+  const dateVal = isNaN(d) ? '' : d.toISOString().slice(0,10);
+  const timeVal = isNaN(d) ? '' : d.toTimeString().slice(0,5);
+  const overlay = document.createElement('div');
+  overlay.id = 'clubos-edittime-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:380px;width:100%">
+    <div style="font-weight:800;font-size:16px;margin-bottom:4px">Correct This Appointment's Time</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Use this if the time changed in ClubOS but hasn't shown up here yet. This only fixes the display here -- it doesn't write back to ClubOS.</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <input type="date" id="clubos-edittime-date" value="${dateVal}" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 12px">
+      <input type="time" id="clubos-edittime-time" value="${timeVal}" style="flex:1;border:1px solid var(--line);border-radius:8px;padding:10px 12px">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveClubosTimeOverride(${apptId})" style="flex:1;background:var(--red);color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save Correction</button>
+      <button onclick="document.getElementById('clubos-edittime-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
+    </div>
+    <button onclick="clearClubosTimeOverride(${apptId})" style="width:100%;margin-top:10px;background:none;border:none;color:var(--muted);font-size:12px;text-decoration:underline;cursor:pointer">Clear correction — trust ClubOS again</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+async function saveClubosTimeOverride(apptId){
+  const date = document.getElementById('clubos-edittime-date').value;
+  const time = document.getElementById('clubos-edittime-time').value;
+  if (!date || !time) { alert('Pick both a date and a time.'); return; }
+  await fetch(WORKER + '/schedule/clubos-override-time', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id: apptId, start_datetime: new Date(date+'T'+time).toISOString() }) });
+  const o = document.getElementById('clubos-edittime-overlay'); if (o) o.remove();
+  loadTodaySchedule();
+}
+async function clearClubosTimeOverride(apptId){
+  await fetch(WORKER + '/schedule/clubos-override-time', { method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id: apptId, start_datetime: null }) });
+  const o = document.getElementById('clubos-edittime-overlay'); if (o) o.remove();
+  loadTodaySchedule();
+}
+
 async function setSessionStatus(id, status){
   try {
     await fetch(WORKER + '/schedule/session-status', { method:'POST', headers:{'Content-Type':'application/json'},
@@ -1072,10 +1221,30 @@ function resolveClubOsLinkCrm(summary, clients){
   const namePart = (summary||'').split(/[-–]/)[0].trim();
   if (!namePart) return { tool, clientId: null };
   const nameLower = namePart.toLowerCase();
-  const match = (clients||[]).find(c => {
+  const nameWords = nameLower.split(/\s+/).filter(Boolean);
+  const guessedFirst = nameWords[0] || '';
+  const guessedLast = nameWords.slice(1).join(' ');
+  const guessedFirstVariants = firstNameVariants(guessedFirst);
+
+  // Pass 1: exact/substring match on the full name, same as before -- still
+  // the fastest, most reliable path when the name matches outright.
+  let match = (clients||[]).find(c => {
     const full = ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase();
     return full === nameLower || full.includes(nameLower) || nameLower.includes(full);
   });
+
+  // Pass 2: nickname-aware match -- same last name, and first name is in
+  // the same nickname group (Richard/Rick, Christopher/Chris, etc). This
+  // is what actually fixes the recurring Cooper/Wall-style mismatches
+  // instead of just patching one client at a time.
+  if (!match && guessedLast) {
+    match = (clients||[]).find(c => {
+      const cLast = (c.last_name||'').toLowerCase().trim();
+      const cFirst = (c.first_name||'').toLowerCase().trim();
+      return cLast === guessedLast && guessedFirstVariants.includes(cFirst);
+    });
+  }
+
   return { tool, clientId: match ? match.id : null };
 }
 
