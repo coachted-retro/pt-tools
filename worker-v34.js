@@ -1954,6 +1954,46 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok(result, cors);
       }
 
+      // Jotform posts here every time someone submits the 42-day check-in.
+      // Configure this in the Jotform form's Settings -> Integrations ->
+      // Webhooks, pointing at this exact URL. Jotform sends multipart
+      // form data with a "rawRequest" field containing the full answer
+      // set as JSON -- stored as-is so nothing is lost even if the form's
+      // questions change later, plus a readable summary logged as a
+      // coach touchpoint so it shows up right on the client's profile.
+      if (url.pathname === '/jotform/webhook' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        try {
+          const form = await request.formData();
+          const formId = form.get('formID') || null;
+          const submissionId = form.get('submissionID') || null;
+          const rawRequestStr = form.get('rawRequest') || '{}';
+          const raw = JSON.parse(rawRequestStr);
+          // clientId comes from the hidden field pre-filled in the drip
+          // email URL. Jotform prefixes answer keys with q<n>_ sometimes
+          // and not others depending on field type, so check both forms.
+          let clientId = null;
+          for (const [k, v] of Object.entries(raw)) {
+            if (/clientid$/i.test(k) && v) { clientId = parseInt(v, 10) || null; break; }
+          }
+          await env.DB.prepare(
+            'INSERT INTO jotform_responses (client_id, form_id, submission_id, raw_json, received_at) VALUES (?,?,?,?,?)'
+          ).bind(clientId, formId, submissionId, rawRequestStr, new Date().toISOString()).run();
+
+          if (clientId) {
+            const summary = Object.entries(raw)
+              .filter(([k]) => !/clientid$/i.test(k))
+              .map(([k, v]) => k + ': ' + v)
+              .join(' | ');
+            await env.DB.prepare('INSERT INTO coach_touchpoints (coach_name,client_id,type,body) VALUES (?,?,?,?)')
+              .bind('System', clientId, 'checkin_response', 'Check-in survey response: ' + summary).run();
+          }
+          return ok({ received: true, matched: !!clientId }, cors);
+        } catch (e) {
+          return bad('Webhook parse error: ' + e.message, cors);
+        }
+      }
+
       // ── CLASS ROUTINES (preprogrammed workout per class, e.g. "Boot ──
       // Camp" - tied to the real group_classes record, the same table ──
       // that powers the public class calendar, not a loose text match) ─
@@ -4371,7 +4411,8 @@ ${compactIndex.join('\n')}`;
 // reschedule form is live. Everything that needs a reschedule link (no-show
 // emails, reminder emails) points here instead of hardcoding a URL.
 const FOLLOWUP_LINKS = {
-  reschedule: 'https://calendar.app.google/z6vifErwUYRPn1vFA'
+  reschedule: 'https://calendar.app.google/z6vifErwUYRPn1vFA',
+  checkin: 'https://form.jotform.com/261937579829075'
 };
 
 // ---------------- Shared outbound email helper ----------------
@@ -4437,17 +4478,12 @@ async function sendDeclineDripEmails(env) {
     const goalLine = c.goal_primary
       ? `Last time we talked, you mentioned wanting to work on ${c.goal_primary.toLowerCase()}.`
       : `Last time we talked, you had some goals you wanted to work toward.`;
+    const checkinUrl = FOLLOWUP_LINKS.checkin + '?clientId=' + c.id;
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
         <p>Hi ${firstName},</p>
         <p>It's been a little while since we last talked at Retro Fitness of Fairless Hills. ${goalLine} No pressure at all, just wanted to check in.</p>
-        <p>How's it been going on your own? A few quick things I'm curious about:</p>
-        <ul>
-          <li>Are you still working toward that goal, or has it shifted?</li>
-          <li>Is anything getting in the way right now?</li>
-          <li>Would it help to have someone in your corner, even just for a quick check-in?</li>
-        </ul>
-        <p>If you'd like, just reply to this email and let me know where you're at. If a short conversation would help, you're always welcome to grab a time here: <a href="https://calendar.app.google/z6vifErwUYRPn1vFA">book a quick consult</a>. No obligation either way, just want to help if I can.</p>
+        <p>Got 60 seconds? <a href="${checkinUrl}">Take our quick check-in</a> and let us know how it's been going on your own. If it sounds like a real conversation would help, there's an option right on there to say so, and we'll reach back out.</p>
         <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
       </div>`;
     const subject = 'Checking in, ' + firstName;
