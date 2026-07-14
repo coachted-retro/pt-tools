@@ -273,7 +273,7 @@ CREATE TABLE win_reactions (
   created_at TEXT,
   UNIQUE(win_id, client_id, emoji)
 );
-CREATE TABLE workouts (   id INTEGER PRIMARY KEY AUTOINCREMENT,   client_id INTEGER NOT NULL REFERENCES clients(id),   workout_date TEXT,   title TEXT,   file_url TEXT,   exercises_json TEXT,   total_volume REAL,   notes TEXT,   source TEXT,   created_at TEXT DEFAULT (datetime('now')) );
+CREATE TABLE workouts (   id INTEGER PRIMARY KEY AUTOINCREMENT,   client_id INTEGER NOT NULL REFERENCES clients(id),   workout_date TEXT,   title TEXT,   file_url TEXT,   exercises_json TEXT,   total_volume REAL,   notes TEXT,   source TEXT,   created_at TEXT DEFAULT (datetime('now')) , logged_by TEXT);
 
 CREATE TABLE scheduled_meals (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1773,7 +1773,7 @@ function saveSession(){
   });
   const row={client_id:SESSION.client_id,workout_date:SESSION.date,title:SESSION.title,
     exercises_json:JSON.stringify(exercises),total_volume:Math.round(totalVolume()),
-    notes:SESSION.workoutNote||null,source:'gym_floor'};
+    notes:SESSION.workoutNote||null,source:'gym_floor',logged_by:COACH_PARAM||null};
   Object.keys(row).forEach(k=>{if(row[k]==null)delete row[k];});
   qpush({op:'insert',table:'workouts',values:row});
   /* badges to client_wins: surfaces on client portal wins feed + profile */

@@ -1374,18 +1374,21 @@ function renderClientPanel(clients, coach, isFiltered) {
     const stale = daysSince === null || daysSince > 14;
     const tagChips = (c.tags||'').split(',').map(t=>t.trim()).filter(Boolean).slice(0,3)
       .map(t => `<span style="font-size:9px;font-weight:700;color:#2563EB;background:#EFF6FF;padding:2px 6px;border-radius:999px">${escH(t)}</span>`).join(' ');
-    return `<a class="card" href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(c.coach||coach)}">
-      <div class="avatar">${escH(initials)}</div>
-      <div style="flex:1">
-        <div class="name">${escH(c.first_name)} ${escH(c.last_name)}</div>
-        ${renderClientGraphs(c)}
-        ${tagChips ? `<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${tagChips}</div>` : ''}
-      </div>
-      <div class="badges">
-        ${c.unread_messages > 0 ? `<span class="badge badge-red">${c.unread_messages} new msg</span>` : ''}
-        ${stale ? `<span class="badge badge-red">Touch base</span>` : `<span class="badge badge-muted">${daysSince}d ago</span>`}
-      </div>
-    </a>`;
+    return `<div class="card" style="flex-direction:column;align-items:stretch">
+      <a href="coach-client-profile.html?client=${c.id}&coach=${encodeURIComponent(c.coach||coach)}" style="display:flex;gap:10px;text-decoration:none;color:inherit">
+        <div class="avatar">${escH(initials)}</div>
+        <div style="flex:1">
+          <div class="name">${escH(c.first_name)} ${escH(c.last_name)}</div>
+          ${renderClientGraphs(c)}
+          ${tagChips ? `<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">${tagChips}</div>` : ''}
+        </div>
+        <div class="badges">
+          ${c.unread_messages > 0 ? `<span class="badge badge-red">${c.unread_messages} new msg</span>` : ''}
+          ${stale ? `<span class="badge badge-red">Touch base</span>` : `<span class="badge badge-muted">${daysSince}d ago</span>`}
+        </div>
+      </a>
+      <a href="member-app.html?coachClient=${c.id}" style="margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:#B0121F;text-decoration:none;border:1px solid #B0121F;border-radius:8px;padding:7px">View as ${escH(c.first_name)} sees it &rarr;</a>
+    </div>`;
   }).join('');
 }
 if (saved || IS_LOCKED) loadClients();
