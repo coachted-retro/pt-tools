@@ -731,6 +731,7 @@ function startScheduledProgram(){
   try { items = JSON.parse(TODAYS_SCHEDULED.exercises_json||'[]') || []; } catch(e) {}
   const names = items.map(x => typeof x === 'string' ? x : x.name).filter(Boolean);
   newSession(names, TODAYS_SCHEDULED.program_name);
+  SESSION.scheduledSessionId = TODAYS_SCHEDULED.id;
   items.forEach((x, i) => {
     const prescription = typeof x === 'string' ? '' : (x.prescription || '');
     if (prescription && SESSION.exercises[i]) SESSION.exercises[i].note = prescription;
@@ -1838,6 +1839,21 @@ function swapExerciseTo(newName){
   persistActive();
   closeExerciseSwap();
   if(EXI===SWAP_IDX){ openLogging(); } else { renderQueue(); }
+  syncSwapToScheduledSession();
+}
+// The swap above only ever updated this device's local copy of the
+// session -- the actual scheduled_sessions record on the server, the
+// thing that shows up again if you reopen this routine, checked it from
+// the client's app, or come back to it another day, never changed. That's
+// exactly why it still said the old exercise name everywhere except the
+// screen in front of you at that moment. This writes the real record.
+async function syncSwapToScheduledSession(){
+  if (!SESSION.scheduledSessionId) return;
+  const exercises = SESSION.exercises.map(e => ({ name: e.name, prescription: e.note || '' }));
+  try {
+    await fetch(WORKER + '/schedule/update', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id: SESSION.scheduledSessionId, exercises }) });
+  } catch(e) {}
 }
 function setTimerMode(m){
   if(tRunning)timerToggle();

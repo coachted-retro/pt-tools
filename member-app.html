@@ -2008,6 +2008,37 @@ function mStartStretchRoutine(kind){
 
 function mVib(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
 
+// ── LIVE SESSION PERSISTENCE ──────────────────────────────────
+// Getting bumped out of the app mid-workout (phone locks, a call comes
+// in, iOS reclaims the tab) used to lose every set already logged,
+// since MSESSION only ever lived in memory until the whole workout was
+// finished. This mirrors it into localStorage after every change, and
+// checks for a resumable session before starting a fresh one.
+const LIVE_SESSION_KEY = 'member_live_session_backup';
+function mPersistSession(){
+  if (!MSESSION) return;
+  try {
+    localStorage.setItem(LIVE_SESSION_KEY, JSON.stringify({ MSESSION, MEXI, savedAt: Date.now() }));
+  } catch(e) {}
+}
+function mClearPersistedSession(){
+  try { localStorage.removeItem(LIVE_SESSION_KEY); } catch(e) {}
+}
+// Only offers to resume if there's actually something logged and it's
+// from the same day -- a three-day-old abandoned session isn't worth
+// resuming and would just be confusing to be asked about.
+function mCheckForResumableSession(){
+  try {
+    const raw = localStorage.getItem(LIVE_SESSION_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    const hoursSince = (Date.now() - saved.savedAt) / 3600000;
+    const hasLoggedSets = saved.MSESSION && saved.MSESSION.exercises.some(e => e.sets.length);
+    if (!hasLoggedSets || hoursSince > 6) { mClearPersistedSession(); return null; }
+    return saved;
+  } catch(e) { return null; }
+}
+
 function mOpenLiveLog(exerciseNames, title){
   // Guard against a session with no exercises attached (e.g. a coach-
   // scheduled session saved with an empty or malformed exercises_json).
@@ -2016,6 +2047,15 @@ function mOpenLiveLog(exerciseNames, title){
   // silent TypeError the moment it's clicked -- exactly the "hung up,
   // nothing responds" bug reported July 12. Now it fails loudly and
   // clearly instead of opening a broken screen.
+  const resumable = mCheckForResumableSession();
+  if (resumable && confirm('You have an unfinished workout from earlier with sets already logged. Pick up where you left off instead of starting over?')) {
+    MSESSION = resumable.MSESSION;
+    MEXI = Math.min(resumable.MEXI, MSESSION.exercises.length - 1);
+    document.getElementById('live-log-screen').style.display = 'flex';
+    mOpenExercise();
+    return;
+  }
+  mClearPersistedSession();
   const cleanNames = (exerciseNames || []).filter(n => n && String(n).trim());
   if (!cleanNames.length) {
     alert("This workout doesn't have any exercises attached yet. Ask your coach to add exercises to this session, then try again.");
@@ -2144,6 +2184,7 @@ function mLogSet(){
   mVib(30);
   document.getElementById('ll-progress').style.width = Math.round((MSESSION.exercises.filter(e=>e.sets.length).length/MSESSION.exercises.length)*100)+'%';
   mRenderSetsDone();
+  mPersistSession();
   const mech = mExerciseMechanics(ex.name);
   mStartRest(mech === 'Compound' ? 180 : 75);
 }
@@ -2183,7 +2224,12 @@ function mRenderSetsDone(){
     }
   }
   if (ex.sets.length >= target) {
-    html += `<div style="text-align:center;padding:8px 0"><a href="#" onclick="mBumpTargetSets();return false" style="color:var(--red);font-weight:700;font-size:13px">&#10003; Planned ${target} sets done — + Add Another Set</a></div>`;
+    const isLast = MEXI >= MSESSION.exercises.length - 1;
+    html += `<div style="background:#fff;border-radius:12px;padding:14px;margin-top:6px;text-align:center;border:2px solid var(--green,#1E9E5A)">
+      <div style="color:var(--green,#1E9E5A);font-weight:700;font-size:14px;margin-bottom:10px">&#10003; All ${target} sets logged</div>
+      <button onclick="mNextExercise()" style="width:100%;padding:13px;border-radius:10px;border:none;background:var(--green,#1E9E5A);color:#fff;font-weight:700;font-size:15px;margin-bottom:8px">${isLast ? 'Finish Workout' : 'Complete Exercise — Next &rarr;'}</button>
+      <a href="#" onclick="mBumpTargetSets();return false" style="color:var(--ink3,#9CA3AF);font-weight:600;font-size:12px">+ Add one more set instead</a>
+    </div>`;
   }
   document.getElementById('ll-sets-done').innerHTML = html;
 }
@@ -2191,8 +2237,9 @@ function mBumpTargetSets(){
   const ex = MSESSION.exercises[MEXI];
   ex.targetSets = (ex.targetSets || 3) + 1;
   mRenderSetsDone();
+  mPersistSession();
 }
-function mDelSet(i){ MSESSION.exercises[MEXI].sets.splice(i,1); mRenderSetsDone(); }
+function mDelSet(i){ MSESSION.exercises[MEXI].sets.splice(i,1); mRenderSetsDone(); mPersistSession(); }
 
 function mStartRest(secs){
   mRestLeft = secs;
@@ -2212,23 +2259,34 @@ function mPaintRest(){
 function mRestAdd(n){ mRestLeft += n; mPaintRest(); }
 function mRestSkip(){ clearInterval(mRestIv); document.getElementById('ll-rest-overlay').style.display = 'none'; }
 
-function mSaveNote(){ MSESSION.exercises[MEXI].note = document.getElementById('ll-note').value; }
-function mNextExercise(){ mSaveNote(); if (MEXI < MSESSION.exercises.length-1) { MEXI++; mOpenExercise(); } else { mFinishWorkout(); } }
-function mPrevExercise(){ mSaveNote(); if (MEXI > 0) { MEXI--; mOpenExercise(); } }
+function mSaveNote(){ MSESSION.exercises[MEXI].note = document.getElementById('ll-note').value; mPersistSession(); }
+function mNextExercise(){ mSaveNote(); if (MEXI < MSESSION.exercises.length-1) { MEXI++; mOpenExercise(); mPersistSession(); } else { mFinishWorkout(); } }
+function mPrevExercise(){ mSaveNote(); if (MEXI > 0) { MEXI--; mOpenExercise(); mPersistSession(); } }
 
 async function mFinishWorkout(){
   const logged = MSESSION.exercises.filter(e => e.sets.length);
-  if (!logged.length) { document.getElementById('live-log-screen').style.display='none'; MSESSION=null; return; }
+  if (!logged.length) { document.getElementById('live-log-screen').style.display='none'; MSESSION=null; mClearPersistedSession(); return; }
   const exercises = logged.map(e => ({ name: e.name, set_detail: e.sets.map(s=>({reps:s.reps, weight:s.weight})), note: e.note||'' }));
   const durationMin = Math.max(1, Math.round((Date.now()-MSESSION.startedAt)/60000));
+  let saveOk = false;
   try {
-    await fetch(WORKER + '/portal/log-workout', {method:'POST', headers:{'Content-Type':'application/json'},
+    const r = await fetch(WORKER + '/portal/log-workout', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({client_id: SESSION.client_id, title: MSESSION.title, exercises, duration_min: durationMin})});
+    saveOk = r.ok;
   } catch(e) {}
   document.getElementById('live-log-screen').style.display = 'none';
-  MSESSION = null;
-  alert('Workout saved — ' + logged.length + ' exercises logged. Nice work!');
-  loadPortalData().then(() => { renderProgress(); });
+  if (saveOk) {
+    MSESSION = null;
+    mClearPersistedSession();
+    alert('Workout saved — ' + logged.length + ' exercises logged. Nice work!');
+    loadPortalData().then(() => { renderProgress(); });
+  } else {
+    // Don't claim success and don't throw away what they just did --
+    // the backup stays in localStorage, and they'll be offered it again
+    // next time they open a workout instead of losing it silently.
+    alert("Couldn't reach the server to save this workout, but nothing's lost -- it's still saved on this device. Just reopen a workout in a bit and you'll be offered the chance to pick up right where you left off, then it'll save for real.");
+    MSESSION = null;
+  }
 }
 
 async function mHandleFormVideo(ev){
