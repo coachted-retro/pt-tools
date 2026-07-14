@@ -2070,7 +2070,7 @@ function mOpenLiveLog(exerciseNames, title){
 function mCloseLiveLog(){
   if (MSESSION && MSESSION.exercises.some(e=>e.sets.length)) {
     if (!confirm('End this workout? Anything logged so far will be saved.')) return;
-    mFinishWorkout();
+    mShowFinishPanel();
   } else {
     document.getElementById('live-log-screen').style.display = 'none';
     MSESSION = null;
@@ -2260,21 +2260,34 @@ function mRestAdd(n){ mRestLeft += n; mPaintRest(); }
 function mRestSkip(){ clearInterval(mRestIv); document.getElementById('ll-rest-overlay').style.display = 'none'; }
 
 function mSaveNote(){ MSESSION.exercises[MEXI].note = document.getElementById('ll-note').value; mPersistSession(); }
-function mNextExercise(){ mSaveNote(); if (MEXI < MSESSION.exercises.length-1) { MEXI++; mOpenExercise(); mPersistSession(); } else { mFinishWorkout(); } }
+function mNextExercise(){ mSaveNote(); if (MEXI < MSESSION.exercises.length-1) { MEXI++; mOpenExercise(); mPersistSession(); } else { mShowFinishPanel(); } }
 function mPrevExercise(){ mSaveNote(); if (MEXI > 0) { MEXI--; mOpenExercise(); mPersistSession(); } }
+
+function mShowFinishPanel(){
+  const logged = MSESSION.exercises.filter(e => e.sets.length);
+  const totalSets = logged.reduce((a,e) => a + e.sets.length, 0);
+  document.getElementById('finish-workout-summary').textContent =
+    logged.length + ' exercise' + (logged.length===1?'':'s') + ' logged, ' + totalSets + ' total set' + (totalSets===1?'':'s') + '.';
+  document.getElementById('finish-workout-note').value = MSESSION.workoutNote || '';
+  document.getElementById('finish-workout-panel').style.display = 'block';
+}
+function mCancelFinish(){ document.getElementById('finish-workout-panel').style.display = 'none'; }
 
 async function mFinishWorkout(){
   const logged = MSESSION.exercises.filter(e => e.sets.length);
-  if (!logged.length) { document.getElementById('live-log-screen').style.display='none'; MSESSION=null; mClearPersistedSession(); return; }
+  if (!logged.length) { document.getElementById('live-log-screen').style.display='none'; document.getElementById('finish-workout-panel').style.display='none'; MSESSION=null; mClearPersistedSession(); return; }
   const exercises = logged.map(e => ({ name: e.name, set_detail: e.sets.map(s=>({reps:s.reps, weight:s.weight})), note: e.note||'' }));
   const durationMin = Math.max(1, Math.round((Date.now()-MSESSION.startedAt)/60000));
+  const finishNoteEl = document.getElementById('finish-workout-note');
+  const sessionNote = finishNoteEl ? finishNoteEl.value.trim() : '';
   let saveOk = false;
   try {
     const r = await fetch(WORKER + '/portal/log-workout', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({client_id: SESSION.client_id, title: MSESSION.title, exercises, duration_min: durationMin})});
+      body: JSON.stringify({client_id: SESSION.client_id, title: MSESSION.title, exercises, duration_min: durationMin, notes: sessionNote})});
     saveOk = r.ok;
   } catch(e) {}
   document.getElementById('live-log-screen').style.display = 'none';
+  document.getElementById('finish-workout-panel').style.display = 'none';
   if (saveOk) {
     MSESSION = null;
     mClearPersistedSession();
@@ -5601,6 +5614,20 @@ if (IS_DEMO) {
   </div>
 
   <!-- LIVE WORKOUT LOGGING OVERLAY -->
+  <!-- Shown right before a workout actually saves, so there's always a
+       real chance to add a note before it's closed out -- matches the
+       same pattern already proven on the coach's gym-floor tool. -->
+  <div id="finish-workout-panel" style="display:none;position:fixed;bottom:0;right:0;left:0;top:0;background:rgba(0,0,0,.4);z-index:85" onclick="if(event.target===this) mCancelFinish()">
+    <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;max-width:480px;margin:0 auto;padding:20px">
+      <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:18px;text-transform:uppercase;margin-bottom:4px">Workout Complete</div>
+      <div id="finish-workout-summary" style="font-size:13px;color:#6B7280;margin-bottom:16px"></div>
+      <label style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase">Notes (optional)</label>
+      <textarea id="finish-workout-note" rows="4" placeholder="How'd it go? Anything worth remembering for next time?" style="width:100%;padding:12px;border:1px solid #D1D5DB;border-radius:8px;font-size:14px;margin:6px 0 16px"></textarea>
+      <button onclick="mFinishWorkout()" style="width:100%;padding:14px;background:#1E9E5A;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;margin-bottom:8px">Save & Finish</button>
+      <button onclick="mCancelFinish()" style="width:100%;padding:12px;background:none;color:#6B7280;border:none;font-weight:600;font-size:13px">Back to workout</button>
+    </div>
+  </div>
+
   <div id="live-log-screen" style="display:none;position:fixed;inset:0;background:var(--soft, #F5F6F8);z-index:80;flex-direction:column">
     <div style="background:#fff;padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));border-bottom:1px solid var(--line3, #E4E7EC);display:flex;align-items:center;gap:10px">
       <div style="height:4px;background:var(--line3,#E4E7EC);border-radius:2px;position:absolute;top:0;left:0;right:0"><div id="ll-progress" style="height:100%;background:var(--red);border-radius:2px;width:0%;transition:width .3s"></div></div>

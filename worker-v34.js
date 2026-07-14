@@ -3717,15 +3717,28 @@ ${compactIndex.join('\n')}`;
         const since56 = (() => { const d = new Date(anchorDay); d.setUTCDate(d.getUTCDate()-56); return d.toISOString().slice(0,10); })();
         const since14 = (() => { const d = new Date(anchorDay); d.setUTCDate(d.getUTCDate()-14); return d.toISOString().slice(0,10); })();
 
-        for (const c of clients) {
+        await Promise.all(clients.map(async (c) => {
           // --- Workout completion: logged activity vs what's actually scheduled, last 30 days ---
-          const scheduled = await env.DB.prepare(
-            "SELECT COUNT(*) n FROM scheduled_sessions WHERE client_id=? AND scheduled_date>=? AND status='scheduled'"
-          ).bind(c.id, since30).first();
-          const loggedRows = await env.DB.prepare(
-            `SELECT workout_date d FROM self_workouts WHERE client_id=? AND workout_date>=?
-             UNION ALL SELECT session_date d FROM training_sessions WHERE client_id=? AND session_date>=?`
-          ).bind(c.id, since56, c.id, since56).all();
+          // --- Macro adherence: daily logged meals vs meal_profiles target, last 14 days ---
+          // All four queries for this client run concurrently instead of
+          // one at a time, and every client runs concurrently with every
+          // other client instead of waiting in line -- this used to be
+          // roughly 4 sequential round trips per client, which is exactly
+          // why this got slower as the roster grew.
+          const [scheduled, loggedRows, mp, mealRows] = await Promise.all([
+            env.DB.prepare(
+              "SELECT COUNT(*) n FROM scheduled_sessions WHERE client_id=? AND scheduled_date>=? AND status='scheduled'"
+            ).bind(c.id, since30).first(),
+            env.DB.prepare(
+              `SELECT workout_date d FROM self_workouts WHERE client_id=? AND workout_date>=?
+               UNION ALL SELECT session_date d FROM training_sessions WHERE client_id=? AND session_date>=?`
+            ).bind(c.id, since56, c.id, since56).all(),
+            env.DB.prepare('SELECT calories,protein_g,carbs_g,fat_g FROM meal_profiles WHERE client_id=? LIMIT 1').bind(c.id).first(),
+            env.DB.prepare(
+              'SELECT meal_date, calories, protein_g, carbs_g, fat_g FROM meals WHERE client_id=? AND meal_date>=? ORDER BY meal_date ASC'
+            ).bind(c.id, since14).all()
+          ]);
+
           const loggedDates = (loggedRows.results || []).map(r => r.d);
           const logged30 = loggedDates.filter(d => d >= since30).length;
           c.workout_scheduled_30d = scheduled?.n || 0;
@@ -3739,11 +3752,6 @@ ${compactIndex.join('\n')}`;
           }
           c.workout_weekly_series = weekCounts;
 
-          // --- Macro adherence: daily logged meals (real 'meals' table from client-portal.html) vs meal_profiles target, last 14 days ---
-          const mp = await env.DB.prepare('SELECT calories,protein_g,carbs_g,fat_g FROM meal_profiles WHERE client_id=? LIMIT 1').bind(c.id).first();
-          const mealRows = await env.DB.prepare(
-            'SELECT meal_date, calories, protein_g, carbs_g, fat_g FROM meals WHERE client_id=? AND meal_date>=? ORDER BY meal_date ASC'
-          ).bind(c.id, since14).all();
           const dayTotals = {};
           for (const mr of (mealRows.results || [])) {
             const d = mr.meal_date;
@@ -3769,7 +3777,7 @@ ${compactIndex.join('\n')}`;
           c.macro_days_logged = cnt;
           c.macro_has_target = !!(mp && mp.calories);
           c.macro_series = macroSeries;
-        }
+        }));
 
         return ok({ clients, showing_all: showAll }, cors);
       }
