@@ -1964,6 +1964,26 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok(result, cors);
       }
 
+      // Manual "Send Check-In Email Now" button on a client's profile --
+      // for anyone already past the 42-day mark from before this
+      // automation existed, or any prospect a coach wants to reach out
+      // to right now instead of waiting for the nightly scan. No admin
+      // key required since this is triggered from inside the coach
+      // tools themselves, not a raw API call.
+      if (url.pathname === '/followup/send-checkin-now' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id) return bad('client_id required', cors);
+        const c = await env.DB.prepare('SELECT id, first_name, last_name, email, goal_primary FROM clients WHERE id=?').bind(b.client_id).first();
+        if (!c) return bad('Client not found', cors);
+        if (!c.email) return bad('No email on file for this client', cors);
+        const result = await sendSingleCheckinEmail(env, c);
+        if (result.sent) {
+          await env.DB.prepare('UPDATE clients SET followup_email_sent_at=? WHERE id=?').bind(new Date().toISOString(), c.id).run();
+        }
+        return ok({ ok: true, sent: result.sent, error: result.error || null }, cors);
+      }
+
       // A plain GET so it works as a direct email link, no JS or login
       // required. Sets the flag every campaign checks before sending.
       if (url.pathname === '/unsubscribe' && request.method === 'GET') {
@@ -4486,6 +4506,27 @@ async function sendPlainEmail(env, { to, subject, html, client_id, context, coac
 // their drip email yet, and sends one low-pressure, no-pressure email
 // each. A coach only has to act if and when the person actually
 // replies -- that's the entire workload on this end.
+// Sends the actual 42-day check-in email to one client. Shared by both
+// the automated nightly scan and the manual "Send Check-In Email Now"
+// button on a client's profile, so there's exactly one copy of this
+// template rather than one per caller.
+async function sendSingleCheckinEmail(env, c) {
+  const firstName = c.first_name || 'there';
+  const goalLine = c.goal_primary
+    ? `Last time we talked, you mentioned wanting to work on ${c.goal_primary.toLowerCase()}.`
+    : `Last time we talked, you had some goals you wanted to work toward.`;
+  const checkinUrl = FOLLOWUP_LINKS.checkin + '?clientId=' + c.id;
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
+      <p>Hi ${firstName},</p>
+      <p>It's been a little while since we last talked at Retro Fitness of Fairless Hills. ${goalLine} No pressure at all, just wanted to check in.</p>
+      <p>Got 60 seconds? <a href="${checkinUrl}">Take our quick check-in</a> and let us know how it's been going on your own. If it sounds like a real conversation would help, there's an option right on there to say so, and we'll reach back out.</p>
+      <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
+    </div>`;
+  const subject = 'Checking in, ' + firstName;
+  return sendPlainEmail(env, { to: c.email, subject, html, client_id: c.id, context: 'Decline drip follow-up (42-day)' });
+}
+
 async function sendDeclineDripEmails(env) {
   if (!env.DB) return { sent: 0, error: 'No DB' };
   if (!env.RESEND_KEY) return { sent: 0, error: 'RESEND_KEY not configured' };
@@ -4501,20 +4542,7 @@ async function sendDeclineDripEmails(env) {
 
   let sent = 0, failed = 0;
   for (const c of (due.results || [])) {
-    const firstName = c.first_name || 'there';
-    const goalLine = c.goal_primary
-      ? `Last time we talked, you mentioned wanting to work on ${c.goal_primary.toLowerCase()}.`
-      : `Last time we talked, you had some goals you wanted to work toward.`;
-    const checkinUrl = FOLLOWUP_LINKS.checkin + '?clientId=' + c.id;
-    const html = `
-      <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
-        <p>Hi ${firstName},</p>
-        <p>It's been a little while since we last talked at Retro Fitness of Fairless Hills. ${goalLine} No pressure at all, just wanted to check in.</p>
-        <p>Got 60 seconds? <a href="${checkinUrl}">Take our quick check-in</a> and let us know how it's been going on your own. If it sounds like a real conversation would help, there's an option right on there to say so, and we'll reach back out.</p>
-        <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
-      </div>`;
-    const subject = 'Checking in, ' + firstName;
-    const result = await sendPlainEmail(env, { to: c.email, subject, html, client_id: c.id, context: 'Decline drip follow-up (42-day)' });
+    const result = await sendSingleCheckinEmail(env, c);
     if (result.sent) {
       await env.DB.prepare('UPDATE clients SET followup_email_sent_at=? WHERE id=?').bind(new Date().toISOString(), c.id).run();
       sent++;
@@ -4529,47 +4557,49 @@ async function sendDeclineDripEmails(env) {
 // booking link everything else uses -- swap FOLLOWUP_LINKS.reschedule
 // once the Retro-branded Jotform reschedule form is live, that's the
 // only line that needs to change.
-// ---------------- Men's members bi-weekly drip campaign ----------------
-// Runs nightly, targets male gym members who are NOT personal training
-// clients (status = active_member only -- anything else, active_pt,
-// prospect, declined, is already being reached some other way and drops
-// off this list automatically since the WHERE clause below only ever
-// matches active_member). Every 14 days each qualifying member gets the
-// next piece in a rotating 4-part educational sequence, cycling back to
-// the start after part 4. Deliberately not a sales pitch anywhere in the
-// copy -- the only ask is a 60-second curiosity quiz or booking a free
-// body composition scan, never personal training directly.
+// ---------------- Members bi-weekly drip campaign ----------------
+// Runs nightly, targets ALL gym members who are NOT personal training
+// clients (status = active_member only). Originally scoped to men only,
+// but almost no members have gender on file yet (ABC's export doesn't
+// carry it), so this runs against the full active_member list instead.
+// Ted's plan: sort respondents by gender once they reply and route men
+// to himself, women to Danielle, backfilling the gender field on their
+// profile as that happens. Every 14 days each qualifying member gets
+// the next piece in a rotating 4-part educational sequence, cycling
+// back to the start after part 4. Deliberately not a sales pitch
+// anywhere in the copy -- the only ask is a 60-second curiosity quiz or
+// booking a free body composition scan, never personal training directly.
 const MENS_DRIP_CONTENT = [
   {
-    subject: 'The muscle most guys don\u2019t know they\u2019re losing',
+    subject: 'The muscle most people don\u2019t know they\u2019re losing',
     body: (firstName) => `
       <p>Hi ${firstName},</p>
-      <p>Here's something most guys never get told directly: starting around age 30, the average man loses roughly 3 to 8 percent of his muscle mass per decade if he's not doing anything specific to hold onto it. It doesn't show up as a dramatic change. It shows up slowly, as things just feeling a little harder than they used to.</p>
-      <p>The guys who avoid that curve aren't doing anything mysterious. They're just training with intent, and they actually know their numbers instead of guessing.</p>
+      <p>Here's something most people never get told directly: starting around age 30, the average adult loses roughly 3 to 8 percent of their muscle mass per decade if they're not doing anything specific to hold onto it. It doesn't show up as a dramatic change. It shows up slowly, as things just feeling a little harder than they used to.</p>
+      <p>The people who avoid that curve aren't doing anything mysterious. They're just training with intent, and they actually know their numbers instead of guessing.</p>
       <p>Curious where you actually stand right now? <a href="${'{{STRENGTH_CHECK}}'}">Take our 60-second check</a>, no obligation, just a real look at where you're at.</p>`
   },
   {
     subject: 'Why the scale is lying to you',
     body: (firstName) => `
       <p>Hi ${firstName},</p>
-      <p>Two guys can weigh exactly the same, 185 pounds, and be in completely different shape. One's carrying real muscle. The other isn't. The scale can't tell you which one you are. Body composition can.</p>
-      <p>Most guys going to the gym on their own are optimizing for a number that doesn't actually tell them anything useful. The number that matters is how much of you is muscle versus everything else, and whether that ratio is moving the direction you want.</p>
+      <p>Two people can weigh exactly the same, say 160 pounds, and be in completely different shape. One's carrying real muscle. The other isn't. The scale can't tell you which one you are. Body composition can.</p>
+      <p>Most people going to the gym on their own are optimizing for a number that doesn't actually tell them anything useful. The number that matters is how much of you is muscle versus everything else, and whether that ratio is moving the direction you want.</p>
       <p>If you've never actually seen that number for yourself, <a href="${'{{BODY_COMP}}'}">grab a free complete body composition scan</a>, completely free, no strings, just real data on where you stand.</p>`
   },
   {
     subject: 'The number almost nobody checks',
     body: (firstName) => `
       <p>Hi ${firstName},</p>
-      <p>Most guys can tell you how much they bench. Almost none can tell you their resting metabolic rate, the number of calories your body burns just existing, before you've done a single set. It's driven almost entirely by how much lean muscle you're carrying.</p>
-      <p>More muscle means your body is working harder for you around the clock, not just during your workout. It's the real reason two guys eating the same way can look completely different a year later.</p>
+      <p>Most people can tell you how much they can lift. Almost none can tell you their resting metabolic rate, the number of calories your body burns just existing, before you've done a single set. It's driven almost entirely by how much lean muscle you're carrying.</p>
+      <p>More muscle means your body is working harder for you around the clock, not just during your workout. It's the real reason two people eating the same way can look completely different a year later.</p>
       <p>Want to actually know yours instead of guessing? <a href="${'{{STRENGTH_CHECK}}'}">60-second check here</a>, or skip straight to <a href="${'{{BODY_COMP}}'}">booking a full scan</a> if you're ready to see the real numbers.</p>`
   },
   {
     subject: 'Strength doesn\u2019t care how old you are',
     body: (firstName) => `
       <p>Hi ${firstName},</p>
-      <p>One of the most consistent findings in exercise science: strength training is one of the very few things that keeps paying off at every age, not just for how you look, but bone density, joint health, hormone balance, even long-term cognitive health. It's not a young guy's game. If anything, it matters more the older you get.</p>
-      <p>The guys who stay strong into their 40s, 50s, and 60s aren't genetically different. They just trained like it mattered, consistently, with an actual plan behind it.</p>
+      <p>One of the most consistent findings in exercise science: strength training is one of the very few things that keeps paying off at every age, not just for how you look, but bone density, joint health, hormone balance, even long-term cognitive health. It's not a young person's game. If anything, it matters more the older you get.</p>
+      <p>The people who stay strong into their 40s, 50s, and 60s aren't genetically different. They just trained like it mattered, consistently, with an actual plan behind it.</p>
       <p>If you want a real read on where your strength and body composition actually stand today, <a href="${'{{BODY_COMP}}'}">grab a free complete body composition scan</a>, completely free, no pressure, just real information.</p>`
   }
 ];
@@ -4581,7 +4611,7 @@ async function sendMensMembersDrip(env) {
   const due = await env.DB.prepare(
     `SELECT id, first_name, email, mens_drip_sequence
      FROM clients
-     WHERE status = 'active_member' AND LOWER(gender) = 'male'
+     WHERE status = 'active_member'
        AND email IS NOT NULL AND email != ''
        AND COALESCE(email_opt_out, 0) = 0
        AND (mens_drip_last_sent_at IS NULL OR mens_drip_last_sent_at <= date('now','-14 day'))`
