@@ -111,7 +111,7 @@ const MEAL_LIBRARY = {
   ]
 };
 
-// --- Gym location: Retro Fitness of Fairless Hills, 516 Lincoln Hwy, 19030 ---
+// --- Gym location: Retro Strong, 516 Lincoln Hwy, 19030 ---
 const GYM_LAT = 40.1762, GYM_LON = -74.8530, RADIUS_MI = 10;
 
 // --- What to harvest. Edit freely. "near {LOC}" gets filled with the
@@ -144,7 +144,8 @@ const ALLOWED_TABLES = new Set([
   'b2b_log','social_media_log','member_joins_log','schedule_changes',
   'maintenance_log','staff_performance','action_items','shift_logs',
   'staff_roster','hr_documents','hr_onboarding','hr_performance','candidates',
-  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media','followups','eod_flag_dismissals','cardio_logs','pt_leads','scheduled_meals','client_recaps'
+  'staff_availability','time_off_requests','gym_events','churn_surveys','chef_recipes','pt_appointments','coach_daily_tips','saved_programs','coach_coverage','group_classes','group_class_sessions','marketing_media','followups','eod_flag_dismissals','cardio_logs','pt_leads','scheduled_meals','client_recaps',
+  'incident_reports','vendors','equipment_repairs','inventory_items'
 ]);
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
 const ORDER = /^[a-z_][a-z0-9_]*( (asc|desc))?$/i;
@@ -321,7 +322,7 @@ export default {
         // AI screening pass, best-effort. Application still succeeds if this fails.
         if (env.ANTHROPIC_KEY && (b.resume_text || b.cover_note)) {
           try {
-            const sys = `You are screening a job application for a Retro Fitness gym. Role applied for: ${roleApplied}. Read the candidate's background/resume text and any cover note. Respond ONLY with JSON, no other text, in this exact shape: {"score": <integer 1-10>, "summary": "<2-3 sentence overview>", "strengths": ["...", "..."], "concerns": ["...", "..."]}. Score reflects fit for the role based only on what's written, not assumptions. If information is thin, say so in the summary and score conservatively.`;
+            const sys = `You are screening a job application for a Retro Strong gym. Role applied for: ${roleApplied}. Read the candidate's background/resume text and any cover note. Respond ONLY with JSON, no other text, in this exact shape: {"score": <integer 1-10>, "summary": "<2-3 sentence overview>", "strengths": ["...", "..."], "concerns": ["...", "..."]}. Score reflects fit for the role based only on what's written, not assumptions. If information is thin, say so in the summary and score conservatively.`;
             const user = `Candidate name: ${name}\nRole applied for: ${roleApplied}\nAvailability: ${b.availability || 'not stated'}\n\nBackground/resume:\n${b.resume_text || '(none provided)'}\n\nCover note:\n${b.cover_note || '(none provided)'}`;
             const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
               method: 'POST',
@@ -716,7 +717,7 @@ export default {
         const macroLine = (mp.calories || mp.protein_g)
           ? `Daily targets: ${mp.calories||'?'} kcal, protein ${mp.protein_g||'?'}g, carbs ${mp.carbs_g||'?'}g, fat ${mp.fat_g||'?'}g. Size portions to fit sensibly within one meal of that budget.`
           : 'No fixed macro targets on file; write balanced, protein-forward recipes.';
-        const sys = `You are Coach Ted, a Retro Fitness personal trainer and former professional chef, writing recipes for one of your PT clients. Write in your own voice: practical, encouraging, a little insider, zero wasted words, like a chef who also coaches. Return ONLY valid JSON, no markdown, no prose, with this exact shape: {"recipes":[{"title":"string","meal_type":"breakfast|lunch|dinner|snack","prep_min":number,"calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"ingredients":["string",...],"steps":["string",...],"tags":["string",...],"supplement_note":"string or empty"}]}. Generate exactly ${count} recipes spread across meal types. Strictly avoid every excluded food and allergen listed below. If a medical condition is listed, do not design around it clinically; just keep the recipe general and note nothing medical. For snack or shake recipes only, set supplement_note to one short sentence suggesting a 1st Phorm protein powder or supplement with this link: ${FPLINK}; for all other recipes leave supplement_note as an empty string. No emojis, no em dashes, plain punctuation only.`;
+        const sys = `You are Coach Ted, a Retro Strong personal trainer and former professional chef, writing recipes for one of your PT clients. Write in your own voice: practical, encouraging, a little insider, zero wasted words, like a chef who also coaches. Return ONLY valid JSON, no markdown, no prose, with this exact shape: {"recipes":[{"title":"string","meal_type":"breakfast|lunch|dinner|snack","prep_min":number,"calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"ingredients":["string",...],"steps":["string",...],"tags":["string",...],"supplement_note":"string or empty"}]}. Generate exactly ${count} recipes spread across meal types. Strictly avoid every excluded food and allergen listed below. If a medical condition is listed, do not design around it clinically; just keep the recipe general and note nothing medical. For snack or shake recipes only, set supplement_note to one short sentence suggesting a 1st Phorm protein powder or supplement with this link: ${FPLINK}; for all other recipes leave supplement_note as an empty string. No emojis, no em dashes, plain punctuation only.`;
         const user = `Client goal: ${mp.goal_type || client.goal_primary || 'general fitness'}.
 ${macroLine}
 Excluded proteins: ${mp.excluded_proteins||'none'}. Excluded vegetables: ${mp.excluded_vegetables||'none'}. Excluded fruits: ${mp.excluded_fruits||'none'}.
@@ -957,7 +958,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
               from: env.MAIL_FROM || 'onboarding@resend.dev',
               to: [client.email],
               subject: 'We\'re sorry to see you go — quick question?',
-              html: '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto"><h2 style="color:#E0192B">RETRO FITNESS</h2><p>Hi ' + (client.first_name||'there') + ', we\'re sorry to see your membership end. Your feedback genuinely helps us do better — could you take 60 seconds to tell us what happened?</p><p style="text-align:center;margin:24px 0"><a href="' + surveyUrl + '" style="background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Share Feedback</a></p><p style="color:#888;font-size:12px">Thank you for having been part of our gym.</p></div>'
+              html: '<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto"><h2 style="color:#E0192B">RETRO STRONG</h2><p>Hi ' + (client.first_name||'there') + ', we\'re sorry to see your membership end. Your feedback genuinely helps us do better — could you take 60 seconds to tell us what happened?</p><p style="text-align:center;margin:24px 0"><a href="' + surveyUrl + '" style="background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Share Feedback</a></p><p style="color:#888;font-size:12px">Thank you for having been part of our gym.</p></div>'
             })
           });
           const mailData = await mailResp.json().catch(() => ({}));
@@ -1222,8 +1223,8 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
               body: JSON.stringify({
                 from: env.MAIL_FROM || 'onboarding@resend.dev',
                 to: [em],
-                subject: 'Retro Fitness Member App: Your verification code',
-                html: '<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto"><h2 style="color:#E0192B">RETRO FITNESS</h2><p>Use this code to set your Member App password. It expires in 15 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:6px;background:#F5F6F8;padding:16px;text-align:center;border-radius:10px">' + code + '</div><p style="color:#888;font-size:12px">If you did not request this, you can ignore this email.</p></div>'
+                subject: 'Retro Strong Member App: Your verification code',
+                html: '<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto"><h2 style="color:#E0192B">RETRO STRONG</h2><p>Use this code to set your Member App password. It expires in 15 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:6px;background:#F5F6F8;padding:16px;text-align:center;border-radius:10px">' + code + '</div><p style="color:#888;font-size:12px">If you did not request this, you can ignore this email.</p></div>'
               })
             });
             const mailData = await mailResp.json().catch(() => ({}));
@@ -1993,7 +1994,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           try { await env.DB.prepare('UPDATE clients SET email_opt_out=1 WHERE id=?').bind(clientId).run(); } catch(e) {}
         }
         return new Response(
-          '<div style="font-family:Arial,sans-serif;max-width:480px;margin:60px auto;text-align:center;color:#222"><h2 style="color:#B0121F">Retro Fitness</h2><p>You\'re unsubscribed from these emails. If you change your mind, just reach out any time.</p></div>',
+          '<div style="font-family:Arial,sans-serif;max-width:480px;margin:60px auto;text-align:center;color:#222"><h2 style="color:#B0121F">Retro Strong</h2><p>You\'re unsubscribed from these emails. If you change your mind, just reach out any time.</p></div>',
           { status: 200, headers: { 'Content-Type': 'text/html' } }
         );
       }
@@ -2343,7 +2344,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!b.question) return bad('question required', cors);
         const exercises = Array.isArray(b.exercises) ? b.exercises : [];
         const exerciseList = exercises.map(e => `${e.name} | ${e.body_part} | ${e.equipment} | ${e.type}`).join('\n');
-        const sys = `You are FitChat, a friendly assistant inside the Retro Fitness Fairless Hills member app. Members ask you fitness questions and you help them, grounded in the gym's real exercise library below (format: name | body part | equipment | type).
+        const sys = `You are FitChat, a friendly assistant inside the Retro Strong member app. Members ask you fitness questions and you help them, grounded in the gym's real exercise library below (format: name | body part | equipment | type).
 
 EXERCISE LIBRARY:
 ${exerciseList}
@@ -3360,7 +3361,7 @@ Rules:
           ? ' If eating-out/spending habits were discussed, briefly note what was learned and how it factored into the cost conversation -- the regional director is specifically tracking whether that ground gets covered on every consultation. If it was NOT captured, say so plainly in one short clause so it is visible as a gap, do not silently omit it.'
           : '';
         const sys = `You are helping a personal trainer compose one short, professional caption summarizing a client appointment for a daily report their regional director reads. Combine the appointment's intake/assessment data with the coach's own follow-up note into ONE tight paragraph (2-4 sentences max). Lead with the outcome/result, then the key supporting detail. Plain, factual, businesslike tone -- this is a status report, not marketing copy.${spendingNote} No emojis, no em dashes, plain punctuation only. Return ONLY the caption text, nothing else.`;
-        const user = `Client: ${clientName}\nAppointment type: ${apptLabel}\n\n${apptDetail}\n\nCoach's note(s) logged today about this client: ${agendaNotes}\n\nCompose the caption.`;
+        const user = `Appointment type: ${apptLabel}\n\n${apptDetail}\n\nCoach's note(s) logged today about this client: ${agendaNotes}\n\nCompose the caption. Refer to the person simply as "the client," their name is not needed here and is already attached to this record separately.`;
 
         const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
@@ -3440,7 +3441,7 @@ Rules:
             compactIndex.push(`${r.name} | ${cat} | ${r.calories}kcal ${r.protein_g}p/${r.carbs_g}c/${r.fat_g}f | tags: ${(r.tags||[]).join(',')||'none'} | key ingredients: ${firstFew}`);
           });
         });
-        const sys = `You are "Chef", a friendly recipe assistant for Retro Fitness's Coach's Table meal library. A member is asking what to make. Suggest 1-3 REAL recipes from the library below by their EXACT name -- never invent a recipe that isn't in this list. If they mention an ingredient they have on hand, prioritize recipes whose key ingredients include it. If they ask something generic like "what should I make tonight," pick something that reasonably fits what they have left for the day, factoring in what they've already eaten if that's provided below, not just their full daily target. Keep the reply short and conversational (3-5 sentences), like a friendly chef texting back, not a formal list. Mention the recipe name(s) clearly so they can find it in the app. No emojis, no em dashes, plain punctuation only.
+        const sys = `You are "Chef", a friendly recipe assistant for Retro Strong's Coach's Table meal library. A member is asking what to make. Suggest 1-3 REAL recipes from the library below by their EXACT name -- never invent a recipe that isn't in this list. If they mention an ingredient they have on hand, prioritize recipes whose key ingredients include it. If they ask something generic like "what should I make tonight," pick something that reasonably fits what they have left for the day, factoring in what they've already eaten if that's provided below, not just their full daily target. Keep the reply short and conversational (3-5 sentences), like a friendly chef texting back, not a formal list. Mention the recipe name(s) clearly so they can find it in the app. No emojis, no em dashes, plain punctuation only.
 
 ${macroLine}
 
@@ -3494,7 +3495,7 @@ ${compactIndex.join('\n')}`;
             compactIndex.push(`${r.name} | ${cat} | ${r.calories}kcal ${r.protein_g}p/${r.carbs_g}c/${r.fat_g}f | tags: ${(r.tags||[]).join(',')||'none'} | key ingredients: ${firstFew}`);
           });
         });
-        const sys = `You are "Chef", a friendly recipe assistant for Retro Fitness's Coach's Table meal library. A member just sent a photo of their fridge or pantry. Identify what food items you can actually see -- be honest that a photo like this is hard to read fully (containers, packaging, items partially hidden), so only mention items you're reasonably confident about, don't guess wildly. Then suggest 1-3 REAL recipes from the library below by their EXACT name that use ingredients close to what you identified -- never invent a recipe that isn't in this list, and never claim high confidence about what's in the photo if it's genuinely unclear. If you can't identify much of anything useful, say so plainly and suggest they try describing what they have in the chat instead. Keep the reply short and conversational (3-5 sentences). No emojis, no em dashes, plain punctuation only.
+        const sys = `You are "Chef", a friendly recipe assistant for Retro Strong's Coach's Table meal library. A member just sent a photo of their fridge or pantry. Identify what food items you can actually see -- be honest that a photo like this is hard to read fully (containers, packaging, items partially hidden), so only mention items you're reasonably confident about, don't guess wildly. Then suggest 1-3 REAL recipes from the library below by their EXACT name that use ingredients close to what you identified -- never invent a recipe that isn't in this list, and never claim high confidence about what's in the photo if it's genuinely unclear. If you can't identify much of anything useful, say so plainly and suggest they try describing what they have in the chat instead. Keep the reply short and conversational (3-5 sentences). No emojis, no em dashes, plain punctuation only.
 
 ${macroLine}
 
@@ -3607,9 +3608,9 @@ ${compactIndex.join('\n')}`;
       if (url.pathname === '/coach/draft-outreach' && request.method === 'POST') {
         if (!env.ANTHROPIC_KEY) return bad('ANTHROPIC_KEY not set.', cors);
         const b = await request.json();
-        if (!b.client_name || !b.reasons) return bad('client_name, reasons required', cors);
-        const sys = 'You are a personal trainer drafting a short, warm, proactive outreach message to a client who needs a check-in. 2-3 sentences, casual and human, not corporate. Address one of the real reasons given (renewal coming up, or haven\'t heard from them). Return ONLY the message text.';
-        const content = [{ type:'text', text: `Client: ${b.client_name}. Reason to reach out: ${b.reasons}. Draft the message.` }];
+        if (!b.reasons) return bad('reasons required', cors);
+        const sys = 'You are a personal trainer drafting a short, warm, proactive outreach message to a client who needs a check-in. 2-3 sentences, casual and human, not corporate. Address one of the real reasons given (renewal coming up, or haven\'t heard from them). Start with "Hey [Name]," using that literal placeholder since you don\'t have their real name, the coach will swap it in before sending. Return ONLY the message text.';
+        const content = [{ type:'text', text: `Reason to reach out: ${b.reasons}. Draft the message.` }];
         const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'Content-Type':'application/json','x-api-key':env.ANTHROPIC_KEY,'anthropic-version':'2023-06-01' },
@@ -4112,7 +4113,7 @@ ${compactIndex.join('\n')}`;
           .bind(b.gym_id, b.member_id||null, b.client_name||'', b.package_name||'', b.sessions||null, b.amount, b.sold_by, saleDate, saleType).run();
         const saleId = ins.meta.last_row_id;
         const gym = await env.DB.prepare('SELECT name FROM gyms WHERE id=?').bind(b.gym_id).first();
-        const gymName = gym?.name?.replace('Retro Fitness ','') || 'Gym ' + b.gym_id;
+        const gymName = gym?.name?.replace('Retro Strong ','') || 'Gym ' + b.gym_id;
         const amt = Number(b.amount).toLocaleString('en-US', {minimumFractionDigits: 0});
         const typeTag = saleType === 'renewal' ? ' (renewal)' : saleType === 'upgrade' ? ' (upgrade)' : '';
         const winBody = '\uD83C\uDF89 ' + gymName + ' closed a ' + (b.package_name || 'PT package') + typeTag + ', $' + amt + ', ' + b.sold_by;
@@ -4519,9 +4520,9 @@ async function sendSingleCheckinEmail(env, c) {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
       <p>Hi ${firstName},</p>
-      <p>It's been a little while since we last talked at Retro Fitness of Fairless Hills. ${goalLine} No pressure at all, just wanted to check in.</p>
+      <p>It's been a little while since we last talked at Retro Strong. ${goalLine} No pressure at all, just wanted to check in.</p>
       <p>Got 60 seconds? <a href="${checkinUrl}">Take our quick check-in</a> and let us know how it's been going on your own. If it sounds like a real conversation would help, there's an option right on there to say so, and we'll reach back out.</p>
-      <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
+      <p>Coach Ted Scholl<br>Retro Strong</p>
     </div>`;
   const subject = 'Checking in, ' + firstName;
   return sendPlainEmail(env, { to: c.email, subject, html, client_id: c.id, context: 'Decline drip follow-up (42-day)' });
@@ -4628,9 +4629,9 @@ async function sendMensMembersDrip(env) {
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.6">
         ${bodyHtml}
-        <p style="margin-top:24px">Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
+        <p style="margin-top:24px">Coach Ted Scholl<br>Retro Strong</p>
         <p style="margin-top:28px;font-size:11px;color:#9CA3AF;border-top:1px solid #eee;padding-top:12px">
-          You're getting this because you're a member at Retro Fitness of Fairless Hills.
+          You're getting this because you're a member at Retro Strong.
           <a href="https://broken-cake-e9c2.tedscholl.workers.dev/unsubscribe?client=${c.id}" style="color:#9CA3AF">Unsubscribe from these emails</a>.
         </p>
       </div>`;
@@ -4651,9 +4652,9 @@ async function sendNoShowEmail(env, appt) {
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
       <p>Hi ${firstName},</p>
-      <p>Looks like we missed you for your appointment at Retro Fitness of Fairless Hills. No worries at all, life happens, we'd just love to get you back on the calendar.</p>
+      <p>Looks like we missed you for your appointment at Retro Strong. No worries at all, life happens, we'd just love to get you back on the calendar.</p>
       <p>Pick whatever time actually works for you: <a href="${FOLLOWUP_LINKS.reschedule}">reschedule here</a>.</p>
-      <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
+      <p>Coach Ted Scholl<br>Retro Strong</p>
     </div>`;
   return sendPlainEmail(env, { to, subject: 'Missed you today, let\'s reschedule', html, client_id: appt.client_id || null, context: 'No-show reschedule email' });
 }
@@ -4679,9 +4680,9 @@ async function sendAppointmentReminders(env) {
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:520px;color:#222;line-height:1.55">
         <p>Hi ${firstName},</p>
-        <p>Just a friendly reminder about your appointment tomorrow${timeStr} at Retro Fitness of Fairless Hills. Looking forward to seeing you.</p>
+        <p>Just a friendly reminder about your appointment tomorrow${timeStr} at Retro Strong. Looking forward to seeing you.</p>
         <p>Need to move it? <a href="${FOLLOWUP_LINKS.reschedule}">reschedule here</a> instead of just not showing up, that way we can hold your spot for someone else.</p>
-        <p>Coach Ted Scholl<br>Retro Fitness of Fairless Hills</p>
+        <p>Coach Ted Scholl<br>Retro Strong</p>
       </div>`;
     const result = await sendPlainEmail(env, { to, subject: 'Reminder: your appointment tomorrow' + timeStr, html, client_id: a.client_id || null, context: 'Appointment reminder' });
     if (result.sent) {
@@ -4741,7 +4742,7 @@ async function populateDailyFeedItems(env, dateStr) {
     if (years <= 0) continue;
     if (await alreadyPosted('anniversary', 'sa'+s.id, dateStr)) continue;
     await env.DB.prepare('INSERT INTO feed_posts (category,title,body,pinned,created_by,created_at) VALUES (?,?,?,1,?,?)')
-      .bind('anniversary', s.name+"'s Work Anniversary #sa"+s.id, 'Celebrating '+years+' year'+(years===1?'':'s')+' with Retro Fitness today!', 'system', new Date().toISOString()).run();
+      .bind('anniversary', s.name+"'s Work Anniversary #sa"+s.id, 'Celebrating '+years+' year'+(years===1?'':'s')+' with Retro Strong today!', 'system', new Date().toISOString()).run();
     created++;
   }
 
@@ -5077,7 +5078,7 @@ async function buildMealPlan(env, r, inbody){
     cat.toUpperCase() + ' OPTIONS:\n' + MEAL_LIBRARY[cat].map(m =>
       `- ${m.name} (${m.calories} kcal, ${m.protein_g}g protein, ${m.carbs_g}g carbs, ${m.fat_g}g fat)`).join('\n')
   ).join('\n\n');
-  const sys = `You are a nutrition planning assistant for Retro Fitness personal training. Build a practical 7-day meal plan for one client from their body composition and goal.
+  const sys = `You are a nutrition planning assistant for Retro Strong personal training. Build a practical 7-day meal plan for one client from their body composition and goal.
 
 APPROVED MEAL LIBRARY — every meal slot in the plan must reference one of these items by its EXACT name, character-for-character, so the app can look up its macros and let the client swap it later. Never invent a meal name that isn't in this list. A portion_mult field (default 1, e.g. 1.5 for a larger portion) lets you scale a library item's macros up or down to fit the day's targets instead of inventing a new food:
 

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="config.js"></script>
+<script>
+function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
+
+(function(){
+  var ALLOWED = ["Franchise Owner","Director of Fitness","General Manager","Men's Training Lead"];
+  var session = null;
+  try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
+  if (!session || ALLOWED.indexOf(session.role) === -1) {
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management, since it includes incident reports and other sensitive records. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    throw new Error("unauthorized access blocked");
+  }
+  window._STAFF_SESSION = session;
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ops Center — Retro Strong</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--blue:#2563EB;--lred:#FEF2F2;--lamber:#FFF7ED;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+.topbar{background:var(--ink);display:flex;align-items:center;gap:10px;padding:0 16px;height:52px;position:sticky;top:0;z-index:40;border-bottom:3px solid var(--red)}
+.topbar .logo{font-family:'Oswald';font-weight:800;font-size:15px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.topbar .logo span{color:var(--red)}
+.topbar .spacer{flex:1}
+.topbar .nav-btn{font-size:12px;color:#9CA3AF;text-decoration:none;padding:6px 12px;border:1px solid #374151;border-radius:8px}
+.topbar .nav-btn:hover{color:#fff}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 80px}
+h1{font-family:'Oswald';font-size:22px;font-weight:800;text-transform:uppercase;margin-bottom:4px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.tab-btn{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;color:var(--ink)}
+.tab-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.section{display:none}
+.section.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px}
+.card-title{font-family:'Oswald';font-weight:700;font-size:14px;text-transform:uppercase;margin-bottom:10px}
+label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:4px;margin-top:10px}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit}
+textarea{min-height:70px;resize:vertical}
+.btn{background:var(--red);color:#fff;border:none;border-radius:8px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer;margin-top:14px}
+.btn.secondary{background:var(--soft);color:var(--ink)}
+.status{font-size:13px;margin-top:8px}
+.row-item{border-bottom:1px solid var(--line);padding:10px 0}
+.row-item:last-child{border-bottom:none}
+.row-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.badge{font-size:10px;font-weight:800;text-transform:uppercase;padding:3px 8px;border-radius:20px}
+.badge-open{background:var(--lred);color:var(--red)}
+.badge-closed{background:#E3F5EC;color:var(--green)}
+.badge-scheduled{background:var(--lamber);color:var(--amber)}
+.client-hit{padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-top:4px;cursor:pointer;font-size:13px}
+.client-hit:hover{background:var(--soft)}
+.emergency-box{background:var(--lamber);border:1px solid var(--amber);border-radius:8px;padding:10px 12px;margin-top:10px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="logo">RETRO <span>OPS CENTER</span></div>
+  <div class="spacer"></div>
+  <a class="nav-btn" href="command-center.html">Command Center</a>
+</div>
+<div class="wrap">
+  <h1>Ops Center</h1>
+  <div class="sub">Incident reports, equipment & vendors, and inventory — restricted to management.</div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('incidents')">Incident Reports</button>
+    <button class="tab-btn" onclick="showTab('equipment')">Equipment & Vendors</button>
+    <button class="tab-btn" onclick="showTab('inventory')">Inventory</button>
+  </div>
+
+  <!-- INCIDENT REPORTS -->
+  <div id="sec-incidents" class="section active">
+    <div class="card">
+      <div class="card-title">File a New Incident Report</div>
+      <label>Involved Person (search by name, optional)</label>
+      <input id="inc-search" placeholder="Type a client or member name..." oninput="searchIncidentClient()">
+      <div id="inc-client-results"></div>
+      <div id="inc-emergency-box"></div>
+      <input type="hidden" id="inc-client-id">
+
+      <label>Name (auto-fills if matched above, or type a guest's name)</label>
+      <input id="inc-name">
+
+      <label>Date</label>
+      <input type="date" id="inc-date">
+      <label>Time</label>
+      <input type="time" id="inc-time">
+
+      <label>Incident Type</label>
+      <select id="inc-type">
+        <option value="medical_emergency">Medical Emergency</option>
+        <option value="injury">Injury (non-emergency)</option>
+        <option value="facility">Building / Facility Issue</option>
+        <option value="other">Other</option>
+      </select>
+
+      <label>Who Was Called</label>
+      <select id="inc-called">
+        <option value="none">No one — handled on site</option>
+        <option value="ambulance">Ambulance</option>
+        <option value="police">Police</option>
+        <option value="both">Both police and ambulance</option>
+      </select>
+
+      <label>What Happened</label>
+      <textarea id="inc-description" placeholder="Describe exactly what happened, as factually as possible"></textarea>
+
+      <label>Outcome</label>
+      <textarea id="inc-outcome" placeholder="What happened as a result — transported, treated on site, resolved, etc."></textarea>
+
+      <label>Witnesses</label>
+      <input id="inc-witnesses" placeholder="Names of anyone who saw it happen">
+
+      <button class="btn" onclick="submitIncident()">File Report</button>
+      <div id="inc-status" class="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Recent Incident Reports</div>
+      <div id="inc-list">Loading...</div>
+    </div>
+  </div>
+
+  <!-- EQUIPMENT & VENDORS -->
+  <div id="sec-equipment" class="section">
+    <div class="card">
+      <div class="card-title">Log Equipment Repair</div>
+      <label>Equipment</label>
+      <input id="eq-name" placeholder="e.g. Treadmill #4">
+      <label>Issue</label>
+      <textarea id="eq-issue"></textarea>
+      <label>Vendor (optional)</label>
+      <select id="eq-vendor"><option value="">-- None yet --</option></select>
+      <label>Estimated / Actual Cost</label>
+      <input type="number" id="eq-cost" placeholder="0.00">
+      <label>Status</label>
+      <select id="eq-status">
+        <option value="open">Open</option>
+        <option value="scheduled">Scheduled</option>
+        <option value="completed">Completed</option>
+      </select>
+      <label>Notes</label>
+      <textarea id="eq-notes"></textarea>
+      <button class="btn" onclick="submitEquipment()">Save Repair Entry</button>
+      <div id="eq-status-msg" class="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Equipment Repair Log</div>
+      <div id="eq-list">Loading...</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Add a Vendor</div>
+      <label>Name</label>
+      <input id="v-name">
+      <label>Category</label>
+      <input id="v-category" placeholder="e.g. equipment repair, HVAC, cleaning">
+      <label>Contact Name</label>
+      <input id="v-contact">
+      <label>Phone</label>
+      <input id="v-phone">
+      <label>Email</label>
+      <input id="v-email">
+      <label>Notes</label>
+      <textarea id="v-notes"></textarea>
+      <button class="btn secondary" onclick="submitVendor()">Save Vendor</button>
+      <div id="v-status" class="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Vendor Directory</div>
+      <div id="v-list">Loading...</div>
+    </div>
+  </div>
+
+  <!-- INVENTORY -->
+  <div id="sec-inventory" class="section">
+    <div class="card">
+      <div class="card-title">Add / Update Inventory Item</div>
+      <label>Item Name</label>
+      <input id="inv-name" placeholder="e.g. Vanilla Protein Mix">
+      <label>Category</label>
+      <input id="inv-category" placeholder="e.g. protein/shakes, supplements, cleaning">
+      <label>Quantity On Hand</label>
+      <input type="number" id="inv-qty">
+      <label>Reorder Threshold (optional)</label>
+      <input type="number" id="inv-threshold">
+      <label>Notes</label>
+      <textarea id="inv-notes"></textarea>
+      <button class="btn" onclick="submitInventory()">Save Item</button>
+      <div id="inv-status" class="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Current Inventory</div>
+      <div id="inv-list">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORKER = RETRO_WORKER_URL;
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+async function db(body){ const r = await fetch(WORKER+'/db',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); return r.json(); }
+
+function showTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('sec-'+name).classList.add('active');
+  if (name==='incidents') loadIncidents();
+  if (name==='equipment') { loadEquipment(); loadVendors(); loadVendorOptions(); }
+  if (name==='inventory') loadInventory();
+}
+
+document.getElementById('inc-date').value = todayET();
+
+// ---- Incident client search + emergency contact auto-fill ----
+let incSearchTimer = null;
+function searchIncidentClient(){
+  clearTimeout(incSearchTimer);
+  const q = document.getElementById('inc-search').value.trim();
+  document.getElementById('inc-client-results').innerHTML = '';
+  if (q.length < 2) return;
+  incSearchTimer = setTimeout(async () => {
+    const d = await db({ op:'select', table:'clients', limit:200 });
+    const matches = (d.results||[]).filter(c => ((c.first_name||'')+' '+(c.last_name||'')).toLowerCase().includes(q.toLowerCase())).slice(0,6);
+    document.getElementById('inc-client-results').innerHTML = matches.map(c =>
+      `<div class="client-hit" onclick='pickIncidentClient(${c.id})'>${esc(c.first_name)} ${esc(c.last_name)}</div>`
+    ).join('');
+    window._incMatches = matches;
+  }, 300);
+}
+function pickIncidentClient(id){
+  const c = (window._incMatches||[]).find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('inc-client-id').value = c.id;
+  document.getElementById('inc-name').value = ((c.first_name||'')+' '+(c.last_name||'')).trim();
+  document.getElementById('inc-search').value = '';
+  document.getElementById('inc-client-results').innerHTML = '';
+  const box = document.getElementById('inc-emergency-box');
+  if (c.emergency_contact_name || c.emergency_contact_phone) {
+    box.innerHTML = `<div class="emergency-box"><b>Emergency contact on file:</b> ${esc(c.emergency_contact_name||'not named')} (${esc(c.emergency_contact_relationship||'relationship not on file')}) — ${esc(c.emergency_contact_phone||'no phone on file')}</div>`;
+  } else {
+    box.innerHTML = `<div class="emergency-box">No emergency contact on file for this person yet. Add one on their profile when possible.</div>`;
+  }
+}
+
+async function submitIncident(){
+  const status = document.getElementById('inc-status');
+  const description = document.getElementById('inc-description').value.trim();
+  if (!description) { status.style.color='var(--red)'; status.textContent='Description is required.'; return; }
+  status.style.color='var(--muted)'; status.textContent='Saving...';
+  const clientId = document.getElementById('inc-client-id').value || null;
+  const r = await db({ op:'insert', table:'incident_reports', values: {
+    incident_date: document.getElementById('inc-date').value || todayET(),
+    incident_time: document.getElementById('inc-time').value || null,
+    incident_type: document.getElementById('inc-type').value,
+    involved_client_id: clientId,
+    involved_name: document.getElementById('inc-name').value || null,
+    description,
+    who_was_called: document.getElementById('inc-called').value,
+    outcome: document.getElementById('inc-outcome').value || null,
+    witnesses: document.getElementById('inc-witnesses').value || null,
+    reported_by: (window._STAFF_SESSION && window._STAFF_SESSION.name) || 'Unknown',
+    status: 'open'
+  }});
+  if (r.ok !== false) {
+    status.style.color='var(--green)'; status.textContent='Report filed.';
+    ['inc-name','inc-time','inc-description','inc-outcome','inc-witnesses'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('inc-client-id').value='';
+    document.getElementById('inc-emergency-box').innerHTML='';
+    loadIncidents();
+  } else { status.style.color='var(--red)'; status.textContent='Error: '+(r.error||'could not save'); }
+}
+
+async function loadIncidents(){
+  const d = await db({ op:'select', table:'incident_reports', orderBy:'created_at DESC', limit:50 });
+  const list = document.getElementById('inc-list');
+  const rows = d.results || [];
+  if (!rows.length) { list.innerHTML = '<div class="sub">No incident reports on file.</div>'; return; }
+  list.innerHTML = rows.map(r => `
+    <div class="row-item">
+      <div class="row-top">
+        <b>${esc(r.incident_date)}${r.incident_time?' '+esc(r.incident_time):''} — ${esc((r.incident_type||'').replace(/_/g,' '))}</b>
+        <span class="badge badge-${r.status==='open'?'open':'closed'}">${esc(r.status)}</span>
+      </div>
+      <div class="sub">${esc(r.involved_name||'Unnamed')} · Called: ${esc(r.who_was_called||'none')} · Reported by ${esc(r.reported_by)}</div>
+      <div style="margin-top:4px">${esc(r.description)}</div>
+    </div>`).join('');
+}
+
+// ---- Equipment & vendors ----
+async function submitEquipment(){
+  const status = document.getElementById('eq-status-msg');
+  const name = document.getElementById('eq-name').value.trim();
+  if (!name) { status.style.color='var(--red)'; status.textContent='Equipment name is required.'; return; }
+  status.style.color='var(--muted)'; status.textContent='Saving...';
+  const r = await db({ op:'insert', table:'equipment_repairs', values: {
+    equipment_name: name,
+    issue_description: document.getElementById('eq-issue').value || null,
+    reported_date: todayET(),
+    vendor_id: document.getElementById('eq-vendor').value || null,
+    cost: parseFloat(document.getElementById('eq-cost').value) || null,
+    status: document.getElementById('eq-status').value,
+    notes: document.getElementById('eq-notes').value || null,
+    entered_by: (window._STAFF_SESSION && window._STAFF_SESSION.name) || 'Unknown'
+  }});
+  if (r.ok !== false) {
+    status.style.color='var(--green)'; status.textContent='Saved.';
+    ['eq-name','eq-issue','eq-cost','eq-notes'].forEach(id=>document.getElementById(id).value='');
+    loadEquipment();
+  } else { status.style.color='var(--red)'; status.textContent='Error saving.'; }
+}
+
+async function loadEquipment(){
+  const d = await db({ op:'select', table:'equipment_repairs', orderBy:'created_at DESC', limit:50 });
+  const list = document.getElementById('eq-list');
+  const rows = d.results || [];
+  if (!rows.length) { list.innerHTML = '<div class="sub">No equipment repairs logged yet.</div>'; return; }
+  list.innerHTML = rows.map(r => `
+    <div class="row-item">
+      <div class="row-top">
+        <b>${esc(r.equipment_name)}</b>
+        <span class="badge badge-${r.status}">${esc(r.status)}</span>
+      </div>
+      <div class="sub">${esc(r.reported_date)}${r.cost?' · $'+esc(r.cost):''}</div>
+      <div style="margin-top:4px">${esc(r.issue_description||'')}</div>
+    </div>`).join('');
+}
+
+async function submitVendor(){
+  const status = document.getElementById('v-status');
+  const name = document.getElementById('v-name').value.trim();
+  if (!name) { status.style.color='var(--red)'; status.textContent='Vendor name is required.'; return; }
+  status.style.color='var(--muted)'; status.textContent='Saving...';
+  const r = await db({ op:'insert', table:'vendors', values: {
+    name, category: document.getElementById('v-category').value || null,
+    contact_name: document.getElementById('v-contact').value || null,
+    phone: document.getElementById('v-phone').value || null,
+    email: document.getElementById('v-email').value || null,
+    notes: document.getElementById('v-notes').value || null
+  }});
+  if (r.ok !== false) {
+    status.style.color='var(--green)'; status.textContent='Saved.';
+    ['v-name','v-category','v-contact','v-phone','v-email','v-notes'].forEach(id=>document.getElementById(id).value='');
+    loadVendors(); loadVendorOptions();
+  } else { status.style.color='var(--red)'; status.textContent='Error saving.'; }
+}
+
+async function loadVendors(){
+  const d = await db({ op:'select', table:'vendors', orderBy:'name ASC', limit:100 });
+  const list = document.getElementById('v-list');
+  const rows = d.results || [];
+  if (!rows.length) { list.innerHTML = '<div class="sub">No vendors added yet.</div>'; return; }
+  list.innerHTML = rows.map(r => `
+    <div class="row-item">
+      <b>${esc(r.name)}</b> <span class="sub">${esc(r.category||'')}</span>
+      <div class="sub">${esc(r.contact_name||'')} ${r.phone?'· '+esc(r.phone):''} ${r.email?'· '+esc(r.email):''}</div>
+    </div>`).join('');
+}
+
+async function loadVendorOptions(){
+  const d = await db({ op:'select', table:'vendors', orderBy:'name ASC', limit:100 });
+  const sel = document.getElementById('eq-vendor');
+  sel.innerHTML = '<option value="">-- None yet --</option>' + (d.results||[]).map(v => `<option value="${v.id}">${esc(v.name)}</option>`).join('');
+}
+
+// ---- Inventory ----
+async function submitInventory(){
+  const status = document.getElementById('inv-status');
+  const name = document.getElementById('inv-name').value.trim();
+  if (!name) { status.style.color='var(--red)'; status.textContent='Item name is required.'; return; }
+  status.style.color='var(--muted)'; status.textContent='Saving...';
+  const existing = await db({ op:'select', table:'inventory_items', where:{ item_name:name }, limit:1 });
+  const values = {
+    item_name: name,
+    category: document.getElementById('inv-category').value || null,
+    quantity_on_hand: parseInt(document.getElementById('inv-qty').value,10) || 0,
+    reorder_threshold: parseInt(document.getElementById('inv-threshold').value,10) || null,
+    notes: document.getElementById('inv-notes').value || null,
+    updated_by: (window._STAFF_SESSION && window._STAFF_SESSION.name) || 'Unknown',
+    updated_at: new Date().toISOString()
+  };
+  let r;
+  if (existing.results && existing.results[0]) {
+    r = await db({ op:'update', table:'inventory_items', values, where:{ id: existing.results[0].id } });
+  } else {
+    r = await db({ op:'insert', table:'inventory_items', values });
+  }
+  if (r.ok !== false) {
+    status.style.color='var(--green)'; status.textContent='Saved.';
+    ['inv-name','inv-category','inv-qty','inv-threshold','inv-notes'].forEach(id=>document.getElementById(id).value='');
+    loadInventory();
+  } else { status.style.color='var(--red)'; status.textContent='Error saving.'; }
+}
+
+async function loadInventory(){
+  const d = await db({ op:'select', table:'inventory_items', orderBy:'item_name ASC', limit:200 });
+  const list = document.getElementById('inv-list');
+  const rows = d.results || [];
+  if (!rows.length) { list.innerHTML = '<div class="sub">No inventory items yet.</div>'; return; }
+  list.innerHTML = rows.map(r => `
+    <div class="row-item">
+      <div class="row-top">
+        <b>${esc(r.item_name)}</b>
+        <span class="badge ${r.reorder_threshold!=null && r.quantity_on_hand<=r.reorder_threshold ? 'badge-open' : 'badge-closed'}">${esc(r.quantity_on_hand)} on hand</span>
+      </div>
+      <div class="sub">${esc(r.category||'')}${r.reorder_threshold!=null?' · reorder at '+esc(r.reorder_threshold):''}</div>
+    </div>`).join('');
+}
+
+loadIncidents();
+</script>
+</body>
+</html>

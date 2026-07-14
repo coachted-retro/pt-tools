@@ -852,7 +852,7 @@ function formatAssessmentSections(text) {
 }
 
 function buildPrompt(){
-  return `You are a Retro Fitness personal training advisor doing a monthly check-in. Generate a SHORT, scannable monthly summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 2 minutes.
+  return `You are a Retro Strong personal training advisor doing a monthly check-in. Generate a SHORT, scannable monthly summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 2 minutes.
 
 MEMBER: ${gv('name')} | Age: ${gv('age')} | Gender: ${gv('gender')}
 ADVISOR (report author): ${gv('advisor-name')||getCfg('advisor')} | ASSIGNED COACH/TRAINER: ${gv('client-coach')||'(not specified)'} | Date: ${gv('checkin-date')}
@@ -1032,7 +1032,7 @@ function resetForm(){
 
 // === REPORT ENGINE ===
 // ============================================================
-// RETRO FITNESS — REPORT ENGINE (injected into all 3 tools)
+// RETRO STRONG — REPORT ENGINE (injected into all 3 tools)
 // Handles: PDF generation via jsPDF + Gmail compose open
 // ============================================================
 
@@ -1066,7 +1066,7 @@ Let's Get Strong Together
 Ted Scholl
 Coach & Fitness Advisor
 
-Retro Fitness of Fairless Hills
+Retro Strong
 516 Lincoln Highway
 Fairless Hills, PA 19030
 215-295-2004`;
@@ -1074,7 +1074,7 @@ Fairless Hills, PA 19030
 // ---- AI REPORT GENERATION ----
 async function generateReportContent(reportType, clientData, assessmentSummary) {
   const systemPrompts = {
-    welcome: `You are writing a Welcome Packet for a new personal training client at Retro Fitness of Fairless Hills. 
+    welcome: `You are writing a Welcome Packet for a new personal training client at Retro Strong. 
 Generate a professional, warm, motivating welcome report. 
 STRICT RULES — never violate:
 - DO include: InBody scan analysis, current baseline stats, where they stand vs their goal, 2-3 specific barriers between them and success, what the first training phase will focus on (general, e.g. "building movement quality and foundation strength"), why having a coach accelerates results vs going solo, an inspiring closing statement tied to their specific goal.
@@ -1082,14 +1082,14 @@ STRICT RULES — never violate:
 - Tone: warm, expert, premium. Makes them feel they made the right decision enrolling.
 - Format: use plain section headers in ALL CAPS, no markdown symbols, no emojis, no asterisks. Plain text with line breaks only.`,
 
-    thankyou: `You are writing a Thank You / Body Composition Results Letter for a prospect who attended a consultation but did not enroll in personal training at Retro Fitness of Fairless Hills.
+    thankyou: `You are writing a Thank You / Body Composition Results Letter for a prospect who attended a consultation but did not enroll in personal training at Retro Strong.
 STRICT RULES — never violate:
 - DO include: genuine thanks for their time, a summary of their InBody results in plain language, 2-3 specific insights from their body composition data, what the data tells us about where they are vs where they want to be, what unguided progress typically looks like without structured coaching, a soft invitation to reconsider when the time is right.
 - DO NOT include: specific workout plans, macro targets, meal plans, or any prescriptive content that removes the need for coaching.
 - Tone: appreciative, insightful, zero pressure. They should leave feeling informed and respected — and quietly wishing they had signed up.
 - Format: plain section headers ALL CAPS, no markdown, no emojis. Plain text only.`,
 
-    monthly: `You are writing a Monthly Progress Report for an active personal training client at Retro Fitness of Fairless Hills.
+    monthly: `You are writing a Monthly Progress Report for an active personal training client at Retro Strong.
 STRICT RULES — never violate:
 - DO include: this month vs last month InBody comparison with real numbers, training consistency assessment, nutrition adherence summary, recovery and wellbeing snapshot, key wins this month, one specific focus area for next month, motivating closing statement.
 - DO NOT include: specific workout prescriptions, sets/reps/weights, specific macro targets or calorie numbers, meal plans. These are coaching deliverables — the report documents progress, not the program.
@@ -1097,13 +1097,19 @@ STRICT RULES — never violate:
 - Format: plain section headers ALL CAPS, no markdown, no emojis. Plain text only.`
   };
 
-  const userPrompt = `CLIENT DATA:
-${JSON.stringify(clientData, null, 2)}
+  // Strip anything personally identifying before this goes to Claude --
+  // body composition, goals, and package info are what the report
+  // actually needs, name/email aren't. The real name gets substituted
+  // back into the generated text locally, after the AI call, never sent.
+  const { name, email, id, ...clientDataForAI } = clientData;
+
+  const userPrompt = `CLIENT DATA (name withheld intentionally -- refer to them only as "[Client]" wherever a name would go, e.g. "Welcome, [Client]," never invent or guess a name):
+${JSON.stringify(clientDataForAI, null, 2)}
 
 ASSESSMENT SUMMARY FROM SESSION:
 ${assessmentSummary}
 
-Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType === 'thankyou' ? 'Thank You Letter' : 'Monthly Progress Report'} now. Use the real data above — never use placeholders. Under 500 words.`;
+Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType === 'thankyou' ? 'Thank You Letter' : 'Monthly Progress Report'} now. Use the real data above — never use placeholder numbers, but do use the literal placeholder "[Client]" everywhere a name would appear. Under 500 words.`;
 
   // NOTE: text/plain avoids a CORS preflight (OPTIONS). The Worker reads the
   // JSON body regardless of declared content-type. application/json forced a
@@ -1125,7 +1131,9 @@ Generate the full ${reportType === 'welcome' ? 'Welcome Packet' : reportType ===
   }
   const data = await resp.json();
   if (data.error) throw new Error(data.error.message);
-  return data.content.map(b => b.text || '').join('');
+  const rawContent = data.content.map(b => b.text || '').join('');
+  // Substitute the real name back in locally -- Claude never saw it.
+  return rawContent.split('[Client]').join(clientData.name || 'there');
 }
 
 // ---- PDF BUILDER ----
@@ -1145,10 +1153,10 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('RETRO FITNESS', margin, 35);
+  doc.text('RETRO STRONG', margin, 35);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('of Fairless Hills  |  516 Lincoln Highway, Fairless Hills, PA 19030  |  215-295-2004', margin, 52);
+  doc.text('  |  516 Lincoln Highway, Fairless Hills, PA 19030  |  215-295-2004', margin, 52);
 
   // Report title
   doc.setFontSize(11);
@@ -1268,7 +1276,7 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.text('"Progress is built one month at a time. Stay consistent, stay committed."', margin + 10, y);
   y += 12;
   doc.setFont('helvetica', 'normal');
-  doc.text('Coach Ted Scholl  |  Retro Fitness of Fairless Hills  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
+  doc.text('Coach Ted Scholl  |  Retro Strong  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
 
   // Save locally as a backup copy, and return base64 for automated email attachment
   const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + todayET() + '.pdf';
@@ -1331,8 +1339,8 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
 
         const emailBody = buildEmailBody(reportType, clientData.name, clientData, assessmentSummary);
         const subjects = {
-          welcome: 'Welcome to Retro Fitness Elite Training — Your Welcome Packet',
-          thankyou: 'Your Body Composition Results — Retro Fitness of Fairless Hills',
+          welcome: 'Welcome to Retro Strong Elite Training — Your Welcome Packet',
+          thankyou: 'Your Body Composition Results — Retro Strong',
           monthly: 'Your Monthly Progress Report — ' + new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'})
         };
         if (!clientData.email) {
@@ -1383,10 +1391,10 @@ function buildInternalRecapPDF(intakeLabel, clientName, advisor, sections, asses
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('RETRO FITNESS', margin, 35);
+  doc.text('RETRO STRONG', margin, 35);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('of Fairless Hills  |  INTERNAL RECAP — STAFF ONLY, NOT FOR CLIENT DISTRIBUTION', margin, 52);
+  doc.text('  |  INTERNAL RECAP — STAFF ONLY, NOT FOR CLIENT DISTRIBUTION', margin, 52);
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text((intakeLabel || 'INTAKE') + ' — INTERNAL RECAP', margin, 68);
@@ -1550,7 +1558,7 @@ async function generateCheckinThankYou(clientData){
   const statusEl = document.getElementById('report-monthly-status');
   const firstName = (clientData.name||'').split(' ')[0] || 'there';
   const prompt = "Write a warm, personal check-in recap email from a personal trainer to their active client, right after a monthly check-in session. Return ONLY the plain-text email body. No subject line, no markdown, no asterisks, no bullet characters. Use natural paragraphs.\n\n"+
-    "Address them by first name: "+firstName+". Sign off as "+(clientData.advisor||'Coach Ted')+", Retro Fitness of Fairless Hills.\n\n"+
+    "Address them by first name: "+firstName+". Sign off as "+(clientData.advisor||'Coach Ted')+", Retro Strong.\n\n"+
     "Cover naturally, not as a numbered list: (1) a brief, genuine thank-you for coming in for their monthly check-in; (2) a short, warm recap of how things are going based on the session below; (3) clear direction on whether we're adjusting their program to help them progress further, or staying the current course because it's working — decide which fits based on the data below, and briefly say why; (4) an encouraging close. Around 150 to 250 words, noticeably shorter and more personal than a formal report.\n\n"+
     "SESSION DATA: macro/calorie adherence "+(clientData.macroAdherence||'n/a')+", wins noted: "+(clientData.wins||'none specific noted')+", nutrition changes: "+(clientData.nutritionChanges||'n/a')+", nutrition struggles: "+(clientData.nutritionStruggles||'n/a')+"\n"+
     "WEIGHT/BODY: current weight "+(clientData.weight||'n/a')+", lean mass "+(clientData.leanMass||'n/a')+", fat mass "+(clientData.fatMass||'n/a')+"\n"+

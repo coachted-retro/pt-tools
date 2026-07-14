@@ -1,7 +1,7 @@
 {
-  "name": "Retro Fitness PT",
+  "name": "Retro Strong PT",
   "short_name": "Retro PT",
-  "description": "Retro Fitness of Fairless Hills — Personal Training member portal",
+  "description": "Retro Strong — Personal Training member portal",
   "start_url": "client-portal.html",
   "scope": ".",
   "display": "standalone",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PT Management Dashboard — Retro Fitness</title>
+<title>PT Management Dashboard — Retro Strong</title>
 
 <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -282,7 +282,7 @@
   <div class="header-left">
     <button class="back-btn" onclick="window.location.href='command-center.html'">← Hub</button>
     <div class="logo">
-      <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills">
+      <img src="../icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
       <div>
         <div class="logo-label">Management Dashboard</div>
       </div>
@@ -869,7 +869,7 @@ async function generateAIAnalysis() {
   const cold = allProspects.filter(p=>p.Interest==='Cold').length;
   const upcoming = allBC.filter(b=>{ const s=String(b['Status']||b.Status||''); return s==='Booked'||s==='Confirmed'||s==='Rescheduled'; }).length;
 
-  const prompt = `You are a fitness business consultant specializing in personal training sales for commercial gyms. Analyze this data for Retro Fitness Fairless Hills and provide specific, actionable recommendations.
+  const prompt = `You are a fitness business consultant specializing in personal training sales for commercial gyms. Analyze this data for Retro Strong and provide specific, actionable recommendations.
 
 CURRENT PERFORMANCE DATA:
 - Total consultations: ${intakes.length}

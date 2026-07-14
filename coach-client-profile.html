@@ -834,7 +834,7 @@ async function sendClientEmail(clientId){
   const bodyText = document.getElementById('em-body').value.trim();
   if (!subject || !bodyText) { status.textContent = 'Add a subject and message first.'; return; }
   status.textContent = 'Sending...';
-  const html = `<p>${escH(bodyText).replace(/\n/g,'<br>')}</p><p style="color:#6B7280;font-size:12px;margin-top:20px">— ${escH(COACH_NAME)}, Retro Fitness</p>`;
+  const html = `<p>${escH(bodyText).replace(/\n/g,'<br>')}</p><p style="color:#6B7280;font-size:12px;margin-top:20px">— ${escH(COACH_NAME)}, Retro Strong</p>`;
   try {
     const r = await fetch(WORKER + '/reports/email', { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ to: c.email, subject, html, client_id: clientId, coach_name: COACH_NAME, context: 'Direct message from coach' }) });

@@ -11,7 +11,7 @@
 <link rel="manifest" href="retro-strong.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#E0192B">
-<title>Retro Fitness — Member App</title>
+<title>Retro Strong — Member App</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── DESIGN TOKENS ─────────────────────────────────────────── */
@@ -397,7 +397,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <div class="landing-hero">
       <div class="landing-swoosh"></div>
       <div class="landing-logos">
-        <img src="Retro_FH_Logo.jpg" class="landing-logo-primary" alt="Retro Fitness of Fairless Hills" onerror="this.style.display='none'">
+        <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
         <img src="icons-strong/icon-192.png" alt="Retro Strong" class="landing-subbadge" onerror="this.style.display='none'">
       </div>
       <div class="landing-headline">FAIRLESS HILLS<br>STRONG</div>
@@ -484,7 +484,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
   <!-- TOPBAR -->
   <div class="topbar">
-    <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" style="height:34px;width:auto;border-radius:6px;flex-shrink:0" onerror="this.style.display='none'">
+    <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
     <div class="greeting">
       <strong id="g-name">Loading...</strong>
       <span id="g-sub">Good morning</span>
@@ -867,7 +867,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <!-- STAFF SHELL (role-based landing, separate from the member app) -->
 <div id="staff-shell" style="display:none;flex-direction:column;height:100%">
   <div class="topbar">
-    <img src="Retro_FH_Logo.jpg" alt="Retro Fitness of Fairless Hills" style="height:34px;width:auto;border-radius:6px;flex-shrink:0" onerror="this.style.display='none'">
+    <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
     <div style="flex:1;min-width:0;margin-left:10px">
       <div id="staff-greeting-name" style="font-weight:700;font-size:14px"></div>
       <div id="staff-greeting-role" style="font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;font-weight:700"></div>
@@ -3497,7 +3497,7 @@ async function sendFitChat(){
 }
 
 function shareWin(headline) {
-  const shareData = { title: 'Retro Fitness Fairless Hills', text: headline + ' — Retro Fitness of Fairless Hills', url: 'https://myretrostrong.com/member-app.html' };
+  const shareData = { title: 'Retro Strong', text: headline + ' — Retro Strong', url: 'https://myretrostrong.com/member-app.html' };
   if (navigator.share) { navigator.share(shareData).catch(()=>{}); }
   else { navigator.clipboard?.writeText(shareData.text + ' ' + shareData.url); alert('Copied to clipboard!'); }
 }
@@ -3708,7 +3708,7 @@ function startGuestMode() {
   document.getElementById('login-screen').style.display = 'none';
   const shell = document.getElementById('app-shell');
   shell.style.display = 'flex';
-  document.getElementById('g-name').textContent = 'Retro Fitness';
+  document.getElementById('g-name').textContent = 'Retro Strong';
   document.getElementById('g-sub').textContent = 'Fairless Hills';
   const avatar = document.getElementById('g-avatar');
   avatar.style.display = 'none';
@@ -3840,12 +3840,12 @@ function renderFbFeed() {
   const el = document.getElementById('home-fb-feed');
   if (!el || el.dataset.rendered) return;
   el.dataset.rendered = '1';
-  el.innerHTML = `<div class="sec-label">Retro Fitness Fairless Hills — Facebook</div>
+  el.innerHTML = `<div class="sec-label">Retro Strong — Facebook</div>
     <div class="card"><div class="card-body" style="padding:8px;overflow:hidden">
       <div class="fb-page" data-href="${FB_PAGE_URL}" data-tabs="timeline" data-width="" data-height="500"
         data-small-header="true" data-adapt-container-width="true" data-hide-cover="false" data-show-facepile="false">
         <blockquote cite="${FB_PAGE_URL}" class="fb-xfbml-parse-ignore">
-          <a href="${FB_PAGE_URL}">Retro Fitness of Fairless Hills</a>
+          <a href="${FB_PAGE_URL}">Retro Strong</a>
         </blockquote>
       </div>
     </div></div>`;
@@ -3885,8 +3885,8 @@ async function submitClassGuestPass(className, classDate) {
 }
 
 async function shareGuestPass() {
-  const payload = { title: 'Free Guest Pass — Retro Fitness Fairless Hills',
-    text: 'Come work out with me at Retro Fitness Fairless Hills. Sign the guest waiver here and you\'re in:',
+  const payload = { title: 'Free Guest Pass — Retro Strong',
+    text: 'Come work out with me at Retro Strong. Sign the guest waiver here and you\'re in:',
     url: GUEST_PASS_URL };
   try {
     if (navigator.share) { await navigator.share(payload); }
@@ -3985,7 +3985,7 @@ function renderCommunityFeed() {
   const total = DATA.sessions.length + DATA.selfWorkouts.length + DATA.checkins.length;
   const items = [
     { type: 'achievement', avatar: name[0], name, time: 'Today', body: `<strong>${name}</strong> logged a workout and kept the streak alive. ${total} sessions and counting. 🔥`, reactions: {fire:12, strong:8} },
-    { type: 'announcement', avatar: 'RF', name: 'Retro Fitness FH', time: '2h ago', body: `<strong>Toned! with Jessica</strong> is now every Tuesday at 6pm. First class is FREE — invite a friend and come try something new.`, reactions: {heart:24, fire:11} },
+    { type: 'announcement', avatar: 'RF', name: 'Retro Strong FH', time: '2h ago', body: `<strong>Toned! with Jessica</strong> is now every Tuesday at 6pm. First class is FREE — invite a friend and come try something new.`, reactions: {heart:24, fire:11} },
     { type: 'win', avatar: 'CT', name: 'Coach Ted', time: '4h ago', body: `<strong>Class challenge this month:</strong> The July Tuesday Trifecta. Hit Pilates, Ignite Core, and Toned! in the same week. First 10 to complete it earn a founding member badge.`, reactions: {strong:31, fire:19} },
   ];
   el.innerHTML = items.map(item => `
@@ -4704,7 +4704,7 @@ async function toggleGoing(className, classDate, classTime, btn) {
 
 function shareClass(className, classDate) {
   const dateLabel = fmtShortDate(classDate);
-  const shareData = { title: 'Retro Fitness Fairless Hills', text: `I'm going to ${className} ${dateLabel} at Retro Fitness Fairless Hills — come join me! 💪`, url: 'https://myretrostrong.com/member-app.html' };
+  const shareData = { title: 'Retro Strong', text: `I'm going to ${className} ${dateLabel} at Retro Strong — come join me! 💪`, url: 'https://myretrostrong.com/member-app.html' };
   if (navigator.share) { navigator.share(shareData).catch(()=>{}); }
   else { navigator.clipboard?.writeText(shareData.text + ' ' + shareData.url); alert('Copied to clipboard!'); }
 }
@@ -5774,17 +5774,17 @@ async function shareProgressPhoto() {
   const list = PC_PHOTOS[PC_POSE] || [];
   const latest = list[list.length-1];
   if (!latest) return;
-  const text = "Check out my progress at Retro Fitness Fairless Hills! \uD83D\uDCAA #RetroFitness #Progress";
+  const text = "Check out my progress at Retro Strong! \uD83D\uDCAA #RetroFitness #Progress";
   try {
     const resp = await fetch(WORKER+'/photo/get?key='+encodeURIComponent(latest.r2_key));
     const blob = await resp.blob();
     const file = new File([blob], 'progress.jpg', { type: blob.type || 'image/jpeg' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Retro Fitness Fairless Hills', text });
+      await navigator.share({ files: [file], title: 'Retro Strong', text });
       return;
     }
   } catch(e) {}
-  if (navigator.share) { navigator.share({ title: 'Retro Fitness Fairless Hills', text, url: 'https://myretrostrong.com/member-app.html' }).catch(()=>{}); }
+  if (navigator.share) { navigator.share({ title: 'Retro Strong', text, url: 'https://myretrostrong.com/member-app.html' }).catch(()=>{}); }
   else { navigator.clipboard?.writeText(text); alert('Copied to clipboard!'); }
 }
 
@@ -5834,7 +5834,7 @@ function hideFinish() {
 function shareWorkout() {
   const count = document.getElementById('finish-count').textContent;
   if (navigator.share) {
-    navigator.share({title:'Retro Fitness', text:`I just logged workout #${count} at Retro Fitness Fairless Hills. Showing up matters. 💪 #RetroFitness #ShowUp`});
+    navigator.share({title:'Retro Strong', text:`I just logged workout #${count} at Retro Strong. Showing up matters. 💪 #RetroFitness #ShowUp`});
   } else { hideFinish(); }
 }
 

@@ -4,7 +4,7 @@
 <script src="config.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Client Profile — Retro Fitness PT</title>
+<title>Client Profile — Retro Strong PT</title>
 
 <link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
@@ -155,7 +155,7 @@
 <body>
 
 <div class="topbar">
-  <img src="Retro_FH_Logo.jpg" alt="Retro Fitness" onerror="this.style.display='none'">
+  <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
   <div class="t">Client <span>Profile</span></div>
   <span style="background:#1E3A5F;color:#fff;font-family:'Oswald';font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:5px 12px;border-radius:6px;margin-left:10px">📋 Admin Record — Full File</span>
   <div class="spacer"></div>
@@ -437,6 +437,9 @@ function openEdit(){
   setF('m_advisor',CURRENT.advisor); setF('m_package',CURRENT.package||'');
   setF('m_goal',CURRENT.goal_primary); setF('m_start',CURRENT.training_start_date);
   setF('m_birthday',CURRENT.birthday||'');
+  setF('m_ec_name',CURRENT.emergency_contact_name||'');
+  setF('m_ec_phone',CURRENT.emergency_contact_phone||'');
+  setF('m_ec_rel',CURRENT.emergency_contact_relationship||'');
   setF('m_why',CURRENT.my_why||'');
   setF('m_sessions_pw',CURRENT.sessions_per_week||'');
   document.getElementById('similar-names-hint').style.display='none';
@@ -455,7 +458,8 @@ async function saveClient(){
   const vals={
     first_name:getF('m_first'), last_name:getF('m_last'), email:getF('m_email'), phone:getF('m_phone'),
     gender:getF('m_gender'), status:getF('m_status'), coach:getF('m_coach'), advisor:getF('m_advisor'),
-    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), birthday:getF('m_birthday')||null, my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null
+    package:getF('m_package'), goal_primary:getF('m_goal'), training_start_date:getF('m_start'), birthday:getF('m_birthday')||null, my_why:getF('m_why')||null, sessions_per_week:getF('m_sessions_pw')||null,
+    emergency_contact_name:getF('m_ec_name')||null, emergency_contact_phone:getF('m_ec_phone')||null, emergency_contact_relationship:getF('m_ec_rel')||null
   };
   if (isCancelling) {
     const cancelNote = 'CANCELLED (' + todayET() + ') — Reason: ' + cancelReason + (getF('m_cancel_notes') ? '. ' + getF('m_cancel_notes') : '');
@@ -1787,6 +1791,9 @@ function renderMuscleBalance(scan){
       <div class="fld"><label>Trainer</label><select id="m_coach"><option value="">Unassigned</option></select></div>
       <div class="fld"><label>Advisor</label><input id="m_advisor"></div>
       <div class="fld"><label>Birthday</label><input type="date" id="m_birthday"></div>
+      <div class="fld"><label>Emergency Contact Name</label><input id="m_ec_name"></div>
+      <div class="fld"><label>Emergency Contact Phone</label><input id="m_ec_phone"></div>
+      <div class="fld"><label>Emergency Contact Relationship</label><input id="m_ec_rel" placeholder="e.g. spouse, parent, sibling"></div>
       <div class="fld"><label>Package</label><select id="m_package">
         <option value="">—</option>
         <optgroup label="Session frequency">
