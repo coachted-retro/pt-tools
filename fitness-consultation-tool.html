@@ -1672,13 +1672,15 @@
               <div style="font-size:12px;color:var(--text2);margin-top:6px">Picking a coach here emails them immediately with this client's profile link, consultation notes, and a suggested starting program -- no separate step needed.</div>
             </div>
 
-            <!-- Nutrition Add-On -->
-            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Nutrition Add-On</div>
-            <div class="package-card" id="nutrition-addon-card" onclick="toggleNutritionAddon()" style="cursor:pointer;border:1.5px solid var(--border2);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px;">
-              <input type="checkbox" id="nutrition-addon-chk" disabled style="width:20px;height:20px;flex-shrink:0;">
+            <!-- Nutrition is included on every package now, not an add-on --
+                 this is a plain included banner, nothing to click, nothing
+                 to confuse. -->
+            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Included In Your Training</div>
+            <div class="package-card" style="border:1.5px solid var(--green,#1E9E5A);background:rgba(30,158,90,.06);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px;">
+              <span style="font-size:20px;flex-shrink:0;color:var(--green,#1E9E5A)">&#10003;</span>
               <div style="flex:1">
-                <div style="font-weight:700;font-size:14px">Weekly Chef-Crafted Meal Plan</div>
-                <div style="font-size:12px;color:var(--text2);margin-top:2px">Nutrition assessed from your InBody scan and answers given during this consultation — emailed every Saturday.</div>
+                <div style="font-weight:700;font-size:14px">Weekly Chef-Crafted Meal Plan — Included</div>
+                <div style="font-size:12px;color:var(--text2);margin-top:2px">A full recommended meal plan based on their calories and macros for the day, calculated from their InBody scan and answers given during this consultation — emailed every Saturday, no extra charge.</div>
               </div>
             </div>
           </div>
@@ -3947,11 +3949,13 @@ var CLUB_GYM_ID = {
   'rego-park': 6, 'fairfield': 7, 'tottenville': 8, 'mt-olive': 9, 'whippany': 10
 }[CLUB_ID] || 1;
 var SESSION_RATE = { '12': CLUB.rate12, '6': CLUB.rate6 };
-var nutritionAddon = false;
-
-function nutritionAddonPrice(freqId) {
-  return (parseInt(freqId) >= 3) ? 49 : 69;
-}
+// Nutrition is included on every package now, not an optional add-on --
+// always true, no toggle, no separate charge. Kept as a variable rather
+// than removed outright since pkgDbValue() below still reads it, and a
+// couple of older files still check for the resulting 'complete' /
+// 'complete_plus' values even though the actual feature-gating on those
+// values was removed elsewhere.
+var nutritionAddon = true;
 
 function computeMonthly(freqId, months) {
   var tier = FREQ_TIERS[freqId];
@@ -3959,8 +3963,7 @@ function computeMonthly(freqId, months) {
   // Every Other Week never earns the 12-month discount rate — it's always
   // priced at the lower-commitment (6-month) rate regardless of the toggle.
   var rate = (parseInt(freqId) === 0) ? SESSION_RATE['6'] : SESSION_RATE[months];
-  var base = tier.sessions * rate;
-  return base + (nutritionAddon ? nutritionAddonPrice(freqId) : 0);
+  return tier.sessions * rate;
 }
 
 // Hides any frequency tier below this club's minimum sessions/month floor.
@@ -3978,15 +3981,14 @@ function applyClubMinimums() {
 
 function pkgDisplayName() {
   if (selectedPkg == null || !FREQ_TIERS[selectedPkg]) return '';
-  return FREQ_TIERS[selectedPkg].name + (nutritionAddon ? ' + Nutrition' : '');
+  return FREQ_TIERS[selectedPkg].name;
 }
 
-// Preserves compatibility with existing package-tier gating in meal-plans.html,
-// client-portal.html, and member-app.html, which check for exactly 'complete'
-// or 'complete_plus'. Nutrition is now an add-on across any frequency rather
-// than a fixed named tier, so this maps the new model back onto those values.
+// Preserves compatibility with existing package-tier gating in
+// meal-plans.html, client-portal.html, and member-app.html. Nutrition is
+// included on every package now, so this always resolves to a
+// nutrition-inclusive value rather than depending on a toggle.
 function pkgDbValue() {
-  if (!nutritionAddon) return 'training';
   return (parseInt(selectedPkg) >= 3) ? 'complete_plus' : 'complete';
 }
 
@@ -4054,7 +4056,6 @@ async function generatePkgRecommendation(){
       if(card){ card.classList.add('pkg-recommended'); }
       if(benefit) benefit.textContent=j.reason||'';
       if (typeof selectPkg === 'function') selectPkg(parseInt(j.pkg));
-      // Nutrition add-on is opt-in only — advisor checks it manually, never auto-selected.
     }
   }catch(e){}
   loading.style.display='none';
@@ -4063,7 +4064,6 @@ async function generatePkgRecommendation(){
 function selectPkg(id) {
   selectedPkg = id;
   document.querySelectorAll('.package-card').forEach(function(c) {
-    if (c.id === 'nutrition-addon-card') return;
     c.classList.remove('pkg-selected');
     var chk = c.querySelector('.pkg-check input');
     if (chk) chk.checked = false;
@@ -4087,26 +4087,6 @@ function selectPkg(id) {
   acceptPackage();
 }
 
-function toggleNutritionAddon() {
-  nutritionAddon = !nutritionAddon;
-  var card = document.getElementById('nutrition-addon-card');
-  var chk = document.getElementById('nutrition-addon-chk');
-  if (card) card.classList.toggle('pkg-selected', nutritionAddon);
-  if (chk) chk.checked = nutritionAddon;
-
-  if (!nutritionAddon) {
-    // The preferences panel should only ever be visible when the add-on
-    // is actually included — hide it immediately if it was showing.
-    var np = document.getElementById('nutrition-panel');
-    if (np) np.style.display = 'none';
-  }
-
-  var tp = document.getElementById('terms-panel');
-  if (tp && tp.style.display === 'block') {
-    refreshClosingPricing();
-  }
-}
-
 function editPackageSelection() {
   // Go back to package page without clearing closing content
   goPage(6);
@@ -4119,7 +4099,7 @@ function refreshClosingPricing() {
   var sum = document.getElementById('enroll-pkg-summary');
   if (sum && selectedPkg != null) {
     var tier = FREQ_TIERS[selectedPkg];
-    sum.textContent = tier.name + ' — ' + tier.sessions + ' sessions/mo' + (nutritionAddon ? ' + Nutrition' : '');
+    sum.textContent = tier.name + ' — ' + tier.sessions + ' sessions/mo';
   }
   // Reset length selection so they repick for the new package
   document.querySelectorAll('#length-group .pill').forEach(function(pill){ pill.classList.remove('selected'); });
@@ -4134,10 +4114,10 @@ function acceptPackage() {
     refreshClosingPricing();
     var tp = document.getElementById('terms-panel');
     if (tp) { tp.style.display = 'block'; tp.scrollIntoView({ behavior:'smooth' }); }
-  } else if (nutritionAddon) {
-    showNutritionPanel();
   } else {
-    showTerms();
+    // Nutrition is included on every package now, so the nutrition
+    // preferences panel always comes next, no conditional branch needed.
+    showNutritionPanel();
   }
 }
 
