@@ -1389,6 +1389,7 @@ async function doLogin() {
 let STAFF_SESSION = null;
 let COACH_VIEW_MODE = false;
 let COACH_VIEW_CLIENT_ID = null;
+let SELF_TRAIN_MODE = false;
 
 let LOGIN_PATH_TYPE = 'ptclient';
 function showLoginPath(type) {
@@ -2341,6 +2342,47 @@ async function sendClientChat(){
 }
 
 // ── APP INIT ─────────────────────────────────────────────────
+// A coach tapping "My Training" in the Coach app lands here. Same staff
+// session already in localStorage, no separate client login -- just
+// looks up which client record (if any) Ted has linked to this coach's
+// staff_roster row and starts the normal member app pointed at it.
+// Deliberately does NOT set COACH_VIEW_MODE -- this is the coach training
+// themselves, not coaching someone else, so no Coach Tools gear/assign-
+// workout-to-self loop.
+async function startSelfTraining() {
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ op:'select', table:'staff_roster', where:{ id: STAFF_SESSION.staff_id }, limit:1 }) });
+    const d = await r.json();
+    const row = (d.results || [])[0];
+    if (!row || !row.linked_client_id) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.body.insertAdjacentHTML('beforeend', `
+        <div style="position:fixed;inset:0;background:#F5F6F8;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:'Inter',sans-serif;z-index:999">
+          <div>
+            <div style="font-size:40px;margin-bottom:12px">🏋️</div>
+            <div style="font-weight:700;font-size:18px;margin-bottom:8px">No training account linked yet</div>
+            <div style="color:#6B7280;font-size:14px;margin-bottom:20px;max-width:280px">Ask Ted to link your coach profile to a client record so you can log your own workouts here.</div>
+            <a href="coach-crm.html?coach=${encodeURIComponent(STAFF_SESSION.name)}&locked=1" style="color:#B0121F;font-weight:700;text-decoration:none;font-size:14px">&larr; Back to Coach App</a>
+          </div>
+        </div>`);
+      return;
+    }
+    SELF_TRAIN_MODE = true;
+    SESSION = { client_id: row.linked_client_id, token: null, email: null };
+    startApp();
+  } catch (e) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.body.insertAdjacentHTML('beforeend', `
+      <div style="position:fixed;inset:0;background:#F5F6F8;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-family:'Inter',sans-serif;z-index:999">
+        <div>
+          <div style="font-weight:700;font-size:16px;margin-bottom:10px">Could not reach the server</div>
+          <a href="coach-crm.html" style="color:#B0121F;font-weight:700;text-decoration:none;font-size:14px">&larr; Back to Coach App</a>
+        </div>
+      </div>`);
+  }
+}
+
 async function startApp() {
   GUEST_MODE = false;
   // Restore any gated tab that a guest-mode visit may have overwritten
@@ -3174,7 +3216,12 @@ function showStaffBackBanner() {
   if (!staff || !staff.name) { banner.style.display = 'none'; return; }
   const role = (staff.role || '').toLowerCase();
   let href, text;
-  if (COACH_VIEW_MODE) {
+  if (SELF_TRAIN_MODE) {
+    // Coach training themselves -- distinct from COACH_VIEW_MODE (which
+    // is about someone else's data). Same "how do I get back" clarity.
+    href = 'coach-crm.html?coach=' + encodeURIComponent(staff.name) + '&locked=1';
+    text = 'My Training — back to Coach App';
+  } else if (COACH_VIEW_MODE) {
     // Viewing a specific client's real screen as their coach -- name it
     // plainly so it's never ambiguous whose data is on screen, and make
     // the way back obvious rather than a generic "Coach App" link.
@@ -5404,6 +5451,7 @@ if (IS_DEMO) {
   const savedStaff = localStorage.getItem('staff_session');
   const forceGuest = new URLSearchParams(location.search).get('forceGuest');
   const coachClientId = new URLSearchParams(location.search).get('coachClient');
+  const myTraining = new URLSearchParams(location.search).get('myTraining');
   // A coach opening one of their clients from coach-crm/coach-client-profile
   // lands here. This is the actual fix for "the coach sees something
   // different than the client" -- it's not a separate coach-built page,
@@ -5411,7 +5459,13 @@ if (IS_DEMO) {
   // Requires a real staff session already in localStorage first, so this
   // link can't be used to view an arbitrary client without being logged
   // in as staff.
-  if (coachClientId && savedStaff) {
+  if (myTraining && savedStaff) {
+    try {
+      STAFF_SESSION = JSON.parse(savedStaff);
+      startSelfTraining();
+    } catch(e) { localStorage.removeItem('staff_session'); }
+  }
+  else if (coachClientId && savedStaff) {
     try {
       STAFF_SESSION = JSON.parse(savedStaff);
       COACH_VIEW_MODE = true;
