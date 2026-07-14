@@ -1659,6 +1659,19 @@
               </div>
             </div>
 
+            <!-- Assign to Coach -- this is what actually triggers the new-client -->
+            <!-- notification email to the coach (see notifyCoachOfNewClient in the -->
+            <!-- worker), including the profile link, consultation summary, and a -->
+            <!-- suggested starting program. Without picking someone here, that -->
+            <!-- automation never fires and the coach has no idea they have a new client. -->
+            <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Assign to Coach</div>
+            <div class="field" style="margin-bottom:16px">
+              <select id="assigned-coach">
+                <option value="">-- Not yet decided --</option>
+              </select>
+              <div style="font-size:12px;color:var(--text2);margin-top:6px">Picking a coach here emails them immediately with this client's profile link, consultation notes, and a suggested starting program -- no separate step needed.</div>
+            </div>
+
             <!-- Nutrition Add-On -->
             <div style="font-family:var(--font-display,Oswald,sans-serif);text-transform:uppercase;letter-spacing:.5px;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:10px">Nutrition Add-On</div>
             <div class="package-card" id="nutrition-addon-card" onclick="toggleNutritionAddon()" style="cursor:pointer;border:1.5px solid var(--border2);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:14px;">
@@ -2581,6 +2594,20 @@ function hasGLP1Selected() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  (async function loadCoachRosterForAssignment() {
+    var sel = document.getElementById('assigned-coach');
+    if (!sel) return;
+    try {
+      var r = await fetch(RETRO_WORKER_URL + '/coaches/roster');
+      var d = await r.json();
+      (d.coaches || []).forEach(function(c) {
+        var opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.name + ' (' + c.role + ', ' + c.client_count + ' clients)';
+        sel.appendChild(opt);
+      });
+    } catch (e) { /* dropdown just stays at the default option */ }
+  })();
   renderCatPicker('cat-medical', MEDICAL_CATEGORIES);
   renderCatPicker('cat-medications', MEDICATION_CATEGORIES);
   applyClubMinimums();
@@ -3217,6 +3244,7 @@ async function finalizeAccept() {
       package_end_date: (function(){ var d = new Date(gv('consult-date') || todayET()); d.setMonth(d.getMonth()+1); return d.toISOString().slice(0,10); })(),
       status: 'active_pt',
       gym_id: CLUB_GYM_ID,
+      coach: (document.getElementById('assigned-coach') || {}).value || null,
       notes: 'Enrolled via consultation tool. Frequency: ' + freqLabel + '. Length: ' + (length ? length.textContent.trim() : '') + '. Medical: ' + (gv('medical')||'none') + '. Assessment: ' + (assessmentText||'').substring(0,400)
     };
     Object.keys(clientPayload).forEach(function(k){ if(clientPayload[k]==null) delete clientPayload[k]; });
