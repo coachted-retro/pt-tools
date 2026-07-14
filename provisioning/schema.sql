@@ -52,7 +52,7 @@ CREATE TABLE class_rsvps (
 );
 CREATE TABLE client_auth (id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER UNIQUE, email TEXT UNIQUE, password_hash TEXT, must_change_password INTEGER DEFAULT 1, active INTEGER DEFAULT 1, last_login TEXT, reset_code_hash TEXT, reset_expires TEXT);
 CREATE TABLE client_wins (id INTEGER PRIMARY KEY AUTOINCREMENT, client_id INTEGER, headline TEXT, detail TEXT, win_type TEXT, source TEXT, visible INTEGER DEFAULT 1, created_at TEXT DEFAULT (datetime('now')));
-CREATE TABLE clients (   id                 INTEGER PRIMARY KEY AUTOINCREMENT,   first_name         TEXT,   last_name          TEXT,   email              TEXT,   phone              TEXT,   gender             TEXT,   age                INTEGER,   status             TEXT DEFAULT 'prospect',   advisor            TEXT,   goal_primary       TEXT,   source_id          INTEGER REFERENCES lead_sources(id),   trainerize_client_id TEXT,   notes              TEXT,   created_at         TEXT DEFAULT (datetime('now')),   updated_at         TEXT DEFAULT (datetime('now')) , training_start_date TEXT, coach TEXT, package TEXT, sessions_total INTEGER DEFAULT 0, sessions_used INTEGER DEFAULT 0, sessions_remaining INTEGER DEFAULT 0, package_start_date TEXT, package_end_date TEXT, billing_type TEXT DEFAULT 'monthly_eft', my_why TEXT, monthly_intention TEXT, sessions_per_week INTEGER DEFAULT 2, coach_recommendation TEXT, coach_recommendation_date TEXT, coach_recommendation_by TEXT, membership_tier TEXT, membership_price REAL, onboarding_json TEXT, gym_id INTEGER DEFAULT 1, birthday TEXT, agreement_number TEXT, barcode TEXT, tags TEXT);
+CREATE TABLE clients (   id                 INTEGER PRIMARY KEY AUTOINCREMENT,   first_name         TEXT,   last_name          TEXT,   email              TEXT,   phone              TEXT,   gender             TEXT,   age                INTEGER,   status             TEXT DEFAULT 'prospect',   advisor            TEXT,   goal_primary       TEXT,   source_id          INTEGER REFERENCES lead_sources(id),   trainerize_client_id TEXT,   notes              TEXT,   created_at         TEXT DEFAULT (datetime('now')),   updated_at         TEXT DEFAULT (datetime('now')) , training_start_date TEXT, coach TEXT, package TEXT, sessions_total INTEGER DEFAULT 0, sessions_used INTEGER DEFAULT 0, sessions_remaining INTEGER DEFAULT 0, package_start_date TEXT, package_end_date TEXT, billing_type TEXT DEFAULT 'monthly_eft', my_why TEXT, monthly_intention TEXT, sessions_per_week INTEGER DEFAULT 2, coach_recommendation TEXT, coach_recommendation_date TEXT, coach_recommendation_by TEXT, membership_tier TEXT, membership_price REAL, onboarding_json TEXT, gym_id INTEGER DEFAULT 1, birthday TEXT, agreement_number TEXT, barcode TEXT, tags TEXT, decline_date TEXT, followup_email_sent_at TEXT);
 CREATE TABLE clubos_appointments (   id INTEGER PRIMARY KEY AUTOINCREMENT,   uid TEXT UNIQUE NOT NULL,   summary TEXT,   start_datetime TEXT NOT NULL,   end_datetime TEXT,   description TEXT,   location TEXT,   synced_at TEXT , status TEXT DEFAULT 'scheduled', notes TEXT, reschedule_date TEXT, reschedule_time TEXT, reschedule_tbd INTEGER DEFAULT 0);
 CREATE TABLE coach_coverage (   id INTEGER PRIMARY KEY AUTOINCREMENT,   covering_coach TEXT NOT NULL,   covered_coach TEXT NOT NULL,   start_date TEXT NOT NULL,   end_date TEXT NOT NULL,   created_by TEXT,   created_at TEXT );
 CREATE TABLE coach_daily_tips (   id INTEGER PRIMARY KEY AUTOINCREMENT,   tip_date TEXT NOT NULL UNIQUE,   industry_news TEXT,   coaching_tip TEXT,   nutrition_note TEXT,   created_at TEXT );
@@ -200,7 +200,7 @@ CREATE TABLE programs (   id                    INTEGER PRIMARY KEY AUTOINCREMEN
 CREATE TABLE progress_photos (   id INTEGER PRIMARY KEY AUTOINCREMENT,   client_id INTEGER NOT NULL,   captured_at TEXT,   pose TEXT DEFAULT 'other',   r2_key TEXT NOT NULL,   source TEXT DEFAULT 'adhoc',   created_at TEXT DEFAULT (datetime('now')) );
 CREATE TABLE client_recaps (   id INTEGER PRIMARY KEY AUTOINCREMENT,   client_id INTEGER NOT NULL,   report_type TEXT NOT NULL,   pdf_key TEXT,   summary TEXT,   advisor TEXT,   emailed_to TEXT,   created_at TEXT DEFAULT (datetime('now')) );
 CREATE TABLE prospect_log (   id INTEGER PRIMARY KEY AUTOINCREMENT,   gym_id INTEGER NOT NULL DEFAULT 1,   name TEXT,   email TEXT,   phone TEXT,   touchpoint_count INTEGER DEFAULT 0,   last_contact_date TEXT,   source TEXT DEFAULT 'clubos_followup_audit',   status TEXT DEFAULT 'not_yet_contacted',   campaign_tag TEXT,   created_at TEXT DEFAULT (datetime('now')),   updated_at TEXT , is_member INTEGER DEFAULT 0, member_client_id INTEGER);
-CREATE TABLE pt_appointments (   id INTEGER PRIMARY KEY AUTOINCREMENT,   appointment_date TEXT NOT NULL,   appointment_time TEXT,   appointment_type TEXT NOT NULL,   prospect_name TEXT,   prospect_phone TEXT,   prospect_email TEXT,   client_id INTEGER,   assigned_coach TEXT,   status TEXT DEFAULT 'scheduled',   gym_id INTEGER DEFAULT 1,   notes TEXT,   created_at TEXT,   updated_at TEXT , reschedule_date TEXT, reschedule_time TEXT, reschedule_tbd INTEGER, advisor TEXT);
+CREATE TABLE pt_appointments (   id INTEGER PRIMARY KEY AUTOINCREMENT,   appointment_date TEXT NOT NULL,   appointment_time TEXT,   appointment_type TEXT NOT NULL,   prospect_name TEXT,   prospect_phone TEXT,   prospect_email TEXT,   client_id INTEGER,   assigned_coach TEXT,   status TEXT DEFAULT 'scheduled',   gym_id INTEGER DEFAULT 1,   notes TEXT,   created_at TEXT,   updated_at TEXT , reschedule_date TEXT, reschedule_time TEXT, reschedule_tbd INTEGER, advisor TEXT, reminder_sent_at TEXT);
 CREATE TABLE pt_leads (
   id INTEGER PRIMARY KEY,
   coach_name TEXT NOT NULL,
@@ -297,3 +297,16 @@ CREATE TABLE scheduled_meals (
 -- the new club fills in their own name, city, director, and everything
 -- else themselves, rather than a hardcoded placeholder that has to be
 -- found and edited manually. See NEW_CLUB_SETUP.md Step 9.
+
+-- Added July 13 2026: stores every Jotform check-in submission for this
+-- club, tied back to a client via the hidden Client ID field on the
+-- form. See /jotform/webhook in worker-v34.js.
+CREATE TABLE IF NOT EXISTS jotform_responses (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_id INTEGER,
+  form_id TEXT,
+  submission_id TEXT,
+  raw_json TEXT,
+  received_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_jotform_responses_client ON jotform_responses(client_id);
