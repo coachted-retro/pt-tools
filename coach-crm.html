@@ -64,8 +64,26 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   #coach-stats{grid-template-columns:repeat(2,1fr) !important}
   .badges{flex-direction:column;align-items:flex-end;gap:4px}
   .name{font-size:15px}
-}
+/* ── PROGRAM CARDS (shared visual language with member-app.html's Training tab) ── */
+.pg-bundle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.pg-bundle-card{background:var(--card);border-radius:12px;padding:14px 12px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;border:2px solid transparent;position:relative;overflow:hidden}
+.pg-bundle-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--pg-accent,var(--red))}
+.pg-bundle-card:active{opacity:.85}
+.pg-bundle-icon{font-size:24px;margin-bottom:6px}
+.pg-bundle-name{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;color:var(--ink);margin-bottom:3px}
+.pg-bundle-desc{font-size:11px;color:var(--muted);line-height:1.4}
+.pg-bundle-days{font-size:10px;font-weight:700;color:var(--pg-accent,var(--red));margin-top:5px;text-transform:uppercase;letter-spacing:.3px}
+.pg-ex-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.pg-ex-row:last-child{border-bottom:none}
+.pg-ex-num{width:22px;height:22px;border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pg-ex-name{flex:1;font-weight:600;font-size:13px}
+.pg-ex-meta{font-size:11px;color:var(--muted)}
+.pg-day-pill{flex-shrink:0;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;white-space:nowrap}
+.pg-day-pill.active{background:var(--red);color:#fff;border-color:var(--red)}
+#pg-picker-screen{display:none;position:fixed;inset:0;background:var(--soft);z-index:500;flex-direction:column}
+#pg-picker-screen.open{display:flex}
 </style>
+<script src="bundles-library.js"></script>
 </head>
 <body>
 <div class="topbar">
@@ -1677,21 +1695,10 @@ async function loadCoachDailyTip(){
   } catch(e) { el.innerHTML = ''; }
 }
 
-const ROUTINE_LIBRARY = [
-  {id:"upper_lower", icon:"\ud83d\udd01", name:"Upper / Lower Split", routines:[{label:"Day A \u2014 Upper Body Push", exercises:["Barbell Bench Press", "Incline Dumbbell Press", "Overhead Press", "Lateral Raises", "Tricep Pushdown"]}, {label:"Day B \u2014 Lower Body", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Calf Raises"]}, {label:"Day C \u2014 Upper Body Pull", exercises:["Pull-Ups / Lat Pulldown", "Seated Cable Row", "Face Pulls", "Barbell Curl", "Hammer Curl"]}, {label:"Day D \u2014 Lower Body + Core", exercises:["Deadlift", "Bulgarian Split Squat", "Hip Thrust", "Plank", "Cable Crunch"]}]},
-  {id:"push_pull_legs", icon:"\ud83d\udd3a", name:"Push / Pull / Legs", routines:[{label:"Push \u2014 Chest, Shoulders, Triceps", exercises:["Flat Bench Press", "Incline Dumbbell Press", "Shoulder Press", "Cable Fly", "Lateral Raise", "Tricep Dips"]}, {label:"Pull \u2014 Back, Biceps", exercises:["Deadlift", "Pull-Ups", "Barbell Row", "Lat Pulldown", "Face Pulls", "EZ Bar Curl"]}, {label:"Legs \u2014 Quads, Hamstrings, Glutes, Calves", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Walking Lunges", "Leg Curl", "Standing Calf Raise"]}]},
-  {id:"full_body", icon:"\u26a1", name:"Full Body", routines:[{label:"Full Body A", exercises:["Squat", "Bench Press", "Barbell Row", "Overhead Press", "Romanian Deadlift", "Plank"]}, {label:"Full Body B", exercises:["Deadlift", "Incline Dumbbell Press", "Pull-Ups / Lat Pulldown", "Dumbbell Shoulder Press", "Leg Press", "Cable Crunch"]}]},
-  {id:"core_conditioning", icon:"\ud83d\udd25", name:"Core & Conditioning", routines:[{label:"Core + Cardio Circuit", exercises:["Plank Hold", "Dead Bug", "Cable Crunch", "Russian Twist", "Mountain Climbers", "Rowing Machine or Bike"]}, {label:"Glutes & Core", exercises:["Hip Thrust", "Glute Bridge", "Side-Lying Clam Shell", "Bird Dog", "Reverse Crunch", "Pallof Press"]}]},
-  {id:"strength_5x5", icon:"\ud83c\udfcb\ufe0f", name:"Strength Foundation 5\u00d75", routines:[{label:"Workout A", exercises:["Barbell Squat", "Barbell Bench Press", "Barbell Row"]}, {label:"Workout B", exercises:["Barbell Squat", "Overhead Press", "Deadlift"]}]},
-  {id:"fat_loss_circuit", icon:"\u26a1", name:"Fat Loss Circuit", routines:[{label:"Circuit A \u2014 Upper + Lower Superset", exercises:["Dumbbell Press (superset with Row)", "Dumbbell Row", "Goblet Squat (superset with RDL)", "Romanian Deadlift", "Plank to Push-Up"]}, {label:"Circuit B \u2014 Push + Pull Superset", exercises:["Incline Press (superset with Pull-Up)", "Pull-Up or Lat Pulldown", "Shoulder Press (superset with Face Pull)", "Face Pull", "Dip (superset with Curl)", "Barbell Curl"]}]},
-  {id:"functional_strength", icon:"\ud83d\udd29", name:"Functional Strength", routines:[{label:"Day 1 \u2014 Hinge & Push", exercises:["Trap Bar Deadlift or Kettlebell Swing", "Push-Up Variations (tempo)", "Cable Pull-Through", "Farmers Carry", "Pallof Press"]}, {label:"Day 2 \u2014 Squat & Pull", exercises:["Goblet Squat or Safety Bar Squat", "Single-Arm Dumbbell Row", "Step-Up with Dumbbells", "Band Pull-Apart", "Dead Bug"]}, {label:"Day 3 \u2014 Carry & Rotate", exercises:["Single-Leg RDL", "Landmine Press", "Suitcase Carry", "Cable Woodchop", "Plank Row"]}]},
-  {id:"chest_arms", icon:"\ud83d\udcaa", name:"Chest & Arms", routines:[{label:"Chest Specialization Day", exercises:["Flat Barbell Bench Press", "Incline Dumbbell Press", "Low Cable Fly", "Decline Push-Up", "Cable Chest Press"]}, {label:"Arms Specialization Day", exercises:["EZ Bar Preacher Curl", "Skull Crushers", "Incline Dumbbell Curl", "Cable Tricep Pushdown", "Hammer Curl", "Overhead Tricep Extension", "Reverse Curl"]}]},
-  {id:"bodybuilding_5day", icon:"\ud83c\udfc6", name:"Bodybuilding Split", routines:[{label:"Day 1 \u2014 Chest", exercises:["Flat Barbell Bench Press", "Incline Dumbbell Press", "Decline Bench Press", "Cable Fly", "Push-Up Burnout"]}, {label:"Day 2 \u2014 Back", exercises:["Deadlift", "Wide-Grip Pull-Up", "T-Bar Row", "Seated Cable Row", "Straight-Arm Pulldown", "Face Pull"]}, {label:"Day 3 \u2014 Shoulders", exercises:["Overhead Press (Barbell)", "Dumbbell Lateral Raise", "Arnold Press", "Rear Delt Fly", "Cable Lateral Raise", "Shrugs"]}, {label:"Day 4 \u2014 Arms", exercises:["EZ Bar Curl", "Close-Grip Bench Press", "Incline Dumbbell Curl", "Skull Crushers", "Concentration Curl", "Overhead Tricep Extension", "Reverse Curl"]}, {label:"Day 5 \u2014 Legs", exercises:["Barbell Squat", "Leg Press", "Romanian Deadlift", "Leg Curl", "Leg Extension", "Standing Calf Raise"]}]},
-  {id:"beginner_foundation", icon:"\ud83c\udf31", name:"Beginner Foundation", routines:[{label:"Week 1\u20132: Movement Patterns", exercises:["Goblet Squat", "Dumbbell Bench Press", "Seated Cable Row", "Dumbbell Shoulder Press", "Plank"]}, {label:"Week 3\u20134: Adding Load", exercises:["Barbell Squat (light)", "Barbell Bench Press (light)", "Lat Pulldown", "Dumbbell Row", "Romanian Deadlift (dumbbell)", "Plank + Side Plank"]}, {label:"Week 5\u20136: Progressive Overload", exercises:["Barbell Squat", "Barbell Bench Press", "Deadlift (intro)", "Barbell Row", "Overhead Press", "Ab Wheel or Cable Crunch"]}]},
-  {id:"athletic_performance", icon:"\ud83d\ude80", name:"Athletic Performance", routines:[{label:"Power Day A", exercises:["Box Jump", "Power Clean or Hang Clean", "Barbell Squat (explosive)", "Broad Jump", "Med Ball Slam"]}, {label:"Power Day B", exercises:["Trap Bar Jump Deadlift", "Push Press (barbell)", "Single-Leg Bound", "Battle Ropes", "Sprint (treadmill or turf)"]}]},
-  {id:"mobility_recovery", icon:"\ud83e\uddd8", name:"Mobility & Recovery", routines:[{label:"Full Body Mobility Flow", exercises:["Foam Roll \u2014 T-Spine", "Foam Roll \u2014 Lats", "90/90 Hip Stretch", "World's Greatest Stretch", "Cat-Cow", "Thoracic Rotation (half-kneeling)", "Hip Flexor Stretch", "Shoulder CARs (Controlled Articular Rotations)", "Hamstring Floss (banded or towel)"]}, {label:"Pre-Session Activation", exercises:["Band Pull-Apart", "Hip Circle", "Glute Bridge Activation", "Inchworm", "Leg Swing (front-back + lateral)", "Light Goblet Squat (warm-up weight)"]}]}
-,{"id":"kb_foundations","icon":"🏋️","name":"Kettlebell Foundations","routines":[{"label":"Session 1 — Fundamentals","exercises":["Kettlebell Goblet Squat","Kettlebell Swing","Kettlebell Single Arm Press","Kettlebell Romanian Deadlift","Kettlebell Bent Over Row"]},{"label":"Session 2 — Building Load","exercises":["Kettlebell Reverse Lunge","Kettlebell Clean","Kettlebell Halo","Kettlebell Single Leg Deadlift","Kettlebell Racked Carry"]}]},{"id":"kb_complex","icon":"🔥","name":"Kettlebell Complex Conditioning","routines":[{"label":"Complex A","exercises":["Kettlebell Clean and Press","Kettlebell Snatch","Kettlebell Single Arm Swing","Kettlebell Turkish Get Up","Kettlebell Overhead Carry"]},{"label":"Complex B","exercises":["Kettlebell Bulgarian Split Squat","Kettlebell Gorilla Row","Kettlebell Figure 8","Kettlebell Arm Bar"]}]},{"id":"trx_full_body","icon":"🪢","name":"TRX / Suspension Full Body","routines":[{"label":"Day A — Push & Core","exercises":["Suspension Chest Press","Suspension Pike","Suspension Tricep Extension","Suspension Plank","Suspension Mountain Climber"]},{"label":"Day B — Pull & Legs","exercises":["Suspension Row","Suspension Low Row","Suspension Hamstring Curl","Suspension Split Squat","Suspension Reverse Lunge","Suspension Bicep Curl"]}]},{"id":"landmine_strength","icon":"🔩","name":"Landmine Strength Circuit","routines":[{"label":"Day 1 — Press & Squat","exercises":["Landmine Single Arm Press","Landmine Squat","Landmine Front Squat","Landmine Rotation"]},{"label":"Day 2 — Hinge & Row","exercises":["Landmine Deadlift","Landmine RDL","Landmine Row","Landmine Split Squat","Landmine Good Morning"]}]},{"id":"sandbag_conditioning","icon":"🏖️","name":"Sandbag Conditioning","routines":[{"label":"Full Body Sandbag Session","exercises":["Sandbag Deadlift","Sandbag Clean","Sandbag Front Squat","Sandbag Overhead Press","Sandbag Bent Over Row","Sandbag Carry"]}]},{"id":"medball_power","icon":"💥","name":"Medicine Ball Power","routines":[{"label":"Power Finisher","exercises":["Medicine Ball Slam","Medicine Ball Rotational Throw","Medicine Ball Overhead Slam","Medicine Ball Chest Pass","Medicine Ball Squat to Press"]}]},{"id":"superband_total","icon":"🏹","name":"SuperBand Total Body","routines":[{"label":"Home / Travel Session","exercises":["SuperBand Deadlift","SuperBand Row","SuperBand Chest Fly","SuperBand Squat","SuperBand Pallof Press","SuperBand Face Pull"]}]},{"id":"stability_ball_core","icon":"⚪","name":"Stability Ball Core","routines":[{"label":"Core Circuit","exercises":["Stability Ball Pike","Stability Ball Rollout","Stability Ball Dead Bug","Stability Ball Plank","Stability Ball Hamstring Curl"]}]},{"id":"pilates_mat","icon":"🧘","name":"Pilates Mat Fundamentals","routines":[{"label":"Beginner Mat Flow","exercises":["Pilates The Hundred","Pilates Roll-Up","Pilates Single Leg Circle","Pilates Double Leg Stretch","Pilates Spine Stretch Forward"]},{"label":"Intermediate Mat Flow","exercises":["Pilates Teaser","Pilates Side Kick Series","Pilates Swan","Pilates Saw","Pilates Shoulder Bridge"]}]},{"id":"yoga_mobility","icon":"🧘‍♀️","name":"Yoga Mobility Flow","routines":[{"label":"Morning Flow","exercises":["Yoga Sun Salutation A","Yoga Downward-Facing Dog","Yoga Warrior I","Yoga Warrior II","Yoga Chair Pose","Yoga Tree Pose"]},{"label":"Recovery Flow","exercises":["Yoga Cat-Cow Stretch","Yoga Pigeon Pose","Yoga Cobra Pose","Yoga Child's Pose","Yoga Triangle Pose","Yoga Bridge Pose"]}]},{"id":"foam_roller_recovery","icon":"🧊","name":"Foam Roller / Lacrosse Ball Recovery","routines":[{"label":"Full Body Recovery","exercises":["Foam Roller Quad Smash","Foam Roller Hamstring","Foam Roller Lat","Foam Roller Glute","Foam Roller Calf","Foam Roller Upper Back","Lacrosse Ball Glute Release","Lacrosse Ball Hip Flexor Release"]}]}
-];
+// ROUTINE_LIBRARY now comes from the shared bundles-library.js (loaded in <head>),
+// same canonical list member-app.html uses -- includes Retro Iron Protocol and
+// Retro Ironman Circuit, which this file never had before consolidation (July 14, 2026).
+const ROUTINE_LIBRARY = BUNDLES;
 
 function openAddAppointment() {
   const clients = window._loadedClients || [];
@@ -1700,7 +1707,8 @@ function openAddAppointment() {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   const selectedClientObj = clients.find(c => String(c.id) === document.getElementById('appt-client')?.value);
   const recommendedIds = recommendedBundleIdsForGoalsCrm(selectedClientObj && selectedClientObj.goal_primary);
-  const bundleOptions = ROUTINE_LIBRARY.map(b => `<option value="${b.id}">${recommendedIds.has(b.id)?'\u2605 ':''}${b.icon} ${escH(b.name)}${recommendedIds.has(b.id)?' (recommended)':''}</option>`).join('');
+  // (bundleOptions dropdown text removed -- program picker card UI computes its own
+  // "matches your goal" badges live, see openProgramPicker/renderProgramPickerGrid)
   el.innerHTML = `<div class="card" style="flex-direction:column;align-items:stretch;cursor:default">
     <div style="font-weight:800;margin-bottom:10px">New Recurring Session</div>
 
@@ -1736,11 +1744,7 @@ function openAddAppointment() {
             <input type="checkbox" id="appt-day-${i}" ${i>=1&&i<=5?'checked':''} onchange="toggleApptDay(${i})">${WEEKDAY_NAMES[i]}
           </label>
           <div id="appt-day-${i}-routine" style="margin-top:8px;${i>=1&&i<=5?'':'display:none'}">
-            <select id="appt-day-${i}-bundle" onchange="renderDayRoutineOptions(${i})" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px">
-              <option value="">-- Custom / type your own --</option>
-              ${bundleOptions}
-            </select>
-            <select id="appt-day-${i}-routinesel" onchange="applyDayRoutine(${i})" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px;display:none"></select>
+            <button type="button" onclick="openProgramPicker(${i})" style="width:100%;padding:9px;border:1.5px dashed var(--red);border-radius:8px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--red);background:#fff;cursor:pointer">📋 Choose a Program</button>
             <input id="appt-day-${i}-program" placeholder="Session name, e.g. Push Day" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-size:12px">
             <input id="appt-day-${i}-exercises" placeholder="Exercises, comma separated" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:12px">
             <div id="appt-day-${i}-preview" style="margin-top:8px"></div>
@@ -1842,15 +1846,79 @@ function toggleApptDay(i) {
   document.getElementById('appt-day-'+i+'-routine').style.display = checked ? 'block' : 'none';
 }
 
-function renderDayRoutineOptions(i) {
-  const bundleId = document.getElementById('appt-day-'+i+'-bundle').value;
-  const routineSel = document.getElementById('appt-day-'+i+'-routinesel');
-  if (!bundleId) { routineSel.style.display = 'none'; routineSel.innerHTML = ''; return; }
+let _pgTargetDay = null;
+
+function openProgramPicker(dayIndex) {
+  _pgTargetDay = dayIndex;
+  document.getElementById('pg-picker-title').textContent = 'Choose a Program for ' + WEEKDAY_NAMES[dayIndex];
+  renderProgramPickerGrid();
+  document.getElementById('pg-picker-screen').classList.add('open');
+}
+
+function closeProgramPicker() {
+  document.getElementById('pg-picker-screen').classList.remove('open');
+}
+
+function currentPickerClient() {
+  const clients = window._loadedClients || [];
+  const clientId = document.getElementById('appt-client')?.value;
+  return clients.find(c => String(c.id) === clientId);
+}
+
+function renderProgramPickerGrid() {
+  const clientObj = currentPickerClient();
+  const recommendedIds = recommendedBundleIdsForGoalsCrm(clientObj && clientObj.goal_primary);
+  document.getElementById('pg-picker-body').innerHTML = `
+    <div class="pg-bundle-grid">
+      ${ROUTINE_LIBRARY.map(b => `
+        <div class="pg-bundle-card" style="--pg-accent:${b.accent}" onclick="openPickerBundleDetail('${b.id}')">
+          <div class="pg-bundle-icon">${b.icon}</div>
+          <div class="pg-bundle-name">${escH(b.name)}</div>
+          <div class="pg-bundle-desc">${escH(b.desc)}</div>
+          <div class="pg-bundle-days">${escH(b.days)}</div>
+          ${recommendedIds.has(b.id) ? `<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:${b.accent};margin-top:5px">✓ Matches this client's goal</div>` : ''}
+        </div>`).join('')}
+    </div>`;
+}
+
+function openPickerBundleDetail(bundleId) {
   const bundle = ROUTINE_LIBRARY.find(b => b.id === bundleId);
   if (!bundle) return;
-  routineSel.innerHTML = '<option value="">-- Pick a day from this split --</option>' +
-    bundle.routines.map((r,idx) => `<option value="${idx}">${escH(r.label)}</option>`).join('');
-  routineSel.style.display = 'block';
+  const clientObj = currentPickerClient();
+  const recommendedIds = recommendedBundleIdsForGoalsCrm(clientObj && clientObj.goal_primary);
+  document.getElementById('pg-picker-title').textContent = bundle.name;
+  document.getElementById('pg-picker-body').innerHTML = `
+    <button type="button" onclick="renderProgramPickerGrid();document.getElementById('pg-picker-title').textContent='Choose a Program for ${WEEKDAY_NAMES[_pgTargetDay]}'" style="border:none;background:var(--soft);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;margin-bottom:12px">← All Programs</button>
+    <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;border-top:3px solid ${bundle.accent}">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:2px">${escH(bundle.desc)} · ${escH(bundle.days)}</div>
+        ${recommendedIds.has(bundle.id) ? `<div style="font-size:11px;font-weight:800;color:${bundle.accent};margin-bottom:10px">✓ This program matches ${clientObj ? escH(clientObj.first_name) + "'s" : "the client's"} stated goal</div>` : '<div style="height:6px"></div>'}
+        ${bundle.routines.map((r, ri) => `
+          <div style="margin-bottom:14px;padding-bottom:14px;${ri<bundle.routines.length-1?'border-bottom:1px solid var(--line)':''}">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:${bundle.accent};margin-bottom:6px;letter-spacing:.3px">${escH(r.label)}</div>
+            ${r.exercises.map((ex, i) => `
+              <div class="pg-ex-row">
+                <div class="pg-ex-num">${i+1}</div>
+                <div style="flex:1">
+                  <div class="pg-ex-name">${escH(ex.name)}</div>
+                  ${ex.sets ? `<div class="pg-ex-meta">${escH(ex.sets)} sets × ${escH(ex.reps)} · Rest ${escH(ex.rest)}</div>` : ''}
+                </div>
+              </div>`).join('')}
+            <button type="button" onclick="assignRoutineToDay('${bundle.id}', ${ri})" style="margin-top:10px;width:100%;background:${bundle.accent};color:#fff;border:none;border-radius:8px;padding:10px;font-weight:700;cursor:pointer;font-size:13px">Assign to ${WEEKDAY_NAMES[_pgTargetDay]}</button>
+          </div>`).join('')}
+    </div>`;
+}
+
+function assignRoutineToDay(bundleId, routineIdx) {
+  const i = _pgTargetDay;
+  if (i === null) return;
+  const bundle = ROUTINE_LIBRARY.find(b => b.id === bundleId);
+  const routine = bundle?.routines[routineIdx];
+  if (!routine) return;
+  const exerciseNames = routine.exercises.map(ex => ex.name);
+  document.getElementById('appt-day-'+i+'-program').value = bundle.name + ' — ' + routine.label;
+  document.getElementById('appt-day-'+i+'-exercises').value = exerciseNames.join(', ');
+  renderDayProgressionPreview(i, exerciseNames);
+  closeProgramPicker();
 }
 
 const COMPOUND_KEYWORDS = ['squat','deadlift','bench press','press','row','pull-up','pulldown','clean','snatch','lunge','thrust','dip'];
@@ -1968,17 +2036,8 @@ async function renderDayProgressionPreview(i, exercises){
   }).join('');
 }
 
-function applyDayRoutine(i) {
-  const bundleId = document.getElementById('appt-day-'+i+'-bundle').value;
-  const routineIdx = document.getElementById('appt-day-'+i+'-routinesel').value;
-  if (!bundleId || routineIdx === '') return;
-  const bundle = ROUTINE_LIBRARY.find(b => b.id === bundleId);
-  const routine = bundle?.routines[parseInt(routineIdx,10)];
-  if (!routine) return;
-  document.getElementById('appt-day-'+i+'-program').value = routine.label;
-  document.getElementById('appt-day-'+i+'-exercises').value = routine.exercises.join(', ');
-  renderDayProgressionPreview(i, routine.exercises);
-}
+// (applyDayRoutine removed -- superseded by assignRoutineToDay, called from the
+// card-based program picker instead of the old two-level dropdown)
 
 async function saveAppointment() {
   const status = document.getElementById('appt-status');
@@ -2022,5 +2081,16 @@ async function saveAppointment() {
   } catch(e) { status.textContent = 'Connection error, try again.'; }
 }
 </script>
+<!-- PROGRAM PICKER OVERLAY: browse the same card library clients see, drill into full
+     day-by-day detail, assign a specific day's routine straight into the scheduling form.
+     Body-level sibling on purpose -- see the July 14 fix in member-app.html for why. -->
+<div id="pg-picker-screen">
+  <div style="background:#fff;padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button onclick="closeProgramPicker()" style="border:none;background:var(--soft);border-radius:10px;width:36px;height:36px;font-size:18px;cursor:pointer;flex-shrink:0">←</button>
+    <div id="pg-picker-title" style="font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.3px">Choose a Program</div>
+  </div>
+  <div id="pg-picker-body" style="flex:1;overflow-y:auto;padding:16px"></div>
+</div>
+
 </body>
 </html>
