@@ -1387,6 +1387,8 @@ async function doLogin() {
 
 // ── STAFF LOGIN (separate tier — coaches, MEAs, floor techs, management) ──
 let STAFF_SESSION = null;
+let COACH_VIEW_MODE = false;
+let COACH_VIEW_CLIENT_ID = null;
 
 let LOGIN_PATH_TYPE = 'ptclient';
 function showLoginPath(type) {
@@ -2362,6 +2364,13 @@ async function startApp() {
   shell.style.display = 'flex';
   showStaffBackBanner();
   await loadPortalData();
+  if (COACH_VIEW_MODE) {
+    showStaffBackBanner();
+    const fab = document.getElementById('coach-tools-fab');
+    if (fab) fab.style.display = 'flex';
+    if (fab) fab.style.alignItems = 'center';
+    if (fab) fab.style.justifyContent = 'center';
+  }
   renderHome(); renderHomeExtras();
   renderHabits(DATA.dailyLogs || []);
   loadPublicHomeContent();
@@ -3008,6 +3017,153 @@ GATED_TABS.forEach(t => {
 // currently browsing member-app.html as a guest or a signed-in member.
 // Covers the "Gym Home" preview link from coach-crm.html / mea-agenda.html,
 // which can't reliably rely on target="_blank" opening a real new tab.
+// ── COACH TOOLS ──────────────────────────────────────────────
+// Everything here only runs when COACH_VIEW_MODE is true, meaning a
+// coach opened this exact screen from coach-crm/coach-client-profile
+// to work with a specific client. Nothing here ever fires for a client
+// looking at their own app.
+function openCoachTools() { document.getElementById('coach-tools-panel').style.display = 'block'; coachToolsShowMenu(); }
+function closeCoachTools() { document.getElementById('coach-tools-panel').style.display = 'none'; }
+
+function coachToolsShowMenu() {
+  const clientName = (DATA.client && DATA.client.first_name) || 'this client';
+  document.getElementById('coach-tools-body').innerHTML = `
+    <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:18px;text-transform:uppercase;margin-bottom:4px">Coach Tools</div>
+    <div style="font-size:13px;color:#6B7280;margin-bottom:18px">Working with ${esc(clientName)} — none of this shows up as something they did themselves.</div>
+    <button onclick="coachToolsShowSchedule()" style="width:100%;text-align:left;padding:16px;border:1px solid #E5E7EB;border-radius:12px;background:#fff;margin-bottom:10px;font-size:15px;font-weight:700;cursor:pointer">Assign a Workout<div style="font-size:12px;color:#6B7280;font-weight:400;margin-top:3px">Pick a program and a date, right from the same list ${esc(clientName)} sees</div></button>
+    <button onclick="coachToolsShowMacros()" style="width:100%;text-align:left;padding:16px;border:1px solid #E5E7EB;border-radius:12px;background:#fff;margin-bottom:10px;font-size:15px;font-weight:700;cursor:pointer">Adjust Nutrition Targets<div style="font-size:12px;color:#6B7280;font-weight:400;margin-top:3px">Update daily calories and macros</div></button>
+    <button onclick="coachToolsShowNote()" style="width:100%;text-align:left;padding:16px;border:1px solid #E5E7EB;border-radius:12px;background:#fff;font-size:15px;font-weight:700;cursor:pointer">Add a Coach Note<div style="font-size:12px;color:#6B7280;font-weight:400;margin-top:3px">Private, only other coaches see this</div></button>
+  `;
+}
+
+function coachToolsBackBtn() {
+  return `<button onclick="coachToolsShowMenu()" style="background:none;border:none;color:#B0121F;font-weight:700;font-size:13px;cursor:pointer;padding:0;margin-bottom:14px">&larr; Back</button>`;
+}
+
+// Reuses the exact same BUNDLES array the client's own Training tab
+// renders from -- same routines, same exercises, no separate coach-only
+// copy of program content to keep in sync.
+function coachToolsShowSchedule() {
+  const today = new Date().toISOString().slice(0,10);
+  const bundleOptions = BUNDLES.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  document.getElementById('coach-tools-body').innerHTML = `
+    ${coachToolsBackBtn()}
+    <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;margin-bottom:14px">Assign a Workout</div>
+    <label style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase">Date</label>
+    <input type="date" id="ct-sched-date" value="${today}" style="width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:8px;margin:6px 0 14px;font-size:14px">
+    <label style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase">Program</label>
+    <select id="ct-sched-bundle" onchange="coachToolsRenderRoutinePicker()" style="width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:8px;margin:6px 0 14px;font-size:14px">${bundleOptions}</select>
+    <div id="ct-sched-routine-wrap"></div>
+    <button onclick="coachToolsSubmitSchedule()" style="width:100%;padding:14px;background:#B0121F;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;margin-top:8px;cursor:pointer">Assign This</button>
+    <div id="ct-sched-status" style="font-size:13px;margin-top:10px;text-align:center"></div>
+  `;
+  coachToolsRenderRoutinePicker();
+}
+
+function coachToolsRenderRoutinePicker() {
+  const bundleId = document.getElementById('ct-sched-bundle').value;
+  const bundle = BUNDLES.find(b => b.id === bundleId);
+  const wrap = document.getElementById('ct-sched-routine-wrap');
+  if (!bundle || !bundle.routines || !bundle.routines.length) { wrap.innerHTML = ''; return; }
+  const options = bundle.routines.map((r, i) => `<option value="${i}">${esc(r.label)}</option>`).join('');
+  wrap.innerHTML = `
+    <label style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase">Day</label>
+    <select id="ct-sched-routine" style="width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:8px;margin:6px 0 14px;font-size:14px">${options}</select>
+  `;
+}
+
+async function coachToolsSubmitSchedule() {
+  const date = document.getElementById('ct-sched-date').value;
+  const bundleId = document.getElementById('ct-sched-bundle').value;
+  const bundle = BUNDLES.find(b => b.id === bundleId);
+  const routineSel = document.getElementById('ct-sched-routine');
+  const routine = bundle && bundle.routines && routineSel ? bundle.routines[parseInt(routineSel.value, 10)] : null;
+  const status = document.getElementById('ct-sched-status');
+  if (!date || !bundle) { status.textContent = 'Pick a date and a program first.'; status.style.color = '#B0121F'; return; }
+  const dow = new Date(date + 'T00:00:00').getDay();
+  const programName = routine ? routine.label : bundle.name;
+  const exercises = routine ? routine.exercises : [];
+  status.textContent = 'Assigning...'; status.style.color = '#6B7280';
+  try {
+    const r = await fetch(WORKER + '/schedule/create', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      client_id: COACH_VIEW_CLIENT_ID, start_date: date, end_date: date, weekdays: [dow],
+      program_name: programName, exercises, assigned_coach: (STAFF_SESSION && STAFF_SESSION.name) || '', coach_name: (STAFF_SESSION && STAFF_SESSION.name) || ''
+    })});
+    const d = await r.json();
+    if (d.ok) { status.style.color = '#1E9E5A'; status.textContent = 'Assigned. Showing up on their schedule now.'; }
+    else { status.style.color = '#B0121F'; status.textContent = 'Error: ' + (d.error || 'try again'); }
+  } catch (e) { status.style.color = '#B0121F'; status.textContent = 'Could not reach the server.'; }
+}
+
+async function coachToolsShowMacros() {
+  document.getElementById('coach-tools-body').innerHTML = `${coachToolsBackBtn()}<div style="text-align:center;padding:20px;color:#6B7280">Loading current targets...</div>`;
+  let mp = {};
+  try {
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ op:'select', table:'meal_profiles', where:{ client_id: COACH_VIEW_CLIENT_ID }, limit:1 })});
+    const d = await r.json();
+    mp = (d.results && d.results[0]) || {};
+  } catch (e) {}
+  document.getElementById('coach-tools-body').innerHTML = `
+    ${coachToolsBackBtn()}
+    <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;margin-bottom:14px">Nutrition Targets</div>
+    <label style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase">Calories</label>
+    <input type="number" id="ct-macro-cal" value="${mp.calories || ''}" style="width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:8px;margin:6px 0 12px;font-size:14px">
+    <label style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase">Protein (g)</label>
+    <input type="number" id="ct-macro-p" value="${mp.protein_g || ''}" style="width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:8px;margin:6px 0 12px;font-size:14px">
+    <label style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase">Carbs (g)</label>
+    <input type="number" id="ct-macro-c" value="${mp.carbs_g || ''}" style="width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:8px;margin:6px 0 12px;font-size:14px">
+    <label style="font-size:12px;font-weight:700;color:#6B7280;text-transform:uppercase">Fat (g)</label>
+    <input type="number" id="ct-macro-f" value="${mp.fat_g || ''}" style="width:100%;padding:10px 12px;border:1px solid #D1D5DB;border-radius:8px;margin:6px 0 14px;font-size:14px">
+    <button onclick="coachToolsSaveMacros(${mp.id ? mp.id : 'null'})" style="width:100%;padding:14px;background:#B0121F;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer">Save Targets</button>
+    <div id="ct-macro-status" style="font-size:13px;margin-top:10px;text-align:center"></div>
+  `;
+}
+
+async function coachToolsSaveMacros(existingId) {
+  const status = document.getElementById('ct-macro-status');
+  const values = {
+    calories: parseInt(document.getElementById('ct-macro-cal').value, 10) || null,
+    protein_g: parseInt(document.getElementById('ct-macro-p').value, 10) || null,
+    carbs_g: parseInt(document.getElementById('ct-macro-c').value, 10) || null,
+    fat_g: parseInt(document.getElementById('ct-macro-f').value, 10) || null
+  };
+  status.textContent = 'Saving...'; status.style.color = '#6B7280';
+  try {
+    const body = existingId
+      ? { op:'update', table:'meal_profiles', values, where:{ id: existingId } }
+      : { op:'insert', table:'meal_profiles', values: Object.assign({ client_id: COACH_VIEW_CLIENT_ID }, values) };
+    const r = await fetch(WORKER + '/db', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (d.ok) { status.style.color = '#1E9E5A'; status.textContent = 'Saved.'; }
+    else { status.style.color = '#B0121F'; status.textContent = 'Error: ' + (d.error || 'try again'); }
+  } catch (e) { status.style.color = '#B0121F'; status.textContent = 'Could not reach the server.'; }
+}
+
+function coachToolsShowNote() {
+  document.getElementById('coach-tools-body').innerHTML = `
+    ${coachToolsBackBtn()}
+    <div style="font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;text-transform:uppercase;margin-bottom:14px">Add a Coach Note</div>
+    <textarea id="ct-note-body" rows="5" placeholder="Only visible to other coaches, never to the client" style="width:100%;padding:12px;border:1px solid #D1D5DB;border-radius:8px;font-size:14px;margin-bottom:14px"></textarea>
+    <button onclick="coachToolsSaveNote()" style="width:100%;padding:14px;background:#B0121F;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer">Save Note</button>
+    <div id="ct-note-status" style="font-size:13px;margin-top:10px;text-align:center"></div>
+  `;
+}
+
+async function coachToolsSaveNote() {
+  const body = document.getElementById('ct-note-body').value.trim();
+  const status = document.getElementById('ct-note-status');
+  if (!body) { status.style.color = '#B0121F'; status.textContent = 'Write something first.'; return; }
+  status.textContent = 'Saving...'; status.style.color = '#6B7280';
+  try {
+    const r = await fetch(WORKER + '/coach/note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      client_id: COACH_VIEW_CLIENT_ID, coach_name: (STAFF_SESSION && STAFF_SESSION.name) || 'Coach', tag: 'General', body
+    })});
+    const d = await r.json();
+    if (d.saved) { status.style.color = '#1E9E5A'; status.textContent = 'Saved.'; document.getElementById('ct-note-body').value = ''; }
+    else { status.style.color = '#B0121F'; status.textContent = 'Error, try again.'; }
+  } catch (e) { status.style.color = '#B0121F'; status.textContent = 'Could not reach the server.'; }
+}
+
 function showStaffBackBanner() {
   const banner = document.getElementById('staff-back-banner');
   const link = document.getElementById('staff-back-link');
@@ -3018,7 +3174,16 @@ function showStaffBackBanner() {
   if (!staff || !staff.name) { banner.style.display = 'none'; return; }
   const role = (staff.role || '').toLowerCase();
   let href, text;
-  if (role === 'pt coach' || role === "men's training lead") {
+  if (COACH_VIEW_MODE) {
+    // Viewing a specific client's real screen as their coach -- name it
+    // plainly so it's never ambiguous whose data is on screen, and make
+    // the way back obvious rather than a generic "Coach App" link.
+    const clientName = (DATA.client && (DATA.client.first_name || DATA.client.last_name))
+      ? ((DATA.client.first_name || '') + ' ' + (DATA.client.last_name || '')).trim()
+      : 'Client';
+    href = 'coach-crm.html?coach=' + encodeURIComponent(staff.name) + '&locked=1';
+    text = 'Viewing ' + clientName + "'s app — back to my clients";
+  } else if (role === 'pt coach' || role === "men's training lead") {
     href = 'coach-crm.html?coach=' + encodeURIComponent(staff.name) + '&locked=1';
     text = 'Coach App';
   } else if (role === 'mea') {
@@ -5238,7 +5403,24 @@ if (IS_DEMO) {
   const saved = localStorage.getItem('member_session');
   const savedStaff = localStorage.getItem('staff_session');
   const forceGuest = new URLSearchParams(location.search).get('forceGuest');
-  if (forceGuest) { startGuestMode(); }
+  const coachClientId = new URLSearchParams(location.search).get('coachClient');
+  // A coach opening one of their clients from coach-crm/coach-client-profile
+  // lands here. This is the actual fix for "the coach sees something
+  // different than the client" -- it's not a separate coach-built page,
+  // it's this exact same app, just told which client's data to load.
+  // Requires a real staff session already in localStorage first, so this
+  // link can't be used to view an arbitrary client without being logged
+  // in as staff.
+  if (coachClientId && savedStaff) {
+    try {
+      STAFF_SESSION = JSON.parse(savedStaff);
+      COACH_VIEW_MODE = true;
+      COACH_VIEW_CLIENT_ID = coachClientId;
+      SESSION = { client_id: coachClientId, token: null, email: null };
+      startApp();
+    } catch(e) { localStorage.removeItem('staff_session'); }
+  }
+  else if (forceGuest) { startGuestMode(); }
   else if (saved) { try { SESSION = JSON.parse(saved); startApp(); } catch(e) { localStorage.removeItem('member_session'); } }
   else if (savedStaff) { try { STAFF_SESSION = JSON.parse(savedStaff); startStaffApp(); } catch(e) { localStorage.removeItem('staff_session'); } }
   // No forced-guest link, no saved session of any kind: this app is shared
@@ -5260,6 +5442,19 @@ if (IS_DEMO) {
   <button id="fitchat-fab" onclick="openFitChat()" style="position:fixed;bottom:140px;right:16px;width:52px;height:52px;border-radius:50%;background:#1E9E5A;color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:22px;z-index:60;cursor:pointer">
     &#10024;
   </button>
+
+  <!-- COACH TOOLS -- only shown when a coach is viewing a client's real
+       screen (COACH_VIEW_MODE). Everything in here writes on behalf of
+       the coach, never silently as the client. -->
+  <button id="coach-tools-fab" onclick="openCoachTools()" style="display:none;position:fixed;bottom:202px;right:16px;width:52px;height:52px;border-radius:50%;background:#15171A;color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:20px;z-index:60;cursor:pointer">
+    &#128295;
+  </button>
+  <div id="coach-tools-panel" style="display:none;position:fixed;bottom:0;right:0;left:0;top:0;background:rgba(0,0,0,.4);z-index:80" onclick="if(event.target===this) closeCoachTools()">
+    <div style="position:absolute;bottom:0;left:0;right:0;max-height:85vh;background:#fff;border-radius:20px 20px 0 0;display:flex;flex-direction:column;max-width:480px;margin:0 auto;overflow-y:auto">
+      <div id="coach-tools-body" style="padding:20px"></div>
+    </div>
+  </div>
+
   <div id="fitchat-panel" style="display:none;position:fixed;bottom:0;right:0;left:0;top:0;background:rgba(0,0,0,.4);z-index:70" onclick="if(event.target===this) closeFitChat()">
     <div style="position:absolute;bottom:0;left:0;right:0;max-height:80vh;background:#fff;border-radius:20px 20px 0 0;display:flex;flex-direction:column;max-width:480px;margin:0 auto">
       <div style="padding:16px 18px;border-bottom:1px solid var(--line3,#E4E7EC);display:flex;align-items:center;gap:10px">

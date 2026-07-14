@@ -412,6 +412,23 @@ function openAdd(){
   document.getElementById('similar-names-hint').style.display='none';
   document.getElementById('clientModal').classList.add('open');
 }
+async function sendCheckinNow(clientId){
+  const btn = document.getElementById('send-checkin-btn');
+  const status = document.getElementById('send-checkin-status');
+  btn.disabled = true; btn.textContent = 'Sending...';
+  status.style.color = 'var(--muted,#6B7280)'; status.textContent = 'Sending...';
+  try {
+    const r = await fetch(WORKER + '/followup/send-checkin-now', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ client_id: clientId }) });
+    const d = await r.json();
+    btn.disabled = false; btn.textContent = 'Send Check-In Email Now';
+    if (d.ok && d.sent) { status.style.color = 'var(--green,#1E9E5A)'; status.textContent = 'Sent.'; }
+    else { status.style.color = 'var(--red,#B0121F)'; status.textContent = 'Error: ' + (d.error || 'could not send'); }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Send Check-In Email Now';
+    status.style.color = 'var(--red,#B0121F)'; status.textContent = 'Could not reach the server.';
+  }
+}
+
 function openEdit(){
   if(!CURRENT) return; EDIT_ID=CURRENT.id; document.getElementById('modalTitle').textContent='Edit Client';
   setF('m_first',CURRENT.first_name); setF('m_last',CURRENT.last_name); setF('m_email',CURRENT.email);
@@ -746,7 +763,9 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
   html+='<div class="actions">'+
     '<a class="btn" href="meal-plans.html">Build Meal Plan</a>'+
     '<a class="btn" href="fitness-monthly-checkin.html'+q+'&id='+client.id+'">Pull Report</a>'+
-    '</div>';
+    (client.status === 'prospect' ? '<button class="btn" id="send-checkin-btn" onclick="sendCheckinNow('+client.id+')">Send Check-In Email Now</button>' : '')+
+    '</div>'+
+    (client.status === 'prospect' ? '<div id="send-checkin-status" style="font-size:13px;margin-top:6px"></div>' : '');
 
   html+='<div class="card" style="margin-top:16px;border-left:4px solid #2563EB" id="touchpoints-card">'+
     '<div style="font-weight:800;margin-bottom:6px">Coach Touchpoints &amp; Activity</div>'+
