@@ -3724,12 +3724,12 @@ ${compactIndex.join('\n')}`;
           showAll = !!(staffRow && staffRow.sees_all_clients);
         }
         const rows = await env.DB.prepare(
-          `SELECT c.id, c.first_name, c.last_name, c.phone, c.email, c.status, c.goal_primary, c.tags, c.coach,
+          `SELECT c.id, c.first_name, c.last_name, c.phone, c.email, c.status, c.goal_primary, c.tags, c.coach, c.gender,
                   c.sessions_remaining, c.sessions_total, c.package_end_date,
                   (SELECT COUNT(*) FROM coach_touchpoints t WHERE t.client_id=c.id) AS touchpoint_count,
                   (SELECT MAX(created_at) FROM coach_touchpoints t WHERE t.client_id=c.id) AS last_touchpoint,
                   (SELECT COUNT(*) FROM portal_messages m WHERE m.client_id=c.id AND m.sender='client' AND m.read=0) AS unread_messages
-           FROM clients c ${showAll ? '' : 'WHERE c.coach = ?'} ORDER BY c.last_name ASC`
+           FROM clients c WHERE c.status = 'active_pt' ${showAll ? '' : 'AND c.coach = ?'} ORDER BY c.last_name ASC`
         ).bind(...(showAll ? [] : [coach])).all();
         const clients = rows.results || [];
 

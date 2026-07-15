@@ -184,6 +184,16 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <a href="#" onclick="openQuickAddClient();return false" style="display:block;text-align:center;background:var(--red);color:#fff;text-decoration:none;padding:10px;border-radius:8px;font-weight:700;font-size:13px;margin-bottom:12px">+ Quick Add Client</a>
     <div id="quick-add-form" style="display:none;margin-bottom:14px"></div>
     <input id="client-search" placeholder="Search by name, phone, or tag..." oninput="filterClientPanel()" style="width:100%;margin-bottom:10px;padding:9px 12px;border:1px solid var(--line,#E4E7EC);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box">
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <select id="client-gender-filter" onchange="filterClientPanel()" style="flex:1;padding:9px 8px;border:1px solid var(--line,#E4E7EC);border-radius:8px;font-size:12px;font-family:inherit">
+        <option value="">All Genders</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+      <select id="client-coach-filter" onchange="filterClientPanel()" style="flex:1;padding:9px 8px;border:1px solid var(--line,#E4E7EC);border-radius:8px;font-size:12px;font-family:inherit">
+        <option value="">All Coaches</option>
+      </select>
+    </div>
     <div id="tag-filter-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <div id="client-list"><div class="empty">Select your name above to see your clients.</div></div>
   </div>
@@ -1344,6 +1354,7 @@ async function loadClients(){
     if (navLink) navLink.style.display = d.showing_all ? '' : 'none';
     if (countLabel) countLabel.textContent = clients.length + ' Client' + (clients.length===1?'':'s') + (d.showing_all ? ' (all)' : '');
     renderTagFilterChips(clients);
+    populateCoachFilter(clients);
     renderClientPanel(clients, coach);
   } catch(e) { list.innerHTML = '<div class="empty">Could not load clients.</div>'; }
   loadBell();
@@ -1373,11 +1384,24 @@ function toggleTagFilter(tag) {
   renderTagFilterChips(window._loadedClients||[]);
   filterClientPanel();
 }
+function populateCoachFilter(clients) {
+  const sel = document.getElementById('client-coach-filter');
+  if (!sel) return;
+  const current = sel.value;
+  const coaches = [...new Set(clients.map(c => c.coach).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">All Coaches</option>' + coaches.map(c => `<option value="${escH(c)}">${escH(c)}</option>`).join('');
+  if (coaches.includes(current)) sel.value = current;
+}
+
 function filterClientPanel() {
   const q = (document.getElementById('client-search')||{}).value?.trim().toLowerCase() || '';
+  const genderFilter = (document.getElementById('client-gender-filter')||{}).value || '';
+  const coachFilter = (document.getElementById('client-coach-filter')||{}).value || '';
   const coach = document.getElementById('coach-select').value;
   let clients = window._loadedClients || [];
   if (ACTIVE_TAG_FILTER) clients = clients.filter(c => (c.tags||'').split(',').map(t=>t.trim()).includes(ACTIVE_TAG_FILTER));
+  if (genderFilter) clients = clients.filter(c => (c.gender||'').toLowerCase() === genderFilter);
+  if (coachFilter) clients = clients.filter(c => c.coach === coachFilter);
   if (q) clients = clients.filter(c => {
     const blob = [c.first_name, c.last_name, c.phone, c.email, c.tags].filter(Boolean).join(' ').toLowerCase();
     return blob.includes(q);
