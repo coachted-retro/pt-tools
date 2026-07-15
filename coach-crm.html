@@ -564,9 +564,9 @@ async function loadTodaySchedule(){
     const toolFor = { initial_consultation:'fitness-consultation-tool.html', follow_up:'fitness-followup-tool.html', monthly_checkin:'fitness-monthly-checkin.html' };
 
     // Build one normalized list across all three sources (pt_appointments,
-    // Club OS, Retro One Schedule) instead of three separate sections --
+    // Club OS, Ironclad Schedule) instead of three separate sections --
     // this is everything on the calendar for the day, one agenda, sorted
-    // by time. Items with no specific time (Retro One Schedule sessions)
+    // by time. Items with no specific time (Ironclad Schedule sessions)
     // sort to the end.
     const items = [];
 
@@ -1700,8 +1700,8 @@ async function loadCoachDailyTip(){
 }
 
 // ROUTINE_LIBRARY now comes from the shared bundles-library.js (loaded in <head>),
-// same canonical list member-app.html uses -- includes Retro Iron Protocol and
-// Retro Ironman Circuit, which this file never had before consolidation (July 14, 2026).
+// same canonical list member-app.html uses -- includes Ironclad Iron Protocol and
+// Ironclad Ironman Circuit, which this file never had before consolidation (July 14, 2026).
 const ROUTINE_LIBRARY = BUNDLES;
 
 function openAddAppointment() {

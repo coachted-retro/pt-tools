@@ -1148,7 +1148,7 @@
         <div class="card">
           <div class="card-title"><span class="dot"></span> Fitness goals & activity</div>
           <div class="field">
-            <label>Tell us about why you joined Retro — specifically, your goals (select all that apply)</label>
+            <label>Tell us about why you joined Ironclad — specifically, your goals (select all that apply)</label>
             <div id="goals-checks" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
               <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Lose Weight" onchange="syncGoalsField()">Lose Weight</label>
               <label style="display:flex;align-items:center;gap:8px;font-size:13px;border:1px solid var(--line,#E4E7EC);border-radius:8px;padding:8px 10px;cursor:pointer"><input type="checkbox" class="goal-check" value="Gain Weight" onchange="syncGoalsField()">Gain Weight</label>
@@ -1601,7 +1601,7 @@
                   <li>Biweekly check-in training</li>
                   <li>Personalized workout program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Retro Strong app access</li>
+                  <li>Ironclad app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-0-benefit"></div>
               </div>
@@ -1614,7 +1614,7 @@
                   <li>Weekly one-on-one training</li>
                   <li>Personalized workout program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Retro Strong app access</li>
+                  <li>Ironclad app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-1-benefit"></div>
               </div>
@@ -1627,7 +1627,7 @@
                   <li>Twice-weekly training momentum</li>
                   <li>Faster adaptation and results</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Retro Strong app access</li>
+                  <li>Ironclad app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-2-benefit"></div>
               </div>
@@ -1640,7 +1640,7 @@
                   <li>High-frequency coaching</li>
                   <li>Full periodized program</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Retro Strong app access</li>
+                  <li>Ironclad app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-3-benefit"></div>
               </div>
@@ -1653,7 +1653,7 @@
                   <li>Elite daily coaching structure</li>
                   <li>Maximum accountability</li>
                   <li>Monthly InBody scan review</li>
-                  <li>Retro Strong app access</li>
+                  <li>Ironclad app access</li>
                 </ul>
                 <div class="pkg-benefit" id="pkg-4-benefit"></div>
               </div>
@@ -2649,7 +2649,7 @@ function buildPrompt() {
   const segRL     = gv('seg-rl') || '';
   const advisor   = gv('advisor-name') || 'your advisor';
 
-  return `You are a Retro Strong personal training advisor. Generate a SHORT, SCANNABLE client-facing consultation summary. No long paragraphs. Use the exact data below — never use placeholders.
+  return `You are a Ironclad personal training advisor. Generate a SHORT, SCANNABLE client-facing consultation summary. No long paragraphs. Use the exact data below — never use placeholders.
 
 MEMBER DATA:
 Name: ${name} | Gender: ${gender} | Age: ${age} | Height: ${height}
@@ -2691,7 +2691,7 @@ SECTION: YOUR GAME PLAN
 SECTION: THE BOTTOM LINE
 One powerful closing sentence. No pressure — just clarity.
 
-FOOTER: ${advisor} | Retro Strong
+FOOTER: ${advisor} | Ironclad
 Under 280 words total. No markdown. No emojis. No hashtags. Plain text only.`;
 }
 
@@ -3516,7 +3516,7 @@ async function generateThankYouEmail(){
   const toEl=document.getElementById('ty-to'); if(toEl) toEl.value=gv('email')||'';
   const followDateStr = (function(){ const d=new Date(); d.setDate(d.getDate()+42); return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'}); })();
   const prompt="Write a warm, professional follow-up email from a personal trainer to a prospective client who just completed a fitness consultation and InBody assessment but decided NOT to start personal training right now. Return ONLY the plain-text email body. No subject line, no markdown, no asterisks, no symbols, no bullet characters. Use natural paragraphs with line breaks.\n\n"+
-    "Address them by first name: "+firstName+". Sign off as "+advisor+", Retro Strong, 215-295-2004.\n\n"+
+    "Address them by first name: "+firstName+". Sign off as "+advisor+", Ironclad, 215-295-2004.\n\n"+
     "Cover these in order, woven naturally, not as a numbered list: (1) a brief, genuine thank-you for coming in and completing their assessment; (2) a clear, detailed, plain-language summary of their assessment findings and what their numbers actually mean for their body and health, drawn from the assessment below; (3) based on their physical condition and goals, caring and compelling reasons why their health is worth prioritizing now, framed around them, not pressure; (4) why personal training is a smart, supported path to their goals, and the honest point that without accountability, consistency, and proper support, the time and effort they put in at the gym is easily wasted or can even lead to injury or burnout, and that coaching protects that investment; (5) mention naturally that we'll follow up with them on "+followDateStr+" to see how things are going, and a low-pressure, encouraging close inviting them to start whenever they're ready, making clear you are here to help. Keep it human and sincere, not salesy. Around 250 to 350 words.\n\n"+
     "MEMBER GOALS: "+(gv('goals')||'not specified')+"\n"+
     "INBODY: BMI "+(gv('bmi')||'n/a')+", body fat "+(gv('pbf')||'n/a')+"%, lean mass "+(gv('lean-mass')||'n/a')+" lb, fat mass "+(gv('fat-mass')||'n/a')+" lb\n"+
@@ -3527,7 +3527,7 @@ async function generateThankYouEmail(){
     const d=await r.json();
     if(d.error) throw new Error((d.error.message)||'AI error');
     const body=(d.content||[]).map(b=>b.text||'').join('').trim() + '\n\n' + PHORM_SIGNATURE;
-    const subEl=document.getElementById('ty-subject'); if(subEl) subEl.value='Your Retro Strong assessment, and a thought on your next step';
+    const subEl=document.getElementById('ty-subject'); if(subEl) subEl.value='Your Ironclad assessment, and a thought on your next step';
     const bodyEl=document.getElementById('ty-body'); if(bodyEl) bodyEl.value=body;
     if(st) st.textContent='Ready — sending automatically...';
     autoSendThankYou();
@@ -3932,16 +3932,16 @@ var FREQ_TIERS = {
 // Fairless Hills so nothing breaks for existing bookmarks with no param.
 var CLUB_ID = (new URLSearchParams(window.location.search).get('club') || 'fairless-hills').toLowerCase();
 var CLUB_PRICING = {
-  'fairless-hills': { name: 'Retro Strong', rate12: 45, rate6: 50, minSessions: 4, allowEveryOtherWeek: true },
-  'forest-hills':   { name: 'Retro Strong of Forest Hills',   rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
-  'glendale':       { name: 'Retro Strong of Glendale',       rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
-  'jersey-city':    { name: 'Retro Strong of Jersey City',    rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
-  'cedar-city':     { name: 'Retro Strong of Cedar City',     rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
-  'rego-park':      { name: 'Retro Strong of Rego Park',      rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
-  'fairfield':      { name: 'Retro Strong of Fairfield',      rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false },
-  'tottenville':    { name: 'Retro Strong of Tottenville',    rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false },
-  'mt-olive':       { name: 'Retro Strong of Mt. Olive',      rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
-  'whippany':       { name: 'Retro Strong of Whippany',       rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false }
+  'fairless-hills': { name: 'Ironclad', rate12: 45, rate6: 50, minSessions: 4, allowEveryOtherWeek: true },
+  'forest-hills':   { name: 'Ironclad of Forest Hills',   rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
+  'glendale':       { name: 'Ironclad of Glendale',       rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
+  'jersey-city':    { name: 'Ironclad of Jersey City',    rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
+  'cedar-city':     { name: 'Ironclad of Cedar City',     rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
+  'rego-park':      { name: 'Ironclad of Rego Park',      rate12: 55, rate6: 60, minSessions: 8, allowEveryOtherWeek: false },
+  'fairfield':      { name: 'Ironclad of Fairfield',      rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false },
+  'tottenville':    { name: 'Ironclad of Tottenville',    rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false },
+  'mt-olive':       { name: 'Ironclad of Mt. Olive',      rate12: 45, rate6: 50, minSessions: 8, allowEveryOtherWeek: false },
+  'whippany':       { name: 'Ironclad of Whippany',       rate12: 50, rate6: 55, minSessions: 8, allowEveryOtherWeek: false }
 };
 var CLUB = CLUB_PRICING[CLUB_ID] || CLUB_PRICING['fairless-hills'];
 var CLUB_GYM_ID = {
@@ -4334,7 +4334,7 @@ async function generateClosingValue() {
   var pkgName = FREQ_TIERS[selectedPkg] ? FREQ_TIERS[selectedPkg].name : 'your selected program';
   var hasNutrition = nutritionAddon;
 
-  var prompt = 'You are Coach Ted at Retro Strong writing a value summary for ' + name + ' at the end of their fitness consultation. Their goals: ' + goals + '. Medical notes: ' + medical + '. Current weight: ' + weight + ' lb, ' + pbf + '% body fat, ' + lean + ' lb lean mass. Selected package: ' + pkgName + (hasNutrition ? ' with weekly meal plan' : '') + '.\n\nReturn ONLY a JSON object with exactly these keys:\n- goals_recap: 2 sentences in second person ("you"), reflecting their exact goals and the specific friction or pain points standing between them and success. Warm, direct, no fluff.\n- benefits: array of exactly 4 strings, each one 10-18 words, written to them directly, tying a specific program feature to their specific goal or condition. Not generic. Not "you will get accountability." Make it personal.\n\nNo markdown. No extra keys. Valid JSON only.';
+  var prompt = 'You are Coach Ted at Ironclad writing a value summary for ' + name + ' at the end of their fitness consultation. Their goals: ' + goals + '. Medical notes: ' + medical + '. Current weight: ' + weight + ' lb, ' + pbf + '% body fat, ' + lean + ' lb lean mass. Selected package: ' + pkgName + (hasNutrition ? ' with weekly meal plan' : '') + '.\n\nReturn ONLY a JSON object with exactly these keys:\n- goals_recap: 2 sentences in second person ("you"), reflecting their exact goals and the specific friction or pain points standing between them and success. Warm, direct, no fluff.\n- benefits: array of exactly 4 strings, each one 10-18 words, written to them directly, tying a specific program feature to their specific goal or condition. Not generic. Not "you will get accountability." Make it personal.\n\nNo markdown. No extra keys. Valid JSON only.';
 
   try {
     var r = await fetch(getApiUrl(), {
@@ -4376,7 +4376,7 @@ async function generateClosingValue() {
 
 // === REPORT ENGINE ===
 // ============================================================
-// RETRO STRONG — REPORT ENGINE (injected into all 3 tools)
+// IRONCLAD — REPORT ENGINE (injected into all 3 tools)
 // Handles: PDF generation via jsPDF + Gmail compose open
 // ============================================================
 
@@ -4410,7 +4410,7 @@ Let's Get Strong Together
 Ted Scholl
 Coach & Fitness Advisor
 
-Retro Strong
+Ironclad
 516 Lincoln Highway
 Fairless Hills, PA 19030
 215-295-2004`;
@@ -4418,7 +4418,7 @@ Fairless Hills, PA 19030
 // ---- AI REPORT GENERATION ----
 async function generateReportContent(reportType, clientData, assessmentSummary) {
   const systemPrompts = {
-    welcome: `You are writing a Welcome Packet for a new personal training client at Retro Strong. 
+    welcome: `You are writing a Welcome Packet for a new personal training client at Ironclad. 
 Generate a professional, warm, motivating welcome report. 
 STRICT RULES — never violate:
 - DO include: InBody scan analysis, current baseline stats, where they stand vs their goal, 2-3 specific barriers between them and success, what the first training phase will focus on (general, e.g. "building movement quality and foundation strength"), why having a coach accelerates results vs going solo, an inspiring closing statement tied to their specific goal.
@@ -4426,14 +4426,14 @@ STRICT RULES — never violate:
 - Tone: warm, expert, premium. Makes them feel they made the right decision enrolling.
 - Format: use plain section headers in ALL CAPS, no markdown symbols, no emojis, no asterisks. Plain text with line breaks only.`,
 
-    thankyou: `You are writing a Thank You / Body Composition Results Letter for a prospect who attended a consultation but did not enroll in personal training at Retro Strong.
+    thankyou: `You are writing a Thank You / Body Composition Results Letter for a prospect who attended a consultation but did not enroll in personal training at Ironclad.
 STRICT RULES — never violate:
 - DO include: genuine thanks for their time, a summary of their InBody results in plain language, 2-3 specific insights from their body composition data, what the data tells us about where they are vs where they want to be, what unguided progress typically looks like without structured coaching, a soft invitation to reconsider when the time is right.
 - DO NOT include: specific workout plans, macro targets, meal plans, or any prescriptive content that removes the need for coaching.
 - Tone: appreciative, insightful, zero pressure. They should leave feeling informed and respected — and quietly wishing they had signed up.
 - Format: plain section headers ALL CAPS, no markdown, no emojis. Plain text only.`,
 
-    monthly: `You are writing a Monthly Progress Report for an active personal training client at Retro Strong.
+    monthly: `You are writing a Monthly Progress Report for an active personal training client at Ironclad.
 STRICT RULES — never violate:
 - DO include: this month vs last month InBody comparison with real numbers, training consistency assessment, nutrition adherence summary, recovery and wellbeing snapshot, key wins this month, one specific focus area for next month, motivating closing statement.
 - DO NOT include: specific workout prescriptions, sets/reps/weights, specific macro targets or calorie numbers, meal plans. These are coaching deliverables — the report documents progress, not the program.
@@ -4497,7 +4497,7 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('RETRO STRONG', margin, 35);
+  doc.text('IRONCLAD', margin, 35);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('  |  516 Lincoln Highway, Fairless Hills, PA 19030  |  215-295-2004', margin, 52);
@@ -4614,7 +4614,7 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.text('"Progress is built one month at a time. Stay consistent, stay committed."', margin + 10, y);
   y += 12;
   doc.setFont('helvetica', 'normal');
-  doc.text('Coach Ted Scholl  |  Retro Strong  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
+  doc.text('Coach Ted Scholl  |  Ironclad  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
 
   // Save locally as a backup copy, and return base64 for automated email attachment
   const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + todayET() + '.pdf';
@@ -4677,8 +4677,8 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
 
         const emailBody = buildEmailBody(reportType, clientData.name, clientData, assessmentSummary);
         const subjects = {
-          welcome: 'Welcome to Retro Strong Elite Training — Your Welcome Packet',
-          thankyou: 'Your Body Composition Results — Retro Strong',
+          welcome: 'Welcome to Ironclad Elite Training — Your Welcome Packet',
+          thankyou: 'Your Body Composition Results — Ironclad',
           monthly: 'Your Monthly Progress Report — ' + new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'})
         };
         if (!clientData.email) {
@@ -4734,7 +4734,7 @@ function buildInternalRecapPDF(intakeLabel, clientName, advisor, sections, asses
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('RETRO STRONG', margin, 35);
+  doc.text('IRONCLAD', margin, 35);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('  |  INTERNAL RECAP — STAFF ONLY, NOT FOR CLIENT DISTRIBUTION', margin, 52);

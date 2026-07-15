@@ -342,7 +342,7 @@ function showToast(msg, type = 'success') {
         ).setMimeType(ContentService.MimeType.JSON);
       }
 
-      // ── Delete from Retro Strong Database (All Intakes tab) ──
+      // ── Delete from Ironclad Database (All Intakes tab) ──
       var intakeSheet = SpreadsheetApp.openById('1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g')
                           .getSheetByName('All Intakes');
       intakeSheet.deleteRow(rowIndex);

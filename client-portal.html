@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#E0192B">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Retro PT"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="apple-mobile-web-app-title" content="Ironclad"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#F0F2F5;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--blue:#2563EB;--soft:#F5F6F8}
@@ -61,7 +61,7 @@
   .badge.red{background:#FDECEA;color:var(--red)}
   .badge.green{background:#E3F5EC;color:var(--green)}
 
-  /* ── ELITE / PREMIUM CARDS (Circle, Coach's Edge, Word of the Day, Inside Retro) ── */
+  /* ── ELITE / PREMIUM CARDS (Circle, Coach's Edge, Word of the Day, Inside Ironclad) ── */
   :root{--gold:#D4AF37;--gold-dk:#A6841E;--ink2:#0D0E10}
   .elite-card{background:linear-gradient(155deg,#1A1D21 0%,#0D0E10 100%);border:1px solid #2B2E33;border-radius:14px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden}
   .elite-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
@@ -270,10 +270,10 @@
 
 <!-- ── LOGIN ── -->
 <div id="login-screen">
-  <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
+  <img src="icons-strong/apple-touch-icon.png" alt="Ironclad" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
   <div class="login-box" id="login-box">
     <h2>Member Portal</h2>
-    <p>Body Shoppe — Retro Strong</p>
+    <p>Body Shoppe — Ironclad</p>
     <div class="fld"><label>Email</label><input id="li-email" type="email" autocomplete="email" placeholder="you@email.com"></div>
     <div class="fld"><label>Password</label><input id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
     <div class="login-err" id="login-err"></div>
@@ -293,7 +293,7 @@
 <!-- ── PORTAL ── -->
 <div id="portal-screen">
   <div class="pbar">
-    <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
+    <img src="icons-strong/apple-touch-icon.png" alt="Ironclad" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
     <div class="ptitle" id="pageTitle">Body Shoppe</div>
     <div class="pname" id="p-name"></div>
     <div class="logout" onclick="doLogout()">Sign out</div>
@@ -623,7 +623,7 @@ function renderCoachsEdge(c){
     '<div class="elite-quote">\u201c'+esc(c.quote||'')+'\u201d</div>'+
     '<div class="elite-quote-author">'+esc(c.quote_author||'Unknown')+'</div>'+
     (c.news_headline?(
-      '<div class="elite-label" style="margin-top:14px">Inside Retro<span class="ln"></span></div>'+
+      '<div class="elite-label" style="margin-top:14px">Inside Ironclad<span class="ln"></span></div>'+
       '<div style="font-weight:700;color:#fff;font-size:13px;margin-bottom:3px">'+esc(c.news_headline)+'</div>'+
       '<p class="body-text">'+esc(c.news_blurb||'')+'</p>'
     ):'');
@@ -669,7 +669,7 @@ function renderEvents(events){
   const el=document.getElementById('home-events');
   if(!el) return;
   if(!events.length){ el.innerHTML=''; return; }
-  el.innerHTML='<h3>Happening at Retro</h3>'+events.map(ev=>{
+  el.innerHTML='<h3>Happening at Ironclad</h3>'+events.map(ev=>{
     return '<div class="event-row">'+
       '<div class="event-title">'+esc(ev.title)+'</div>'+
       (ev.event_date?'<div class="event-date">'+esc(fmtDate(ev.event_date))+'</div>':'')+

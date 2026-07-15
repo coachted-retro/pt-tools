@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
 <script src="config.js"></script>
+<script>
+// Locked down while corporate review is pending -- flip this back to
+// false once approved to bring this dashboard back for Keelin.
+const REGIONAL_DASHBOARD_LOCKED = true;
+if (REGIONAL_DASHBOARD_LOCKED) {
+  document.write("<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#B0121F'>Not Currently Available</h2><p style='color:#6B7280;max-width:340px;margin:0 auto'>This dashboard is temporarily offline while the multi-club pilot is under review. Reach out to Ted Scholl with any questions.</p></div></body>");
+  document.close();
+  throw new Error("regional dashboard locked");
+}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -108,7 +118,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <body>
 
 <div class="topbar">
-  <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
+  <img src="icons-strong/apple-touch-icon.png" alt="Ironclad" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
   <div style="display:flex;flex-direction:column;line-height:1.1">
     <div style="font-family:'Oswald';font-weight:800;font-size:13px;color:var(--red);letter-spacing:.5px">THE BODY SHOPPE</div>
     <div style="font-size:9px;color:#9CA3AF;letter-spacing:.5px;text-transform:uppercase">Personal Training Program</div>

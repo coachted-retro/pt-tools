@@ -57,7 +57,7 @@
 </head>
 <body>
 <div class="topbar">
-  <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
+  <img src="icons-strong/apple-touch-icon.png" alt="Ironclad" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
   <div class="t">Portal <span>Access Manager</span></div>
   <div class="spacer"></div>
   <a class="btn" href="command-center.html">← Command Center</a>
@@ -104,7 +104,7 @@
 
   <!-- COACH'S EDGE / DAILY CONTENT -->
   <div class="panel">
-    <h3>Coach's Edge, Word of the Day, Inside Retro</h3>
+    <h3>Coach's Edge, Word of the Day, Inside Ironclad</h3>
     <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Regenerates automatically each day on first load. Use the button below to refresh today's content manually.</p>
     <div id="current-daily"><div style="color:var(--muted);font-size:13px">Loading today's content...</div></div>
     <button class="btn red" onclick="regenerateDaily()" style="margin-top:14px">Regenerate Today's Content</button>
@@ -137,7 +137,7 @@
 
   <!-- HAPPENING AT RETRO -->
   <div class="panel">
-    <h3>Happening at Retro</h3>
+    <h3>Happening at Ironclad</h3>
     <p style="font-size:13px;color:var(--muted);margin:0 0 14px">Post upcoming events and announcements. They appear on every member's home screen, soonest first.</p>
     <div class="grid2">
       <div class="fld"><label>Event title</label>
@@ -272,15 +272,15 @@ async function grantAccess(){
       if(sendEmail){
         st.textContent='Access granted. Sending welcome email...';
         const html=`<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-          <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Welcome to Retro Strong, ${esc(clientName)}!</h2>
-          <p>Your coach just set you up with the Retro Strong app — your workouts, nutrition tracking, schedule, and direct chat with your coach, all in one place.</p>
-          <p><a href="https://myretrostrong.com" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Retro Strong &rarr;</a></p>
+          <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Welcome to Ironclad, ${esc(clientName)}!</h2>
+          <p>Your coach just set you up with the Ironclad app — your workouts, nutrition tracking, schedule, and direct chat with your coach, all in one place.</p>
+          <p><a href="https://myretrostrong.com" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
           <p style="font-size:13px;color:#6B7280">Or go to <b>myretrostrong.com</b> on your phone and tap "Sign In" — works great as an app if you add it to your home screen.</p>
           <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Email</td><td><b>${esc(email)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${esc(password)}</b></td></tr></table>
           <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
           </div>`;
         try{
-          const er=await fetch(WORKER+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,subject:'Welcome to Retro Strong — your login is ready',html,client_id:+client_id,context:'Portal access granted'})});
+          const er=await fetch(WORKER+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,subject:'Welcome to Ironclad — your login is ready',html,client_id:+client_id,context:'Portal access granted'})});
           const ed=await er.json();
           if(ed.sent){ st.textContent='Access granted and welcome email sent to '+email+'.'; log('ga-log','Emailed: '+email,'ok'); }
           else { st.textContent='Access granted, but the email did not send ('+(ed.reason||ed.error||'unknown')+'). Share the login manually.'; log('ga-log','Email not sent: '+(ed.reason||ed.error||'unknown'),'err'); }
@@ -310,13 +310,13 @@ async function reGrantAccess(client_id, email, clientName, btn){
     await r.json();
     if(sendIt){
       const html=`<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-        <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Retro Strong access is back</h2>
+        <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Ironclad access is back</h2>
         <p>Hi ${esc(clientName||'there')}, your coach just re-granted your app access with a new temporary password.</p>
-        <p><a href="https://myretrostrong.com" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Retro Strong &rarr;</a></p>
+        <p><a href="https://myretrostrong.com" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
         <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Email</td><td><b>${esc(email)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${esc(pw)}</b></td></tr></table>
         <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
         </div>`;
-      try{ await fetch(WORKER+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,subject:'Your Retro Strong login was reset',html,client_id:+client_id,context:'Portal access re-granted'})}); }catch(e){}
+      try{ await fetch(WORKER+'/reports/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:email,subject:'Your Ironclad login was reset',html,client_id:+client_id,context:'Portal access re-granted'})}); }catch(e){}
     }
     loadActiveUsers();
   }catch(e){ btn.textContent='Re-grant'; btn.disabled=false; }
@@ -361,7 +361,7 @@ async function loadDailyContent(){
       '<div class="cs" style="text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Word of the Day</div>'+
       '<div style="font-size:13px;color:#D1D5DB;font-style:italic;margin-bottom:2px">\u201c'+esc(c.quote||'')+'\u201d</div>'+
       '<div style="font-size:11px;color:#9CA3AF;margin-bottom:10px">'+esc(c.quote_author||'Unknown')+'</div>'+
-      '<div class="cs" style="text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Inside Retro</div>'+
+      '<div class="cs" style="text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:4px">Inside Ironclad</div>'+
       '<div style="font-weight:700;font-size:13px;color:#fff;margin-bottom:2px">'+esc(c.news_headline||'')+'</div>'+
       '<div style="font-size:12px;color:#D1D5DB">'+esc(c.news_blurb||'')+'</div>'+
       '</div>';

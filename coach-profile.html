@@ -15,7 +15,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Coach Profile — Retro Strong</title>
+<title>Coach Profile — Ironclad</title>
 <link rel="icon" type="image/x-icon" href="icons-strong/favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
@@ -51,7 +51,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <body>
 
 <div class="topbar">
-  <img src="icons-strong/apple-touch-icon.png" alt="Retro Strong" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
+  <img src="icons-strong/apple-touch-icon.png" alt="Ironclad" style="height:34px;width:34px;border-radius:8px;flex-shrink:0;object-fit:cover">
   <a href="member-app.html?forceGuest=1">&larr; Back</a>
 </div>
 
@@ -95,7 +95,7 @@ function renderView(staff, profile, isMine) {
   if (staff.hire_date) {
     const days = Math.floor((new Date() - new Date(staff.hire_date)) / 86400000);
     const years = days / 365;
-    tenureText = years >= 1 ? `${years.toFixed(1)} yrs with Retro` : `${Math.max(1, Math.round(days/30))} mo with Retro`;
+    tenureText = years >= 1 ? `${years.toFixed(1)} yrs with Ironclad` : `${Math.max(1, Math.round(days/30))} mo with Ironclad`;
   }
   const statsRow = (tenureText || staff.sessions_coached != null) ? `
     <div style="display:flex;gap:10px;justify-content:center;margin:12px 0">
@@ -157,7 +157,7 @@ function renderView(staff, profile, isMine) {
     </div>
     ` : ''}
     ` : ''}
-    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--ink3,#6B7280);display:flex;align-items:center;justify-content:center;gap:5px"><img src="icons-strong/icon-192.png" alt="" style="width:14px;height:14px;border-radius:3px" onerror="this.style.display='none'"> Powered by <b style="color:var(--red,#E0192B)">Retro Strong</b></div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--ink3,#6B7280);display:flex;align-items:center;justify-content:center;gap:5px"><img src="icons-strong/icon-192.png" alt="" style="width:14px;height:14px;border-radius:3px" onerror="this.style.display='none'"> Powered by <b style="color:var(--red,#E0192B)">Ironclad</b></div>
   `;
   window._currentStaff = staff;
   window._currentProfile = profile;
@@ -318,7 +318,7 @@ async function loadMyShiftsProfile(staffId, coachName, role) {
       date: s.shift_date, label: 'Shift — ' + (s.role||'Work'), sub: s.start_time+'–'+s.end_time, href: null, color: '#7C3AED'
     }));
     sessions.forEach(s => items.push({
-      date: s.scheduled_date, label: s.program_name || 'Training Session', sub: 'Retro One Schedule', href: 'gym-floor.html?client='+s.client_id, color: 'var(--red,#E0192B)'
+      date: s.scheduled_date, label: s.program_name || 'Training Session', sub: 'Ironclad Schedule', href: 'gym-floor.html?client='+s.client_id, color: 'var(--red,#E0192B)'
     }));
     const apptHref = (a) => {
       if (a.appointment_type === 'training_session') return 'gym-floor.html' + (a.client_id ? '?client='+a.client_id : '');
@@ -362,7 +362,7 @@ function syncCalendarToPhone(staffId) {
   const url = WORKER + '/calendar/ics?staff_id=' + staffId;
   const webcalUrl = url.replace(/^https?:\/\//, 'webcal://');
   window.location.href = webcalUrl;
-  setTimeout(() => { alert('Synced. To remove this later: open your phone\'s Calendar app, go to Settings, find "Retro Strong" under your added calendars, and unsubscribe/remove it -- wont touch anything else on your calendar.\n\nIf nothing opened just now, copy this link into your calendar apps Subscribe by URL option instead:\n\n' + url); }, 800);
+  setTimeout(() => { alert('Synced. To remove this later: open your phone\'s Calendar app, go to Settings, find "Ironclad" under your added calendars, and unsubscribe/remove it -- wont touch anything else on your calendar.\n\nIf nothing opened just now, copy this link into your calendar apps Subscribe by URL option instead:\n\n' + url); }, 800);
 }
 
 async function loadGymEventsProfile() {

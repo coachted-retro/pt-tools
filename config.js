@@ -1,4 +1,4 @@
-// Retro Strong / PT Tools -- shared Worker config
+// Ironclad / PT Tools -- shared Worker config
 // Single source of truth for which Worker this club's frontend talks to.
 //
 // Default (Fairless Hills, and anything else not recognized below): calls

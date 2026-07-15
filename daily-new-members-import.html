@@ -19,7 +19,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
-<title>Daily New Members Import — Retro Strong</title>
+<title>Daily New Members Import — Ironclad</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--lgreen:#E3F5EC;--lamber:#FBEFD9;--lred:#FDEAEC;}
@@ -95,7 +95,7 @@ function parseReport(){
   lines.forEach(line => {
     const m = line.match(rowRe);
     if (!m) {
-      if (/Club Name|Agreement #|Members By Join Date|Page \d|^\d+$|Retro Strong/i.test(line)) return;
+      if (/Club Name|Agreement #|Members By Join Date|Page \d|^\d+$|Ironclad/i.test(line)) return;
       unparsed.push(line);
       return;
     }

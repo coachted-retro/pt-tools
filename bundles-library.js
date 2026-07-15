@@ -3,7 +3,7 @@
 // Used by member-app.html (client-facing Training tab) AND coach-crm.html
 // (coach's program picker when scheduling a client). Do not fork this list --
 // before this file existed, member-app.html and coach-crm.html each had their
-// own separate, drifting copy (member-app had Retro Iron Protocol + Retro Ironman
+// own separate, drifting copy (member-app had Ironclad Iron Protocol + Ironclad Ironman
 // Circuit that coaches never saw; coach-crm had 11 equipment-based bundles clients
 // never saw). Consolidated July 14, 2026 per Ted -- add new bundles here once,
 // both apps pick them up automatically.
@@ -390,7 +390,7 @@ const BUNDLES = [
   {
     id: "retro_iron_protocol",
     icon: "🦾",
-    name: "Retro Iron Protocol",
+    name: "Ironclad Iron Protocol",
     desc: "Elite 5-day mass and strength split for advanced lifters chasing maximum growth. Every muscle group trained twice a week. Not for beginners — every set pushes close to failure.",
     days: "5 days / week",
     accent: "#111827",
@@ -481,7 +481,7 @@ const BUNDLES = [
   {
     id: "retro_ironman_circuit",
     icon: "🔥",
-    name: "Retro Ironman Circuit",
+    name: "Ironclad Ironman Circuit",
     desc: "One hour, all-out full-body conditioning. Tire flips, kettlebells, battle ropes, box jumps, sprints — built for the PTC turf room. Hardcore by design, not for the faint of heart.",
     days: "60 min · as often as you can handle it",
     accent: "#DC2626",

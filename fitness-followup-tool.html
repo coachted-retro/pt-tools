@@ -1938,7 +1938,7 @@ function buildPrompt() {
   const scanNotes = gv('scan-notes');
   const priorIntakeContext = PREV_INTAKE_NOTES ? ('\nPRIOR INTAKE ON FILE: ' + PREV_INTAKE_NOTES) : '';
  
-  return `You are a Retro Strong personal training advisor conducting a 6-week follow-up re-engagement consultation. Generate a SHORT, scannable member summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 3 minutes.
+  return `You are a Ironclad personal training advisor conducting a 6-week follow-up re-engagement consultation. Generate a SHORT, scannable member summary using ONLY the real data below. No placeholders. This will be reviewed on screen with the member in under 3 minutes.
  
 MEMBER: ${name} | Age: ${age} | Gender: ${gender}
 ORIGINAL GOALS: ${originalGoals}
@@ -2405,7 +2405,7 @@ function resetForm(){
 
 // === REPORT ENGINE ===
 // ============================================================
-// RETRO STRONG — REPORT ENGINE (injected into all 3 tools)
+// IRONCLAD — REPORT ENGINE (injected into all 3 tools)
 // Handles: PDF generation via jsPDF + Gmail compose open
 // ============================================================
 
@@ -2439,7 +2439,7 @@ Let's Get Strong Together
 Ted Scholl
 Coach & Fitness Advisor
 
-Retro Strong
+Ironclad
 516 Lincoln Highway
 Fairless Hills, PA 19030
 215-295-2004`;
@@ -2447,7 +2447,7 @@ Fairless Hills, PA 19030
 // ---- AI REPORT GENERATION ----
 async function generateReportContent(reportType, clientData, assessmentSummary) {
   const systemPrompts = {
-    welcome: `You are writing a Welcome Packet for a new personal training client at Retro Strong. 
+    welcome: `You are writing a Welcome Packet for a new personal training client at Ironclad. 
 Generate a professional, warm, motivating welcome report. 
 STRICT RULES — never violate:
 - DO include: InBody scan analysis, current baseline stats, where they stand vs their goal, 2-3 specific barriers between them and success, what the first training phase will focus on (general, e.g. "building movement quality and foundation strength"), why having a coach accelerates results vs going solo, an inspiring closing statement tied to their specific goal.
@@ -2455,14 +2455,14 @@ STRICT RULES — never violate:
 - Tone: warm, expert, premium. Makes them feel they made the right decision enrolling.
 - Format: use plain section headers in ALL CAPS, no markdown symbols, no emojis, no asterisks. Plain text with line breaks only.`,
 
-    thankyou: `You are writing a Thank You / Body Composition Results Letter for a prospect who attended a consultation but did not enroll in personal training at Retro Strong.
+    thankyou: `You are writing a Thank You / Body Composition Results Letter for a prospect who attended a consultation but did not enroll in personal training at Ironclad.
 STRICT RULES — never violate:
 - DO include: genuine thanks for their time, a summary of their InBody results in plain language, 2-3 specific insights from their body composition data, what the data tells us about where they are vs where they want to be, what unguided progress typically looks like without structured coaching, a soft invitation to reconsider when the time is right.
 - DO NOT include: specific workout plans, macro targets, meal plans, or any prescriptive content that removes the need for coaching.
 - Tone: appreciative, insightful, zero pressure. They should leave feeling informed and respected — and quietly wishing they had signed up.
 - Format: plain section headers ALL CAPS, no markdown, no emojis. Plain text only.`,
 
-    monthly: `You are writing a Monthly Progress Report for an active personal training client at Retro Strong.
+    monthly: `You are writing a Monthly Progress Report for an active personal training client at Ironclad.
 STRICT RULES — never violate:
 - DO include: this month vs last month InBody comparison with real numbers, training consistency assessment, nutrition adherence summary, recovery and wellbeing snapshot, key wins this month, one specific focus area for next month, motivating closing statement.
 - DO NOT include: specific workout prescriptions, sets/reps/weights, specific macro targets or calorie numbers, meal plans. These are coaching deliverables — the report documents progress, not the program.
@@ -2526,7 +2526,7 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('RETRO STRONG', margin, 35);
+  doc.text('IRONCLAD', margin, 35);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('  |  516 Lincoln Highway, Fairless Hills, PA 19030  |  215-295-2004', margin, 52);
@@ -2643,7 +2643,7 @@ function buildPDF(reportType, clientName, reportContent, clientData) {
   doc.text('"Progress is built one month at a time. Stay consistent, stay committed."', margin + 10, y);
   y += 12;
   doc.setFont('helvetica', 'normal');
-  doc.text('Coach Ted Scholl  |  Retro Strong  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
+  doc.text('Coach Ted Scholl  |  Ironclad  |  215-295-2004  |  https://tr.ee/myfitnessmeeting', margin + 10, y);
 
   // Save locally as a backup copy, and return base64 for automated email attachment
   const filename = clientName.replace(/\s+/g, '_') + '_' + (titles[reportType] || 'Report').replace(/\s+/g, '_') + '_' + todayET() + '.pdf';
@@ -2706,8 +2706,8 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
 
         const emailBody = buildEmailBody(reportType, clientData.name, clientData, assessmentSummary);
         const subjects = {
-          welcome: 'Welcome to Retro Strong Elite Training — Your Welcome Packet',
-          thankyou: 'Your Body Composition Results — Retro Strong',
+          welcome: 'Welcome to Ironclad Elite Training — Your Welcome Packet',
+          thankyou: 'Your Body Composition Results — Ironclad',
           monthly: 'Your Monthly Progress Report — ' + new Date().toLocaleDateString('en-US', {month:'long', year:'numeric'})
         };
         if (!clientData.email) {
@@ -2758,7 +2758,7 @@ function buildInternalRecapPDF(intakeLabel, clientName, advisor, sections, asses
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('RETRO STRONG', margin, 35);
+  doc.text('IRONCLAD', margin, 35);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('  |  INTERNAL RECAP — STAFF ONLY, NOT FOR CLIENT DISTRIBUTION', margin, 52);

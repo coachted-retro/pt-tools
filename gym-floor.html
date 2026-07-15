@@ -1781,6 +1781,18 @@ function saveSession(){
   (EARNED||[]).forEach(b=>{
     qpush({op:'insert',table:'client_wins',values:{client_id:SESSION.client_id,headline:b.icon+' '+b.headline,detail:b.detail,win_type:b.win_type,source:'gym_floor',visible:1,created_at:new Date().toISOString()}});
   });
+  // Finishing a session here used to leave the matching agenda entry
+  // sitting untouched, still showing as scheduled/not-done, coaches had
+  // to separately go find it in the agenda and click Mark Done by hand.
+  // If this session came from a real scheduled entry, close it out here
+  // automatically, and carry the session note over the same way a manual
+  // Mark Done with a note does.
+  if(SESSION.scheduledSessionId){
+    qpush({op:'update',table:'scheduled_sessions',values:{status:'done'},where:{id:SESSION.scheduledSessionId}});
+    if(SESSION.workoutNote){
+      qpush({op:'insert',table:'coach_touchpoints',values:{coach_name:COACH_PARAM||'',client_id:SESSION.client_id,type:'note',body:SESSION.workoutNote}});
+    }
+  }
   localStorage.removeItem(LS_ACTIVE);SESSION=null;
   toast(navigator.onLine?'Session saved':'Saved offline, will sync');
   show('scr-setup');

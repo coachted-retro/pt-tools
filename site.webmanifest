@@ -1,7 +1,7 @@
 {
-  "name": "Retro Strong",
-  "short_name": "Retro Strong",
-  "description": "Retro Strong — training, progress, and coaching, all in one place.",
+  "name": "Ironclad",
+  "short_name": "Ironclad",
+  "description": "Ironclad — training, progress, and coaching, all in one place.",
   "start_url": "./member-app.html",
   "display": "standalone",
   "background_color": "#F0F2F5",

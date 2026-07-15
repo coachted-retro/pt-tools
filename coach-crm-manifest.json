@@ -1,7 +1,7 @@
 {
   "name": "Coach Portal",
   "short_name": "Coach CRM",
-  "description": "Retro Strong — coach's client list, schedule, and notes",
+  "description": "Ironclad — coach's client list, schedule, and notes",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

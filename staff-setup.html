@@ -20,7 +20,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
-<title>Staff Roster — Retro Strong</title>
+<title>Staff Roster — Ironclad</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -289,7 +289,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 <div class="modal-overlay" id="loginModalOverlay">
   <div class="modal">
     <h2>Set Staff Login</h2>
-    <p style="font-size:13px;color:var(--muted,#6B7280);margin:0 0 14px">This is separate from Edit — it's what lets them sign into Retro Strong as staff. Give them the email and PIN directly; they can change the PIN themselves after logging in.</p>
+    <p style="font-size:13px;color:var(--muted,#6B7280);margin:0 0 14px">This is separate from Edit — it's what lets them sign into Ironclad as staff. Give them the email and PIN directly; they can change the PIN themselves after logging in.</p>
     <input type="hidden" id="loginStaffId">
     <div class="field">
       <label>Login Email</label>
@@ -681,7 +681,7 @@ async function saveEmployee() {
 
 function buildAppShareEmailHtml(emp, workEmail, newPin, appUrl, isCoach){
   return `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-    <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Retro Strong app is ready, ${esc(emp.name.split(' ')[0])}</h2>
+    <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Ironclad app is ready, ${esc(emp.name.split(' ')[0])}</h2>
     <p>${isCoach ? "Here's your direct link — it opens straight to your agenda, no need to pick your name each time." : "Here's your link to sign in to the staff app."}</p>
     <p><a href="${appUrl}" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open the App &rarr;</a></p>
     <p style="font-size:13px;color:#6B7280">Tip: open that link on your phone, then use your browser's "Add to Home Screen" option so it works like a real app icon.</p>
@@ -731,7 +731,7 @@ async function shareAppForEmployee(emp, statusEl){
     const html = buildAppShareEmailHtml(emp, workEmail, newPin, appUrl, isCoach);
     const er = await fetch(WORKER + '/reports/email', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ to: personalEmail, subject: 'Your Retro Strong app is ready', html, context: 'Staff app access shared' })
+      body: JSON.stringify({ to: personalEmail, subject: 'Your Ironclad app is ready', html, context: 'Staff app access shared' })
     });
     const ed = await er.json();
     const resultMsg = ed.sent ? ('Emailed ' + personalEmail + '.') : ('Login set, but email did not send (' + (ed.reason||ed.error||'unknown') + '). Share it manually — PIN: ' + newPin);

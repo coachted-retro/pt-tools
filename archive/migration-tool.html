@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
-<title>Retro Strong · Drive Migration Tool</title>
+<title>Ironclad · Drive Migration Tool</title>
 <style>
   :root {
     --bg: #0d1117; --surface: #161b22; --surface2: #1c2128;
@@ -122,7 +122,7 @@
 
 <div class="header">
   <div>
-    <div class="logo">🏋️ Retro Strong</div>
+    <div class="logo">🏋️ Ironclad</div>
     <div class="title">Drive Migration Tool</div>
     <div class="subtitle">Migrate Google Sheets data to organized Drive folders — one folder per client</div>
   </div>
@@ -174,7 +174,7 @@
     <div class="card-title">Step 2 — Sheet Configuration</div>
     <div class="sheet-row">
       <div class="field">
-        <label>Retro Strong Database ID</label>
+        <label>Ironclad Database ID</label>
         <input id="db-sheet" value="1sSLy4Zuai4Vrh1GjyRXgfXoLCBLDuLYfLdKz3VWiT4g">
       </div>
       <div class="field">
@@ -431,7 +431,7 @@ function renderPreview() {
   `).join('');
 
   // Folder tree
-  let tree = '<span class="folder">📁 Retro Strong PT</span>\n';
+  let tree = '<span class="folder">📁 Ironclad PT</span>\n';
   tree += '├── <span class="folder">📁 Active Clients</span>\n';
   migrationPlan.activeClients.slice(0, 8).forEach((c, i) => {
     const isLast = i === migrationPlan.activeClients.length - 1 || i === 7;
