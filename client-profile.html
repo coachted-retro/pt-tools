@@ -173,6 +173,18 @@
 function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date()); }
 
 const WORKER=RETRO_WORKER_URL;
+// No secret sits in this file anymore -- the real admin key lives only
+// in your browser's local storage on this device, entered once here or
+// on any other admin page, they all share it. If a request ever comes
+// back Unauthorized, that's this being empty or stale, not a mystery.
+function getAdminKey(){
+  let k = localStorage.getItem('ironclad_admin_key') || '';
+  if (!k) {
+    k = prompt('Enter the admin key for this Worker (set in Cloudflare under Settings > Variables and Secrets):') || '';
+    if (k) localStorage.setItem('ironclad_admin_key', k);
+  }
+  return k;
+}
 const CLUB_SLUG=(new URLSearchParams(window.location.search).get('club')||'fairless-hills').toLowerCase();
 const CLUB_GYM_ID={'fairless-hills':1,'forest-hills':2,'glendale':3,'jersey-city':4,'cedar-city':5,'rego-park':6,'fairfield':7,'tottenville':8,'mt-olive':9,'whippany':10}[CLUB_SLUG]||1;
 
@@ -322,7 +334,7 @@ async function sendClientApp(clientId){
   status.textContent = 'Sending...';
   const tempPassword = genTempPassword();
   try {
-    const provisionRes = await fetch(WORKER + '/auth/provision', { method:'POST', headers:{'Content-Type':'application/json','X-Admin-Key':'retro-admin-2024'},
+    const provisionRes = await fetch(WORKER + '/auth/provision', { method:'POST', headers:{'Content-Type':'application/json','X-Admin-Key':getAdminKey()},
       body: JSON.stringify({ client_id: clientId, email, password: tempPassword }) });
     const provisionData = await provisionRes.json();
     if (!provisionData.provisioned && !provisionData.ok) { status.textContent = 'Error: ' + (provisionData.error || 'could not grant access'); return; }
@@ -426,6 +438,44 @@ async function sendCheckinNow(clientId){
   } catch(e) {
     btn.disabled = false; btn.textContent = 'Send Check-In Email Now';
     status.style.color = 'var(--red,#B0121F)'; status.textContent = 'Could not reach the server.';
+  }
+}
+
+let DELETE_CLIENT_ID = null;
+let DELETE_CLIENT_NAME = null;
+function openDeleteClient(id, name){
+  DELETE_CLIENT_ID = id;
+  DELETE_CLIENT_NAME = name;
+  document.getElementById('del-client-name').textContent = name;
+  document.getElementById('del-confirm-input').value = '';
+  document.getElementById('delete-status').textContent = '';
+  document.getElementById('deleteModal').classList.add('open');
+}
+function closeDeleteClient(){
+  document.getElementById('deleteModal').classList.remove('open');
+  DELETE_CLIENT_ID = null;
+}
+async function confirmDeleteClient(){
+  const status = document.getElementById('delete-status');
+  const btn = document.getElementById('confirm-delete-btn');
+  const typed = document.getElementById('del-confirm-input').value.trim();
+  if (!typed) { status.style.color='#B0121F'; status.textContent='Type their name exactly to confirm.'; return; }
+  btn.disabled = true; btn.textContent = 'Deleting...';
+  status.style.color = 'var(--muted,#6B7280)'; status.textContent = 'Deleting...';
+  try {
+    const r = await fetch(WORKER + '/clients/delete', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ client_id: DELETE_CLIENT_ID, confirm_name: typed }) });
+    const d = await r.json();
+    btn.disabled = false; btn.textContent = 'Permanently Delete';
+    if (d.ok !== false && d.deleted) {
+      status.style.color = '#1E9E5A'; status.textContent = 'Deleted.';
+      setTimeout(() => { window.location.href = 'client-management.html'; }, 900);
+    } else {
+      status.style.color = '#B0121F'; status.textContent = d.error || 'Could not delete, try again.';
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Permanently Delete';
+    status.style.color = '#B0121F'; status.textContent = 'Could not reach the server.';
   }
 }
 
@@ -760,6 +810,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<div style="display:flex;gap:6px" id="rosterNav"></div>'+
     '<button class="btn" onclick="openEdit()">Edit</button>'+
     '<a href="coach-client-profile.html?client='+client.id+'" class="btn" style="text-decoration:none;display:inline-block">Coach View</a>'+
+    '<button class="btn" onclick="openDeleteClient('+client.id+',\''+esc(nm).replace(/'/g,"\\'")+'\')" style="background:#fff;color:#B0121F;border:1.5px solid #B0121F">Delete</button>'+
     '</div></div>';
 
   // actions
@@ -1749,6 +1800,26 @@ function renderMuscleBalance(scan){
     <div class="wo-box-foot">
       <button class="btn" onclick="closeWoModal()">Cancel</button>
       <button class="btn red" onclick="saveSession()">Save Session</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="deleteModal">
+  <div class="box">
+    <div class="mh"><h3 style="color:#B0121F">Delete Client</h3><button class="x" onclick="closeDeleteClient()">&times;</button></div>
+    <div class="mb" style="grid-template-columns:1fr">
+      <div style="background:#FEF2F2;border:1px solid #B0121F;border-radius:8px;padding:14px;font-size:13px;line-height:1.5">
+        <b>This cannot be undone.</b> Deleting <span id="del-client-name" style="font-weight:700"></span> permanently removes their profile and everything tied to it, workouts, check-ins, notes, messages, meal plans, photos, appointments, everything. This is not an archive, there's no way to bring it back afterward.
+      </div>
+      <div style="margin-top:14px">
+        <label style="font-size:12px;font-weight:700;color:var(--muted,#6B7280);text-transform:uppercase">Type their full name to confirm</label>
+        <input id="del-confirm-input" autocomplete="off" style="width:100%;margin-top:6px;padding:10px 12px;border:1.5px solid var(--line,#E4E7EC);border-radius:8px;font-size:14px;box-sizing:border-box">
+      </div>
+      <div id="delete-status" style="font-size:13px;margin-top:10px"></div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeDeleteClient()">Cancel</button>
+      <button class="btn" id="confirm-delete-btn" onclick="confirmDeleteClient()" style="background:#B0121F;color:#fff;border-color:#B0121F">Permanently Delete</button>
     </div>
   </div>
 </div>

@@ -205,7 +205,16 @@
 <script>
 
 const WORKER=RETRO_WORKER_URL;
-const ADMIN_KEY='retro-admin-2024';
+// No secret sits in this file anymore -- the real admin key lives only
+// in your browser's local storage on this device, entered once. If a
+// request ever comes back Unauthorized, that's this being empty or
+// stale, not a mystery -- clearing it and re-entering the real key
+// fixes it immediately.
+let ADMIN_KEY = localStorage.getItem('ironclad_admin_key') || '';
+if (!ADMIN_KEY) {
+  ADMIN_KEY = prompt('Enter the admin key for this Worker (set in Cloudflare under Settings > Variables and Secrets):') || '';
+  if (ADMIN_KEY) localStorage.setItem('ironclad_admin_key', ADMIN_KEY);
+}
 
 function log(id, msg, cls){
   const el=document.getElementById(id); el.classList.add('show');

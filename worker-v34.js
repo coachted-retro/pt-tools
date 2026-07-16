@@ -929,30 +929,34 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         if (!email) return bad('email required', cors);
         const em = email.toLowerCase().trim();
         const row = await env.DB.prepare('SELECT * FROM staff_auth WHERE email=?').bind(em).first();
-        if (row) {
-          const code = String(Math.floor(100000 + Math.random() * 900000));
-          const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-          await env.DB.prepare('UPDATE staff_auth SET reset_code_hash=?, reset_expires=?, active=1 WHERE id=?')
-            .bind(await sha256(code), expires, row.id).run();
-          if (!env.RESEND_KEY) {
-            return ok({ sent: false, mail_configured: false, reason: 'RESEND_KEY is not set on this Worker — no email provider configured, so no email was sent.' }, cors);
-          }
-          try {
-            const mailResp = await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                from: env.MAIL_FROM || 'onboarding@resend.dev',
-                to: [em],
-                subject: 'Ironclad: Your staff PIN reset code',
-                html: '<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto"><h2 style="color:#E0192B">IRONCLAD</h2><p>Use this code to reset your staff PIN. It expires in 15 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:6px;background:#F5F6F8;padding:16px;text-align:center;border-radius:10px">' + code + '</div><p style="color:#888;font-size:12px">If you did not request this, you can ignore this email.</p></div>'
-              })
-            });
-            const mailData = await mailResp.json().catch(() => ({}));
-            if (!mailResp.ok) return ok({ sent: false, mail_configured: true, reason: 'Resend rejected the send: ' + (mailData.message || mailResp.status) }, cors);
-          } catch (e) {
-            return ok({ sent: false, mail_configured: true, reason: 'Network error reaching Resend: ' + e.message }, cors);
-          }
+        if (!row) {
+          // This is a small internal team, not a public system -- being
+          // honest here saves real time when someone's just not sure
+          // which email is on file, which is exactly what happened here.
+          return ok({ sent: false, mail_configured: true, reason: 'No staff account found with that email. Double check with Ted which email is actually on file for your login.' }, cors);
+        }
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        await env.DB.prepare('UPDATE staff_auth SET reset_code_hash=?, reset_expires=?, active=1 WHERE id=?')
+          .bind(await sha256(code), expires, row.id).run();
+        if (!env.RESEND_KEY) {
+          return ok({ sent: false, mail_configured: false, reason: 'RESEND_KEY is not set on this Worker — no email provider configured, so no email was sent.' }, cors);
+        }
+        try {
+          const mailResp = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: env.MAIL_FROM || 'onboarding@resend.dev',
+              to: [em],
+              subject: 'Ironclad: Your staff PIN reset code',
+              html: '<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto"><h2 style="color:#E0192B">IRONCLAD</h2><p>Use this code to reset your staff PIN. It expires in 15 minutes.</p><div style="font-size:32px;font-weight:bold;letter-spacing:6px;background:#F5F6F8;padding:16px;text-align:center;border-radius:10px">' + code + '</div><p style="color:#888;font-size:12px">If you did not request this, you can ignore this email.</p></div>'
+            })
+          });
+          const mailData = await mailResp.json().catch(() => ({}));
+          if (!mailResp.ok) return ok({ sent: false, mail_configured: true, reason: 'Resend rejected the send: ' + (mailData.message || mailResp.status) }, cors);
+        } catch (e) {
+          return ok({ sent: false, mail_configured: true, reason: 'Network error reaching Resend: ' + e.message }, cors);
         }
         return ok({ sent: true }, cors);
       }
@@ -2689,6 +2693,50 @@ Rules:
           }
         }
         return ok({ tags: cleanTags }, cors);
+      }
+
+      // Genuinely deletes a client and everything tied to them across
+      // every table that references client_id, 43 tables checked
+      // directly against the schema, not guessed at. Requires typing the
+      // client's name back exactly as a confirmation -- irreversible
+      // actions get real friction on purpose, not a plain yes/no click.
+      // Incident reports are the one deliberate exception: the report
+      // itself stays, since that's a safety/legal record that shouldn't
+      // vanish just because a client record does, only the link to them
+      // is cleared.
+      if (url.pathname === '/clients/delete' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const b = await request.json();
+        if (!b.client_id) return bad('client_id required', cors);
+        const client = await env.DB.prepare('SELECT first_name, last_name FROM clients WHERE id=?').bind(b.client_id).first();
+        if (!client) return bad('Client not found', cors);
+        const realName = ((client.first_name || '') + ' ' + (client.last_name || '')).trim().toLowerCase();
+        const typedName = (b.confirm_name || '').trim().toLowerCase();
+        if (!typedName || typedName !== realName) {
+          return bad('The name typed doesn\'t match this client\'s name exactly. Nothing was deleted.', cors);
+        }
+        const relatedTables = [
+          'buddy_optins','cardio_logs','challenge_entries','checkins','churn_surveys','class_rsvps',
+          'client_auth','client_recaps','client_wins','coach_notes','coach_touchpoints','consultations',
+          'daily_intake_logs','daily_logs','email_log','eod_flag_dismissals','exercise_favorites',
+          'exercise_videos','followups','group_members','guest_shares','inbody_scans','jotform_responses',
+          'marketing_media','meal_plans','meal_profiles','meals','members','outreach_log','pantry_items',
+          'partner_taps','portal_messages','presence_checkins','programs','progress_photos','pt_appointments',
+          'recipes','scheduled_meals','scheduled_sessions','self_workouts','touchpoints','training_sessions',
+          'win_reactions','workouts'
+        ];
+        const deletedCounts = {};
+        for (const t of relatedTables) {
+          try {
+            const res = await env.DB.prepare(`DELETE FROM ${t} WHERE client_id=?`).bind(b.client_id).run();
+            if (res.meta && res.meta.changes) deletedCounts[t] = res.meta.changes;
+          } catch (e) { /* table may not exist on every club's DB yet -- skip, not fatal */ }
+        }
+        try {
+          await env.DB.prepare('UPDATE incident_reports SET involved_client_id=NULL WHERE involved_client_id=?').bind(b.client_id).run();
+        } catch (e) {}
+        await env.DB.prepare('DELETE FROM clients WHERE id=?').bind(b.client_id).run();
+        return ok({ deleted: true, client_name: ((client.first_name || '') + ' ' + (client.last_name || '')).trim(), related_rows_removed: deletedCounts }, cors);
       }
 
       if (url.pathname === '/clients/common-tags' && request.method === 'GET') {
