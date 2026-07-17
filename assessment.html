@@ -143,7 +143,14 @@ textarea{resize:vertical;min-height:70px;line-height:1.5}
     <div class="nutrition-note" id="outlookNote"></div>
     <div class="nutrition-note" id="nutritionNote"></div>
     <div class="nutrition-note" id="supplementNote"></div>
-    <a href="" id="ctaBtn" class="submit-btn" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box">Start My Membership</a>
+    <div class="section-label" style="margin-top:4px">Choose Your Plan</div>
+    <a href="" id="ctaAdvantage" class="submit-btn" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;position:relative">
+      Start My Membership — Annual <span style="font-weight:400">($189/yr)</span>
+    </a>
+    <div class="hint" style="text-align:center;margin:2px 0 12px;color:var(--green);font-weight:700">Best value — 2 months free vs. paying monthly</div>
+    <a href="" id="ctaFlex" class="submit-btn secondary" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;background:#fff;color:var(--red);border:1.5px solid var(--red)">
+      Or Pay Monthly ($18.99/mo)
+    </a>
     <div class="hint" style="text-align:center;margin:10px 0 6px">Cancel anytime. You'll get your login the moment payment goes through.</div>
     <div class="footer-badge">Powered by <b>Ironclad</b></div>
   </div>
@@ -151,12 +158,11 @@ textarea{resize:vertical;min-height:70px;line-height:1.5}
 
 <script>
 const WORKER = RETRO_WORKER_URL;
-// Set this to the Payment Link URL from Square Dashboard once the
-// subscription plan is created (Items > Payment Links, or the Checkout
-// API's CreatePaymentLink for the plan variation). Until it's a real
-// Square URL, the CTA button is left pointed nowhere rather than faking
-// a working checkout.
-const SQUARE_CHECKOUT_URL = '';
+// Live Square "Take a payment" checkout links (Payments > Online Checkout
+// > Add Button to Website), one per plan, each set to Exact amount +
+// recurring Frequency. Update here if either link is ever regenerated.
+const SQUARE_CHECKOUT_URL_ADVANTAGE = 'https://square.link/u/BKlatLgi';
+const SQUARE_CHECKOUT_URL_FLEX = 'https://square.link/u/NjTJtV70';
 let SELECTED = { goal: null, experience: null, days: null };
 
 function wireChoices(groupId, key) {
@@ -267,14 +273,8 @@ async function submitAssessment(e) {
       `<b>Nutrition:</b> ${NUTRITION_NOTES[SELECTED.goal]}`;
     document.getElementById('supplementNote').innerHTML = buildSupplementNote();
 
-    const ctaBtn = document.getElementById('ctaBtn');
-    if (SQUARE_CHECKOUT_URL) {
-      ctaBtn.href = SQUARE_CHECKOUT_URL;
-    } else {
-      ctaBtn.href = '#';
-      ctaBtn.textContent = 'A Coach Will Reach Out to Get You Started';
-      ctaBtn.onclick = (e) => e.preventDefault();
-    }
+    document.getElementById('ctaAdvantage').href = SQUARE_CHECKOUT_URL_ADVANTAGE;
+    document.getElementById('ctaFlex').href = SQUARE_CHECKOUT_URL_FLEX;
 
     document.getElementById('assessForm').style.display = 'none';
     document.getElementById('resultsCard').style.display = 'block';
