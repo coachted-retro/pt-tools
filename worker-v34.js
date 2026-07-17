@@ -360,6 +360,49 @@ export default {
         return ok({ id: candidateId, submitted: true }, cors);
       }
 
+      // ── PUBLIC ASSESSMENT / LEAD INTAKE ──────────────────────────
+      // Public-facing, unauthenticated by design (like /candidate/apply
+      // above) -- but only ever writes the specific fields listed here,
+      // never a raw pass-through to the generic /db insert, so nothing
+      // else on the clients table is exposed to the open internet.
+      if (url.pathname === '/assessment/submit' && request.method === 'POST') {
+        if (!env.DB) return bad('D1 binding "DB" not found.', cors);
+        const b = await request.json().catch(() => ({}));
+        const firstName = (b.first_name || '').trim();
+        const lastName = (b.last_name || '').trim();
+        if (!firstName) return bad('Name is required', cors);
+        if (!b.phone && !b.email) return bad('Phone or email is required', cors);
+        const now = new Date().toISOString();
+
+        const summaryLines = [
+          'Source: Online Assessment',
+          b.experience ? `Experience: ${b.experience}` : null,
+          b.days_per_week ? `Availability: ${b.days_per_week}` : null,
+          b.injuries ? `Injuries/limitations: ${b.injuries}` : null,
+          b.dietary ? `Dietary: ${b.dietary}` : null,
+          b.recommended_bundle_name ? `Recommended program: ${b.recommended_bundle_name}` : null,
+        ].filter(Boolean);
+
+        const insertRes = await env.DB.prepare(
+          `INSERT INTO clients (first_name, last_name, email, phone, status, goal_primary, notes, sessions_per_week, onboarding_json, gym_id, created_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+        ).bind(
+          firstName,
+          lastName || null,
+          b.email || null,
+          b.phone || null,
+          'prospect',
+          b.goal_primary || null,
+          summaryLines.join('\n'),
+          b.sessions_per_week || null,
+          JSON.stringify({ answers: b, recommended_bundle_id: b.recommended_bundle_id || null }),
+          1,
+          now, now
+        ).run();
+
+        return ok({ id: insertRes.meta?.last_row_id, submitted: true }, cors);
+      }
+
       if (url.pathname === '/harvest/run') {
         if (!env.DB) return bad('D1 binding "DB" not found.', cors);
         if (!env.OUTSCRAPER_KEY) return bad('OUTSCRAPER_KEY variable not set.', cors);
