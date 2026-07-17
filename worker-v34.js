@@ -263,19 +263,34 @@ async function handleSquarePaymentMade(event, env) {
   }
 }
 
-// Fires on subscription.updated -- only acts when the new status is
-// CANCELED, so mid-cycle updates (card changes, etc.) don't accidentally
-// lock anyone out.
+// Fires on subscription.updated. Square's subscription status moves
+// between ACTIVE, PAUSED, and CANCELED -- all three need to be handled
+// here, not just CANCELED, or a paused subscription (billing stopped)
+// would leave the client's app access turned on indefinitely.
 async function handleSquareSubscriptionUpdated(event, env) {
   const sub = event.data && event.data.object && event.data.object.subscription;
-  if (!sub || sub.status !== 'CANCELED') return;
+  if (!sub || !sub.status) return;
   const customer = await squareGetCustomerEmail(sub.customer_id, env);
   if (!customer || !customer.email_address) return;
   const email = customer.email_address.toLowerCase().trim();
   const client = await env.DB.prepare('SELECT id FROM clients WHERE email=? ORDER BY id DESC LIMIT 1').bind(email).first();
   if (!client) return;
-  await env.DB.prepare('UPDATE clients SET status=? WHERE id=?').bind('canceled', client.id).run();
-  await env.DB.prepare('UPDATE client_auth SET active=0 WHERE client_id=?').bind(client.id).run();
+
+  if (sub.status === 'CANCELED') {
+    await env.DB.prepare('UPDATE clients SET status=? WHERE id=?').bind('canceled', client.id).run();
+    await env.DB.prepare('UPDATE client_auth SET active=0 WHERE client_id=?').bind(client.id).run();
+  } else if (sub.status === 'PAUSED') {
+    // Distinct from 'canceled' so the CRM shows this as a pause, not churn --
+    // same lockout mechanism (client_auth.active=0), different reason.
+    await env.DB.prepare('UPDATE clients SET status=? WHERE id=?').bind('paused', client.id).run();
+    await env.DB.prepare('UPDATE client_auth SET active=0 WHERE client_id=?').bind(client.id).run();
+  } else if (sub.status === 'ACTIVE') {
+    // Covers resuming from a pause -- billing continues on the existing
+    // cycle, so this (not a new invoice.payment_made) is what should
+    // restore access.
+    await env.DB.prepare('UPDATE clients SET status=? WHERE id=?').bind('active_pt', client.id).run();
+    await env.DB.prepare('UPDATE client_auth SET active=1 WHERE client_id=?').bind(client.id).run();
+  }
 }
 
 // MULTI-CLUB HOSTNAME ROUTING. Added July 11 2026 so this one Worker can
