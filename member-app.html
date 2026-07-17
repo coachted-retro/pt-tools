@@ -3105,7 +3105,7 @@ async function sendFitChat(){
 }
 
 function shareWin(headline) {
-  const shareData = { title: 'Ironclad', text: headline + ' — Ironclad', url: 'https://myretrostrong.com/member-app.html' };
+  const shareData = { title: 'Ironclad', text: headline + ' — Ironclad', url: 'https://myironcladfit.com/member-app.html' };
   if (navigator.share) { navigator.share(shareData).catch(()=>{}); }
   else { navigator.clipboard?.writeText(shareData.text + ' ' + shareData.url); alert('Copied to clipboard!'); }
 }
@@ -4317,7 +4317,7 @@ async function toggleGoing(className, classDate, classTime, btn) {
 
 function shareClass(className, classDate) {
   const dateLabel = fmtShortDate(classDate);
-  const shareData = { title: 'Ironclad', text: `I'm going to ${className} ${dateLabel} at Ironclad — come join me! 💪`, url: 'https://myretrostrong.com/member-app.html' };
+  const shareData = { title: 'Ironclad', text: `I'm going to ${className} ${dateLabel} at Ironclad — come join me! 💪`, url: 'https://myironcladfit.com/member-app.html' };
   if (navigator.share) { navigator.share(shareData).catch(()=>{}); }
   else { navigator.clipboard?.writeText(shareData.text + ' ' + shareData.url); alert('Copied to clipboard!'); }
 }
@@ -5397,7 +5397,7 @@ async function shareProgressPhoto() {
       return;
     }
   } catch(e) {}
-  if (navigator.share) { navigator.share({ title: 'Ironclad', text, url: 'https://myretrostrong.com/member-app.html' }).catch(()=>{}); }
+  if (navigator.share) { navigator.share({ title: 'Ironclad', text, url: 'https://myironcladfit.com/member-app.html' }).catch(()=>{}); }
   else { navigator.clipboard?.writeText(text); alert('Copied to clipboard!'); }
 }
 

@@ -2991,7 +2991,7 @@ function buildIntakeRow(decision, freq, length, followUpDays) {
     outcome + (document.getElementById('decline-reason') && document.getElementById('decline-reason').value ? ' - ' + document.getElementById('decline-reason').value : ''),
     '',
     (assessmentText || '').replace(/#{1,6}\s*/g,'').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1').replace(/[\u{1F000}-\u{1FFFF}]/gu,'').replace(/[\u{2600}-\u{27BF}]/gu,'').replace(/SECTION:\s*/gi,'').trim().substring(0, 800),
-    '=HYPERLINK("https://myretrostrong.com/fitness-consultation-tool.html","View Tool")'
+    '=HYPERLINK("https://myironcladfit.com/fitness-consultation-tool.html","View Tool")'
   ];
 }
 function getSheetHeaders() {
@@ -4912,7 +4912,7 @@ function buildDemoUrl() {
   if (heightIn) params.set('height', heightIn);
   // Absolute URL so a phone camera scanning the QR opens the live site directly,
   // regardless of what device/host is currently running this consultation page.
-  return 'https://myretrostrong.com/member-app.html?' + params.toString();
+  return 'https://myironcladfit.com/member-app.html?' + params.toString();
 }
 
 function launchAppDemo() {

@@ -80,7 +80,7 @@
         <button class="btn red" onclick="grantAccess()">Grant Access</button>
       </div>
     </div>
-    <p style="font-size:12px;color:var(--muted);margin:8px 0 0">Client will be prompted to change their password on first sign-in. Portal URL: <b>myretrostrong.com</b></p>
+    <p style="font-size:12px;color:var(--muted);margin:8px 0 0">Client will be prompted to change their password on first sign-in. Portal URL: <b>myironcladfit.com</b></p>
     <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:6px;cursor:pointer"><input type="checkbox" id="ga-send-email" checked> Email the client their login link and temporary password</label>
     <div class="status" id="ga-status"></div>
     <div class="log" id="ga-log"></div>
@@ -283,8 +283,8 @@ async function grantAccess(){
         const html=`<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
           <h2 style="color:#1B4D8C;font-family:Oswald,sans-serif">Welcome to Ironclad, ${esc(clientName)}!</h2>
           <p>Your coach just set you up with the Ironclad app — your workouts, nutrition tracking, schedule, and direct chat with your coach, all in one place.</p>
-          <p><a href="https://myretrostrong.com" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
-          <p style="font-size:13px;color:#6B7280">Or go to <b>myretrostrong.com</b> on your phone and tap "Sign In" — works great as an app if you add it to your home screen.</p>
+          <p><a href="https://myironcladfit.com" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
+          <p style="font-size:13px;color:#6B7280">Or go to <b>myironcladfit.com</b> on your phone and tap "Sign In" — works great as an app if you add it to your home screen.</p>
           <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Email</td><td><b>${esc(email)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${esc(password)}</b></td></tr></table>
           <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
           </div>`;
@@ -321,7 +321,7 @@ async function reGrantAccess(client_id, email, clientName, btn){
       const html=`<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
         <h2 style="color:#1B4D8C;font-family:Oswald,sans-serif">Your Ironclad access is back</h2>
         <p>Hi ${esc(clientName||'there')}, your coach just re-granted your app access with a new temporary password.</p>
-        <p><a href="https://myretrostrong.com" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
+        <p><a href="https://myironcladfit.com" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
         <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Email</td><td><b>${esc(email)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${esc(pw)}</b></td></tr></table>
         <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
         </div>`;

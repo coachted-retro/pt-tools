@@ -883,6 +883,23 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
         return ok({ map }, cors);
       }
 
+      // Lets an authorized staff member's own login (email+PIN, already
+      // verified via /staff/login) stand in for the shared admin key on
+      // pages like staff-setup.html -- so nobody has to know or type the
+      // raw Cloudflare secret anymore, but the same X-Admin-Key check on
+      // every other endpoint below doesn't have to change. The token
+      // proves who they are; can_grant_app_access decides if that's enough.
+      if (url.pathname === '/staff/admin-key' && request.method === 'POST') {
+        if (!env.DB) return bad('No DB', cors);
+        const { token } = await request.json();
+        const claims = await verifyToken(token, env.JWT_SECRET || 'bs-secret-2024');
+        if (!claims) return bad('Session expired — please sign in again.', cors);
+        const staff = await env.DB.prepare('SELECT can_grant_app_access, active FROM staff_roster WHERE id=?').bind(claims.clientId).first();
+        if (!staff || !staff.active || !staff.can_grant_app_access) return bad('Not authorized for admin tools.', cors);
+        if (!env.ADMIN_KEY) return bad('No admin key configured', cors);
+        return ok({ admin_key: env.ADMIN_KEY }, cors);
+      }
+
       if (url.pathname === '/staff/provision' && request.method === 'POST') {
         if (!env.DB) return bad('No DB', cors);
         const authHeader = request.headers.get('X-Admin-Key') || '';

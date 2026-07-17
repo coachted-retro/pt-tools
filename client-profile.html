@@ -213,7 +213,7 @@ function genTempPassword(){
 
 function shareAppLink(){
   const status = document.getElementById('app-access-status');
-  const appUrl = 'https://myretrostrong.com/member-app.html';
+  const appUrl = 'https://myironcladfit.com/member-app.html';
   if (navigator.share) {
     navigator.share({ title: 'Ironclad App', text: 'Log in with PT Client Login using your email.', url: appUrl }).catch(()=>{});
   } else if (navigator.clipboard) {
@@ -338,7 +338,7 @@ async function sendClientApp(clientId){
       body: JSON.stringify({ client_id: clientId, email, password: tempPassword }) });
     const provisionData = await provisionRes.json();
     if (!provisionData.provisioned && !provisionData.ok) { status.textContent = 'Error: ' + (provisionData.error || 'could not grant access'); return; }
-    const appUrl = 'https://myretrostrong.com/member-app.html';
+    const appUrl = 'https://myironcladfit.com/member-app.html';
     const emailHtml = `<p>Your Ironclad training app is ready — save it to your phone's home screen for quick access.</p>
       <p><a href="${appUrl}">${appUrl}</a></p>
       <p>Log in with <b>PT Client Login</b> using:<br>Email: ${email}<br>Temporary PIN: <b>${tempPassword}</b></p>

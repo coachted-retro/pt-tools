@@ -245,12 +245,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     </div>
     <div class="field-row" style="background:#F0F7F0;border-radius:10px;padding:10px;margin:0 0 12px">
       <div class="field">
-        <label>Work Email (myretrostrong.com)</label>
-        <input type="email" id="fWorkEmail" placeholder="firstinitiallastname@myretrostrong.com" oninput="_workEmailManuallyEdited=true">
-      </div>
-      <div class="field">
         <label>Login PIN (4 digits)</label>
         <input type="text" id="fWorkPin" inputmode="numeric" maxlength="6" placeholder="Auto-fills from phone number" oninput="_workPinManuallyEdited=true">
+        <div style="font-size:11px;color:#6B7280;margin-top:4px">Login uses the Personal Email above.</div>
       </div>
     </div>
     <div id="shareAppRow" style="display:none;margin:-4px 0 12px">
@@ -310,18 +307,34 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 <script>
 const WORKER = RETRO_WORKER_URL;
-// No secret sits in this file anymore -- the real admin key lives only
-// in your browser's local storage on this device, entered once. If a
-// request ever comes back Unauthorized, that's this being empty or
-// stale, not a mystery -- clearing it and re-entering the real key
-// fixes it immediately.
-let ADMIN_KEY = localStorage.getItem('ironclad_admin_key') || '';
-if (!ADMIN_KEY) {
-  ADMIN_KEY = prompt('Enter the admin key for this Worker (set in Cloudflare under Settings > Variables and Secrets):') || '';
-  if (ADMIN_KEY) localStorage.setItem('ironclad_admin_key', ADMIN_KEY);
-}
+// No shared key is entered by hand anymore. Getting into this page at all
+// already required a real staff login (the role check at the very top of
+// this file) -- that same session's token is exchanged here for the admin
+// key, silently, so it's tied to who's actually signed in rather than a
+// secret anyone could type into a popup.
+let ADMIN_KEY = '';
 let roster = [];
 let authStatusMap = {};
+
+async function ensureAdminKey(){
+  const session = JSON.parse(localStorage.getItem('staff_session') || 'null');
+  if (!session || !session.token) {
+    location.href = 'staff-login.html';
+    throw new Error('no session');
+  }
+  const r = await fetch(WORKER + '/staff/admin-key', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ token: session.token })
+  });
+  const d = await r.json();
+  if (!d.ok || !d.admin_key) {
+    alert(d.error || 'Your session has expired — please sign in again.');
+    localStorage.removeItem('staff_session');
+    location.href = 'staff-login.html';
+    throw new Error('admin key denied');
+  }
+  ADMIN_KEY = d.admin_key;
+}
 
 function coachOptionsHtml(){
   const coaches = roster.filter(e => e.role === 'PT Coach' || e.role === "Men's Training Lead");
@@ -524,9 +537,8 @@ function openModal(id) {
     document.getElementById('fCanGrantAppAccess').checked = false;
     document.getElementById('fActive').checked = true;
     document.getElementById('fTemplate').value = '';
-    document.getElementById('fWorkEmail').value = '';
     document.getElementById('fWorkPin').value = '';
-    _workEmailManuallyEdited = false;
+    _workPinManuallyEdited = false;
   } else {
     const emp = roster.find(e => e.id === id);
     if (!emp) return;
@@ -537,24 +549,18 @@ function openModal(id) {
     document.getElementById('fPhone').value = emp.phone || '';
     document.getElementById('fHireDate').value = emp.hire_date || '';
     document.getElementById('fNotes').value = emp.notes || '';
-    const existingWorkEmail = authStatusMap[emp.id];
-    const hasRealWorkEmail = existingWorkEmail && existingWorkEmail.endsWith('@myretrostrong.com');
-    if (hasRealWorkEmail) {
-      // Already has a real work login — don't touch it, just show what it is
-      document.getElementById('fWorkEmail').value = '';
-      document.getElementById('fWorkEmail').placeholder = 'Already set: ' + existingWorkEmail;
-      _workEmailManuallyEdited = true;
+    const hasLogin = !!authStatusMap[emp.id];
+    if (hasLogin) {
+      // Already has a login set up — leave the PIN field blank/optional so
+      // saving the form doesn't silently reset it.
+      document.getElementById('fWorkPin').value = '';
+      document.getElementById('fWorkPin').placeholder = 'Login already set — leave blank to keep it';
+      _workPinManuallyEdited = true;
     } else {
-      // No proper work login yet (missing entirely, or still using a personal
-      // email from before this feature existed) — suggest one instead of
-      // leaving it blank, so there's actually something to just confirm and save.
-      document.getElementById('fWorkEmail').placeholder = 'firstinitiallastname@myretrostrong.com';
-      _workEmailManuallyEdited = false;
-      autoGenerateWorkEmail();
+      document.getElementById('fWorkPin').placeholder = 'Auto-fills from phone number';
+      _workPinManuallyEdited = false;
+      autoGeneratePin();
     }
-    document.getElementById('fWorkPin').value = '';
-    _workPinManuallyEdited = hasRealWorkEmail; // same logic for the PIN suggestion
-    if (!hasRealWorkEmail) autoGeneratePin();
     document.getElementById('fEOD').checked = !!emp.eod_required;
     document.getElementById('fCanGrantAppAccess').checked = !!emp.can_grant_app_access;
     document.getElementById('fActive').checked = !!emp.active;
@@ -571,16 +577,7 @@ function openLoginModal(id) {
   const emp = roster.find(e => e.id === id);
   if (!emp) return;
   document.getElementById('loginStaffId').value = id;
-  const existingWorkEmail = authStatusMap[emp.id];
-  const hasRealWorkEmail = existingWorkEmail && existingWorkEmail.endsWith('@myretrostrong.com');
-  if (hasRealWorkEmail) {
-    document.getElementById('loginEmail').value = existingWorkEmail;
-  } else {
-    const parts = (emp.name||'').trim().split(/\s+/).filter(Boolean);
-    document.getElementById('loginEmail').value = parts.length >= 2
-      ? (parts[0][0] + parts[parts.length-1]).toLowerCase().replace(/[^a-z]/g,'') + '@myretrostrong.com'
-      : (emp.email || '');
-  }
+  document.getElementById('loginEmail').value = authStatusMap[emp.id] || emp.email || '';
   const digits = (emp.phone||'').replace(/\D/g,'');
   document.getElementById('loginPin').value = digits.length >= 4 ? digits.slice(-4) : '';
   document.getElementById('loginModalOverlay').classList.add('open');
@@ -614,7 +611,6 @@ function updateEODTemplate() {
   document.getElementById('fEOD').checked = !!ROLE_DEFAULT_EOD[role];
 }
 
-let _workEmailManuallyEdited = false;
 let _workPinManuallyEdited = false;
 function autoGeneratePin(){
   if (_workPinManuallyEdited) return;
@@ -622,15 +618,6 @@ function autoGeneratePin(){
   const digits = phone.replace(/\D/g,'');
   if (digits.length < 4) return;
   document.getElementById('fWorkPin').value = digits.slice(-4);
-}
-function autoGenerateWorkEmail(){
-  if (_workEmailManuallyEdited) return;
-  const name = document.getElementById('fName').value.trim();
-  const parts = name.split(/\s+/).filter(Boolean);
-  if (parts.length < 2) return;
-  const first = parts[0], last = parts[parts.length-1];
-  const generated = (first[0] + last).toLowerCase().replace(/[^a-z]/g,'') + '@myretrostrong.com';
-  document.getElementById('fWorkEmail').value = generated;
 }
 
 async function saveEmployee() {
@@ -650,7 +637,7 @@ async function saveEmployee() {
     active: document.getElementById('fActive').checked ? 1 : 0,
     gym_id: parseInt(document.getElementById('fGymId').value, 10) || 1
   };
-  const workEmail = document.getElementById('fWorkEmail').value.trim();
+  const loginEmail = values.email;
   const workPin = document.getElementById('fWorkPin').value.trim();
   try {
     let r, d, staffId;
@@ -667,15 +654,16 @@ async function saveEmployee() {
       if (!d.ok) { showToast('Save failed: ' + (d.error || 'unknown error')); return; }
       staffId = d.id;
     }
-    // Auto-provision login if a work email + PIN were entered — same endpoint
-    // "Set Login" already uses, just folded into the same form so it's one step.
-    if (workEmail && workPin) {
+    // Auto-provision login if a personal email + PIN are available — same
+    // endpoint "Set Login" already uses, just folded into the same form so
+    // it's one step.
+    if (loginEmail && workPin) {
       if (!/^\d{4,6}$/.test(workPin)) {
         showToast('Employee saved, but PIN must be 4-6 digits — set login separately.');
       } else {
         const pr = await fetch(WORKER + '/staff/provision', {
           method: 'POST', headers: {'Content-Type':'application/json', 'X-Admin-Key': ADMIN_KEY},
-          body: JSON.stringify({ staff_id: staffId, email: workEmail, pin: workPin })
+          body: JSON.stringify({ staff_id: staffId, email: loginEmail, pin: workPin })
         });
         const pd = await pr.json();
         showToast(pd.ok ? 'Employee saved and login set up' : 'Employee saved, but login setup failed: ' + (pd.error||''));
@@ -688,31 +676,24 @@ async function saveEmployee() {
   } catch(e) { showToast('Connection error: ' + e.message); }
 }
 
-function buildAppShareEmailHtml(emp, workEmail, newPin, appUrl, isCoach){
+function buildAppShareEmailHtml(emp, loginEmail, newPin, appUrl, isCoach){
   return `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
     <h2 style="color:#1B4D8C;font-family:Oswald,sans-serif">Your Ironclad app is ready, ${esc(emp.name.split(' ')[0])}</h2>
     <p>${isCoach ? "Here's your direct link — it opens straight to your agenda, no need to pick your name each time." : "Here's your link to sign in to the staff app."}</p>
     <p><a href="${appUrl}" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open the App &rarr;</a></p>
     <p style="font-size:13px;color:#6B7280">Tip: open that link on your phone, then use your browser's "Add to Home Screen" option so it works like a real app icon.</p>
-    <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Work email</td><td><b>${esc(workEmail)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary PIN</td><td><b>${esc(newPin)}</b></td></tr></table>
+    <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Login email</td><td><b>${esc(loginEmail)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary PIN</td><td><b>${esc(newPin)}</b></td></tr></table>
     <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own PIN the first time you sign in.</p>
     </div>`;
 }
 
 async function shareAppForEmployee(emp, statusEl){
-  const existingWorkEmail = authStatusMap[emp.id];
-  let workEmail = (existingWorkEmail && existingWorkEmail.endsWith('@myretrostrong.com')) ? existingWorkEmail : null;
-  if (!workEmail) {
-    const parts = (emp.name||'').split(/\s+/).filter(Boolean);
-    const suggested = parts.length>=2 ? (parts[0][0]+parts[parts.length-1]).toLowerCase().replace(/[^a-z]/g,'')+'@myretrostrong.com' : '';
-    workEmail = prompt('No work email set up yet for ' + emp.name + '. Set one:', suggested);
-    if (!workEmail) return;
-  }
   let personalEmail = emp.email;
   if (!personalEmail) {
     personalEmail = prompt('No personal email on file for ' + emp.name + '. Where should the invite go?');
     if (!personalEmail) return;
   }
+  const loginEmail = personalEmail;
   if (!confirm('Reset ' + emp.name + "'s login PIN and email new credentials to " + personalEmail + '?')) return;
 
   if (statusEl) statusEl.textContent = 'Setting up login...';
@@ -727,17 +708,17 @@ async function shareAppForEmployee(emp, statusEl){
   try {
     const pr = await fetch(WORKER + '/staff/provision', {
       method:'POST', headers:{'Content-Type':'application/json','X-Admin-Key':ADMIN_KEY},
-      body: JSON.stringify({ staff_id: emp.id, email: workEmail, pin: newPin })
+      body: JSON.stringify({ staff_id: emp.id, email: loginEmail, pin: newPin })
     });
     const pd = await pr.json();
     if (!pd.ok && !pd.provisioned) { const msg = 'Could not set up login: ' + (pd.error||'unknown'); if (statusEl) statusEl.textContent = msg; else showToast(msg); return; }
 
     const isCoach = (emp.role === 'PT Coach' || emp.role === "Men's Training Lead");
     const appUrl = isCoach
-      ? 'https://myretrostrong.com/coach-crm.html?coach=' + encodeURIComponent(emp.name) + '&locked=1'
-      : 'https://myretrostrong.com';
+      ? 'https://myironcladfit.com/coach-crm.html?coach=' + encodeURIComponent(emp.name) + '&locked=1'
+      : 'https://myironcladfit.com';
     if (statusEl) statusEl.textContent = 'Login set. Sending email...';
-    const html = buildAppShareEmailHtml(emp, workEmail, newPin, appUrl, isCoach);
+    const html = buildAppShareEmailHtml(emp, loginEmail, newPin, appUrl, isCoach);
     const er = await fetch(WORKER + '/reports/email', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ to: personalEmail, subject: 'Your Ironclad app is ready', html, context: 'Staff app access shared' })
@@ -790,7 +771,7 @@ document.getElementById('loginModalOverlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeLoginModal();
 });
 
-loadRoster();
+ensureAdminKey().then(loadRoster).catch(()=>{});
 </script>
 </body>
 </html>
