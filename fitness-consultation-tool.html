@@ -13,7 +13,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
-<meta name="theme-color" content="#E0192B"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1B4D8C"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #E8EBEF;
@@ -24,12 +24,12 @@
     --text: #15171A;
     --text2: #6B7280;
     --text3: #9AA1AC;
-    --accent: #E0192B;
+    --accent: #1B4D8C;
     --accent-light: #FCE8EA;
     --accent2: #15171A;
     --danger: #DC2626;
     --danger-light: #FDECEC;
-    --warning: #D98A0B;
+    --warning: #7C848A;
     --warning-light: #FEF3E0;
     --success: #1E9E5A;
     --success-light: #E3F5EC;
@@ -266,8 +266,8 @@
   .cat-chip:hover { border-color: var(--accent); }
   .cat-chip.checked { border-color: var(--accent); background: var(--accent-light); font-weight: 600; }
   .cat-chip input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; cursor: pointer; }
-  .cat-chip.flag-glp1 { border-color: #d4a843; }
-  .cat-chip.flag-glp1.checked { background: #fbf3e0; border-color: #d4a843; }
+  .cat-chip.flag-glp1 { border-color: #7C848A; }
+  .cat-chip.flag-glp1.checked { background: #fbf3e0; border-color: #7C848A; }
 
   .field label {
     font-size: 12px;
@@ -1083,7 +1083,7 @@
     <div style="background:#FFF4E5;border:1px solid #F0C98A;border-radius:10px;padding:12px 16px;margin:0 0 16px;font-size:13px;color:#8A5A0B;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <span style="font-size:18px">📸</span>
       <span style="flex:1;min-width:200px"><b>Reminder:</b> capture front, side and back progress photos and take body measurements for this client.</span>
-      <a id="profileLink" href="client-profile.html" target="_blank" style="color:#B0121F;font-weight:600;text-decoration:none;white-space:nowrap">Open client profile →</a>
+      <a id="profileLink" href="client-profile.html" target="_blank" style="color:#0B2E52;font-weight:600;text-decoration:none;white-space:nowrap">Open client profile →</a>
     </div>
     <div class="topbar">
       <div class="topbar-left">
@@ -1936,7 +1936,7 @@
                 </label>
               </div>
 
-              <button class="btn btn-primary btn-full" style="margin-top:8px;background:var(--accent);border-color:#B0121F;font-size:15px;padding:16px;" onclick="finalizeAccept()">
+              <button class="btn btn-primary btn-full" style="margin-top:8px;background:var(--accent);border-color:#0B2E52;font-size:15px;padding:16px;" onclick="finalizeAccept()">
                 ✓ Accept — let's get started
               </button>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;">
@@ -1960,7 +1960,7 @@
                   </button>
                 </div>
 
-                <button class="btn btn-primary btn-full" onclick="runConsultReport('welcome')" style="background:#E0192B;border-color:#B0121F;font-size:13px;margin-bottom:8px;">
+                <button class="btn btn-primary btn-full" onclick="runConsultReport('welcome')" style="background:#1B4D8C;border-color:#0B2E52;font-size:13px;margin-bottom:8px;">
                   📄 Generate Welcome Packet &amp; Email Client
                 </button>
                 <div id="report-enrolled-status" style="font-size:12px;margin-top:4px;min-height:16px;color:var(--text2);"></div>
@@ -1993,7 +1993,7 @@
                   <textarea id="meas-notes" rows="2" placeholder="e.g. Slight forward head posture, left shoulder higher than right..." style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;resize:vertical;font-family:var(--font);"></textarea>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                  <button class="btn btn-primary btn-full" onclick="saveMeasurementsNow()" style="background:var(--accent);border-color:#B0121F;">Save Measurements</button>
+                  <button class="btn btn-primary btn-full" onclick="saveMeasurementsNow()" style="background:var(--accent);border-color:#0B2E52;">Save Measurements</button>
                   <button class="btn btn-ghost btn-full" onclick="document.getElementById('post-enroll-measurements').style.display='none'">Skip for now</button>
                 </div>
                 <div id="meas-save-status" style="font-size:12px;color:var(--text2);margin-top:8px;min-height:16px;"></div>
@@ -2707,7 +2707,7 @@ function formatAssessmentSections(text) {
   text = text.replace(/[\u{2600}-\u{27BF}]/gu, '');
 
   var sectionTitles = ['WHERE YOU ARE TODAY','YOUR 12-MONTH OPPORTUNITY','YOUR GAME PLAN','THE BOTTOM LINE'];
-  var sectionColors = ['#4caf7d','#5a8ec8','#d4a843','#a374d4'];
+  var sectionColors = ['#4caf7d','#5a8ec8','#7C848A','#a374d4'];
   var html = '';
 
   // Extract footer
@@ -3469,10 +3469,10 @@ function completeLinkedApptWithNote(defaultSummary){
   }
   const bar = document.createElement('div');
   bar.id = 'appt-complete-note-bar';
-  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--accent,#E0192B);box-shadow:0 -4px 16px rgba(0,0,0,.12);padding:14px 20px;z-index:500;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
+  bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--accent,#1B4D8C);box-shadow:0 -4px 16px rgba(0,0,0,.12);padding:14px 20px;z-index:500;display:flex;gap:10px;align-items:center;flex-wrap:wrap';
   bar.innerHTML = '<div style="font-weight:700;font-size:13px;flex-shrink:0">Outcome note for their profile (required):</div>' +
     '<input id="appt-complete-note-input" style="flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--border2,#ddd);border-radius:8px;font-size:13px" value="' + (defaultSummary||'').replace(/"/g,'&quot;') + '">' +
-    '<button onclick="submitLinkedApptNote(' + JSON.stringify(apptId) + ',' + JSON.stringify(clubosApptId) + ')" style="background:var(--accent,#E0192B);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer">Save Note</button>';
+    '<button onclick="submitLinkedApptNote(' + JSON.stringify(apptId) + ',' + JSON.stringify(clubosApptId) + ')" style="background:var(--accent,#1B4D8C);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer">Save Note</button>';
   document.body.appendChild(bar);
 }
 
@@ -3480,7 +3480,7 @@ async function submitLinkedApptNote(apptId, clubosApptId){
   const inputEl = document.getElementById('appt-complete-note-input');
   const body = inputEl ? inputEl.value.trim() : '';
   const bar = document.getElementById('appt-complete-note-bar');
-  if (!body) { if (inputEl) inputEl.style.borderColor = '#E0192B'; return; }
+  if (!body) { if (inputEl) inputEl.style.borderColor = '#1B4D8C'; return; }
   const clientId = window.EXISTING_CLIENT_ID;
   try {
     if (clientId) {
@@ -3772,7 +3772,7 @@ function renderDraftPanel() {
 
     var loadBtn = document.createElement('button');
     loadBtn.textContent = 'Load';
-    loadBtn.style.cssText = 'background:#E0192B;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700';
+    loadBtn.style.cssText = 'background:#1B4D8C;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700';
     loadBtn.onclick = (function(id) { return function(e) { e.stopPropagation(); loadDraftById(id); }; })(d._id);
 
     var delBtn = document.createElement('button');
@@ -3894,7 +3894,7 @@ function filterClients(query) {
     
     var loadBtn = document.createElement('button');
     loadBtn.textContent = 'Open Intake';
-    loadBtn.style.cssText = 'background:#E0192B;color:#fff;border:none;padding:7px 16px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;margin-left:12px';
+    loadBtn.style.cssText = 'background:#1B4D8C;color:#fff;border:none;padding:7px 16px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;margin-left:12px';
     loadBtn.onclick = (function(id){ return function(e){ e.stopPropagation(); loadDraftById(id); closeClientSearch(); }; })(d._id);
     
     top.appendChild(info);
@@ -4665,7 +4665,7 @@ ${PHORM_SIGNATURE}`
 // ---- MAIN TRIGGER FUNCTION ----
 async function triggerReportWorkflow(reportType, clientData, assessmentSummary, statusElemId) {
   const statusEl = document.getElementById(statusElemId);
-  if (statusEl) statusEl.innerHTML = '<span style="color:#d4a843">⏳ Generating report...</span>';
+  if (statusEl) statusEl.innerHTML = '<span style="color:#7C848A">⏳ Generating report...</span>';
 
   try {
     loadJsPDF(async () => {
@@ -4673,7 +4673,7 @@ async function triggerReportWorkflow(reportType, clientData, assessmentSummary, 
         const reportContent = await generateReportContent(reportType, clientData, assessmentSummary);
         const { filename, base64 } = buildPDF(reportType, clientData.name, reportContent, clientData);
 
-        if (statusEl) statusEl.innerHTML = '<span style="color:#4caf7d">✅ PDF saved: ' + filename + '</span><br><span style="color:#d4a843">⏳ Sending to client...</span>';
+        if (statusEl) statusEl.innerHTML = '<span style="color:#4caf7d">✅ PDF saved: ' + filename + '</span><br><span style="color:#7C848A">⏳ Sending to client...</span>';
 
         const emailBody = buildEmailBody(reportType, clientData.name, clientData, assessmentSummary);
         const subjects = {
@@ -4924,7 +4924,7 @@ function renderDemoQR() {
   if (!box) return;
   var url = buildDemoUrl();
   if (typeof qrcode !== 'function') {
-    box.innerHTML = '<div style="font-size:10px;color:#B0121F;padding:4px;max-width:120px;line-height:1.4;">QR unavailable — <a href="' + url + '" target="_blank" style="color:#B0121F">open link</a></div>';
+    box.innerHTML = '<div style="font-size:10px;color:#0B2E52;padding:4px;max-width:120px;line-height:1.4;">QR unavailable — <a href="' + url + '" target="_blank" style="color:#0B2E52">open link</a></div>';
     return;
   }
   // Auto-detect (typeNumber 0) can throw on some payload lengths in this library
@@ -4940,7 +4940,7 @@ function renderDemoQR() {
       return;
     } catch (e) { /* try the next type number */ }
   }
-  box.innerHTML = '<div style="font-size:10px;color:#B0121F;padding:4px;max-width:120px;line-height:1.4;">QR failed — <a href="' + url + '" target="_blank" style="color:#B0121F">open link</a></div>';
+  box.innerHTML = '<div style="font-size:10px;color:#0B2E52;padding:4px;max-width:120px;line-height:1.4;">QR failed — <a href="' + url + '" target="_blank" style="color:#0B2E52">open link</a></div>';
 }
 
 </script>

@@ -10,7 +10,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -25,7 +25,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
 <title>HR Portal — Ironclad</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--blue:#2563EB;--purple:#7C3AED;--lgreen:#E3F5EC;--lred:#FEF2F2;--lamber:#FFF7ED;--lblue:#EFF6FF;}
+:root{--red:#1B4D8C;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#7C848A;--soft:#F5F6F8;--blue:#2563EB;--purple:#7C3AED;--lgreen:#E3F5EC;--lred:#EAF1FA;--lamber:#FFF7ED;--lblue:#EFF6FF;}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
 
@@ -63,7 +63,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .card-title{font-family:'Oswald';font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
 .card-title .completion{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;font-family:'Inter';text-transform:none;letter-spacing:0}
 .comp-full{background:var(--lgreen);color:#065F46}
-.comp-partial{background:var(--lamber);color:#92400E}
+.comp-partial{background:var(--lamber);color:#4A4F54}
 .comp-none{background:var(--lred);color:var(--red)}
 
 /* CHECKLIST */
@@ -104,7 +104,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--red)}
 textarea{resize:vertical;min-height:72px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
 .save-btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:9px 20px;border-radius:8px;cursor:pointer}
-.save-btn:hover{background:#B0121F}
+.save-btn:hover{background:#0B2E52}
 
 /* KPI BADGES */
 .kpi-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
@@ -118,7 +118,7 @@ textarea{resize:vertical;min-height:72px}
 /* ROLE CHIP */
 .role-chip{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.3px;padding:3px 9px;border-radius:20px;text-transform:uppercase}
 .role-director{background:#EDE9FE;color:#5B21B6}
-.role-gm{background:#FEF3C7;color:#92400E}
+.role-gm{background:#E9EBED;color:#4A4F54}
 .role-lead{background:#DBEAFE;color:#1E40AF}
 .role-coach{background:#D1FAE5;color:#065F46}
 .role-mea{background:#F3F4F6;color:#374151}
@@ -149,7 +149,7 @@ textarea{resize:vertical;min-height:72px}
 .kb-card .kb-meta{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .kb-score{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
 .score-hi{background:var(--lgreen);color:#065F46}
-.score-mid{background:var(--lamber);color:#92400E}
+.score-mid{background:var(--lamber);color:#4A4F54}
 .score-lo{background:var(--lred);color:var(--red)}
 .kb-source{font-size:10px;color:var(--muted)}
 

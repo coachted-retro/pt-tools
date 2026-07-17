@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.name) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to ownership and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='coach-crm.html' style='color:#E0192B;font-weight:700'>your Coach Portal</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to ownership and management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='coach-crm.html' style='color:#1B4D8C;font-weight:700'>your Coach Portal</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -22,9 +22,9 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
-<meta name="theme-color" content="#E0192B"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1B4D8C"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--soft:#F0F2F5}
+  :root{--red:#1B4D8C;--red-dk:#0B2E52;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--soft:#F0F2F5}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
   .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:30}
@@ -281,9 +281,9 @@ async function grantAccess(){
       if(sendEmail){
         st.textContent='Access granted. Sending welcome email...';
         const html=`<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-          <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Welcome to Ironclad, ${esc(clientName)}!</h2>
+          <h2 style="color:#1B4D8C;font-family:Oswald,sans-serif">Welcome to Ironclad, ${esc(clientName)}!</h2>
           <p>Your coach just set you up with the Ironclad app — your workouts, nutrition tracking, schedule, and direct chat with your coach, all in one place.</p>
-          <p><a href="https://myretrostrong.com" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
+          <p><a href="https://myretrostrong.com" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
           <p style="font-size:13px;color:#6B7280">Or go to <b>myretrostrong.com</b> on your phone and tap "Sign In" — works great as an app if you add it to your home screen.</p>
           <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Email</td><td><b>${esc(email)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${esc(password)}</b></td></tr></table>
           <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
@@ -319,9 +319,9 @@ async function reGrantAccess(client_id, email, clientName, btn){
     await r.json();
     if(sendIt){
       const html=`<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-        <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Ironclad access is back</h2>
+        <h2 style="color:#1B4D8C;font-family:Oswald,sans-serif">Your Ironclad access is back</h2>
         <p>Hi ${esc(clientName||'there')}, your coach just re-granted your app access with a new temporary password.</p>
-        <p><a href="https://myretrostrong.com" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
+        <p><a href="https://myretrostrong.com" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open Ironclad &rarr;</a></p>
         <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Email</td><td><b>${esc(email)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${esc(pw)}</b></td></tr></table>
         <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
         </div>`;
@@ -583,7 +583,7 @@ async function saveMealPhoto(btn){
 async function postFeedItem(){
   const title = document.getElementById('feed-title').value.trim();
   const status = document.getElementById('feed-post-status');
-  if (!title) { status.textContent = 'Enter a headline first.'; status.style.color = '#B0121F'; return; }
+  if (!title) { status.textContent = 'Enter a headline first.'; status.style.color = '#0B2E52'; return; }
   const body = document.getElementById('feed-body').value.trim();
   const eventDate = document.getElementById('feed-event-date').value || null;
   status.textContent = 'Posting...'; status.style.color = 'var(--muted)';
@@ -599,7 +599,7 @@ async function postFeedItem(){
     document.getElementById('feed-event-date').value = '';
   } catch(e) {
     status.textContent = 'Could not post — try again.';
-    status.style.color = '#B0121F';
+    status.style.color = '#0B2E52';
   }
 }
 

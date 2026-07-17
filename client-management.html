@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || (ALLOWED.indexOf(session.role) === -1 && !session.sees_all_clients)) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--green-light:#ECFDF3;--amber:#D98A0B;--amber-light:#FFFBEB;--blue:#2563EB;--blue-light:#EFF6FF;}
+  :root{--red:#1B4D8C;--red-dk:#0B2E52;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--green-light:#ECFDF3;--amber:#7C848A;--amber-light:#FFFBEB;--blue:#2563EB;--blue-light:#EFF6FF;}
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px;}
   .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:30;}
@@ -75,7 +75,7 @@
   .merge-card h3{font-family:'Oswald';font-size:14px;margin:0 0 6px;}
   .merge-card .id{font-size:11px;color:var(--muted);margin-bottom:8px;}
   .merge-card .field{font-size:12px;color:var(--muted);margin-bottom:3px;}
-  .merge-warn{background:var(--amber-light);border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#92400e;line-height:1.6;margin-bottom:16px;}
+  .merge-warn{background:var(--amber-light);border:1px solid #fde68a;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#4A4F54;line-height:1.6;margin-bottom:16px;}
   .merge-foot{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;}
   .merge-status{font-size:12px;color:var(--muted);flex:1;align-self:center;}
 </style>
@@ -92,11 +92,11 @@
   <div class="page-head" style="display:flex;align-items:center;justify-content:space-between;gap:16px">
     <div>
       <h1>Member &amp; PT Client Admin Records</h1>
-      <p>Duplicate detection and a safe merge tool built in. Leads and prospects live in their own tracker now. <span id="club-label" style="font-weight:700;color:var(--red,#E0192B)"></span></p>
+      <p>Duplicate detection and a safe merge tool built in. Leads and prospects live in their own tracker now. <span id="club-label" style="font-weight:700;color:var(--red,#1B4D8C)"></span></p>
     </div>
     <div style="display:flex;gap:10px;flex-shrink:0">
       <a href="portal-admin.html" style="background:#fff;border:1.5px solid var(--line,#E4E7EC);color:var(--ink,#15171A);font-weight:700;text-decoration:none;padding:10px 18px;border-radius:10px;font-size:13px;white-space:nowrap">Portal Access Manager</a>
-      <a href="client-profile.html?add=1" id="add-client-link" style="background:var(--red,#E0192B);color:#fff;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:10px;font-size:13px;white-space:nowrap">+ Add Client</a>
+      <a href="client-profile.html?add=1" id="add-client-link" style="background:var(--red,#1B4D8C);color:#fff;font-weight:700;text-decoration:none;padding:10px 18px;border-radius:10px;font-size:13px;white-space:nowrap">+ Add Client</a>
     </div>
   </div>
 
@@ -314,7 +314,7 @@ function renderRoster(){
     const isDupe = dupeIds.has(c.id);
     const personCol = showTrainer ? normalizedCoach(c.coach) : c.advisor;
     return '<tr'+(isDupe?' class="flagged"':'')+'>'+
-      '<td style="font-weight:600">'+esc(name)+(isDupe?' <span style="color:#92400e;font-size:11px;font-weight:700">⚠ likely duplicate</span>':'')+'</td>'+
+      '<td style="font-weight:600">'+esc(name)+(isDupe?' <span style="color:#4A4F54;font-size:11px;font-weight:700">⚠ likely duplicate</span>':'')+'</td>'+
       '<td><span class="pill '+statusClass+'">'+esc((c.status||'—').replace('_',' '))+'</span></td>'+
       '<td>'+esc(c.package||'—')+'</td>'+
       '<td>'+esc(c.training_start_date||'—')+'</td>'+

@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.name) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to ownership and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='coach-crm.html' style='color:#E0192B;font-weight:700'>your Coach Portal</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to ownership and management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='coach-crm.html' style='color:#1B4D8C;font-weight:700'>your Coach Portal</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--green-light:#ECFDF3;--amber:#D98A0B;--amber-light:#FFFBEB;}
+  :root{--red:#1B4D8C;--red-dk:#0B2E52;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--green-light:#ECFDF3;--amber:#7C848A;--amber-light:#FFFBEB;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
   .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:20}

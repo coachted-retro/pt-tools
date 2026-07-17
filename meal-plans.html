@@ -10,10 +10,10 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
-<meta name="theme-color" content="#E0192B"><link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="theme-color" content="#1B4D8C"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A}
+  :root{--red:#1B4D8C;--red-dk:#0B2E52;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
   .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px}
@@ -342,7 +342,7 @@ function renderPlanEditor(clientId){
     const rows=slots.map(slot=>{
       const m=day.meals&&day.meals[slot]; if(!m) return '';
       const base=findLibItem(slot,m.item); const macros=scaleMacros(base,m.portion_mult||1);
-      const suppTag=(base&&base.supplement)?' <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--red-dk);background:#FDEAEC;padding:2px 6px;border-radius:8px">1st Phorm</span>':'';
+      const suppTag=(base&&base.supplement)?' <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--red-dk);background:#EAF1FA;padding:2px 6px;border-radius:8px">1st Phorm</span>':'';
       return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)">'+
         '<div style="width:60px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted)">'+slot+'</div>'+
         '<div style="flex:1;font-size:13px">'+esc(m.item)+suppTag+' <span style="color:var(--muted);font-size:11px">('+macros.calories+' kcal, '+macros.protein_g+'g pro)</span></div>'+
@@ -363,7 +363,7 @@ function adminSwap(clientId,dayIdx,slot){
   const picker=document.getElementById('swap-picker-'+clientId);
   picker.innerHTML='<div style="background:var(--soft);border-radius:10px;padding:10px;margin-top:8px">'+
     '<div class="meta" style="margin-bottom:6px">Swap '+slot+' — currently '+esc(current.item)+'</div>'+
-    top.map(opt=>'<div style="padding:6px 4px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)" onclick="adminApplySwap('+clientId+','+dayIdx+',\''+slot+'\',\''+esc(opt.name).replace(/'/g,"\\'")+'\')">'+esc(opt.name)+(opt.supplement?' <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--red-dk);background:#FDEAEC;padding:2px 6px;border-radius:8px">1st Phorm</span>':'')+' <span style="color:var(--muted);font-size:11px">('+opt.calories+' kcal)</span></div>').join('')+
+    top.map(opt=>'<div style="padding:6px 4px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--line)" onclick="adminApplySwap('+clientId+','+dayIdx+',\''+slot+'\',\''+esc(opt.name).replace(/'/g,"\\'")+'\')">'+esc(opt.name)+(opt.supplement?' <span style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--red-dk);background:#EAF1FA;padding:2px 6px;border-radius:8px">1st Phorm</span>':'')+' <span style="color:var(--muted);font-size:11px">('+opt.calories+' kcal)</span></div>').join('')+
     '</div>';
 }
 

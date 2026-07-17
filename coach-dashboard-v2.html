@@ -10,7 +10,7 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="icons-strong/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
-<meta name="theme-color" content="#E0192B"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1B4D8C"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
@@ -25,15 +25,15 @@
     --text3: #9AA1AC;
     --green: #1E9E5A;
     --green-dim: rgba(30,158,90,0.12);
-    --red: #E0192B;
+    --red: #1B4D8C;
     --red-dim: rgba(224,25,43,0.10);
-    --gold: #D98A0B;
+    --gold: #7C848A;
     --gold-dim: rgba(217,138,11,0.12);
     --blue: #2563EB;
     --blue-dim: rgba(37,99,235,0.10);
     --purple: #7C3AED;
     --purple-dim: rgba(124,58,237,0.10);
-    --coach-accent: #E0192B;
+    --coach-accent: #1B4D8C;
     --mgr-accent: #15171A;
     --shadow: 0 2px 12px rgba(0,0,0,0.06);
     --shadow-lg: 0 8px 28px rgba(0,0,0,0.10);
@@ -506,8 +506,8 @@
         <div style="display:flex;flex-direction:column;gap:8px;">
           <button onclick="markApptStatus('show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(76,175,125,0.4);background:rgba(76,175,125,0.15);color:var(--green);font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">✅ SHOW — Session logged</button>
           <button onclick="markApptStatus('cancel_reschedule')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(90,142,200,0.4);background:rgba(90,142,200,0.15);color:#7eb3e8;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">🔄 CANCEL — RESCHEDULE (30+ min notice, session preserved)</button>
-          <button onclick="markApptStatus('no_show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(217,138,11,0.4);background:rgba(217,138,11,0.15);color:#D98A0B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">❌ NO SHOW — Session lost (deducted)</button>
-          <button onclick="markApptStatus('cancel_charge')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(224,25,43,0.4);background:rgba(224,25,43,0.15);color:#E0192B;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">⚡ CANCEL CHARGE — Under 30 min, session lost</button>
+          <button onclick="markApptStatus('no_show')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(217,138,11,0.4);background:rgba(217,138,11,0.15);color:#7C848A;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">❌ NO SHOW — Session lost (deducted)</button>
+          <button onclick="markApptStatus('cancel_charge')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(224,25,43,0.4);background:rgba(224,25,43,0.15);color:#1B4D8C;font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">⚡ CANCEL CHARGE — Under 30 min, session lost</button>
           <button onclick="markApptStatus('declined')" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(100,100,100,0.3);background:rgba(100,100,100,0.1);color:var(--text3,#9CA3AF);font-family:var(--font-display,Oswald,sans-serif);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;text-align:left;">— DECLINED (consultation, not a PT session)</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:16px;">
@@ -902,8 +902,8 @@ function renderCalendar() {
       var status = statusRow ? statusRow.status : null;
       var bg, col;
       if (status === 'show') { bg='rgba(76,175,125,0.28)'; col='var(--green)'; }
-      else if (status === 'no_show') { bg='rgba(217,138,11,0.28)'; col='#D98A0B'; }
-      else if (status === 'cancel_charge') { bg='rgba(224,25,43,0.22)'; col='#E0192B'; }
+      else if (status === 'no_show') { bg='rgba(217,138,11,0.28)'; col='#7C848A'; }
+      else if (status === 'cancel_charge') { bg='rgba(224,25,43,0.22)'; col='#1B4D8C'; }
       else if (status === 'cancel_reschedule' || status === 'rescheduled') { bg='rgba(90,142,200,0.28)'; col='#7eb3e8'; }
       else if (status === 'declined') { bg='rgba(100,100,100,0.18)'; col='#9CA3AF'; }
       else { bg = isSession?'rgba(63,119,192,0.16)':'rgba(184,120,12,0.16)'; col = isSession?'#3F77C0':'#B8780C'; }
@@ -1377,7 +1377,7 @@ function renderCoachTrendCharts(cis) {
   mkChart('c-chart-session','line',labels, ds(keys.map(k=>avg(byMonth[k].session)),'#4caf7d'));
   mkChart('c-chart-diet','line',labels, ds(keys.map(k=>avg(byMonth[k].diet)),'#5a8ec8'));
   mkChart('c-chart-stress','line',labels, ds(keys.map(k=>avg(byMonth[k].stress)),'#e05252'));
-  mkChart('c-chart-bf','line',labels, ds(keys.map(k=>avg(byMonth[k].bf)),'#d4a843'));
+  mkChart('c-chart-bf','line',labels, ds(keys.map(k=>avg(byMonth[k].bf)),'#7C848A'));
   mkChart('c-chart-lean','line',labels, ds(keys.map(k=>avg(byMonth[k].lean)),'#9b6fd4'));
 }
 

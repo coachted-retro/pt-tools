@@ -12,7 +12,7 @@
 <title>Client Profile — Coach CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F0F2F5;--lred:#FEF2F2;--blue:#2563EB}
+:root{--red:#1B4D8C;--red-dk:#0B2E52;--ink:#15171A;--bg:#E8EBEF;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#7C848A;--soft:#F0F2F5;--lred:#EAF1FA;--blue:#2563EB}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
 .topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 20px;height:56px;border-bottom:3px solid var(--red)}
@@ -431,9 +431,9 @@ function checkResumeSessionBanner(){
     const s = JSON.parse(localStorage.getItem('gf_active_session') || 'null');
     if (!s || !s.client_id || String(s.client_id) !== String(CLIENT_ID)) { box.innerHTML = ''; return; }
     const doneCount = (s.exercises||[]).filter(e => e.sets && e.sets.length).length;
-    box.innerHTML = `<a href="gym-floor.html?client=${CLIENT_ID}" style="display:flex;align-items:center;gap:10px;text-decoration:none;background:#FDEAEC;border:2px solid var(--red,#E0192B);border-radius:10px;padding:12px 16px;margin:8px 0;color:inherit">
+    box.innerHTML = `<a href="gym-floor.html?client=${CLIENT_ID}" style="display:flex;align-items:center;gap:10px;text-decoration:none;background:#EAF1FA;border:2px solid var(--red,#1B4D8C);border-radius:10px;padding:12px 16px;margin:8px 0;color:inherit">
       <span style="font-size:18px">&#9654;</span>
-      <span><span style="font-weight:800;color:var(--red,#E0192B);text-transform:uppercase;font-size:12px">Resume In-Progress Session</span><br>
+      <span><span style="font-weight:800;color:var(--red,#1B4D8C);text-transform:uppercase;font-size:12px">Resume In-Progress Session</span><br>
       <span style="font-size:12px;color:var(--muted,#6B7280)">${escH(s.title||'Training Session')} &middot; ${doneCount} of ${(s.exercises||[]).length} exercises logged &middot; got interrupted? Pick up right where it left off.</span></span>
     </a>`;
   } catch(e) { box.innerHTML = ''; }
@@ -594,7 +594,7 @@ async function loadSchedule() {
     items.push({
       date: (c.start_datetime||'').slice(0,10), label: c.summary || 'ClubOS Booking',
       sub: new Date(c.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' · ClubOS',
-      href: tool ? (tool + '?client_id=' + CLIENT_ID) : null, color: '#D98A0B', editable: false
+      href: tool ? (tool + '?client_id=' + CLIENT_ID) : null, color: '#7C848A', editable: false
     });
   });
   items.sort((a,b) => a.date.localeCompare(b.date));

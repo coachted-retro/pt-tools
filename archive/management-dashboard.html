@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
-<meta name="theme-color" content="#E0192B"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1B4D8C"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
@@ -17,14 +17,14 @@
     --surface: #ffffff;
     --surface2: #F0F2F5;
     --border: #E4E7EC;
-    --accent: #E0192B;
+    --accent: #1B4D8C;
     --accent2: #2563EB;
-    --gold: #D98A0B;
+    --gold: #7C848A;
     --text: #15171A;
     --muted: #6B7280;
     --success: #1E9E5A;
-    --warning: #D98A0B;
-    --danger: #E0192B;
+    --warning: #7C848A;
+    --danger: #1B4D8C;
     --purple: #7c3aed;
     --shadow: 0 2px 12px rgba(0,0,0,.06);
     --shadow-lg: 0 8px 28px rgba(0,0,0,.10);
@@ -718,7 +718,7 @@ function renderFunnel(intakes, accepted, declined) {
   const followups = allIntakes.filter(r => r['Follow-Up Date']);
   const steps = [
     { label: 'Consultations', count: intakes.length, color: '#2b4c8c' },
-    { label: 'Have Follow-Up', count: followups.length, color: '#d4a843' },
+    { label: 'Have Follow-Up', count: followups.length, color: '#7C848A' },
     { label: 'Booked Consults', count: allBC.filter(b=>b.Status==='Booked'||b.Status==='Confirmed').length, color: '#7c3aed' },
     { label: 'Signed Up', count: accepted.length, color: '#2d7a4f' }
   ];
@@ -753,7 +753,7 @@ function renderDeclineChart(declined) {
     type: 'doughnut',
     data: {
       labels: sorted.map(s => s[0]),
-      datasets: [{ data: sorted.map(s => s[1]), backgroundColor: ['#c8392b','#2b4c8c','#d4a843','#2d7a4f','#c87a2b','#7a7066'], borderWidth: 0 }]
+      datasets: [{ data: sorted.map(s => s[1]), backgroundColor: ['#c8392b','#2b4c8c','#7C848A','#2d7a4f','#c87a2b','#7a7066'], borderWidth: 0 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '65%',
@@ -776,7 +776,7 @@ function renderPipelineChart() {
     type: 'doughnut',
     data: {
       labels: ['Hot 🔥', 'Warm ☀️', 'Cold ❄️'],
-      datasets: [{ data: [hot, warm, cold], backgroundColor: ['#c8392b','#d4a843','#2b4c8c'], borderWidth: 0 }]
+      datasets: [{ data: [hot, warm, cold], backgroundColor: ['#c8392b','#7C848A','#2b4c8c'], borderWidth: 0 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '65%',

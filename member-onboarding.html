@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for front-desk staff and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for front-desk staff and management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -23,7 +23,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
 <style>
 :root {
-  --accent: #E0192B;
+  --accent: #1B4D8C;
   --accent-light: #FCE8EA;
   --accent2: #15171A;
   --text: #15171A;
@@ -35,8 +35,8 @@
   --border2: #D1D5DB;
   --success: #1E9E5A;
   --success-light: #E3F5EC;
-  --amber: #D97706;
-  --amber-light: #FEF3C7;
+  --amber: #7C848A;
+  --amber-light: #E9EBED;
   --font-display: 'Oswald', sans-serif;
   --radius: 14px;
   --radius-sm: 10px;
@@ -120,7 +120,7 @@ h1, h2, h3, .card-title, .step-title { font-family: var(--font-display); }
 .status-pill { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
 .status-pill.guest { background: var(--amber-light); color: var(--amber); }
 .status-pill.active { background: var(--success-light); color: var(--success); }
-.status-pill.declined { background: #FDEAEC; color: var(--accent); }
+.status-pill.declined { background: #EAF1FA; color: var(--accent); }
 
 .won-lost-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
 .won-lost-row button { padding: 16px; font-size: 15px; }

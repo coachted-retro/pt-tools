@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for coaches and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for coaches and management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -23,7 +23,7 @@
 <link rel="manifest" href="retro-strong.webmanifest">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--red:#E0192B;--red-dk:#B8101F;--red-lt:#FEF2F2;--ink:#15171A;--ink3:#6B7280;--bg:#F2F4F7;--card:#FFFFFF;--soft:#F8F9FB;--line:#E5E7EB;}
+:root{--red:#1B4D8C;--red-dk:#0B2E52;--red-lt:#EAF1FA;--ink:#15171A;--ink3:#6B7280;--bg:#F2F4F7;--card:#FFFFFF;--soft:#F8F9FB;--line:#E5E7EB;}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
 .topbar{background:var(--ink);display:flex;align-items:center;gap:12px;padding:0 16px;height:56px}
@@ -157,7 +157,7 @@ function renderView(staff, profile, isMine) {
     </div>
     ` : ''}
     ` : ''}
-    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--ink3,#6B7280);display:flex;align-items:center;justify-content:center;gap:5px"><img src="icons-strong/icon-192.png" alt="" style="width:14px;height:14px;border-radius:3px" onerror="this.style.display='none'"> Powered by <b style="color:var(--red,#E0192B)">Ironclad</b></div>
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:var(--ink3,#6B7280);display:flex;align-items:center;justify-content:center;gap:5px"><img src="icons-strong/icon-192.png" alt="" style="width:14px;height:14px;border-radius:3px" onerror="this.style.display='none'"> Powered by <b style="color:var(--red,#1B4D8C)">Ironclad</b></div>
   `;
   window._currentStaff = staff;
   window._currentProfile = profile;
@@ -195,14 +195,14 @@ function renderShiftCalendar(containerId, shifts) {
   const byDate = {};
   (shifts||[]).forEach(s => { (byDate[s.shift_date] = byDate[s.shift_date]||[]).push(s); });
   const todayStr = todayET();
-  const dotColor = s => s.status==='needs_coverage' ? '#D98A0B' : s.status==='pending_swap_approval' ? '#2563EB' : '#1E9E5A';
+  const dotColor = s => s.status==='needs_coverage' ? '#7C848A' : s.status==='pending_swap_approval' ? '#2563EB' : '#1E9E5A';
   let cells = '';
   for (let i=0;i<startWeekday;i++) cells += '<div></div>';
   for (let d=1; d<=daysInMonth; d++) {
     const dateStr = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const dayShifts = byDate[dateStr]||[];
     const isToday = dateStr===todayStr;
-    cells += `<div style="aspect-ratio:1;border-radius:8px;background:${isToday?'#FDEAEC':'var(--soft,#F5F6F8)'};border:${isToday?'2px solid var(--red,#E0192B)':'1px solid transparent'};padding:3px;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start">
+    cells += `<div style="aspect-ratio:1;border-radius:8px;background:${isToday?'#EAF1FA':'var(--soft,#F5F6F8)'};border:${isToday?'2px solid var(--red,#1B4D8C)':'1px solid transparent'};padding:3px;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start">
       <div style="font-weight:${isToday?800:600}">${d}</div>
       ${dayShifts.length ? `<div style="display:flex;gap:2px;margin-top:2px">${dayShifts.slice(0,3).map(s=>`<span style="width:6px;height:6px;border-radius:50%;background:${dotColor(s)}"></span>`).join('')}</div>` : ''}
     </div>`;
@@ -216,7 +216,7 @@ function renderShiftCalendar(containerId, shifts) {
     <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells}</div>
     <div style="display:flex;gap:10px;margin-top:10px;font-size:9.5px;color:var(--ink3,#6B7280);flex-wrap:wrap">
       <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#1E9E5A;margin-right:3px"></span>Scheduled</span>
-      <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#D98A0B;margin-right:3px"></span>Needs Coverage</span>
+      <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#7C848A;margin-right:3px"></span>Needs Coverage</span>
       <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#2563EB;margin-right:3px"></span>Pending Approval</span>
     </div>`;
 }
@@ -239,7 +239,7 @@ function renderWorkShiftRow(s, isMine, staffId, staffName) {
   let statusBadge = '';
   let actionBtn = '';
   if (s.status === 'needs_coverage') {
-    statusBadge = '<span class="wp-supp-tag" style="background:#FEF3C7;color:#92400E">Needs Coverage</span>';
+    statusBadge = '<span class="wp-supp-tag" style="background:#E9EBED;color:#4A4F54">Needs Coverage</span>';
     if (isMine) actionBtn = `<button class="wp-swap-btn" onclick="cancelShiftCoverageRequest(${s.id},${staffId||'null'})">Undo Request</button>`;
     else actionBtn = `<button class="action-btn" style="width:auto;margin-top:0;padding:8px 14px;font-size:12px" onclick="claimWorkShiftCoverage(${s.id},${staffId},'${esc(staffName).replace(/'/g,"\\'")}','${esc(s.role).replace(/'/g,"\\'")}')">I'll Cover This</button>`;
   } else if (s.status === 'pending_swap_approval') {
@@ -318,7 +318,7 @@ async function loadMyShiftsProfile(staffId, coachName, role) {
       date: s.shift_date, label: 'Shift — ' + (s.role||'Work'), sub: s.start_time+'–'+s.end_time, href: null, color: '#7C3AED'
     }));
     sessions.forEach(s => items.push({
-      date: s.scheduled_date, label: s.program_name || 'Training Session', sub: 'Ironclad Schedule', href: 'gym-floor.html?client='+s.client_id, color: 'var(--red,#E0192B)'
+      date: s.scheduled_date, label: s.program_name || 'Training Session', sub: 'Ironclad Schedule', href: 'gym-floor.html?client='+s.client_id, color: 'var(--red,#1B4D8C)'
     }));
     const apptHref = (a) => {
       if (a.appointment_type === 'training_session') return 'gym-floor.html' + (a.client_id ? '?client='+a.client_id : '');
@@ -341,7 +341,7 @@ async function loadMyShiftsProfile(staffId, coachName, role) {
         label: c.summary || 'ClubOS Booking',
         sub: new Date(c.start_datetime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) + ' · ClubOS',
         href: tool ? (tool + (match ? '?client_id='+match.id : '')) : (match ? 'coach-client-profile.html?client='+match.id : null),
-        color: '#D98A0B'
+        color: '#7C848A'
       });
     });
 
@@ -396,7 +396,7 @@ async function loadAvailabilityProfile(staffId) {
   } catch(e) {}
   const anyPending = existing.some(a => a.status === 'pending');
   const statusNote = existing.length
-    ? (anyPending ? '<div class="status-msg" style="color:#D98A0B;text-align:left;margin-bottom:8px">Awaiting manager approval</div>' : '<div class="status-msg" style="color:#1E9E5A;text-align:left;margin-bottom:8px">Approved</div>')
+    ? (anyPending ? '<div class="status-msg" style="color:#7C848A;text-align:left;margin-bottom:8px">Awaiting manager approval</div>' : '<div class="status-msg" style="color:#1E9E5A;text-align:left;margin-bottom:8px">Approved</div>')
     : '';
   el.innerHTML = statusNote + AVAIL_DAYS_P.map((label, i) => {
     const match = existing.find(a => a.day_of_week === i);
@@ -450,8 +450,8 @@ async function loadMyTimeOffProfile(staffId) {
     const reqs = d.requests || [];
     if (!reqs.length) { el.innerHTML = ''; return; }
     const badge = s => s==='approved' ? '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:#ECFDF3;color:#1E9E5A">Approved</span>'
-      : s==='denied' ? '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:#FEF2F2;color:#E0192B">Denied</span>'
-      : '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:#FFFBEB;color:#D98A0B">Pending</span>';
+      : s==='denied' ? '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:#EAF1FA;color:#1B4D8C">Denied</span>'
+      : '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;background:#FFFBEB;color:#7C848A">Pending</span>';
     el.innerHTML = '<div class="sec-label" style="margin-top:0">Your Requests</div>' + reqs.slice(0,10).map(r =>
       `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)">
         <span style="font-size:12px">${esc(r.start_date)} – ${esc(r.end_date)}</span>${badge(r.status)}

@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for coaches, floor staff, and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for coaches, floor staff, and management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -31,10 +31,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --red:#E0192B; --red-dk:#B0121F;
+  --red:#1B4D8C; --red-dk:#0B2E52;
   --bg:#F0F2F5; --panel:#FFFFFF; --panel2:#F5F6F8;
   --ink:#15171A; --ink2:#6B7280; --ink3:#9CA3AF;
-  --line:#E4E7EC; --green:#1E9E5A; --amber:#D98A0B;
+  --line:#E4E7EC; --green:#1E9E5A; --amber:#7C848A;
   --disp:'Oswald',sans-serif; --body:'Inter',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -686,7 +686,7 @@ function checkResumeBanner(){
     const s=JSON.parse(localStorage.getItem(LS_ACTIVE)||'null');
     if(!s||!s.client_id){ box.innerHTML=''; return; }
     const doneCount=(s.exercises||[]).filter(e=>e.sets&&e.sets.length).length;
-    box.innerHTML=`<button class="opt-tile" style="border:2px solid var(--red);background:linear-gradient(135deg,#fff 70%,#FDEAEC);width:100%;text-align:left" onclick="resumeActiveSession()">
+    box.innerHTML=`<button class="opt-tile" style="border:2px solid var(--red);background:linear-gradient(135deg,#fff 70%,#EAF1FA);width:100%;text-align:left" onclick="resumeActiveSession()">
       <span class="ic">▶</span>
       <span><span class="t" style="color:var(--red)">Resume In-Progress Session</span><br><span class="d">${esc(s.client_name||'A client')} &middot; ${esc(s.title||'Training Session')} &middot; ${doneCount} of ${(s.exercises||[]).length} exercises logged</span></span>
     </button>`;
@@ -1366,7 +1366,7 @@ function tryResume(){
 /* =====================================================================
    EXERCISE QUEUE
    ===================================================================== */
-const GROUP_COLORS=['#E0192B','#2FBF71','#4A9EFF','#F5A623','#B06AF0'];
+const GROUP_COLORS=['#1B4D8C','#2FBF71','#4A9EFF','#F5A623','#B06AF0'];
 function renderQueue(){
   $('queueName').textContent=SESSION.client_name;
   const done=SESSION.exercises.filter(e=>e.sets.length).length;
@@ -1834,7 +1834,7 @@ async function openExerciseSwap(idx){
     const n = favCounts[o.name] || 0;
     return `<div class="ex-row" onclick="swapExerciseTo('${o.name.replace(/'/g,"\\'")}')" style="cursor:pointer">
       <div style="flex:1">
-        <div class="nm">${esc(o.name)}${n>0?` <span style="font-size:11px;font-weight:700;color:#E0192B">\u2764\uFE0F ${n}</span>`:''}</div>
+        <div class="nm">${esc(o.name)}${n>0?` <span style="font-size:11px;font-weight:700;color:#1B4D8C">\u2764\uFE0F ${n}</span>`:''}</div>
         <div class="meta">${esc(o.equipment||'')}${o.mechanics?' · '+esc(o.mechanics):''}</div>
       </div>
     </div>`;

@@ -11,7 +11,7 @@
 <title>Class Agenda — Ironclad</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--red:#E0192B;--ink:#15171A;--bg:#F5F6F8;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;}
+:root{--red:#1B4D8C;--ink:#15171A;--bg:#F5F6F8;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif}
 .header{background:var(--ink);color:#fff;padding:24px 20px;text-align:center}
@@ -28,10 +28,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .station-name{font-family:'Oswald';font-size:22px;font-weight:700;text-transform:uppercase;display:inline-block;vertical-align:middle}
 .station-work{font-size:15px;font-weight:700;color:var(--red);margin:10px 0 4px}
 .station-equipment{font-size:13px;color:var(--muted);margin-bottom:10px}
-.station-cue{font-size:14px;background:#FFFBEB;border-left:3px solid #D98A0B;padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:8px}
+.station-cue{font-size:14px;background:#FFFBEB;border-left:3px solid #7C848A;padding:8px 12px;border-radius:0 8px 8px 0;margin-bottom:8px}
 .station-scale{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px}
 .scale-box{padding:8px 10px;border-radius:8px}
-.scale-up{background:#FDEAEC;color:#991B1B}
+.scale-up{background:#EAF1FA;color:#991B1B}
 .scale-down{background:#E3F5EC;color:#166534}
 .scale-label{font-weight:800;text-transform:uppercase;font-size:10px;display:block;margin-bottom:2px}
 .rest-note{text-align:center;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin:8px 0}
@@ -45,7 +45,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div class="cname" id="class-name">Loading...</div>
   <div class="meta" id="class-meta"></div>
 </div>
-<div id="timer-overlay" style="display:none;position:fixed;inset:0;background:#E0192B;z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:#fff;text-align:center;transition:background .4s">
+<div id="timer-overlay" style="display:none;position:fixed;inset:0;background:#1B4D8C;z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:#fff;text-align:center;transition:background .4s">
   <button onclick="closeClassTimer()" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:40px;height:40px;border-radius:50%;cursor:pointer">&times;</button>
   <div id="timer-progress" style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;opacity:.8;margin-bottom:8px"></div>
   <div id="timer-phase-label" style="font-family:'Oswald';font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px"></div>
@@ -55,7 +55,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
   <div id="timer-next" style="font-size:13px;opacity:.75;margin-bottom:30px"></div>
   <div style="display:flex;gap:16px;align-items:center">
     <button onclick="prevPhase()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:52px;height:52px;border-radius:50%;cursor:pointer">⏮</button>
-    <button id="timer-playpause" onclick="toggleTimerPause()" style="background:#fff;border:none;color:#E0192B;font-size:26px;width:68px;height:68px;border-radius:50%;cursor:pointer">⏸</button>
+    <button id="timer-playpause" onclick="toggleTimerPause()" style="background:#fff;border:none;color:#1B4D8C;font-size:26px;width:68px;height:68px;border-radius:50%;cursor:pointer">⏸</button>
     <button onclick="skipPhase()" style="background:rgba(255,255,255,.2);border:none;color:#fff;font-size:20px;width:52px;height:52px;border-radius:50%;cursor:pointer">⏭</button>
   </div>
   <div style="font-size:11px;opacity:.6;margin-top:24px;max-width:320px">Play your music from Spotify/Apple Music in the background — these cues layer on top through the same Bluetooth speaker automatically.</div>
@@ -162,7 +162,7 @@ function paintClock(){
   const m = Math.floor(TIMER_LEFT/60), s = TIMER_LEFT%60;
   document.getElementById('timer-clock').textContent = m + ':' + String(s).padStart(2,'0');
   const phase = TIMER_QUEUE[TIMER_IDX];
-  document.getElementById('timer-overlay').style.background = phase.type==='rest' ? '#1E9E5A' : (phase.type==='warmup'||phase.type==='cooldown') ? '#2563EB' : '#E0192B';
+  document.getElementById('timer-overlay').style.background = phase.type==='rest' ? '#1E9E5A' : (phase.type==='warmup'||phase.type==='cooldown') ? '#2563EB' : '#1B4D8C';
 }
 function toggleTimerPause(){
   TIMER_RUNNING = !TIMER_RUNNING;

@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -24,10 +24,10 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
 <style>
 :root {
-  --red:#E0192B; --red-dk:#B0121F; --ink:#15171A; --bg:#E8EBEF;
+  --red:#1B4D8C; --red-dk:#0B2E52; --ink:#15171A; --bg:#E8EBEF;
   --card:#fff; --border:#E1E4E9; --text2:#4B5563; --text3:#6B7280;
-  --green:#1E9E5A; --amber:#D98A0B; --blue:#2563EB; --gray:#9AA1AC;
-  --green-lt:#E3F5EC; --amber-lt:#FBEFD9; --blue-lt:#E7EEFE; --red-lt:#FDEAEC;
+  --green:#1E9E5A; --amber:#7C848A; --blue:#2563EB; --gray:#9AA1AC;
+  --green-lt:#E3F5EC; --amber-lt:#E9EBED; --blue-lt:#E7EEFE; --red-lt:#EAF1FA;
   --font-display:'Oswald',sans-serif; --radius:14px;
 }
 * { box-sizing:border-box; margin:0; padding:0; }
@@ -459,7 +459,7 @@ function resetToCurrentPeriod() {
 
 let _newCancelChart = null;
 let _tierChart = null;
-const CHART_COLORS = ['#E0192B','#2563EB','#1E9E5A','#D98A0B','#9333EA','#0891B2','#DB2777','#65A30D','#9CA3AF'];
+const CHART_COLORS = ['#1B4D8C','#2563EB','#1E9E5A','#7C848A','#9333EA','#0891B2','#DB2777','#65A30D','#9CA3AF'];
 
 function renderCharts(newCount, cancelCount, tierCounts, sortedTiers) {
   if (typeof Chart === 'undefined') return;
@@ -469,7 +469,7 @@ function renderCharts(newCount, cancelCount, tierCounts, sortedTiers) {
     type: 'bar',
     data: {
       labels: ['New', 'Cancelled'],
-      datasets: [{ data: [newCount, cancelCount], backgroundColor: ['#1E9E5A', '#E0192B'], borderRadius: 6, maxBarThickness: 60 }]
+      datasets: [{ data: [newCount, cancelCount], backgroundColor: ['#1E9E5A', '#1B4D8C'], borderRadius: 6, maxBarThickness: 60 }]
     },
     options: {
       responsive: true,

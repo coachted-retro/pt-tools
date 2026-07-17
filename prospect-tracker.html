@@ -10,7 +10,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for front-desk staff and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for front-desk staff and management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -24,20 +24,20 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
 <link rel="manifest" href="coach-crm-manifest.json">
-<meta name="theme-color" content="#E0192B"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1B4D8C"><link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #E8EBEF;
     --surface: #FFFFFF;
     --surface2: #F0F2F5;
     --border: #E4E7EC;
-    --accent: #E0192B;
+    --accent: #1B4D8C;
     --accent2: #15171A;
-    --warm: #D98A0B;
+    --warm: #7C848A;
     --text: #15171A;
     --muted: #6B7280;
-    --hot: #E0192B;
-    --warm-c: #D98A0B;
+    --hot: #1B4D8C;
+    --warm-c: #7C848A;
     --cold: #2563EB;
     --purple: #7C3AED;
   }
@@ -69,7 +69,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
     border-radius: 8px; font-family: 'Oswald', sans-serif; font-weight: 700;
     font-size: 14px; letter-spacing: .5px; cursor: pointer; transition: all .2s;
   }
-  .btn-primary:hover { background: #E0192B; transform: translateY(-1px); }
+  .btn-primary:hover { background: #1B4D8C; transform: translateY(-1px); }
   .btn-outline {
     background: none; color: var(--text); border: 1px solid var(--border); padding: 8px 16px;
     border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 13px; cursor: pointer; transition: all .2s;
@@ -218,7 +218,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
   }
   .status-booked { background: rgba(168,85,247,.15); color: var(--purple); }
   .status-confirmed { background: rgba(0,229,160,.15); color: var(--accent); }
-  .status-show { background: rgba(0,229,160,.2); color: #E0192B; }
+  .status-show { background: rgba(0,229,160,.2); color: #1B4D8C; }
   .status-noshow { background: rgba(255,68,68,.15); color: var(--hot); }
   .status-canceled { background: rgba(107,107,133,.2); color: var(--muted); }
   .status-rescheduled { background: rgba(255,184,48,.15); color: var(--warm-c); }
@@ -253,7 +253,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
     font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer;
     white-space: nowrap; transition: all .2s;
   }
-  .btn-add-tp:hover { background: #E0192B; }
+  .btn-add-tp:hover { background: #1B4D8C; }
 
   .tp-history { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; }
   .tp-entry {
@@ -309,7 +309,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
   }
   .cal-event.ev-booked { background: rgba(168,85,247,.25); color: var(--purple); }
   .cal-event.ev-confirmed { background: rgba(0,229,160,.2); color: var(--accent); }
-  .cal-event.ev-show { background: rgba(0,229,160,.35); color: #E0192B; }
+  .cal-event.ev-show { background: rgba(0,229,160,.35); color: #1B4D8C; }
   .cal-event.ev-noshow { background: rgba(255,68,68,.2); color: var(--hot); }
   .cal-event.ev-canceled { background: rgba(107,107,133,.2); color: var(--muted); }
 
@@ -1000,7 +1000,7 @@ function todayET() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Americ
   </div>
 </div>
 
-<a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#E0192B;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:998;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
+<a href="https://coachted-retro.github.io/pt-tools/" target="_blank" style="position:fixed;bottom:20px;right:20px;background:#1B4D8C;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;z-index:998;box-shadow:0 4px 12px rgba(0,0,0,0.2);font-family:inherit">⌂ Hub</a>
 
 <script>
 // ══════════════════════════════════════════════════
@@ -1331,13 +1331,13 @@ function renderList(filter='') {
     const today = todayET();
     const overdue = p.followUpDate && p.followUpDate <= today;
     const dueToday = p.followUpDate === today;
-    return '<div class="prospect-item' + (p.id===selectedId?' active':'') + '" style="' + (overdue?'border-left:4px solid var(--red,#E0192B)':'') + '" onclick="selectProspect(\'' + p.id + '\')">' +
+    return '<div class="prospect-item' + (p.id===selectedId?' active':'') + '" style="' + (overdue?'border-left:4px solid var(--red,#1B4D8C)':'') + '" onclick="selectProspect(\'' + p.id + '\')">' +
       '<div>' +
         '<div class="prospect-name">' + p.name + '</div>' +
         '<div class="prospect-meta">' + p.phone + (p.email?' · '+p.email:'') + '</div>' +
         '<div class="prospect-type">' + p.type + ' · ' + p.timeframe + '</div>' +
         (last ? '<div class="last-touch">Last: ' + last.date + ' — ' + last.outcome + '</div>' : '') +
-        (overdue ? '<div style="font-size:11px;font-weight:700;color:var(--red,#E0192B);margin-top:3px">' + (dueToday?'Follow up today':'Follow-up overdue since ' + p.followUpDate) + '</div>' : '') +
+        (overdue ? '<div style="font-size:11px;font-weight:700;color:var(--red,#1B4D8C);margin-top:3px">' + (dueToday?'Follow up today':'Follow-up overdue since ' + p.followUpDate) + '</div>' : '') +
       '</div>' +
       '<div><span class="interest-badge ' + badgeClass + '">' + p.interest + '</span>' +
         (p.isMember ? '<span class="interest-badge" style="background:#EFF6FF;color:#2563EB;margin-left:4px">MEMBER</span>' : '') +
@@ -2263,10 +2263,10 @@ function renderBizList() {
     const overdue = l.next_action_date && l.next_action_date <= today;
     const dueToday = l.next_action_date === today;
     return `
-    <div class="prospect-card ${BIZ_SELECTED===l.id?'selected':''}" style="cursor:pointer;padding:10px;border-radius:8px;border:1px solid var(--line,#E4E7EC);margin-bottom:8px;${BIZ_SELECTED===l.id?'border-color:var(--red,#E0192B);background:#FDEAEC;':''}${overdue?'border-left:4px solid var(--red,#E0192B)':''}" onclick="openBizLead(${l.id})">
+    <div class="prospect-card ${BIZ_SELECTED===l.id?'selected':''}" style="cursor:pointer;padding:10px;border-radius:8px;border:1px solid var(--line,#E4E7EC);margin-bottom:8px;${BIZ_SELECTED===l.id?'border-color:var(--red,#1B4D8C);background:#EAF1FA;':''}${overdue?'border-left:4px solid var(--red,#1B4D8C)':''}" onclick="openBizLead(${l.id})">
       <div style="font-weight:700;font-size:13px">${escBiz(l.business_name)}</div>
       <div style="font-size:11px;color:var(--muted,#6B7280);text-transform:uppercase;letter-spacing:.3px;margin-top:2px">${escBiz((l.lead_type||'').replace(/_/g,' '))} &middot; ${escBiz(l.status||'new')}</div>
-      ${overdue ? `<div style="font-size:11px;font-weight:700;color:var(--red,#E0192B);margin-top:3px">${dueToday?'Follow up today':'Follow-up overdue since '+escBiz(l.next_action_date)}</div>` : ''}
+      ${overdue ? `<div style="font-size:11px;font-weight:700;color:var(--red,#1B4D8C);margin-top:3px">${dueToday?'Follow up today':'Follow-up overdue since '+escBiz(l.next_action_date)}</div>` : ''}
     </div>`;
   }).join('') : '<div class="empty-state" style="text-align:center;color:var(--muted,#6B7280);padding:20px">No businesses yet. Run the harvester or add one manually.</div>';
 }
@@ -2437,12 +2437,12 @@ function renderCallList() {
   el.innerHTML = CALL_LIST.map((r, i) => `
     <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--line,#E4E7EC);cursor:pointer" onclick="${r.type==='person'?'callGoToProspect':'callGoToBusiness'}('${r.id}')">
       <div style="font-size:11px;font-weight:800;color:var(--muted,#6B7280);width:24px">${i+1}</div>
-      <span style="font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:12px;background:${r.type==='person'?'#FDEAEC;color:var(--red,#E0192B)':'#EFF6FF;color:#2563EB'}">${r.type==='person'?'Person':'Business'}</span>
+      <span style="font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:12px;background:${r.type==='person'?'#EAF1FA;color:var(--red,#1B4D8C)':'#EFF6FF;color:#2563EB'}">${r.type==='person'?'Person':'Business'}</span>
       <div style="flex:1;min-width:0">
         <div style="font-weight:700;font-size:13px">${(r.name||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</div>
         <div style="font-size:11px;color:var(--muted,#6B7280)">${(r.sub||'')} &middot; ${(r.phone||'no phone')} &middot; Last: ${(r.last||'')}</div>
       </div>
-      ${r.dueDate && r.dueDate <= todayET() ? '<span style="font-size:10px;font-weight:800;color:var(--red,#E0192B)">DUE</span>' : ''}
+      ${r.dueDate && r.dueDate <= todayET() ? '<span style="font-size:10px;font-weight:800;color:var(--red,#1B4D8C)">DUE</span>' : ''}
     </div>`).join('');
 }
 

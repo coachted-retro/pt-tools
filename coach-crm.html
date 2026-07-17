@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for coaches and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is for coaches and management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -23,7 +23,7 @@
 <title>My Clients — Coach CRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;--soft:#F5F6F8;--lred:#FEF2F2;}
+:root{--red:#1B4D8C;--ink:#15171A;--bg:#F0F2F5;--card:#fff;--line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#7C848A;--soft:#F5F6F8;--lred:#EAF1FA;}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
 .topbar{background:var(--ink);display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 16px;min-height:56px;border-bottom:3px solid var(--red)}
@@ -589,7 +589,7 @@ async function loadTodaySchedule(){
       const statusBadge = status==='showed' ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Completed</span>'
         : status==='no_show' ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
         : status==='cancel' ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled</span>'
-        : status==='rescheduled' ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
+        : status==='rescheduled' ? '<span class="badge" style="background:#E9EBED;color:#4A4F54">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
         : '';
       items.push({
         uid: 'pt' + a.id, timeSort: a.appointment_time || '99:99',
@@ -615,7 +615,7 @@ async function loadTodaySchedule(){
       const dimmed = ['done','rescheduled','no_show','cancel'].includes(status);
       const rescheduleNote = status==='rescheduled' ? (a.reschedule_tbd ? 'To be determined' : (a.reschedule_date ? 'to ' + fmtApptDate(a.reschedule_date) + (a.reschedule_time ? ' ' + a.reschedule_time : '') : '')) : '';
       const statusBadge = status==='done' ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
-        : status==='rescheduled' ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
+        : status==='rescheduled' ? '<span class="badge" style="background:#E9EBED;color:#4A4F54">&#8635; Rescheduled ' + escH(rescheduleNote) + '</span>'
         : status==='no_show' ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
         : status==='cancel' ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled — following up</span>'
         : '';
@@ -687,7 +687,7 @@ async function loadTodaySchedule(){
       const dimmed = ['done','rescheduled','no_show','cancel'].includes(status);
       const clientName = `${s.first_name||''} ${s.last_name||''}`.trim();
       const statusBadge = status==='done' ? '<span class="badge" style="background:#DCFCE7;color:#166534">&#10003; Done</span>'
-        : status==='rescheduled' ? '<span class="badge" style="background:#FEF3C7;color:#92400E">&#8635; Rescheduled</span>'
+        : status==='rescheduled' ? '<span class="badge" style="background:#E9EBED;color:#4A4F54">&#8635; Rescheduled</span>'
         : status==='no_show' ? '<span class="badge" style="background:#FEE2E2;color:#991B1B">No Show</span>'
         : status==='cancel' ? '<span class="badge" style="background:#F3F4F6;color:#6B7280">Cancelled — following up</span>'
         : '';
@@ -709,12 +709,12 @@ async function loadTodaySchedule(){
     items.sort((a,b) => a.timeSort.localeCompare(b.timeSort));
 
     let html = items.map(it => `
-      <div class="card" style="border-left:4px solid ${it.dimmed?'#D1D5DB':(it.needsProfile?'#D98A0B':it.accent)};flex-direction:column;align-items:stretch;cursor:default;${it.dimmed?'opacity:.6':''}">
+      <div class="card" style="border-left:4px solid ${it.dimmed?'#D1D5DB':(it.needsProfile?'#7C848A':it.accent)};flex-direction:column;align-items:stretch;cursor:default;${it.dimmed?'opacity:.6':''}">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="flex:1">
             <div class="name" style="${it.dimmed?'text-decoration:line-through':''}">${it.clientId ? `<a href="coach-client-profile.html?client=${it.clientId}&coach=${encodeURIComponent(document.getElementById('coach-select').value)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsProfile ? `<a href="#" onclick="${it.matchBtn};return false" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.needsClassSetup ? `<a href="gym-floor.html?${it.matchedGroupClassId ? 'setupClassId='+it.matchedGroupClassId : 'setupClass='+encodeURIComponent(it.classNameGuess||it.name)}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : (it.startHref ? `<a href="${it.startHref}" style="color:inherit;text-decoration:none;border-bottom:1px dotted currentColor">${escH(it.name)}</a>` : escH(it.name))))}${it.typeLabel?' — '+escH(it.typeLabel):''}</div>
             <div class="sub">${it.timeLabel}</div>
-            ${it.needsProfile ? `<div style="display:inline-block;margin-top:4px;background:#FEF3C7;color:#92400E;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px">&#9888; No client record yet — tap the name to set up their profile</div>` : ''}
+            ${it.needsProfile ? `<div style="display:inline-block;margin-top:4px;background:#E9EBED;color:#4A4F54;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px">&#9888; No client record yet — tap the name to set up their profile</div>` : ''}
             ${it.needsClassSetup ? `<div style="display:inline-block;margin-top:4px;background:#EDE9FE;color:#5B21B6;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:6px">&#9888; No routine saved for this class yet — tap the name to build and save one</div>` : ''}
             ${it.note ? `<div class="sub" style="margin-top:2px;font-style:italic">${escH(it.note)}</div>` : ''}
           </div>
@@ -732,9 +732,9 @@ async function loadTodaySchedule(){
             <span id="note-status-${it.uid}" style="font-size:11px;color:var(--green,#1E9E5A);font-weight:700"></span>
           </div>
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-            ${it.needsProfile ? `<button onclick="${it.matchBtn}" style="background:#D98A0B;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Find or Add Client</button>` : (it.needsClassSetup ? `<a href="gym-floor.html?${it.matchedGroupClassId ? 'setupClassId='+it.matchedGroupClassId : 'setupClass='+encodeURIComponent(it.classNameGuess||it.name)}" style="background:#7C3AED;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Build Routine</a>` : (it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''))}
+            ${it.needsProfile ? `<button onclick="${it.matchBtn}" style="background:#7C848A;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Find or Add Client</button>` : (it.needsClassSetup ? `<a href="gym-floor.html?${it.matchedGroupClassId ? 'setupClassId='+it.matchedGroupClassId : 'setupClass='+encodeURIComponent(it.classNameGuess||it.name)}" style="background:#7C3AED;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Build Routine</a>` : (it.startHref ? `<a href="${it.startHref}" style="background:var(--red);color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:700">Start &rarr;</a>` : ''))}
             <button onclick="${it.doneBtn}" style="background:#1E9E5A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Mark Done</button>
-            <button onclick="${it.rescheduleBtn}" style="background:#D98A0B;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
+            <button onclick="${it.rescheduleBtn}" style="background:#7C848A;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Reschedule</button>
             <button onclick="${it.noShowBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">No Show</button>
             <button onclick="${it.cancelBtn}" style="background:var(--soft);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">Cancel</button>
             ${it.editTimeBtn ? `<button onclick="${it.editTimeBtn}" style="background:none;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer">&#9998; Edit Time</button>` : ''}
@@ -884,9 +884,9 @@ function openNoShowModal(apptId, clientId, clientName, apptTypeLabel){
   overlay.innerHTML = `<div style="background:#fff;border-radius:14px;padding:22px;max-width:440px;width:100%">
     <div style="font-weight:800;font-size:16px;margin-bottom:4px">No Show — ${escH(clientName)}</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px">${escH(apptTypeLabel)} — didn't show today.</div>
-    <label style="display:flex;align-items:flex-start;gap:10px;background:#FEF3E2;border:1px solid #D98A0B;border-radius:10px;padding:12px;margin-bottom:14px;cursor:pointer">
+    <label style="display:flex;align-items:flex-start;gap:10px;background:#FEF3E2;border:1px solid #7C848A;border-radius:10px;padding:12px;margin-bottom:14px;cursor:pointer">
       <input type="checkbox" id="noshow-abc-confirm" style="margin-top:2px">
-      <span style="font-size:13px;color:#92400E"><b>I put the member alert in ABC</b> — front desk will remind them to reschedule their ${escH(apptTypeLabel)} next time they're in.</span>
+      <span style="font-size:13px;color:#4A4F54"><b>I put the member alert in ABC</b> — front desk will remind them to reschedule their ${escH(apptTypeLabel)} next time they're in.</span>
     </label>
     <textarea id="noshow-note-body" rows="2" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="Any other context (optional)"></textarea>
     <div style="display:flex;gap:8px;margin-top:14px">
@@ -935,7 +935,7 @@ function openRescheduleModal(apptId, clientId, clientName){
     </label>
     <textarea id="resched-note" rows="2" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="Optional note — why it's moving, what to remember..."></textarea>
     <div style="display:flex;gap:8px;margin-top:14px">
-      <button onclick="saveReschedule(${apptId},${clientId||'null'},'${escH(clientName).replace(/'/g,"")}')" style="flex:1;background:#D98A0B;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="saveReschedule(${apptId},${clientId||'null'},'${escH(clientName).replace(/'/g,"")}')" style="flex:1;background:#7C848A;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
       <button onclick="document.getElementById('reschedule-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
     </div>
     <div id="resched-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
@@ -1067,7 +1067,7 @@ function openClubosRescheduleModal(apptId, summary){
     </label>
     <textarea id="clubos-resched-note" rows="2" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit" placeholder="Optional note — why it's moving, what to remember..."></textarea>
     <div style="display:flex;gap:8px;margin-top:14px">
-      <button onclick="saveClubosReschedule(${apptId})" style="flex:1;background:#D98A0B;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="saveClubosReschedule(${apptId})" style="flex:1;background:#7C848A;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">Save</button>
       <button onclick="document.getElementById('clubos-resched-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
     </div>
   </div>`;
@@ -1113,7 +1113,7 @@ function openClubosMatchModal(apptId, guessedName){
     <input id="clubos-match-search" placeholder="Type a name..." style="width:100%;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:8px" oninput="renderClubosMatchResults(${apptId})">
     <div id="clubos-match-results" style="margin-bottom:14px"></div>
     <div style="display:flex;gap:8px;border-top:1px solid var(--line);padding-top:14px">
-      <button onclick="document.getElementById('clubos-match-overlay').remove();openQuickAddClient('${escH(guessedName).replace(/'/g,"\\'")}')" style="flex:1;background:#D98A0B;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">None of these — add as new client</button>
+      <button onclick="document.getElementById('clubos-match-overlay').remove();openQuickAddClient('${escH(guessedName).replace(/'/g,"\\'")}')" style="flex:1;background:#7C848A;color:#fff;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer">None of these — add as new client</button>
       <button onclick="document.getElementById('clubos-match-overlay').remove()" style="background:var(--soft);border:none;border-radius:8px;padding:12px 20px;cursor:pointer">Cancel</button>
     </div>
   </div>`;
@@ -1430,7 +1430,7 @@ function renderClientPanel(clients, coach, isFiltered) {
           ${stale ? `<span class="badge badge-red">Touch base</span>` : `<span class="badge badge-muted">${daysSince}d ago</span>`}
         </div>
       </a>
-      <a href="member-app.html?coachClient=${c.id}" style="margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:#B0121F;text-decoration:none;border:1px solid #B0121F;border-radius:8px;padding:7px">View as ${escH(c.first_name)} sees it &rarr;</a>
+      <a href="member-app.html?coachClient=${c.id}" style="margin-top:8px;text-align:center;font-size:12px;font-weight:700;color:#0B2E52;text-decoration:none;border:1px solid #0B2E52;border-radius:8px;padding:7px">View as ${escH(c.first_name)} sees it &rarr;</a>
     </div>`;
   }).join('');
 }

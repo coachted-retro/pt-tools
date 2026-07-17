@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -24,8 +24,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;
-  --line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;
+  --red:#1B4D8C;--ink:#15171A;--bg:#F0F2F5;--card:#fff;
+  --line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#7C848A;
   --soft:#F5F6F8;--blue:#2563EB;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -45,7 +45,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 
 .add-bar{display:flex;gap:10px;margin-bottom:20px}
 .add-bar .add-btn{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--red);color:#fff;border:none;padding:10px 20px;border-radius:10px;cursor:pointer}
-.add-bar .add-btn:hover{background:#B0121F}
+.add-bar .add-btn:hover{background:#0B2E52}
 .ga-tab{font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:10px 18px;border-radius:10px;border:1.5px solid var(--line);background:#fff;color:var(--muted);cursor:pointer}
 .ga-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 
@@ -64,7 +64,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .modal-actions{display:flex;gap:10px;margin-top:20px}
 .modal-actions button{flex:1;font-family:'Oswald';font-size:13px;font-weight:700;text-transform:uppercase;padding:10px;border-radius:8px;cursor:pointer;border:none}
 .btn-save{background:var(--red);color:#fff}
-.btn-save:hover{background:#B0121F}
+.btn-save:hover{background:#0B2E52}
 .btn-cancel{background:var(--soft);color:var(--muted);border:1px solid var(--line)!important}
 
 .section-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
@@ -79,12 +79,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .r-sub{font-size:11px;color:var(--muted);margin-top:1px}
 .role-pill{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.3px;padding:3px 9px;border-radius:20px;text-transform:uppercase}
 .role-director{background:#EDE9FE;color:#5B21B6}
-.role-gm{background:#FEF3C7;color:#92400E}
+.role-gm{background:#E9EBED;color:#4A4F54}
 .role-lead{background:#DBEAFE;color:#1E40AF}
 .role-coach{background:#D1FAE5;color:#065F46}
 .role-mea{background:#F3F4F6;color:#374151}
 .role-floor{background:#FEE2E2;color:#991B1B}
-.role-regional{background:#E0192B;color:#fff}
+.role-regional{background:#1B4D8C;color:#fff}
 
 .eod-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px}
 .eod-yes{background:#D1FAE5;color:#065F46}
@@ -97,7 +97,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .row-actions{display:flex;gap:6px}
 .action-btn{font-size:10px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;border:none;text-transform:uppercase;letter-spacing:.3px}
 .btn-edit{background:var(--soft);color:var(--ink);border:1px solid var(--line)!important}
-.btn-deactivate{background:#FEF2F2;color:var(--red);border:1px solid #FECACA!important}
+.btn-deactivate{background:#EAF1FA;color:var(--red);border:1px solid #FECACA!important}
 .btn-activate{background:#E3F5EC;color:var(--green);border:1px solid #9FE1CB!important}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-family:'Oswald';font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:12px 24px;border-radius:10px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
@@ -690,9 +690,9 @@ async function saveEmployee() {
 
 function buildAppShareEmailHtml(emp, workEmail, newPin, appUrl, isCoach){
   return `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-    <h2 style="color:#E0192B;font-family:Oswald,sans-serif">Your Ironclad app is ready, ${esc(emp.name.split(' ')[0])}</h2>
+    <h2 style="color:#1B4D8C;font-family:Oswald,sans-serif">Your Ironclad app is ready, ${esc(emp.name.split(' ')[0])}</h2>
     <p>${isCoach ? "Here's your direct link — it opens straight to your agenda, no need to pick your name each time." : "Here's your link to sign in to the staff app."}</p>
-    <p><a href="${appUrl}" style="display:inline-block;background:#E0192B;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open the App &rarr;</a></p>
+    <p><a href="${appUrl}" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Open the App &rarr;</a></p>
     <p style="font-size:13px;color:#6B7280">Tip: open that link on your phone, then use your browser's "Add to Home Screen" option so it works like a real app icon.</p>
     <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Work email</td><td><b>${esc(workEmail)}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary PIN</td><td><b>${esc(newPin)}</b></td></tr></table>
     <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own PIN the first time you sign in.</p>

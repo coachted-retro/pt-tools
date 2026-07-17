@@ -5,7 +5,7 @@
   "start_url": "/member-app.html",
   "display": "standalone",
   "background_color": "#F5F6F8",
-  "theme_color": "#E0192B",
+  "theme_color": "#1B4D8C",
   "icons": [
     { "src": "icons-strong/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icons-strong/icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },

@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem("staff_session")||"null"); } catch(e){}
   if (!session || ALLOWED.indexOf(session.name) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>Command Center is restricted to ownership and management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='coach-crm.html' style='color:#E0192B;font-weight:700'>your Coach Portal</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>Command Center is restricted to ownership and management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='coach-crm.html' style='color:#1B4D8C;font-weight:700'>your Coach Portal</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -22,14 +22,14 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
 <link rel="manifest" href="coach-crm-manifest.json">
-<meta name="theme-color" content="#E0192B"><link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="theme-color" content="#1B4D8C"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
-    --red:#E0192B; --red-dk:#B0121F; --ink:#15171A; --bg:#E8EBEF;
+    --red:#1B4D8C; --red-dk:#0B2E52; --ink:#15171A; --bg:#E8EBEF;
     --card:#FFFFFF; --line:#E4E7EC; --muted:#6B7280; --soft:#F0F2F5;
-    --green:#1E9E5A; --amber:#D98A0B; --blue:#2563EB; --gray:#9AA1AC;
+    --green:#1E9E5A; --amber:#7C848A; --blue:#2563EB; --gray:#9AA1AC;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
@@ -95,9 +95,9 @@
   .row .meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pill{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px;white-space:nowrap}
   .p-active{background:#E3F5EC;color:var(--green)} .p-new{background:#E7EEFE;color:var(--blue)}
-  .p-prospect{background:#FBEFD9;color:var(--amber)} .p-declined,.p-dead,.p-lapsed{background:#EEF0F3;color:var(--gray)}
+  .p-prospect{background:#E9EBED;color:var(--amber)} .p-declined,.p-dead,.p-lapsed{background:#EEF0F3;color:var(--gray)}
   .p-won,.p-partner_active{background:#E3F5EC;color:var(--green)}
-  .p-contacted,.p-qualified,.p-meeting_set{background:#FBEFD9;color:var(--amber)}
+  .p-contacted,.p-qualified,.p-meeting_set{background:#E9EBED;color:var(--amber)}
 
   .charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
   @media(max-width:1100px){.charts{grid-template-columns:1fr}}
@@ -173,7 +173,7 @@
     <div id="win-thread-box" style="display:none;background:#F8F9FB;border-radius:10px;padding:12px;margin-bottom:10px"></div>
     <div style="display:flex;gap:8px">
       <input id="win-input" placeholder="Drop a shout-out — great job, big win, congrats..." style="flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:9px 12px;font-size:13px">
-      <button class="btn" style="background:var(--red,#E0192B);color:#fff;border:none" onclick="postWinShout()">🔥 Send</button>
+      <button class="btn" style="background:var(--red,#1B4D8C);color:#fff;border:none" onclick="postWinShout()">🔥 Send</button>
     </div>
   </div>
 
@@ -181,7 +181,7 @@
 
     <div class="cc-stack">
       <div class="tools-label">Team &amp; Staff</div>
-      <div class="toolcard" onclick="location.href='coaches-hub.html'" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+      <div class="toolcard" onclick="location.href='coaches-hub.html'" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#EAF1FA)">
         <span class="ic">🧑‍🏫</span><div class="eb" style="color:var(--red)">Coach Directory</div><div class="tt">Coaches</div>
         <div class="td">Every coach, how many clients they carry, and a direct link to their own portal.</div><span class="arrow" style="color:var(--red)">→</span></div>
       <div class="toolcard" onclick="openTool('staff-setup.html')" style="border-color:#7C3AED20;background:linear-gradient(135deg,#fff 80%,#F5F3FF)">
@@ -190,14 +190,14 @@
       <div class="toolcard" onclick="openTool('hr-portal.html')" style="border-color:#1E9E5A20;background:linear-gradient(135deg,#fff 80%,#ECFDF3)">
         <span class="ic">🗂</span><div class="eb" style="color:#1E9E5A">Dani · Bill</div><div class="tt">HR Portal</div>
         <div class="td">Employee records, hiring documents, onboarding checklists, and performance history.</div><span class="arrow" style="color:#1E9E5A">→</span></div>
-      <div class="toolcard" onclick="openTool('ops-center.html')" style="border-color:#D98A0B20;background:linear-gradient(135deg,#fff 80%,#FFF7ED)">
-        <span class="ic">🛠</span><div class="eb" style="color:#D98A0B">Management Only</div><div class="tt">Ops Center</div>
-        <div class="td">Incident reports, equipment repairs, vendor directory, and inventory — all in one place, no more paper log sheets.</div><span class="arrow" style="color:#D98A0B">→</span></div>
+      <div class="toolcard" onclick="openTool('ops-center.html')" style="border-color:#7C848A20;background:linear-gradient(135deg,#fff 80%,#FFF7ED)">
+        <span class="ic">🛠</span><div class="eb" style="color:#7C848A">Management Only</div><div class="tt">Ops Center</div>
+        <div class="td">Incident reports, equipment repairs, vendor directory, and inventory — all in one place, no more paper log sheets.</div><span class="arrow" style="color:#7C848A">→</span></div>
       <div class="toolcard" onclick="openTool('meal-plans.html')">
         <span class="ic">🥗</span><div class="eb">Complete · Complete+</div><div class="tt">Meal Plans</div>
         <div class="td">Build weekly plans and shopping lists, then send by Gmail.</div><span class="arrow">→</span></div>
       <div class="tools-label" style="margin-top:6px">Assessment Tools</div>
-      <div class="toolcard" onclick="openTool('member-onboarding.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+      <div class="toolcard" onclick="openTool('member-onboarding.html')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#EAF1FA)">
         <span class="ic">🚪</span><div class="eb" style="color:var(--red)">Step 0 · Guest Walks In</div><div class="tt">New Member Onboarding</div>
         <div class="td">Guest → tour → membership tier → close → schedule, one continuous record.</div><span class="arrow" style="color:var(--red)">→</span></div>
       <div class="toolcard" onclick="openTool('prospect-tracker.html')">
@@ -221,19 +221,19 @@
       <div class="toolcard" onclick="location.href='batch-import.html'">
         <span class="ic">⬇️</span><div class="eb">Bulk Add</div><div class="tt">Batch Import Clients</div>
         <div class="td">Import multiple clients at once from consultation PDFs, InBody scans, and assessment forms.</div><span class="arrow">→</span></div>
-      <div class="toolcard" onclick="location.href='member-roster-import.html'" style="border-color:#D98A0B20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
-        <span class="ic">📋</span><div class="eb" style="color:#D98A0B">ABC Import</div><div class="tt">Member Roster Import</div>
-        <div class="td">Real ABC membership roster with live dedup against your clients table — new members, existing matches, and non-active accounts all sorted out.</div><span class="arrow" style="color:#D98A0B">→</span></div>
-      <div class="toolcard" onclick="location.href='daily-new-members-import.html'" style="border-color:#D98A0B20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
-        <span class="ic">🆕</span><div class="eb" style="color:#D98A0B">Daily Import</div><div class="tt">Daily New Members</div>
-        <div class="td">Paste the daily "Members By Join Date" ABC report — creates a starter profile for each new member so Club OS-synced appointments have something to match against.</div><span class="arrow" style="color:#D98A0B">→</span></div>
+      <div class="toolcard" onclick="location.href='member-roster-import.html'" style="border-color:#7C848A20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
+        <span class="ic">📋</span><div class="eb" style="color:#7C848A">ABC Import</div><div class="tt">Member Roster Import</div>
+        <div class="td">Real ABC membership roster with live dedup against your clients table — new members, existing matches, and non-active accounts all sorted out.</div><span class="arrow" style="color:#7C848A">→</span></div>
+      <div class="toolcard" onclick="location.href='daily-new-members-import.html'" style="border-color:#7C848A20;background:linear-gradient(135deg,#fff 80%,#FFFBEB)">
+        <span class="ic">🆕</span><div class="eb" style="color:#7C848A">Daily Import</div><div class="tt">Daily New Members</div>
+        <div class="td">Paste the daily "Members By Join Date" ABC report — creates a starter profile for each new member so Club OS-synced appointments have something to match against.</div><span class="arrow" style="color:#7C848A">→</span></div>
       <div class="toolcard" onclick="openTool('portal-admin.html')">
         <span class="ic">🔑</span><div class="eb">Client Access</div><div class="tt">Member Portal</div>
         <div class="td">Grant client login, generate monthly challenge, manage portal access.</div><span class="arrow">→</span></div>
-      <div class="toolcard" onclick="openTool('member-app.html?forceGuest=1')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#FDEAEC)">
+      <div class="toolcard" onclick="openTool('member-app.html?forceGuest=1')" style="border-color:var(--red)20;background:linear-gradient(135deg,#fff 80%,#EAF1FA)">
         <span class="ic">📱</span><div class="eb" style="color:var(--red)">Live App</div><div class="tt">Ironclad — Member App</div>
         <div class="td">Open the live client-facing app to preview, test, or demo it directly.</div><span class="arrow" style="color:var(--red)">→</span></div>
-      <div class="toolcard" onclick="openTool('demo-data-audit.html')" style="border-color:#DC262620;background:linear-gradient(135deg,#fff 80%,#FEF2F2)">
+      <div class="toolcard" onclick="openTool('demo-data-audit.html')" style="border-color:#DC262620;background:linear-gradient(135deg,#fff 80%,#EAF1FA)">
         <span class="ic">🧹</span><div class="eb" style="color:#DC2626">Region · Cleanup</div><div class="tt">Demo Data Audit</div>
         <div class="td">See exactly what seeded demo data exists before removing it — nothing deletes without review.</div><span class="arrow" style="color:#DC2626">→</span></div>
     </div>
@@ -348,7 +348,7 @@
       <button onclick="markApptStatus('show')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--green);background:#E3F5EC;color:var(--green);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#10003; Show</button>
       <button onclick="markApptStatus('no_show')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--amber);background:#FDF3E3;color:var(--amber);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#10005; No-Show</button>
       <button onclick="markApptStatus('rescheduled')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--blue);background:#E8EFFD;color:var(--blue);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&#8635; Rescheduled</button>
-      <button onclick="markApptStatus('declined')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--red);background:#FDEAEC;color:var(--red);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&mdash; Declined</button>
+      <button onclick="markApptStatus('declined')" style="padding:10px 14px;border-radius:8px;border:1px solid var(--red);background:#EAF1FA;color:var(--red);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;text-align:left">&mdash; Declined</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:14px">
       <button onclick="apptMenuOpenTool()" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font-size:12px;cursor:pointer">Open Tool Only</button>
@@ -460,7 +460,7 @@ async function openWinThread(ref, title) {
   const d = await r.json();
   box.innerHTML = `<div style="font-weight:700;font-size:12px;margin-bottom:8px">${esc(title||'Thread')}</div>` +
     (d.messages||[]).map(m => `
-      <div style="padding:8px 10px;background:${m.author==='system'?'#FEF2F2':'#fff'};border-radius:8px;margin-bottom:6px">
+      <div style="padding:8px 10px;background:${m.author==='system'?'#EAF1FA':'#fff'};border-radius:8px;margin-bottom:6px">
         <div style="font-size:11px;font-weight:700">${esc(m.author)}</div>
         <div style="font-size:13px">${esc(m.body)}</div>
       </div>`).join('') +
@@ -868,13 +868,13 @@ function openSession(i){
 
 /* ---------- charts ---------- */
 function mk(id,cfg){ if(charts[id]) charts[id].destroy(); charts[id]=new Chart(document.getElementById(id),cfg); }
-const RED='#E0192B', INK='#15171A', GRID='#EDEFF2';
+const RED='#1B4D8C', INK='#15171A', GRID='#EDEFF2';
 function countBy(arr,key){ const m={}; arr.forEach(x=>{const k=(x[key]||'unknown'); m[k]=(m[k]||0)+1;}); return m; }
 
 function drawClientChart(){
   const m=countBy(CLIENTS,'status'); const labels=Object.keys(m);
   mk('clientChart',{type:'doughnut',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),
-    backgroundColor:['#1E9E5A','#2563EB','#D98A0B','#9AA1AC','#E0192B']}]},
+    backgroundColor:['#1E9E5A','#2563EB','#7C848A','#9AA1AC','#1B4D8C']}]},
     options:{plugins:{legend:{position:'bottom',labels:{font:{family:'Inter'}}}},cutout:'62%'}});
 }
 function drawStatusChart(){
@@ -891,7 +891,7 @@ function drawCatChart(){
 function drawTypeChart(){
   const m=countBy(LEADS,'lead_type'); const labels=Object.keys(m);
   mk('typeChart',{type:'doughnut',data:{labels:labels.map(s=>s.replace('_',' ')),datasets:[{data:labels.map(k=>m[k]),
-    backgroundColor:[RED,INK,'#D98A0B']}]},options:{plugins:{legend:{position:'bottom'}},cutout:'62%'}});
+    backgroundColor:[RED,INK,'#7C848A']}]},options:{plugins:{legend:{position:'bottom'}},cutout:'62%'}});
 }
 
 /* ---------- client drawer ---------- */
@@ -943,7 +943,7 @@ async function openClient(id){
     mk('inbodyChart',{type:'line',data:{labels:pts.map(p=>p.d),datasets:[
       {label:'Weight',data:pts.map(p=>p.w),borderColor:INK,backgroundColor:'transparent',tension:.3,yAxisID:'y'},
       {label:'Lean mass',data:pts.map(p=>p.ln),borderColor:RED,backgroundColor:'transparent',tension:.3,yAxisID:'y'},
-      {label:'Body fat %',data:pts.map(p=>p.bf),borderColor:'#D98A0B',backgroundColor:'transparent',tension:.3,yAxisID:'y1'}
+      {label:'Body fat %',data:pts.map(p=>p.bf),borderColor:'#7C848A',backgroundColor:'transparent',tension:.3,yAxisID:'y1'}
     ]},options:{plugins:{legend:{position:'bottom'}},scales:{
       y:{position:'left',grid:{color:GRID},title:{display:true,text:'lbs'}},
       y1:{position:'right',grid:{display:false},title:{display:true,text:'bf %'}}}}});

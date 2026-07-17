@@ -8,7 +8,7 @@
   var session = null;
   try { session = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
   if (!session || ALLOWED.indexOf(session.role) === -1) {
-    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#E0192B'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#E0192B;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#E0192B;font-weight:700'>Command Center</a>.</p></div></body>";
+    document.documentElement.innerHTML = "<body style='margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;background:#F0F2F5;text-align:center;padding:24px'><div><h2 style='font-family:Oswald,sans-serif;color:#1B4D8C'>Not Authorized</h2><p style='color:#6B7280;max-width:320px;margin:0 auto'>This page is restricted to management. <a href='staff-login.html' style='color:#1B4D8C;font-weight:700'>Sign in</a> with an authorized account, or head back to <a href='command-center.html' style='color:#1B4D8C;font-weight:700'>Command Center</a>.</p></div></body>";
     throw new Error("unauthorized access blocked");
   }
 })();
@@ -24,10 +24,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --red:#E0192B;--ink:#15171A;--bg:#F0F2F5;--card:#fff;
-  --line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#D98A0B;
+  --red:#1B4D8C;--ink:#15171A;--bg:#F0F2F5;--card:#fff;
+  --line:#E4E7EC;--muted:#6B7280;--green:#1E9E5A;--amber:#7C848A;
   --soft:#F5F6F8;--blue:#2563EB;--purple:#7C3AED;
-  --lgreen:#E3F5EC;--lred:#FEF2F2;--lblue:#EFF6FF;
+  --lgreen:#E3F5EC;--lred:#EAF1FA;--lblue:#EFF6FF;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
@@ -52,7 +52,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
 .qn-btn{font-family:'Oswald';font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:7px 14px;border-radius:8px;border:1px solid var(--line);color:var(--ink);background:var(--card);display:flex;align-items:center;gap:6px}
 .qn-btn:hover{border-color:var(--red);color:var(--red)}
 .qn-btn.primary{background:var(--red);color:#fff;border-color:var(--red)}
-.qn-btn.primary:hover{background:#B0121F}
+.qn-btn.primary:hover{background:#0B2E52}
 
 /* KPI GRID */
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}

@@ -11,11 +11,11 @@
 <link rel="icon" type="image/png" sizes="16x16" href="icons-strong/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons-strong/apple-touch-icon.png">
 <link rel="manifest" href="coach-crm-manifest.json">
-<meta name="theme-color" content="#E0192B"><link rel="preconnect" href="https://fonts.googleapis.com">
+<meta name="theme-color" content="#1B4D8C"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root{--red:#E0192B;--red-dk:#B0121F;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--amber:#D98A0B;--blue:#2563EB}
+  :root{--red:#1B4D8C;--red-dk:#0B2E52;--ink:#15171A;--bg:#E8EBEF;--card:#FFFFFF;--line:#E4E7EC;--muted:#6B7280;--soft:#F0F2F5;--green:#1E9E5A;--amber:#7C848A;--blue:#2563EB}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:14px}
   .topbar{display:flex;align-items:center;gap:14px;background:var(--card);border-bottom:3px solid var(--red);padding:12px 20px;position:sticky;top:0;z-index:30}
@@ -411,7 +411,7 @@ function runSimilarNamesCheck(){
   hint.innerHTML = '<div style="font-weight:700;margin-bottom:4px">⚠ Possible existing match — check before adding a new record:</div>' +
     matches.map(c => {
       const name = ((c.first_name||'')+' '+(c.last_name||'')).trim();
-      return '<a href="client-profile.html?id='+c.id+'" target="_blank" style="display:inline-block;margin:2px 8px 2px 0;color:var(--red,#E0192B);font-weight:600;text-decoration:underline">'+esc(name)+'</a>';
+      return '<a href="client-profile.html?id='+c.id+'" target="_blank" style="display:inline-block;margin:2px 8px 2px 0;color:var(--red,#1B4D8C);font-weight:600;text-decoration:underline">'+esc(name)+'</a>';
     }).join('') +
     '<div style="color:var(--muted,#6B7280);margin-top:4px;font-weight:400">If none of these are the same person, it\'s fine to keep adding as new.</div>';
   hint.style.display = 'block';
@@ -434,10 +434,10 @@ async function sendCheckinNow(clientId){
     const d = await r.json();
     btn.disabled = false; btn.textContent = 'Send Check-In Email Now';
     if (d.ok && d.sent) { status.style.color = 'var(--green,#1E9E5A)'; status.textContent = 'Sent.'; }
-    else { status.style.color = 'var(--red,#B0121F)'; status.textContent = 'Error: ' + (d.error || 'could not send'); }
+    else { status.style.color = 'var(--red,#0B2E52)'; status.textContent = 'Error: ' + (d.error || 'could not send'); }
   } catch(e) {
     btn.disabled = false; btn.textContent = 'Send Check-In Email Now';
-    status.style.color = 'var(--red,#B0121F)'; status.textContent = 'Could not reach the server.';
+    status.style.color = 'var(--red,#0B2E52)'; status.textContent = 'Could not reach the server.';
   }
 }
 
@@ -459,7 +459,7 @@ async function confirmDeleteClient(){
   const status = document.getElementById('delete-status');
   const btn = document.getElementById('confirm-delete-btn');
   const typed = document.getElementById('del-confirm-input').value.trim();
-  if (!typed) { status.style.color='#B0121F'; status.textContent='Type their name exactly to confirm.'; return; }
+  if (!typed) { status.style.color='#0B2E52'; status.textContent='Type their name exactly to confirm.'; return; }
   btn.disabled = true; btn.textContent = 'Deleting...';
   status.style.color = 'var(--muted,#6B7280)'; status.textContent = 'Deleting...';
   try {
@@ -471,11 +471,11 @@ async function confirmDeleteClient(){
       status.style.color = '#1E9E5A'; status.textContent = 'Deleted.';
       setTimeout(() => { window.location.href = 'client-management.html'; }, 900);
     } else {
-      status.style.color = '#B0121F'; status.textContent = d.error || 'Could not delete, try again.';
+      status.style.color = '#0B2E52'; status.textContent = d.error || 'Could not delete, try again.';
     }
   } catch(e) {
     btn.disabled = false; btn.textContent = 'Permanently Delete';
-    status.style.color = '#B0121F'; status.textContent = 'Could not reach the server.';
+    status.style.color = '#0B2E52'; status.textContent = 'Could not reach the server.';
   }
 }
 
@@ -651,7 +651,7 @@ async function renderIntakeLog(clientId) {
         </div>
       </div>`;
     }).join('');
-  } catch(e) { el.innerHTML = '<div style="font-size:12px;color:var(--red,#E0192B)">Could not load — check connection.</div>'; }
+  } catch(e) { el.innerHTML = '<div style="font-size:12px;color:var(--red,#1B4D8C)">Could not load — check connection.</div>'; }
 }
 
 function openIntakeNote(clientId, mealId) {
@@ -692,7 +692,7 @@ function renderTouchpoints(touchpoints){
     return;
   }
   const typeLabels = { note:'Note', text:'Text', call:'Call', email:'Email' };
-  const typeColors = { note:'#6B7280', text:'#2563EB', call:'#1E9E5A', email:'#D98A0B' };
+  const typeColors = { note:'#6B7280', text:'#2563EB', call:'#1E9E5A', email:'#7C848A' };
   el.innerHTML = touchpoints.map(t => {
     const when = t.created_at ? new Date(t.created_at) : null;
     const timeLabel = when ? when.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' at ' + when.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '';
@@ -785,9 +785,9 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     const daysLeft = Math.ceil((new Date(client.package_end_date+'T00:00:00') - new Date()) / 86400000);
     if (daysLeft <= 7) {
       const expText = daysLeft < 0 ? `Package expired ${esc(fmtDate(client.package_end_date))}` : (daysLeft === 0 ? 'Package expires today' : `Package expires in ${daysLeft} day${daysLeft===1?'':'s'} (${esc(fmtDate(client.package_end_date))})`);
-      html += '<div style="background:#FEF3E2;border:1px solid #D98A0B;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'+
-        '<div style="font-weight:700;color:#92400E;font-size:13px">⚠ '+expText+' — resign or capture a reason before it lapses.</div>'+
-        '<a href="coach-crm.html?coach='+encodeURIComponent(client.coach||client.advisor||'')+'&locked=1" style="background:#D98A0B;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0;text-decoration:none">Handle in Coach CRM &rarr;</a>'+
+      html += '<div style="background:#FEF3E2;border:1px solid #7C848A;border-radius:10px;padding:12px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'+
+        '<div style="font-weight:700;color:#4A4F54;font-size:13px">⚠ '+expText+' — resign or capture a reason before it lapses.</div>'+
+        '<a href="coach-crm.html?coach='+encodeURIComponent(client.coach||client.advisor||'')+'&locked=1" style="background:#7C848A;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0;text-decoration:none">Handle in Coach CRM &rarr;</a>'+
       '</div>';
     }
   }
@@ -800,7 +800,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     (client.goal_primary?'<span>Goal: <b>'+esc(client.goal_primary)+'</b></span>':'')+
     (client.package?'<span>Package: <b>'+esc(PKG_LABELS[client.package]||client.package)+'</b></span>':'')+
     (start?'<span>Started: <b>'+esc(fmtDate(start))+'</b> ('+tenure+')</span>':'<span>'+tenure+'</span>')+
-    (nextCheckin?'<span>Next Check-In: <b style="color:var(--red,#E0192B)">'+esc(fmtDate(nextCheckin))+'</b></span>':'')+
+    (nextCheckin?'<span>Next Check-In: <b style="color:var(--red,#1B4D8C)">'+esc(fmtDate(nextCheckin))+'</b></span>':'')+
     '</div><div class="head-meta" style="margin-top:6px">'+
     (client.email?'<span>Email: <b>'+esc(client.email)+'</b></span>':'')+
     (client.phone?'<span>Phone: <b>'+esc(client.phone)+'</b></span>':'')+
@@ -810,7 +810,7 @@ function render(client, checkins, consults, meals, measures, sessions, scans, wo
     '<div style="display:flex;gap:6px" id="rosterNav"></div>'+
     '<button class="btn" onclick="openEdit()">Edit</button>'+
     '<a href="coach-client-profile.html?client='+client.id+'" class="btn" style="text-decoration:none;display:inline-block">Coach View</a>'+
-    '<button class="btn" onclick="openDeleteClient('+client.id+',\''+esc(nm).replace(/'/g,"\\'")+'\')" style="background:#fff;color:#B0121F;border:1.5px solid #B0121F">Delete</button>'+
+    '<button class="btn" onclick="openDeleteClient('+client.id+',\''+esc(nm).replace(/'/g,"\\'")+'\')" style="background:#fff;color:#0B2E52;border:1.5px solid #0B2E52">Delete</button>'+
     '</div></div>';
 
   // actions
@@ -989,7 +989,7 @@ function drawBody(pts){
   if(pts.length<2){ el.style.display='none'; document.getElementById('bodyEmpty').innerHTML='<div class="empty">Two or more dated check-ins build the trend line. It fills as you complete check-ins.</div>'; return; }
   const labels=pts.map(p=>fmtDate(p.d));
   new Chart(el,{type:'line',data:{labels,datasets:[
-    {label:'Weight',data:pts.map(p=>num(p.w,null)),borderColor:'#E0192B',backgroundColor:'rgba(224,25,43,.08)',tension:.3,spanGaps:true},
+    {label:'Weight',data:pts.map(p=>num(p.w,null)),borderColor:'#1B4D8C',backgroundColor:'rgba(224,25,43,.08)',tension:.3,spanGaps:true},
     {label:'Lean',data:pts.map(p=>num(p.l,null)),borderColor:'#1E9E5A',backgroundColor:'rgba(30,158,90,.08)',tension:.3,spanGaps:true},
     {label:'Body Fat %',data:pts.map(p=>num(p.b,null)),borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.08)',tension:.3,spanGaps:true,yAxisID:'y1'}
   ]},options:{plugins:{legend:{labels:{font:{family:'Inter'},boxWidth:12}}},scales:{y:{position:'left'},y1:{position:'right',grid:{drawOnChartArea:false}}}}});
@@ -1001,9 +1001,9 @@ function drawScores(checkins){
   const labels=c.map(x=>fmtDate(x.checkin_date));
   new Chart(el,{type:'line',data:{labels,datasets:[
     {label:'Session',data:c.map(x=>num(x.session_score,null)),borderColor:'#1E9E5A',tension:.3,spanGaps:true},
-    {label:'Diet',data:c.map(x=>num(x.diet_score,null)),borderColor:'#D98A0B',tension:.3,spanGaps:true},
+    {label:'Diet',data:c.map(x=>num(x.diet_score,null)),borderColor:'#7C848A',tension:.3,spanGaps:true},
     {label:'Sleep',data:c.map(x=>num(x.sleep_score,null)),borderColor:'#2563EB',tension:.3,spanGaps:true},
-    {label:'Stress',data:c.map(x=>num(x.stress_score,null)),borderColor:'#E0192B',tension:.3,spanGaps:true}
+    {label:'Stress',data:c.map(x=>num(x.stress_score,null)),borderColor:'#1B4D8C',tension:.3,spanGaps:true}
   ]},options:{plugins:{legend:{labels:{font:{family:'Inter'},boxWidth:12}}},scales:{y:{min:0,max:10}}}});
 }
 
@@ -1067,7 +1067,7 @@ async function loadEmailHistory(clientId){
       return `<div class="row" style="cursor:default">
         <div class="main">
           <div class="name">${e.sent ? '✅' : '❌'} ${esc(e.subject||'(no subject)')}</div>
-          <div class="meta">${esc(when)} · to ${esc(e.to_email)}${e.context ? ' · ' + esc(e.context) : ''}${!e.sent && e.error ? ' · <span style="color:var(--red,#E0192B)">' + esc(e.error) + '</span>' : ''}</div>
+          <div class="meta">${esc(when)} · to ${esc(e.to_email)}${e.context ? ' · ' + esc(e.context) : ''}${!e.sent && e.error ? ' · <span style="color:var(--red,#1B4D8C)">' + esc(e.error) + '</span>' : ''}</div>
         </div>
       </div>`;
     }).join('');
@@ -1106,13 +1106,13 @@ function openCheckinRecall(checkinId){
       <button onclick="document.getElementById('recall-overlay').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted,#6B7280)">&times;</button>
     </div>
 
-    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Body Stats</div>
+    <div style="font-weight:800;color:var(--red,#1B4D8C);margin:14px 0 4px">Body Stats</div>
     ${fieldRow('Weight', c.now_weight ? c.now_weight+' lb (prev '+(c.prev_weight||'—')+')' : '')}
     ${fieldRow('Body Fat %', c.now_body_fat_pct ? c.now_body_fat_pct+'% (prev '+(c.prev_body_fat_pct||'—')+')' : '')}
     ${fieldRow('Lean Mass', c.now_lean ? c.now_lean+' lb (prev '+(c.prev_lean||'—')+')' : '')}
     ${fieldRow('BMI', c.now_bmi ? c.now_bmi+' (prev '+(c.prev_bmi||'—')+')' : '')}
 
-    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Training Review</div>
+    <div style="font-weight:800;color:var(--red,#1B4D8C);margin:14px 0 4px">Training Review</div>
     ${fieldRow('Sessions Completed', tr.sessions_completed)}
     ${fieldRow('Sessions Missed', tr.sessions_missed)}
     ${fieldRow('Reason for Missed Sessions', tr.missed_reason)}
@@ -1126,7 +1126,7 @@ function openCheckinRecall(checkinId){
     ${fieldRow('How the Program Feels', tr.program_feel)}
     ${fieldRow('Program Adjustments Requested', tr.program_adjustments)}
 
-    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Diet & Nutrition</div>
+    <div style="font-weight:800;color:var(--red,#1B4D8C);margin:14px 0 4px">Diet & Nutrition</div>
     ${fieldRow('Diet Score', dn.diet_score)}
     ${fieldRow('Calorie Tracking', dn.calorie_tracking)}
     ${fieldRow('Protein Tracking', dn.protein_tracking)}
@@ -1141,7 +1141,7 @@ function openCheckinRecall(checkinId){
     ${fieldRow('Training Day Nutrition', dn.training_day_nutrition)}
     ${fieldRow('Pre/Post Workout Nutrition', dn.periworkout_nutrition)}
 
-    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Wellbeing & Lifestyle</div>
+    <div style="font-weight:800;color:var(--red,#1B4D8C);margin:14px 0 4px">Wellbeing & Lifestyle</div>
     ${fieldRow('Energy Score', wl.energy_score)}
     ${fieldRow('Motivation Score', wl.motivation_score)}
     ${fieldRow('What is Keeping Them Motivated', wl.motivation_drivers)}
@@ -1152,7 +1152,7 @@ function openCheckinRecall(checkinId){
     ${fieldRow('Biggest Challenge This Month', wl.current_challenges)}
     ${fieldRow('Wins', wl.wins)}
 
-    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 4px">Coach Notes</div>
+    <div style="font-weight:800;color:var(--red,#1B4D8C);margin:14px 0 4px">Coach Notes</div>
     ${fieldRow('Advisor Notes', c.advisor_notes)}
     ${fieldRow('AI Assessment Summary', c.assessment_summary)}
     ${(!Object.keys(fi).length) ? '<div style="font-size:12px;color:var(--muted,#6B7280);margin-top:10px;font-style:italic">This check-in predates full-detail capture — only the summary fields above were saved at the time.</div>' : ''}
@@ -1657,7 +1657,7 @@ function renderScanTrendChart(scans){
              label, color, last: lastPt.val, first: firstPt.val, trendUp };
   }
 
-  const weightLine = buildLine('weight', '#E0192B', 'Weight');
+  const weightLine = buildLine('weight', '#1B4D8C', 'Weight');
   const bfLine = buildLine('body_fat_pct', '#2563EB', 'Body Fat %');
 
   const dateLabels = real.map((s,i) => {
@@ -1668,7 +1668,7 @@ function renderScanTrendChart(scans){
   const legend = [weightLine, bfLine].filter(Boolean).map(l =>
     `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:16px;font-size:12px">
       <span style="width:10px;height:10px;border-radius:50%;background:${l.color};display:inline-block"></span>
-      ${esc(l.label)} <b style="color:${l.trendUp?'var(--red,#E0192B)':'var(--green,#1E9E5A)'}">${l.trendUp?'▲':'▼'} ${Math.abs(+(l.last-l.first).toFixed(1))}</b>
+      ${esc(l.label)} <b style="color:${l.trendUp?'var(--red,#1B4D8C)':'var(--green,#1E9E5A)'}">${l.trendUp?'▲':'▼'} ${Math.abs(+(l.last-l.first).toFixed(1))}</b>
     </span>`).join('');
 
   el.innerHTML = `
@@ -1719,7 +1719,7 @@ function openScanRecall(scanId){
       ${scanStat('Fat Mass', s.fat_mass, 'lb')}
       ${scanStat('BMI', s.bmi, '')}
     </div>
-    <div style="font-weight:800;color:var(--red,#E0192B);margin:14px 0 8px">Muscle Balance</div>
+    <div style="font-weight:800;color:var(--red,#1B4D8C);margin:14px 0 8px">Muscle Balance</div>
     ${renderMuscleBalance(s)}
     ${s.file_url ? `<a class="btn" target="_blank" href="${WORKER}/file/get?key=${encodeURIComponent(s.file_url)}" style="display:block;text-align:center;margin-top:16px">View Original Upload</a>` : ''}
   </div>`;
@@ -1806,9 +1806,9 @@ function renderMuscleBalance(scan){
 
 <div class="modal" id="deleteModal">
   <div class="box">
-    <div class="mh"><h3 style="color:#B0121F">Delete Client</h3><button class="x" onclick="closeDeleteClient()">&times;</button></div>
+    <div class="mh"><h3 style="color:#0B2E52">Delete Client</h3><button class="x" onclick="closeDeleteClient()">&times;</button></div>
     <div class="mb" style="grid-template-columns:1fr">
-      <div style="background:#FEF2F2;border:1px solid #B0121F;border-radius:8px;padding:14px;font-size:13px;line-height:1.5">
+      <div style="background:#EAF1FA;border:1px solid #0B2E52;border-radius:8px;padding:14px;font-size:13px;line-height:1.5">
         <b>This cannot be undone.</b> Deleting <span id="del-client-name" style="font-weight:700"></span> permanently removes their profile and everything tied to it, workouts, check-ins, notes, messages, meal plans, photos, appointments, everything. This is not an archive, there's no way to bring it back afterward.
       </div>
       <div style="margin-top:14px">
@@ -1819,7 +1819,7 @@ function renderMuscleBalance(scan){
     </div>
     <div class="mf">
       <button class="btn" onclick="closeDeleteClient()">Cancel</button>
-      <button class="btn" id="confirm-delete-btn" onclick="confirmDeleteClient()" style="background:#B0121F;color:#fff;border-color:#B0121F">Permanently Delete</button>
+      <button class="btn" id="confirm-delete-btn" onclick="confirmDeleteClient()" style="background:#0B2E52;color:#fff;border-color:#0B2E52">Permanently Delete</button>
     </div>
   </div>
 </div>
@@ -1844,7 +1844,7 @@ function renderMuscleBalance(scan){
         <option value="former">No longer training</option>
         <option value="prospect">Prospect</option>
       </select></div>
-      <div class="fld" id="cancelReasonFld" style="display:none;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px">
+      <div class="fld" id="cancelReasonFld" style="display:none;background:#EAF1FA;border:1px solid #FECACA;border-radius:8px;padding:10px">
         <label style="color:#B91C1C">Reason for cancelling (required)</label>
         <select id="m_cancel_reason">
           <option value="">Select a reason...</option>
