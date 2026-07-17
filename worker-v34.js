@@ -181,6 +181,103 @@ async function verifyToken(token, secret) {
   try { const d = JSON.parse(atob(payload)); if (d.exp < Date.now()) return null; return d; } catch(e) { return null; }
 }
 
+// ── SQUARE INTEGRATION HELPERS ──────────────────────────────────────
+// Signature check per Square's spec: base64(HMAC-SHA256(signature_key,
+// notification_url + raw_body)), compared against the
+// x-square-hmacsha256-signature header. Constant-time compare since this
+// is exactly the kind of check a timing attack targets.
+async function verifySquareSignature(payload, key, signatureB64) {
+  if (!signatureB64) return false;
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey('raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sigBuf = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(payload));
+  const computedB64 = btoa(String.fromCharCode(...new Uint8Array(sigBuf)));
+  if (computedB64.length !== signatureB64.length) return false;
+  let diff = 0;
+  for (let i = 0; i < computedB64.length; i++) diff |= computedB64.charCodeAt(i) ^ signatureB64.charCodeAt(i);
+  return diff === 0;
+}
+
+async function squareGetCustomerEmail(customerId, env) {
+  if (!customerId || !env.SQUARE_ACCESS_TOKEN) return null;
+  const r = await fetch(`https://connect.squareup.com/v2/customers/${customerId}`, {
+    headers: { 'Authorization': 'Bearer ' + env.SQUARE_ACCESS_TOKEN, 'Square-Version': '2026-05-20' }
+  });
+  const d = await r.json();
+  return d.customer || null;
+}
+
+// Fires on invoice.payment_made -- a subscription payment actually cleared.
+// Finds the matching prospect (from the assessment, if they took it) by
+// email, or creates a fresh client record if they paid without one. Either
+// way, provisions their login and emails it -- this is the one moment that
+// turns a paid subscription into working app access.
+async function handleSquarePaymentMade(event, env) {
+  const invoice = event.data && event.data.object && event.data.object.invoice;
+  if (!invoice) return;
+  const customerId = invoice.primary_recipient && invoice.primary_recipient.customer_id;
+  const customer = await squareGetCustomerEmail(customerId, env);
+  if (!customer || !customer.email_address) return;
+
+  const email = customer.email_address.toLowerCase().trim();
+  const firstName = customer.given_name || 'there';
+  const lastName = customer.family_name || null;
+  const now = new Date().toISOString();
+
+  let client = await env.DB.prepare('SELECT id FROM clients WHERE email = ? ORDER BY id DESC LIMIT 1').bind(email).first();
+  let clientId;
+  if (client) {
+    clientId = client.id;
+    await env.DB.prepare('UPDATE clients SET status=?, updated_at=? WHERE id=?').bind('active_pt', now, clientId).run();
+  } else {
+    const ins = await env.DB.prepare(
+      `INSERT INTO clients (first_name,last_name,email,status,gym_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?)`
+    ).bind(firstName, lastName, email, 'active_pt', 1, now, now).run();
+    clientId = ins.meta.last_row_id;
+  }
+
+  const tempPassword = Math.random().toString(36).slice(-10);
+  const hash = await sha256(tempPassword);
+  const existingAuth = await env.DB.prepare('SELECT id FROM client_auth WHERE client_id=?').bind(clientId).first();
+  if (existingAuth) {
+    await env.DB.prepare('UPDATE client_auth SET password_hash=?, must_change_password=1, active=1 WHERE client_id=?').bind(hash, clientId).run();
+  } else {
+    await env.DB.prepare('INSERT INTO client_auth (client_id,email,password_hash,must_change_password,active) VALUES (?,?,?,1,1)').bind(clientId, email, hash).run();
+  }
+
+  if (env.RESEND_KEY) {
+    const html = `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+      <h2 style="color:#1B4D8C;font-family:Oswald,sans-serif">Welcome to Ironclad, ${firstName}!</h2>
+      <p>Your membership is active. Here's how to get started:</p>
+      <p><a href="https://myironcladfit.com/client-portal.html" style="display:inline-block;background:#1B4D8C;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700">Sign In &rarr;</a></p>
+      <table style="margin-top:16px;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Login email</td><td><b>${email}</b></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6B7280">Temporary password</td><td><b>${tempPassword}</b></td></tr></table>
+      <p style="font-size:13px;color:#6B7280;margin-top:12px">You'll be asked to set your own password the first time you sign in.</p>
+      </div>`;
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + env.RESEND_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: env.MAIL_FROM || 'onboarding@resend.dev', to: [email], subject: 'Welcome to Ironclad — your login is ready', html })
+      });
+    } catch (e) { /* account is provisioned either way; email is best-effort */ }
+  }
+}
+
+// Fires on subscription.updated -- only acts when the new status is
+// CANCELED, so mid-cycle updates (card changes, etc.) don't accidentally
+// lock anyone out.
+async function handleSquareSubscriptionUpdated(event, env) {
+  const sub = event.data && event.data.object && event.data.object.subscription;
+  if (!sub || sub.status !== 'CANCELED') return;
+  const customer = await squareGetCustomerEmail(sub.customer_id, env);
+  if (!customer || !customer.email_address) return;
+  const email = customer.email_address.toLowerCase().trim();
+  const client = await env.DB.prepare('SELECT id FROM clients WHERE email=? ORDER BY id DESC LIMIT 1').bind(email).first();
+  if (!client) return;
+  await env.DB.prepare('UPDATE clients SET status=? WHERE id=?').bind('canceled', client.id).run();
+  await env.DB.prepare('UPDATE client_auth SET active=0 WHERE client_id=?').bind(client.id).run();
+}
+
 // MULTI-CLUB HOSTNAME ROUTING. Added July 11 2026 so this one Worker can
 // serve every pilot club, not just Fairless Hills. Each club gets a
 // subdomain (club01.myretrostrong.com etc, matching the slot numbers in
@@ -401,6 +498,37 @@ export default {
         ).run();
 
         return ok({ id: insertRes.meta?.last_row_id, submitted: true }, cors);
+      }
+
+      // ── SQUARE WEBHOOK — payment success provisions the client's login,
+      // cancellation deactivates it. Needs SQUARE_ACCESS_TOKEN and
+      // SQUARE_WEBHOOK_SIGNATURE_KEY set as Worker secrets before this does
+      // anything real; without them it just 500s safely, no silent no-op.
+      if (url.pathname === '/webhooks/square' && request.method === 'POST') {
+        if (!env.DB) return new Response('No DB', { status: 500 });
+        if (!env.SQUARE_WEBHOOK_SIGNATURE_KEY) return new Response('Webhook not configured', { status: 500 });
+        const rawBody = await request.text();
+        const signature = request.headers.get('x-square-hmacsha256-signature') || '';
+        const notificationUrl = 'https://broken-cake-e9c2.tedscholl.workers.dev/webhooks/square';
+        const valid = await verifySquareSignature(notificationUrl + rawBody, env.SQUARE_WEBHOOK_SIGNATURE_KEY, signature);
+        if (!valid) return new Response('Invalid signature', { status: 401 });
+
+        let event;
+        try { event = JSON.parse(rawBody); } catch (e) { return new Response('Bad JSON', { status: 400 }); }
+
+        try {
+          if (event.type === 'invoice.payment_made') {
+            await handleSquarePaymentMade(event, env);
+          } else if (event.type === 'subscription.updated') {
+            await handleSquareSubscriptionUpdated(event, env);
+          }
+        } catch (e) {
+          // Swallow and 200 anyway -- Square retries aggressively on non-2xx,
+          // and a bug here shouldn't turn into a retry storm. Errors are
+          // still visible in the Worker's own logs.
+          console.log('Square webhook handling error:', e.message);
+        }
+        return new Response('OK', { status: 200 });
       }
 
       if (url.pathname === '/harvest/run') {

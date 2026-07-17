@@ -143,13 +143,20 @@ textarea{resize:vertical;min-height:70px;line-height:1.5}
     <div class="nutrition-note" id="outlookNote"></div>
     <div class="nutrition-note" id="nutritionNote"></div>
     <div class="nutrition-note" id="supplementNote"></div>
-    <div class="hint" style="text-align:center;margin:4px 0 6px">We've saved your results — a coach will follow up personally to get you started.</div>
+    <a href="" id="ctaBtn" class="submit-btn" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box">Start My Membership</a>
+    <div class="hint" style="text-align:center;margin:10px 0 6px">Cancel anytime. You'll get your login the moment payment goes through.</div>
     <div class="footer-badge">Powered by <b>Ironclad</b></div>
   </div>
 </div>
 
 <script>
 const WORKER = RETRO_WORKER_URL;
+// Set this to the Payment Link URL from Square Dashboard once the
+// subscription plan is created (Items > Payment Links, or the Checkout
+// API's CreatePaymentLink for the plan variation). Until it's a real
+// Square URL, the CTA button is left pointed nowhere rather than faking
+// a working checkout.
+const SQUARE_CHECKOUT_URL = '';
 let SELECTED = { goal: null, experience: null, days: null };
 
 function wireChoices(groupId, key) {
@@ -259,6 +266,15 @@ async function submitAssessment(e) {
     document.getElementById('nutritionNote').innerHTML =
       `<b>Nutrition:</b> ${NUTRITION_NOTES[SELECTED.goal]}`;
     document.getElementById('supplementNote').innerHTML = buildSupplementNote();
+
+    const ctaBtn = document.getElementById('ctaBtn');
+    if (SQUARE_CHECKOUT_URL) {
+      ctaBtn.href = SQUARE_CHECKOUT_URL;
+    } else {
+      ctaBtn.href = '#';
+      ctaBtn.textContent = 'A Coach Will Reach Out to Get You Started';
+      ctaBtn.onclick = (e) => e.preventDefault();
+    }
 
     document.getElementById('assessForm').style.display = 'none';
     document.getElementById('resultsCard').style.display = 'block';
