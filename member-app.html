@@ -3808,7 +3808,10 @@ function selectBundle(id) {
                   ${ex.note ? `<div style="color:var(--ink2)">${esc(ex.note)}</div>` : `<div style="color:var(--ink2)">${getFormCue(ex.name)}</div>`}
                 </div>
               </div>`).join('')}
-            <button class="action-btn" style="margin-top:10px;background:${bundle.accent};box-shadow:none" onclick="startBundleWorkout(${ri})">Start This Workout</button>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <button class="action-btn" style="flex:1;background:${bundle.accent};box-shadow:none" onclick="startBundleWorkout(${ri})">Start This Workout</button>
+              <button class="action-btn secondary" style="flex:1" onclick="scheduleBundleRoutine('${bundle.id}', ${ri})">📅 Schedule This</button>
+            </div>
           </div>`).join('<div style="height:1px;background:var(--line);margin:16px 0"></div>')}
       </div>
     </div>`;
@@ -3825,6 +3828,24 @@ function startBundleWorkout(routineIdx) {
   if (!bundle) return;
   const routine = bundle.routines[routineIdx];
   mOpenLiveLog(routine.exercises.map(e => e.name), routine.label);
+}
+
+function scheduleBundleRoutine(bundleId, routineIdx) {
+  const bundle = BUNDLES.find(b => b.id === bundleId);
+  if (!bundle) return;
+  const routine = bundle.routines[routineIdx];
+  if (!routine) return;
+  const key = routine.label + ' (' + bundle.name + ')';
+  closeBundlePreview();
+  const titleSel = document.getElementById('sched-title');
+  if (titleSel) {
+    // The routine may not be in the dropdown's option list yet if this is
+    // the first time scheduling UI has rendered on this page load.
+    if (![...titleSel.options].some(o => o.value === key)) initSchedulingUI();
+    titleSel.value = key;
+    previewSchedRoutine();
+    titleSel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 function addSelfLogExercise() {

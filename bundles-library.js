@@ -513,7 +513,182 @@ const BUNDLES = [
     ]
   },
   {
-    id: "kb_foundations",
+    id: "ironclad_mass_protocol",
+    icon: "🦍",
+    name: "Ironclad Mass Protocol",
+    desc: "Extreme hypertrophy bodybuilding split for 6-12 months of maximum muscle growth. Heavy compound lifts early in the week, bodybuilding-rep pump work later, drop sets and rest-pause layered in by Phase 2. 90-120 minute sessions, 5 days a week — not for beginners.",
+    days: "5 days / week",
+    accent: "#1B4D8C",
+    goal: ["build", "strength"],
+    routines: [
+      { label: "Phase 1 (Wks 1-8) — Chest/Triceps", exercises: [
+        {name:"Barbell Bench Press", sets:5, reps:"5", rest:"2-3min"},
+        {name:"Incline Dumbbell Press", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Weighted Dips", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Cable Fly", sets:3, reps:"12-15", rest:"60s"},
+        {name:"Close-Grip Bench Press", sets:3, reps:"8-10", rest:"60s"},
+        {name:"Overhead Tricep Extension", sets:3, reps:"12-15", rest:"45s"},
+        {name:"Machine Chest Press", sets:2, reps:"15 + drop", rest:"60s", note:"Drop set on the last set — go to failure, strip weight, keep going."}
+      ]},
+      { label: "Phase 1 (Wks 1-8) — Back/Rear Delts", exercises: [
+        {name:"Deadlift", sets:5, reps:"5", rest:"3min"},
+        {name:"Weighted Pull-Ups", sets:4, reps:"6-8", rest:"2min"},
+        {name:"Chest-Supported Row", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Lat Pulldown (wide grip)", sets:3, reps:"10-12", rest:"60s"},
+        {name:"Rear Delt Fly", sets:4, reps:"15", rest:"45s"},
+        {name:"Face Pull", sets:3, reps:"15", rest:"45s"},
+        {name:"Straight-Arm Pulldown", sets:2, reps:"15 + drop", rest:"60s", note:"Drop set on the last set."}
+      ]},
+      { label: "Phase 1 (Wks 1-8) — Legs (Quad Emphasis)", exercises: [
+        {name:"Barbell Back Squat", sets:5, reps:"5", rest:"3min"},
+        {name:"Front Squat", sets:4, reps:"8-10", rest:"2min"},
+        {name:"Leg Press", sets:4, reps:"12-15", rest:"90s"},
+        {name:"Walking Lunge", sets:3, reps:"12 each leg", rest:"60s"},
+        {name:"Leg Extension", sets:3, reps:"15-20", rest:"45s"},
+        {name:"Standing Calf Raise", sets:4, reps:"12-15", rest:"45s"}
+      ]},
+      { label: "Phase 1 (Wks 1-8) — Shoulders/Traps", exercises: [
+        {name:"Standing Overhead Press", sets:5, reps:"5", rest:"2-3min"},
+        {name:"Seated Dumbbell Press", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Cable Lateral Raise", sets:4, reps:"12-15", rest:"45s"},
+        {name:"Egyptian Lateral Raise", sets:3, reps:"12-15", rest:"45s"},
+        {name:"Barbell Shrug", sets:4, reps:"10-12", rest:"60s"},
+        {name:"Reverse Pec Deck", sets:3, reps:"15", rest:"45s"}
+      ]},
+      { label: "Phase 1 (Wks 1-8) — Legs (Ham/Glute) + Arms", exercises: [
+        {name:"Romanian Deadlift", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Hip Thrust", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Seated Leg Curl", sets:4, reps:"12-15", rest:"60s"},
+        {name:"Bulgarian Split Squat", sets:3, reps:"10 each leg", rest:"60s"},
+        {name:"Barbell Curl", sets:3, reps:"8-10", rest:"60s"},
+        {name:"Hammer Curl", sets:3, reps:"10-12", rest:"45s"},
+        {name:"Skull Crusher", sets:3, reps:"10-12", rest:"60s"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Chest/Triceps", exercises: [
+        {name:"Incline Barbell Press", sets:5, reps:"5", rest:"2-3min"},
+        {name:"Flat Dumbbell Press", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Weighted Dips", sets:3, reps:"8-10 + drop", rest:"90s", note:"Drop set on the last set."},
+        {name:"Pec Deck Fly", sets:3, reps:"12-15", rest:"60s"},
+        {name:"Skull Crusher", sets:3, reps:"10-12", rest:"60s"},
+        {name:"Cable Tricep Pushdown", sets:3, reps:"12-15", rest:"45s", note:"Rest-pause on the last set — short 10-15s pause at failure, then keep going."}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Back/Rear Delts", exercises: [
+        {name:"Rack Pull", sets:5, reps:"5", rest:"3min"},
+        {name:"Chest-Supported T-Bar Row", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Single-Arm Dumbbell Row", sets:4, reps:"10-12 each arm", rest:"60s"},
+        {name:"Seated Cable Row", sets:3, reps:"10-12", rest:"60s"},
+        {name:"Rear Delt Fly", sets:3, reps:"15 + drop", rest:"60s", note:"Drop set on the last set."},
+        {name:"Face Pull", sets:3, reps:"15-20", rest:"45s"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Legs (Quad Emphasis)", exercises: [
+        {name:"Front Squat", sets:5, reps:"5", rest:"3min"},
+        {name:"Hack Squat", sets:4, reps:"10-12", rest:"90s"},
+        {name:"Leg Press", sets:3, reps:"15+", rest:"90s", note:"Rest-pause on the last set."},
+        {name:"Walking Lunge (weighted)", sets:3, reps:"12 each leg", rest:"60s"},
+        {name:"Leg Extension", sets:3, reps:"15-20 + drop", rest:"45s", note:"Drop set on the last set."},
+        {name:"Standing Calf Raise (paused)", sets:4, reps:"12-15", rest:"45s"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Shoulders/Traps", exercises: [
+        {name:"Push Press", sets:5, reps:"5", rest:"2-3min"},
+        {name:"Arnold Press", sets:4, reps:"8-10", rest:"90s"},
+        {name:"Cable Lateral Raise", sets:3, reps:"12-15 + drop", rest:"45s", note:"Drop set on the last set."},
+        {name:"Egyptian Lateral Raise", sets:3, reps:"12-15", rest:"45s"},
+        {name:"Barbell Shrug", sets:4, reps:"10-12", rest:"60s", note:"Rest-pause on the last set."},
+        {name:"Reverse Pec Deck", sets:3, reps:"15-20", rest:"45s"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Legs (Ham/Glute) + Arms", exercises: [
+        {name:"Stiff-Leg Deadlift", sets:5, reps:"5", rest:"2-3min"},
+        {name:"Hip Thrust", sets:4, reps:"8-10 + drop", rest:"90s", note:"Drop set on the last set."},
+        {name:"Lying Leg Curl", sets:4, reps:"12-15", rest:"60s"},
+        {name:"Reverse Lunge", sets:3, reps:"12 each leg", rest:"60s"},
+        {name:"Preacher Curl", sets:3, reps:"8-10", rest:"60s"},
+        {name:"Cable Curl", sets:3, reps:"12-15", rest:"45s", note:"Rest-pause on the last set."},
+        {name:"EZ-Bar Skull Crusher", sets:3, reps:"10-12", rest:"60s"}
+      ]},
+    ]
+  },
+  {
+    id: "ironclad_shred_protocol",
+    icon: "🪒",
+    name: "Ironclad Shred Protocol",
+    desc: "Extreme fat-loss split for 6-12 months of aggressive cutting toward lean, chiseled, well-defined muscle. Full-body superset circuits every session, a HIIT finisher every time, and rest periods that get shorter as each phase progresses. 90-minute sessions, 5 days a week.",
+    days: "5 days / week",
+    accent: "#4A4F54",
+    goal: ["cut", "recomp"],
+    routines: [
+      { label: "Phase 1 (Wks 1-8) — Full Body A: Upper (90s rest)", exercises: [
+        {name:"Barbell Bench Press + Bent-Over Row", sets:4, reps:"8-10", rest:"90s", note:"Superset — no rest between the two exercises, rest 90s after completing both."},
+        {name:"Push Press + Pull-Up", sets:3, reps:"8-10", rest:"90s", note:"Superset."},
+        {name:"Dumbbell Shoulder Press + Face Pull", sets:3, reps:"12-15", rest:"90s", note:"Superset."},
+        {name:"Cable Tricep Pushdown + Barbell Curl", sets:3, reps:"12-15", rest:"90s", note:"Superset."},
+        {name:"HIIT Finisher", sets:1, reps:"15 min", rest:"—"}
+      ]},
+      { label: "Phase 1 (Wks 1-8) — Full Body B: Lower (90s rest)", exercises: [
+        {name:"Barbell Back Squat + Romanian Deadlift", sets:4, reps:"8-10", rest:"90s", note:"Superset."},
+        {name:"Walking Lunge + Leg Curl", sets:3, reps:"12 each / 12-15", rest:"90s", note:"Superset."},
+        {name:"Leg Press + Standing Calf Raise", sets:3, reps:"15-20", rest:"90s", note:"Superset."},
+        {name:"Hanging Leg Raise + Cable Woodchopper", sets:3, reps:"15", rest:"90s", note:"Superset."},
+        {name:"HIIT Finisher", sets:1, reps:"15 min", rest:"—"}
+      ]},
+      { label: "Phase 1 (Wks 1-8) — Full Body C: Push + Metcon (90s rest)", exercises: [
+        {name:"Incline Dumbbell Press + Chest-Supported Row", sets:4, reps:"10-12", rest:"90s", note:"Superset."},
+        {name:"Arnold Press + Lat Pulldown", sets:3, reps:"10-12", rest:"90s", note:"Superset."},
+        {name:"Dip + Inverted Row", sets:3, reps:"12-15", rest:"90s", note:"Superset."},
+        {name:"Kettlebell Swing + Battle Ropes", sets:3, reps:"20", rest:"90s", note:"Superset."},
+        {name:"HIIT Finisher", sets:1, reps:"20 min", rest:"—"}
+      ]},
+      { label: "Phase 1 (Wks 1-8) — Full Body D: Pull + Metcon (90s rest)", exercises: [
+        {name:"Deadlift + Push-Up", sets:4, reps:"8-10", rest:"90s", note:"Superset."},
+        {name:"Single-Arm Dumbbell Row + Goblet Squat", sets:3, reps:"12 each / 12-15", rest:"90s", note:"Superset."},
+        {name:"Cable Row + Reverse Lunge", sets:3, reps:"12-15", rest:"90s", note:"Superset."},
+        {name:"Plank-to-Row + Mountain Climbers", sets:3, reps:"15 / 30s", rest:"90s", note:"Superset."},
+        {name:"HIIT Finisher", sets:1, reps:"20 min", rest:"—"}
+      ]},
+      { label: "Phase 1 (Wks 1-8) — Metabolic Burnout (90s rest)", exercises: [
+        {name:"Barbell Complex (Deadlift-Row-Clean-Press)", sets:5, reps:"round", rest:"90s"},
+        {name:"Sled Push / Prowler", sets:6, reps:"round", rest:"90s"},
+        {name:"Battle Ropes + Box Jump", sets:4, reps:"20 / 10", rest:"90s", note:"Superset."},
+        {name:"Farmer's Carry", sets:4, reps:"40 yards", rest:"90s"},
+        {name:"HIIT Finisher", sets:1, reps:"20-25 min", rest:"—"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Full Body A: Upper (45-60s rest)", exercises: [
+        {name:"Flat Dumbbell Press + Chin-Up", sets:4, reps:"10-12", rest:"45-60s", note:"Superset, drop set on the last set."},
+        {name:"Landmine Press + Renegade Row", sets:3, reps:"10-12", rest:"45-60s", note:"Superset."},
+        {name:"Lateral Raise + Rear Delt Fly", sets:3, reps:"15", rest:"45-60s", note:"Superset."},
+        {name:"Rope Pushdown + EZ-Bar Curl", sets:3, reps:"15", rest:"45-60s", note:"Superset, rest-pause on the last set."},
+        {name:"HIIT Finisher", sets:1, reps:"15-20 min", rest:"—"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Full Body B: Lower (45-60s rest)", exercises: [
+        {name:"Front Squat + Stiff-Leg Deadlift", sets:4, reps:"10-12", rest:"45-60s", note:"Superset."},
+        {name:"Bulgarian Split Squat + Lying Leg Curl", sets:3, reps:"12 each / 15", rest:"45-60s", note:"Superset."},
+        {name:"Hack Squat + Seated Calf Raise", sets:3, reps:"15-20", rest:"45-60s", note:"Superset, drop set on the last set."},
+        {name:"Weighted Sit-Up + Cable Crunch", sets:3, reps:"15-20", rest:"45-60s", note:"Superset."},
+        {name:"HIIT Finisher", sets:1, reps:"15-20 min", rest:"—"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Full Body C: Push + Metcon (45-60s rest)", exercises: [
+        {name:"Dumbbell Bench Press + Seal Row", sets:4, reps:"12-15", rest:"45-60s", note:"Superset."},
+        {name:"Seated Dumbbell Press + Cable Row", sets:3, reps:"12-15", rest:"45-60s", note:"Superset."},
+        {name:"Bench Dip + TRX Row", sets:3, reps:"15-20", rest:"45-60s", note:"Superset."},
+        {name:"Kettlebell Swing + Burpee", sets:3, reps:"20", rest:"45-60s", note:"Superset."},
+        {name:"HIIT Finisher", sets:1, reps:"20-25 min", rest:"—"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Full Body D: Pull + Metcon (45-60s rest)", exercises: [
+        {name:"Trap Bar Deadlift + Clap Push-Up", sets:4, reps:"10-12", rest:"45-60s", note:"Superset."},
+        {name:"Chest-Supported Row + Jump Squat", sets:3, reps:"12-15", rest:"45-60s", note:"Superset."},
+        {name:"Seated Cable Row + Walking Lunge", sets:3, reps:"15", rest:"45-60s", note:"Superset."},
+        {name:"Renegade Row + Mountain Climbers", sets:3, reps:"15 / 30s", rest:"45-60s", note:"Superset."},
+        {name:"HIIT Finisher", sets:1, reps:"20-25 min", rest:"—"}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Metabolic Burnout (45-60s rest)", exercises: [
+        {name:"Barbell Complex (Deadlift-Row-Clean-Press)", sets:6, reps:"round", rest:"45-60s"},
+        {name:"Sled Push / Prowler", sets:8, reps:"round", rest:"45-60s"},
+        {name:"Battle Ropes + Box Jump", sets:5, reps:"20 / 10", rest:"45-60s", note:"Superset."},
+        {name:"Farmer's Carry", sets:5, reps:"40 yards", rest:"45-60s"},
+        {name:"HIIT Finisher", sets:1, reps:"25-30 min", rest:"—"}
+      ]},
+    ]
+  },
+  {
     icon: "🏋️",
     name: "Kettlebell Foundations",
     desc: "Kettlebell fundamentals — swings, presses, and single-arm work to build a base with the bell.",
