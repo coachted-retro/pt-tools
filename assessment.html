@@ -127,7 +127,9 @@ textarea{resize:vertical;min-height:70px;line-height:1.5}
     <h2>Your Plan Is Ready</h2>
     <div class="sub" id="resultsSub"></div>
     <div id="recList"></div>
+    <div class="nutrition-note" id="outlookNote"></div>
     <div class="nutrition-note" id="nutritionNote"></div>
+    <div class="nutrition-note" id="supplementNote"></div>
     <div class="hint" style="text-align:center;margin:4px 0 6px">We've saved your results — a coach will follow up personally to get you started.</div>
     <div class="footer-badge">Powered by <b>Ironclad</b></div>
   </div>
@@ -152,6 +154,21 @@ wireChoices('daysChoices', 'days');
 
 const GOAL_LABELS = { build: 'Build Muscle', cut: 'Lose Fat', strength: 'Get Stronger', general: 'General Fitness' };
 const DAYS_LABELS = { '2': '2-3 days/week', '4': '3-4 days/week', '5': '5+ days/week' };
+const EXPERIENCE_FRAMING = {
+  beginner: "you're just getting started — which means almost every week ahead brings visible, measurable progress if you stay consistent",
+  intermediate: "you've already built a base — the next phase is about tightening up technique and pushing past the plateaus that trip most people up",
+  advanced: "you're training seriously already — from here it's precision: smarter periodization, not just more effort"
+};
+function buildOutlook(goal, experience) {
+  const framing = EXPERIENCE_FRAMING[experience] || EXPERIENCE_FRAMING.general;
+  return `<b>Where you are, and where this takes you:</b> Right now, ${framing}. Our programs run in 8-week phases that build on each other — over the next 6 to 12 months, that's 3 to 6 full phases, each one adjusting intensity and technique so your body keeps adapting instead of plateauing. This isn't a 30-day challenge — it's designed as a long-term system for building a genuinely better lifestyle, one you can sustain well past the first few months.`;
+}
+
+const SUPPLEMENT_LINK = 'https://1stphorm.com/?a_aid=coachted';
+function buildSupplementNote() {
+  return `<b>Fuel the work:</b> Your coach can also point you toward quality supplementation to support your goals — protein, recovery, and performance products from 1st Phorm. <a href="${SUPPLEMENT_LINK}" target="_blank" rel="noopener" style="color:var(--red);font-weight:700">Browse recommended products &rarr;</a><br><span style="font-size:10.5px;color:var(--ink3)">Disclosure: Ironclad is a 1st Phorm affiliate and may earn a commission on purchases made through this link.</span>`;
+}
+
 const NUTRITION_NOTES = {
   build: "To build muscle, you'll want to be eating enough to fuel growth — consistent meals with adequate protein at every sitting. We'll dial in your exact targets once you're training with a coach.",
   cut: "For fat loss, consistency in a modest calorie deficit beats anything extreme — paired with enough protein to hold onto the muscle you've got. We'll set your exact targets once you're training with a coach.",
@@ -225,8 +242,10 @@ async function submitAssessment(e) {
         <div class="rec-desc">${b.desc}</div>
         <div class="rec-days" style="color:${b.accent}">${b.days}</div>
       </div>`).join('');
+    document.getElementById('outlookNote').innerHTML = buildOutlook(SELECTED.goal, SELECTED.experience);
     document.getElementById('nutritionNote').innerHTML =
       `<b>Nutrition:</b> ${NUTRITION_NOTES[SELECTED.goal]}`;
+    document.getElementById('supplementNote').innerHTML = buildSupplementNote();
 
     document.getElementById('assessForm').style.display = 'none';
     document.getElementById('resultsCard').style.display = 'block';
