@@ -140,6 +140,7 @@ textarea{resize:vertical;min-height:70px;line-height:1.5}
     <h2>Your Plan Is Ready</h2>
     <div class="sub" id="resultsSub"></div>
     <div id="recList"></div>
+    <div class="nutrition-note" id="macrosNote" style="border-left:3px solid var(--red)"></div>
     <div class="nutrition-note" id="outlookNote"></div>
     <div class="nutrition-note" id="nutritionNote"></div>
     <div class="nutrition-note" id="supplementNote"></div>
@@ -207,6 +208,14 @@ const EXPERIENCE_FRAMING = {
   intermediate: "you've already built a base — the next phase is about tightening up technique and pushing past the plateaus that trip most people up",
   advanced: "you're training seriously already — from here it's precision: smarter periodization, not just more effort"
 };
+function buildMacrosNote() {
+  return `<b>Why most programs actually fail you:</b> Almost every diet and workout program treats calories as interchangeable — "just eat less." Your body doesn't work that way. Protein, carbs, and fat each do a completely different job, and getting that balance wrong is the real reason so many plans stall out or bounce back.
+  <br><br>
+  <b>Protein</b> preserves and builds the muscle you're training for — skip it, and a chunk of every pound you lose is muscle, not fat. <b>Carbs</b> fuel the actual training that changes your body — starve them, and your workouts fall apart before your physique does. <b>Fat</b> regulates the hormones behind hunger, energy, and recovery — cut it too hard and you're fighting your own body the whole way.
+  <br><br>
+  A generic app hands you one calorie number and calls it done. Ironclad's plan is built around getting this ratio right for your specific goal, with a real coach dialing in your exact numbers — that's the actual unlock, not just eating less.`;
+}
+
 function buildOutlook(goal, experience) {
   const framing = EXPERIENCE_FRAMING[experience] || EXPERIENCE_FRAMING.general;
   return `<b>Where you are, and where this takes you:</b> Right now, ${framing}. Our programs run in 8-week phases that build on each other — over the next 6 to 12 months, that's 3 to 6 full phases, each one adjusting intensity and technique so your body keeps adapting instead of plateauing. This isn't a 30-day challenge — it's designed as a long-term system for building a genuinely better lifestyle, one you can sustain well past the first few months.`;
@@ -290,6 +299,7 @@ async function submitAssessment(e) {
         <div class="rec-desc">${b.desc}</div>
         <div class="rec-days" style="color:${b.accent}">${b.days}</div>
       </div>`).join('');
+    document.getElementById('macrosNote').innerHTML = buildMacrosNote();
     document.getElementById('outlookNote').innerHTML = buildOutlook(SELECTED.goal, SELECTED.experience);
     document.getElementById('nutritionNote').innerHTML =
       `<b>Nutrition:</b> ${NUTRITION_NOTES[SELECTED.goal]}`;
