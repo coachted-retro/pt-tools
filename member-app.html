@@ -2397,6 +2397,7 @@ async function loadClientChat(){
   const box = document.getElementById('client-chat-box');
   const msgs = d.messages || [];
   box.innerHTML = msgs.length ? msgs.map(m => `
+    ${m.sender==='coach' && m.coach_name ? `<div style="font-size:10.5px;font-weight:700;color:#6B7280;margin:6px 0 2px 2px">${escChat(m.coach_name)}</div>` : ''}
     <div style="max-width:75%;padding:8px 12px;border-radius:12px;font-size:13px;${m.sender==='client'?'align-self:flex-end;background:#1B4D8C;color:#fff;border-bottom-right-radius:2px;margin-left:auto':'align-self:flex-start;background:#F5F6F8;border-bottom-left-radius:2px'}">${escChat(m.body)}</div>
   `).join('') : '<div style="color:#6B7280;text-align:center;padding:20px;font-size:13px">Say hi to your coach!</div>';
   box.scrollTop = box.scrollHeight;

@@ -293,6 +293,41 @@ async function handleSquareSubscriptionUpdated(event, env) {
   }
 }
 
+// ── AI COACH ─────────────────────────────────────────────────────
+// Posts an AI-generated reaction into the same portal_messages thread
+// the client already sees for real coach messages -- but under its own
+// sender name ("Ironclad AI Coach"), never impersonating Ted, so
+// clients always know which messages are automated. Best-effort by
+// design: never throws back into the caller, since a failed AI message
+// should never block the actual workout log from succeeding.
+async function generateAICoachMessage(env, client, workoutInfo) {
+  if (!env.ANTHROPIC_KEY || !client) return;
+  try {
+    const recentWorkouts = await env.DB.prepare(
+      'SELECT workout_date, title FROM self_workouts WHERE client_id=? ORDER BY workout_date DESC LIMIT 6'
+    ).bind(workoutInfo.client_id).all();
+    const history = (recentWorkouts.results || [])
+      .map(w => `${w.workout_date}: ${w.title}`).join('\n') || 'no prior history on file';
+    const clientName = ((client.first_name || '') + ' ' + (client.last_name || '')).trim() || 'there';
+    const exerciseList = (workoutInfo.exercises || [])
+      .map(e => (typeof e === 'string' ? e : e.name)).filter(Boolean).join(', ') || 'not specified';
+
+    const sys = `You are the AI training assistant for Ironclad Fitness, working alongside the real human coach. A client just logged a workout. Write ONE short message (2-4 sentences max) reacting to it -- genuine and specific to what they actually did, never generic filler. If their recent history shows good consistency, acknowledge that. If there's a gap since their last logged workout, be warm and encouraging about getting back into it rather than critical. Never invent facts you weren't given (no fake numbers, no assumed history). Do not include any "As an AI" disclaimer in the message itself -- the sender identity is already shown separately in the app's chat thread.`;
+    const user = `Client: ${clientName}\nGoal: ${client.goal_primary || 'not specified'}\nJust logged: "${workoutInfo.title}" on ${workoutInfo.workout_date}\nExercises: ${exerciseList}\n\nRecent workout history (most recent first):\n${history}`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, system: sys, messages: [{ role: 'user', content: user }] })
+    });
+    const data = await resp.json();
+    const text = (data.content && data.content[0] && data.content[0].text || '').trim();
+    if (!text) return;
+    await env.DB.prepare('INSERT INTO portal_messages (client_id,coach_name,sender,body) VALUES (?,?,?,?)')
+      .bind(workoutInfo.client_id, 'Ironclad AI Coach', 'coach', text).run();
+  } catch (e) { /* best-effort -- workout logging must never depend on this succeeding */ }
+}
+
 // MULTI-CLUB HOSTNAME ROUTING. Added July 11 2026 so this one Worker can
 // serve every pilot club, not just Fairless Hills. Each club gets a
 // subdomain (club01.myretrostrong.com etc, matching the slot numbers in
@@ -2476,7 +2511,7 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
           .bind(body.client_id, body.workout_date||todayET(), body.title||'Self-guided workout', JSON.stringify(body.exercises||[]), body.duration_min||null, body.notes||'').run();
         const workoutId = ins.meta?.last_row_id;
         // Notify the client's coach + post to a coach-client reaction thread
-        const client = await env.DB.prepare('SELECT first_name,last_name,coach FROM clients WHERE id=?').bind(body.client_id).first();
+        const client = await env.DB.prepare('SELECT first_name,last_name,coach,goal_primary FROM clients WHERE id=?').bind(body.client_id).first();
         if (client && client.coach) {
           await env.DB.prepare('INSERT INTO notifications (recipient,type,payload_json) VALUES (?,?,?)')
             .bind(client.coach, 'self_workout', JSON.stringify({
@@ -2485,6 +2520,13 @@ Allergies: ${mp.allergies||'none'}. Medical conditions: ${mp.conditions||'none'}
               exercise_count: (body.exercises||[]).length, date: body.workout_date||todayET()
             })).run();
         }
+        // AI reaction posts asynchronously -- ctx.waitUntil lets the Worker
+        // keep running this after the response already went back to the
+        // client, so a slow (or failed) AI call never delays "logged: true".
+        ctx.waitUntil(generateAICoachMessage(env, client, {
+          client_id: body.client_id, workout_date: body.workout_date || todayET(),
+          title: body.title || 'Self-guided workout', exercises: body.exercises || []
+        }));
         return ok({ logged: true, id: workoutId }, cors);
       }
 
