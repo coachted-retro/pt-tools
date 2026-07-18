@@ -328,6 +328,36 @@ async function generateAICoachMessage(env, client, workoutInfo) {
   } catch (e) { /* best-effort -- workout logging must never depend on this succeeding */ }
 }
 
+// Same idea as generateAICoachMessage, but for a live, coach-run session
+// (pt_appointments marked "showed") rather than a client's own self-logged
+// workout -- the two populations (in-app self-guided vs. in-person PT
+// clients) get the same encouragement layer through two different doors.
+async function generateAICoachSessionMessage(env, client, appt) {
+  if (!env.ANTHROPIC_KEY || !client) return;
+  try {
+    const recentSessions = await env.DB.prepare(
+      "SELECT appointment_date, appointment_type FROM pt_appointments WHERE client_id=? AND status='showed' ORDER BY appointment_date DESC LIMIT 6"
+    ).bind(appt.client_id).all();
+    const history = (recentSessions.results || [])
+      .map(a => `${a.appointment_date}: ${a.appointment_type}`).join('\n') || 'no prior session history on file';
+    const clientName = ((client.first_name || '') + ' ' + (client.last_name || '')).trim() || 'there';
+
+    const sys = `You are the AI training assistant for Ironclad Fitness, working alongside the real human coach. A client just showed up to and completed an in-person, coach-led session. Write ONE short message (2-4 sentences max) reacting to it -- genuine and specific to the session type and their recent consistency showing up, never generic filler. Acknowledge good attendance patterns when you see them. Never invent facts you weren't given (no fake exercise details you don't have -- this was a coach-led session, not something you have exercise-level data on). Do not include any "As an AI" disclaimer in the message itself -- the sender identity is already shown separately in the app's chat thread.`;
+    const user = `Client: ${clientName}\nGoal: ${client.goal_primary || 'not specified'}\nJust completed: "${appt.appointment_type}" session on ${appt.appointment_date}, coached by ${appt.assigned_coach || 'their trainer'}\n\nRecent attended sessions (most recent first):\n${history}`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, system: sys, messages: [{ role: 'user', content: user }] })
+    });
+    const data = await resp.json();
+    const text = (data.content && data.content[0] && data.content[0].text || '').trim();
+    if (!text) return;
+    await env.DB.prepare('INSERT INTO portal_messages (client_id,coach_name,sender,body) VALUES (?,?,?,?)')
+      .bind(appt.client_id, 'Ironclad AI Coach', 'coach', text).run();
+  } catch (e) { /* best-effort -- appointment status update must never depend on this succeeding */ }
+}
+
 // MULTI-CLUB HOSTNAME ROUTING. Added July 11 2026 so this one Worker can
 // serve every pilot club, not just Fairless Hills. Each club gets a
 // subdomain (club01.myretrostrong.com etc, matching the slot numbers in
@@ -3105,6 +3135,13 @@ Rules:
         if (b.status === 'no_show') {
           const appt = await env.DB.prepare('SELECT * FROM pt_appointments WHERE id=?').bind(b.id).first();
           if (appt) ctx.waitUntil(sendNoShowEmail(env, appt));
+        }
+        if (b.status === 'showed') {
+          const appt = await env.DB.prepare('SELECT * FROM pt_appointments WHERE id=?').bind(b.id).first();
+          if (appt && appt.client_id) {
+            const client = await env.DB.prepare('SELECT first_name,last_name,goal_primary FROM clients WHERE id=?').bind(appt.client_id).first();
+            if (client) ctx.waitUntil(generateAICoachSessionMessage(env, client, appt));
+          }
         }
         return ok({ ok: true }, cors);
       }
