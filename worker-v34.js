@@ -358,6 +358,55 @@ async function generateAICoachSessionMessage(env, client, appt) {
   } catch (e) { /* best-effort -- appointment status update must never depend on this succeeding */ }
 }
 
+// Nightly re-engagement scan. Only fires for clients who (a) have at
+// least one prior logged workout or attended session -- a brand-new
+// client with zero history isn't "gone quiet," that's just onboarding --
+// and (b) haven't gotten an AI check-in in the last 4 days, so this
+// nudges once, not every single night someone's inactive.
+async function sendAICoachCheckins(env) {
+  if (!env.ANTHROPIC_KEY || !env.DB) return;
+  try {
+    const rows = await env.DB.prepare(`
+      SELECT c.id, c.first_name, c.last_name, c.goal_primary,
+        (SELECT MAX(workout_date) FROM self_workouts WHERE client_id=c.id) as last_self_workout,
+        (SELECT MAX(appointment_date) FROM pt_appointments WHERE client_id=c.id AND status='showed') as last_session,
+        (SELECT MAX(created_at) FROM portal_messages WHERE client_id=c.id AND coach_name='Ironclad AI Coach') as last_ai_checkin
+      FROM clients c
+      WHERE c.status = 'active_pt'
+    `).all();
+
+    const today = new Date();
+    for (const c of (rows.results || [])) {
+      try {
+        const lastActivity = [c.last_self_workout, c.last_session].filter(Boolean).sort().pop();
+        if (!lastActivity) continue;
+        const daysSince = Math.floor((today - new Date(lastActivity)) / 86400000);
+        if (daysSince < 4) continue;
+
+        if (c.last_ai_checkin) {
+          const daysSinceCheckin = Math.floor((today - new Date(c.last_ai_checkin)) / 86400000);
+          if (daysSinceCheckin < 4) continue;
+        }
+
+        const clientName = ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || 'there';
+        const sys = `You are the AI training assistant for Ironclad Fitness, working alongside the real human coach. This client hasn't logged a workout or attended a session in ${daysSince} days. Write ONE short, warm check-in message (2-4 sentences max) -- encouraging, never guilt-tripping or pushy. Acknowledge life gets busy, invite them back without pressure, and keep it genuine to their stated goal. Never invent facts you weren't given. Do not include any "As an AI" disclaimer -- sender identity is shown separately in the app.`;
+        const user = `Client: ${clientName}\nGoal: ${c.goal_primary || 'not specified'}\nDays since last activity: ${daysSince}\nLast activity date: ${lastActivity}`;
+
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, system: sys, messages: [{ role: 'user', content: user }] })
+        });
+        const data = await resp.json();
+        const text = (data.content && data.content[0] && data.content[0].text || '').trim();
+        if (!text) continue;
+        await env.DB.prepare('INSERT INTO portal_messages (client_id,coach_name,sender,body) VALUES (?,?,?,?)')
+          .bind(c.id, 'Ironclad AI Coach', 'coach', text).run();
+      } catch (e) { /* one client's failure shouldn't block the rest of the batch */ }
+    }
+  } catch (e) { /* best-effort nightly job */ }
+}
+
 // MULTI-CLUB HOSTNAME ROUTING. Added July 11 2026 so this one Worker can
 // serve every pilot club, not just Fairless Hills. Each club gets a
 // subdomain (club01.myretrostrong.com etc, matching the slot numbers in
@@ -4808,6 +4857,7 @@ ${compactIndex.join('\n')}`;
     ctx.waitUntil(sendDeclineDripEmails(env));
     ctx.waitUntil(sendAppointmentReminders(env));
     ctx.waitUntil(sendMensMembersDrip(env));
+    ctx.waitUntil(sendAICoachCheckins(env));
   }
 };
 
