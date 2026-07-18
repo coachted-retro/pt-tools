@@ -407,6 +407,49 @@ async function sendAICoachCheckins(env) {
   } catch (e) { /* best-effort nightly job */ }
 }
 
+// Meal-log and cardio-log reactions -- same shared shape (client, goal,
+// what they logged), fired from inside handleDb's generic insert path
+// since that's where meals/cardio_logs actually get written from the
+// client app. Deliberately light-touch: this isn't nutrition coaching,
+// just acknowledgment that the log happened, in the coach's corner.
+async function generateAICoachMealMessage(env, client, mealType, mealDesc) {
+  if (!env.ANTHROPIC_KEY || !client) return;
+  try {
+    const clientName = ((client.first_name || '') + ' ' + (client.last_name || '')).trim() || 'there';
+    const sys = `You are the AI training assistant for Ironclad Fitness, working alongside the real human coach. A client just logged ${mealType} in their nutrition tracker. Write ONE short message (2-3 sentences max) -- brief acknowledgment and encouragement for staying consistent with tracking, genuine and specific to what they logged if details are given, never generic filler. This is not the place for nutrition advice or calorie/macro commentary -- that's the coach's job, not yours. Never invent facts you weren't given. Do not include any "As an AI" disclaimer -- sender identity is shown separately in the app's chat thread.`;
+    const user = `Client: ${clientName}\nGoal: ${client.goal_primary || 'not specified'}\nJust logged: ${mealType}${mealDesc ? ' -- ' + mealDesc : ''}`;
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 200, system: sys, messages: [{ role: 'user', content: user }] })
+    });
+    const data = await resp.json();
+    const text = (data.content && data.content[0] && data.content[0].text || '').trim();
+    if (!text) return;
+    await env.DB.prepare('INSERT INTO portal_messages (client_id,coach_name,sender,body) VALUES (?,?,?,?)')
+      .bind(client.id, 'Ironclad AI Coach', 'coach', text).run();
+  } catch (e) { /* best-effort -- meal logging must never depend on this succeeding */ }
+}
+
+async function generateAICoachCardioMessage(env, client, cardioType, durationMin) {
+  if (!env.ANTHROPIC_KEY || !client) return;
+  try {
+    const clientName = ((client.first_name || '') + ' ' + (client.last_name || '')).trim() || 'there';
+    const sys = `You are the AI training assistant for Ironclad Fitness, working alongside the real human coach. A client just logged a cardio session on their own (not coach-assigned). Write ONE short message (2-3 sentences max) -- genuine acknowledgment and encouragement, specific to the cardio type and duration if given, never generic filler. Never invent facts you weren't given. Do not include any "As an AI" disclaimer -- sender identity is shown separately in the app's chat thread.`;
+    const user = `Client: ${clientName}\nGoal: ${client.goal_primary || 'not specified'}\nJust logged: ${cardioType}${durationMin ? ', ' + durationMin + ' minutes' : ''}`;
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 200, system: sys, messages: [{ role: 'user', content: user }] })
+    });
+    const data = await resp.json();
+    const text = (data.content && data.content[0] && data.content[0].text || '').trim();
+    if (!text) return;
+    await env.DB.prepare('INSERT INTO portal_messages (client_id,coach_name,sender,body) VALUES (?,?,?,?)')
+      .bind(client.id, 'Ironclad AI Coach', 'coach', text).run();
+  } catch (e) { /* best-effort -- cardio logging must never depend on this succeeding */ }
+}
+
 // MULTI-CLUB HOSTNAME ROUTING. Added July 11 2026 so this one Worker can
 // serve every pilot club, not just Fairless Hills. Each club gets a
 // subdomain (club01.myretrostrong.com etc, matching the slot numbers in
@@ -525,7 +568,7 @@ export default {
 
       if (url.pathname === '/db') {
         if (!env.DB) return bad('D1 binding "DB" not found.', cors);
-        return await handleDb(await request.json(), env, cors);
+        return await handleDb(await request.json(), env, cors, ctx);
       }
 
       // ── CANDIDATE PIPELINE (Phase 6) ────────────────────────────
@@ -5730,7 +5773,7 @@ function fmtStart(raw){
 }
 
 // ---------------- D1 generic endpoint ----------------
-async function handleDb(q, env, cors) {
+async function handleDb(q, env, cors, ctx) {
   const op = (q.op || '').toLowerCase();
   const table = q.table;
   if (!ALLOWED_TABLES.has(table)) return bad('Table not allowed: ' + table, cors);
@@ -5744,7 +5787,7 @@ async function handleDb(q, env, cors) {
     const res = await env.DB.prepare(sql).bind(...cols.map(c => q.values[c] ?? null)).run();
     if (table === 'meals' && q.values.client_id) {
       try {
-        const client = await env.DB.prepare('SELECT first_name,last_name,coach FROM clients WHERE id=?').bind(q.values.client_id).first();
+        const client = await env.DB.prepare('SELECT id,first_name,last_name,coach,goal_primary FROM clients WHERE id=?').bind(q.values.client_id).first();
         if (client && client.coach) {
           const name = ((client.first_name||'')+' '+(client.last_name||'')).trim();
           const mealType = q.values.meal_type || 'a meal';
@@ -5754,11 +5797,12 @@ async function handleDb(q, env, cors) {
               message: name + ' logged ' + mealType
             })).run();
         }
+        if (client && ctx) ctx.waitUntil(generateAICoachMealMessage(env, client, q.values.meal_type || 'a meal', q.values.description || q.values.notes || null));
       } catch(e) {}
     }
     if (table === 'cardio_logs' && q.values.client_id) {
       try {
-        const client = await env.DB.prepare('SELECT first_name,last_name,coach FROM clients WHERE id=?').bind(q.values.client_id).first();
+        const client = await env.DB.prepare('SELECT id,first_name,last_name,coach,goal_primary FROM clients WHERE id=?').bind(q.values.client_id).first();
         if (client && client.coach) {
           const name = ((client.first_name||'')+' '+(client.last_name||'')).trim();
           const dur = q.values.duration_minutes ? q.values.duration_minutes + ' min ' : '';
@@ -5769,6 +5813,7 @@ async function handleDb(q, env, cors) {
               message: name + ' logged ' + dur + type + ' on their own'
             })).run();
         }
+        if (client && ctx) ctx.waitUntil(generateAICoachCardioMessage(env, client, q.values.cardio_type || 'cardio', q.values.duration_minutes || null));
       } catch(e) {}
     }
     if (table === 'clients' && q.values.coach && res.meta?.last_row_id) {
