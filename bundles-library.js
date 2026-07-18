@@ -516,94 +516,80 @@ const BUNDLES = [
     id: "ironclad_mass_protocol",
     icon: "🦍",
     name: "Ironclad Mass Protocol",
-    desc: "Extreme hypertrophy bodybuilding split for 6-12 months of maximum muscle growth. Heavy compound lifts early in the week, bodybuilding-rep pump work later, drop sets and rest-pause layered in by Phase 2. 90-120 minute sessions, 5 days a week — not for beginners.",
+    desc: "The most extreme hypertrophy split on the platform — German Volume Training overload in Phase 1, stacked failure-intensity techniques on every set in Phase 2. Not a variation on Iron Protocol — a genuinely different, harder methodology. 90-120 minute sessions, 5 days a week. Advanced lifters only.",
     days: "5 days / week",
     accent: "#1B4D8C",
     goal: ["build", "strength"],
     routines: [
-      { label: "Phase 1 (Wks 1-8) — Chest/Triceps", exercises: [
-        {name:"Barbell Bench Press", sets:5, reps:"5", rest:"2-3min"},
-        {name:"Incline Dumbbell Press", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Weighted Dips", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Cable Fly", sets:3, reps:"12-15", rest:"60s"},
-        {name:"Close-Grip Bench Press", sets:3, reps:"8-10", rest:"60s"},
-        {name:"Overhead Tricep Extension", sets:3, reps:"12-15", rest:"45s"},
-        {name:"Machine Chest Press", sets:2, reps:"15 + drop", rest:"60s", note:"Drop set on the last set — go to failure, strip weight, keep going."}
+      { label: "Phase 1 (Wks 1-8) — Chest/Triceps: GVT Overload", exercises: [
+        {name:"Barbell Bench Press", sets:10, reps:"10", rest:"60s", note:"German Volume Training — same weight for all 10 sets (~60% 1RM), no adding weight even if it speeds up. The last 3-4 sets should be a genuine grind. This is the single most demanding set-count on the whole platform."},
+        {name:"Incline DB Press + Flat DB Fly + Push-Up to Failure", sets:3, reps:"10 / 12 / max", rest:"0s between, 2min after", note:"Giant set — all three back to back with zero rest, then rest 2 minutes before the next round. 3 full rounds."},
+        {name:"Weighted Dips", sets:4, reps:"failure + drop", rest:"90s", note:"Every set (not just the last) goes to true failure, then strip weight and continue for a drop set."},
+        {name:"Cable Crossover", sets:3, reps:"12 + 12 + 12", rest:"90s", note:"Mechanical drop set — high-to-low, then immediately low-to-high, then immediately straight-across, dropping the pin weight each switch. One long set."},
+        {name:"Skull Crusher + Close-Grip Push-Up", sets:3, reps:"10-12 / max", rest:"60s", note:"Myo-rep finisher — skull crushers to near-failure, then straight into close-grip push-ups to true failure, no rest between the two."}
       ]},
-      { label: "Phase 1 (Wks 1-8) — Back/Rear Delts", exercises: [
-        {name:"Deadlift", sets:5, reps:"5", rest:"3min"},
-        {name:"Weighted Pull-Ups", sets:4, reps:"6-8", rest:"2min"},
-        {name:"Chest-Supported Row", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Lat Pulldown (wide grip)", sets:3, reps:"10-12", rest:"60s"},
-        {name:"Rear Delt Fly", sets:4, reps:"15", rest:"45s"},
-        {name:"Face Pull", sets:3, reps:"15", rest:"45s"},
-        {name:"Straight-Arm Pulldown", sets:2, reps:"15 + drop", rest:"60s", note:"Drop set on the last set."}
+      { label: "Phase 1 (Wks 1-8) — Back/Rear Delts: GVT Overload", exercises: [
+        {name:"Deadlift", sets:5, reps:"3", rest:"3min", note:"Kept heavy and low-volume on purpose — GVT's 10x10 is deliberately NOT applied to deadlift here. Spinal loading fatigues too fast at that volume to be worth the injury risk."},
+        {name:"Barbell Row", sets:10, reps:"10", rest:"60s", note:"German Volume Training — same weight for all 10 sets. This is the volume-overload lift for back day."},
+        {name:"Weighted Pull-Ups + Straight-Arm Pulldown", sets:3, reps:"max / 15", rest:"0s between, 90s after", note:"Giant set pairing — pull-ups to failure straight into pulldowns, no rest. 3 rounds."},
+        {name:"Rear Delt Fly", sets:4, reps:"15 + drop", rest:"45s", note:"Drop set on every set, not just the last."},
+        {name:"Face Pull", sets:3, reps:"20", rest:"45s", note:"Rest-pause on every set — to failure, 15s pause, keep going, 15s pause, finish it."}
       ]},
-      { label: "Phase 1 (Wks 1-8) — Legs (Quad Emphasis)", exercises: [
-        {name:"Barbell Back Squat", sets:5, reps:"5", rest:"3min"},
-        {name:"Front Squat", sets:4, reps:"8-10", rest:"2min"},
-        {name:"Leg Press", sets:4, reps:"12-15", rest:"90s"},
-        {name:"Walking Lunge", sets:3, reps:"12 each leg", rest:"60s"},
-        {name:"Leg Extension", sets:3, reps:"15-20", rest:"45s"},
-        {name:"Standing Calf Raise", sets:4, reps:"12-15", rest:"45s"}
+      { label: "Phase 1 (Wks 1-8) — Legs (Quad Emphasis): GVT Overload", exercises: [
+        {name:"Barbell Back Squat", sets:10, reps:"10", rest:"90s", note:"German Volume Training — same weight for all 10 sets. Expect this to be the hardest single exercise block in the entire program."},
+        {name:"Front Squat", sets:4, reps:"8-10 + drop", rest:"2min", note:"Drop set on every set."},
+        {name:"Leg Press + Walking Lunge", sets:3, reps:"15 / 12 each leg", rest:"0s between, 2min after", note:"Giant set — leg press straight into walking lunges, no rest. 3 rounds."},
+        {name:"Leg Extension", sets:4, reps:"15-20 + drop", rest:"45s", note:"Drop set on every set."},
+        {name:"Standing Calf Raise", sets:5, reps:"15-20", rest:"30s", note:"Rest-pause on every set."}
       ]},
-      { label: "Phase 1 (Wks 1-8) — Shoulders/Traps", exercises: [
-        {name:"Standing Overhead Press", sets:5, reps:"5", rest:"2-3min"},
-        {name:"Seated Dumbbell Press", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Cable Lateral Raise", sets:4, reps:"12-15", rest:"45s"},
-        {name:"Egyptian Lateral Raise", sets:3, reps:"12-15", rest:"45s"},
-        {name:"Barbell Shrug", sets:4, reps:"10-12", rest:"60s"},
-        {name:"Reverse Pec Deck", sets:3, reps:"15", rest:"45s"}
-      ]},
-      { label: "Phase 1 (Wks 1-8) — Legs (Ham/Glute) + Arms", exercises: [
-        {name:"Romanian Deadlift", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Hip Thrust", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Seated Leg Curl", sets:4, reps:"12-15", rest:"60s"},
-        {name:"Bulgarian Split Squat", sets:3, reps:"10 each leg", rest:"60s"},
-        {name:"Barbell Curl", sets:3, reps:"8-10", rest:"60s"},
-        {name:"Hammer Curl", sets:3, reps:"10-12", rest:"45s"},
-        {name:"Skull Crusher", sets:3, reps:"10-12", rest:"60s"}
-      ]},
-      { label: "Phase 2 (Wks 9-16) — Chest/Triceps", exercises: [
-        {name:"Incline Barbell Press", sets:5, reps:"5", rest:"2-3min"},
-        {name:"Flat Dumbbell Press", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Weighted Dips", sets:3, reps:"8-10 + drop", rest:"90s", note:"Drop set on the last set."},
-        {name:"Pec Deck Fly", sets:3, reps:"12-15", rest:"60s"},
-        {name:"Skull Crusher", sets:3, reps:"10-12", rest:"60s"},
-        {name:"Cable Tricep Pushdown", sets:3, reps:"12-15", rest:"45s", note:"Rest-pause on the last set — short 10-15s pause at failure, then keep going."}
-      ]},
-      { label: "Phase 2 (Wks 9-16) — Back/Rear Delts", exercises: [
-        {name:"Rack Pull", sets:5, reps:"5", rest:"3min"},
-        {name:"Chest-Supported T-Bar Row", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Single-Arm Dumbbell Row", sets:4, reps:"10-12 each arm", rest:"60s"},
-        {name:"Seated Cable Row", sets:3, reps:"10-12", rest:"60s"},
-        {name:"Rear Delt Fly", sets:3, reps:"15 + drop", rest:"60s", note:"Drop set on the last set."},
-        {name:"Face Pull", sets:3, reps:"15-20", rest:"45s"}
-      ]},
-      { label: "Phase 2 (Wks 9-16) — Legs (Quad Emphasis)", exercises: [
-        {name:"Front Squat", sets:5, reps:"5", rest:"3min"},
-        {name:"Hack Squat", sets:4, reps:"10-12", rest:"90s"},
-        {name:"Leg Press", sets:3, reps:"15+", rest:"90s", note:"Rest-pause on the last set."},
-        {name:"Walking Lunge (weighted)", sets:3, reps:"12 each leg", rest:"60s"},
-        {name:"Leg Extension", sets:3, reps:"15-20 + drop", rest:"45s", note:"Drop set on the last set."},
-        {name:"Standing Calf Raise (paused)", sets:4, reps:"12-15", rest:"45s"}
-      ]},
-      { label: "Phase 2 (Wks 9-16) — Shoulders/Traps", exercises: [
-        {name:"Push Press", sets:5, reps:"5", rest:"2-3min"},
-        {name:"Arnold Press", sets:4, reps:"8-10", rest:"90s"},
-        {name:"Cable Lateral Raise", sets:3, reps:"12-15 + drop", rest:"45s", note:"Drop set on the last set."},
-        {name:"Egyptian Lateral Raise", sets:3, reps:"12-15", rest:"45s"},
-        {name:"Barbell Shrug", sets:4, reps:"10-12", rest:"60s", note:"Rest-pause on the last set."},
+      { label: "Phase 1 (Wks 1-8) — Shoulders/Traps: GVT Overload", exercises: [
+        {name:"Standing Overhead Press", sets:10, reps:"10", rest:"60s", note:"German Volume Training — same weight for all 10 sets."},
+        {name:"Seated DB Press + Cable Lateral Raise", sets:3, reps:"10 / 15", rest:"0s between, 90s after", note:"Giant set. 3 rounds."},
+        {name:"Egyptian Lateral Raise", sets:4, reps:"12-15 + drop", rest:"45s", note:"Drop set on every set."},
+        {name:"Barbell Shrug", sets:4, reps:"12-15", rest:"45s", note:"Rest-pause on every set."},
         {name:"Reverse Pec Deck", sets:3, reps:"15-20", rest:"45s"}
       ]},
-      { label: "Phase 2 (Wks 9-16) — Legs (Ham/Glute) + Arms", exercises: [
-        {name:"Stiff-Leg Deadlift", sets:5, reps:"5", rest:"2-3min"},
-        {name:"Hip Thrust", sets:4, reps:"8-10 + drop", rest:"90s", note:"Drop set on the last set."},
-        {name:"Lying Leg Curl", sets:4, reps:"12-15", rest:"60s"},
-        {name:"Reverse Lunge", sets:3, reps:"12 each leg", rest:"60s"},
-        {name:"Preacher Curl", sets:3, reps:"8-10", rest:"60s"},
-        {name:"Cable Curl", sets:3, reps:"12-15", rest:"45s", note:"Rest-pause on the last set."},
-        {name:"EZ-Bar Skull Crusher", sets:3, reps:"10-12", rest:"60s"}
+      { label: "Phase 1 (Wks 1-8) — Legs (Ham/Glute) + Arms: GVT Overload", exercises: [
+        {name:"Romanian Deadlift", sets:5, reps:"6-8", rest:"2min", note:"Kept as heavy top sets, not GVT — hip-hinge volume at 10x10 fatigues too fast to be worth it back to back with squat day."},
+        {name:"Hip Thrust", sets:4, reps:"10-12 + drop", rest:"90s", note:"Drop set on every set."},
+        {name:"Seated Leg Curl", sets:4, reps:"15 + drop", rest:"60s", note:"Drop set on every set."},
+        {name:"Barbell Curl + Hammer Curl", sets:3, reps:"10 / 10", rest:"0s between, 60s after", note:"Giant set. 3 rounds."},
+        {name:"Skull Crusher", sets:3, reps:"10-12 + drop", rest:"60s", note:"Drop set on every set."}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Chest/Triceps: Failure Density", exercises: [
+        {name:"Incline Barbell Press", sets:6, reps:"6-8 + rest-pause", rest:"2min", note:"Rest-pause on every set — to failure, 15s pause, push out 2-3 more, 15s pause, finish it."},
+        {name:"Flat DB Press", sets:4, reps:"failure + drop + drop", rest:"90s", note:"Double drop set on every set — to failure, strip weight, failure again, strip again, finish."},
+        {name:"Weighted Dips + Bench Dips to Failure", sets:3, reps:"max / max", rest:"0s between, 2min after", note:"Giant set, weighted dips straight into bodyweight bench dips. 3 rounds."},
+        {name:"Cable Fly", sets:4, reps:"12-15 + drop", rest:"45s", note:"Drop set on every set."},
+        {name:"Cable Tricep Pushdown", sets:4, reps:"failure + rest-pause", rest:"45s", note:"Rest-pause on every set."}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Back/Rear Delts: Failure Density", exercises: [
+        {name:"Rack Pull", sets:5, reps:"3-5", rest:"3min", note:"Still kept low-volume and heavy — this is a strength anchor, not a place to stack intensity techniques."},
+        {name:"Chest-Supported T-Bar Row", sets:5, reps:"failure + drop", rest:"90s", note:"Drop set on every set."},
+        {name:"Single-Arm DB Row + Seated Cable Row", sets:3, reps:"10 each arm / 12", rest:"0s between, 90s after", note:"Giant set. 3 rounds."},
+        {name:"Rear Delt Fly", sets:4, reps:"failure + drop + drop", rest:"45s", note:"Double drop set on every set."},
+        {name:"Face Pull", sets:4, reps:"20 + rest-pause", rest:"45s", note:"Rest-pause on every set."}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Legs (Quad Emphasis): Failure Density", exercises: [
+        {name:"Front Squat", sets:6, reps:"6-8 + rest-pause", rest:"3min", note:"Rest-pause on every set."},
+        {name:"Hack Squat", sets:4, reps:"failure + drop", rest:"90s", note:"Drop set on every set."},
+        {name:"Leg Press", sets:3, reps:"20+ + drop + drop", rest:"90s", note:"Double drop set on every set."},
+        {name:"Walking Lunge (weighted) + Bodyweight Jump Squat", sets:3, reps:"12 each leg / max", rest:"0s between, 2min after", note:"Giant set. 3 rounds."},
+        {name:"Standing Calf Raise (paused)", sets:5, reps:"15-20 + rest-pause", rest:"30s", note:"Rest-pause on every set."}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Shoulders/Traps: Failure Density", exercises: [
+        {name:"Push Press", sets:6, reps:"5-6 + rest-pause", rest:"2-3min", note:"Rest-pause on every set."},
+        {name:"Arnold Press", sets:4, reps:"failure + drop", rest:"90s", note:"Drop set on every set."},
+        {name:"Cable Lateral Raise + Egyptian Lateral Raise", sets:3, reps:"15 / 15", rest:"0s between, 60s after", note:"Giant set. 3 rounds."},
+        {name:"Barbell Shrug", sets:5, reps:"10-12 + rest-pause", rest:"45s", note:"Rest-pause on every set."},
+        {name:"Reverse Pec Deck", sets:4, reps:"15-20 + drop", rest:"45s", note:"Drop set on every set."}
+      ]},
+      { label: "Phase 2 (Wks 9-16) — Legs (Ham/Glute) + Arms: Failure Density", exercises: [
+        {name:"Stiff-Leg Deadlift", sets:5, reps:"6-8", rest:"2-3min", note:"Kept as heavy top sets — not the place for extra intensity techniques on a hip-hinge pattern this late in the week."},
+        {name:"Hip Thrust", sets:5, reps:"failure + drop + drop", rest:"90s", note:"Double drop set on every set."},
+        {name:"Lying Leg Curl", sets:4, reps:"failure + drop", rest:"60s", note:"Drop set on every set."},
+        {name:"Preacher Curl + Cable Curl", sets:3, reps:"10 / 12", rest:"0s between, 60s after", note:"Giant set. 3 rounds."},
+        {name:"EZ-Bar Skull Crusher", sets:4, reps:"failure + rest-pause", rest:"60s", note:"Rest-pause on every set."}
       ]},
     ]
   },
@@ -930,6 +916,41 @@ const BUNDLES = [
         {name:"Foam Roller Upper Back"},
         {name:"Lacrosse Ball Glute Release"},
         {name:"Lacrosse Ball Hip Flexor Release"}
+      ]},
+    ]
+  },
+  {
+    id: "ironclad_tabata_blitz",
+    icon: "⏱️",
+    name: "Ironclad Tabata Blitz",
+    desc: "True Tabata protocol — 20 seconds of genuine max-effort work, 10 seconds rest, 8 rounds per exercise, exactly 4 brutal minutes per block. Not a general HIIT circuit wearing the Tabata name — this is the actual research protocol, at the intensity it demands.",
+    days: "20-30 min · 3-4 days / week",
+    accent: "#EA580C",
+    goal: ["cut", "general"],
+    routines: [
+      { label: "Lower Body Tabata", exercises: [
+        {name:"Squat Jumps", sets:8, reps:"20s work", rest:"10s", note:"True Tabata block: 8 rounds of 20s max effort / 10s rest = 4 minutes exactly. Rest 60s before the next block."},
+        {name:"Kettlebell Swings", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Walking Lunge (bodyweight, fast)", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Box Jumps", sets:8, reps:"20s work", rest:"10s", note:"Final 4-minute Tabata block. Step down between reps, never jump down — that's where Tabata sessions actually get people hurt."}
+      ]},
+      { label: "Upper Body Tabata", exercises: [
+        {name:"Push-Ups", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Battle Ropes", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Dumbbell Thrusters", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Go lighter than you think — form has to hold for all 8 rounds. Rest 60s before the next."},
+        {name:"Renegade Rows", sets:8, reps:"20s work", rest:"10s", note:"Final 4-minute Tabata block."}
+      ]},
+      { label: "Full Body Tabata", exercises: [
+        {name:"Burpees", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block — the original Tabata exercise from Dr. Izumi Tabata's actual research. Rest 60s before the next."},
+        {name:"Kettlebell Swings", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Jump Squats", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Mountain Climbers", sets:8, reps:"20s work", rest:"10s", note:"Final 4-minute Tabata block."}
+      ]},
+      { label: "Core Tabata", exercises: [
+        {name:"Plank Shoulder Taps", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Russian Twists", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Bicycle Crunches", sets:8, reps:"20s work", rest:"10s", note:"4-minute Tabata block. Rest 60s before the next."},
+        {name:"Flutter Kicks", sets:8, reps:"20s work", rest:"10s", note:"Final 4-minute Tabata block."}
       ]},
     ]
   }
