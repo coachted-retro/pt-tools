@@ -93,15 +93,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-se
     <div id="bell-drop" style="display:none;position:absolute;top:36px;right:0;width:300px;max-height:400px;overflow-y:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.2);z-index:50;color:var(--ink)"></div>
   </div>
   <a href="member-app.html?myTraining=1" style="margin-left:12px;color:#fff;background:var(--red);font-size:12px;text-decoration:none;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700" title="Log your own workouts, if you're linked to a client account">&#127947;&#65039; My Training</a>
-  <a href="member-app.html?forceGuest=1" target="_blank" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">&#127968; Gym Home</a>
-  <a href="coach-calendar.html" id="calendar-link" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Calendar</a>
   <a href="client-management.html" id="all-clients-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">All Clients</a>
-  <a href="coach-service-report.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">Monthly Report</a>
   <a href="fitness-consultation-tool.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700" title="Opens blank — type a name to pull up an existing client, or start fresh for a new prospect">Consultation</a>
 
   <a href="fitness-monthly-checkin.html" style="margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700" title="Opens blank — type a name to pull up an existing client">Monthly Check-In</a>
-  <a href="#" id="my-shifts-link" style="display:none;margin-left:12px;color:#9CA3AF;font-size:12px;text-decoration:none;border:1px solid #374151;border-radius:8px;padding:6px 14px;font-family:'Oswald';text-transform:uppercase;font-weight:700">My Shifts &amp; Time Off</a>
-  <a href="command-center.html" id="command-center-link" style="display:none;margin-left:12px">&larr; Command Center</a>
 </div>
 <div class="wrap">
   <div id="add-appt-form" style="display:none"></div>
@@ -248,14 +243,6 @@ function firstNameVariants(name) {
   return NICKNAME_LOOKUP[n] || [n];
 }
 
-const COMMAND_CENTER_ALLOWED = ["Ted Scholl","Danielle Pellegrini","Bill Zolnowski","Sarah Aldrich"];
-(function(){
-  var s = null;
-  try { s = JSON.parse(localStorage.getItem('staff_session')||'null'); } catch(e){}
-  var ccLink = document.getElementById('command-center-link');
-  if (ccLink && s && COMMAND_CENTER_ALLOWED.indexOf(s.name) !== -1) ccLink.style.display = 'inline-block';
-})();
-
 const saved = localStorage.getItem('coach_crm_name');
 const urlParams = new URLSearchParams(location.search);
 const URL_COACH = urlParams.get('coach');
@@ -267,7 +254,6 @@ if (IS_LOCKED) {
   document.getElementById('picker-box').style.display = 'none';
   document.getElementById('coach-select').innerHTML = `<option value="${URL_COACH}">${URL_COACH}</option>`;
   document.getElementById('coach-select').value = URL_COACH;
-  document.getElementById('calendar-link').href = 'coach-calendar.html?coach=' + encodeURIComponent(URL_COACH) + '&locked=1';
   localStorage.setItem('coach_crm_name', URL_COACH);
   loadActiveCoverage();
 } else if (saved) {

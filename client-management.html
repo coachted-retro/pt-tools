@@ -104,19 +104,7 @@
 
   <div id="dupeBanner" class="dupe-banner">Checking for duplicates...</div>
 
-  <div class="tabs">
-    <div class="tab active" data-tab="members" onclick="setTab('members')">Members</div>
-    <div class="tab" data-tab="ptclients" onclick="setTab('ptclients')">PT Clients</div>
-  </div>
-
-  <div id="view-members" class="view active">
-    <table>
-      <thead><tr><th>Name</th><th>Status</th><th>Package</th><th>Start Date</th><th>Advisor</th><th></th></tr></thead>
-      <tbody id="membersRows"></tbody>
-    </table>
-  </div>
-
-  <div id="view-ptclients" class="view">
+  <div id="view-ptclients" class="view active">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px">
       <div class="tabs" style="margin:0">
         <div class="gtab active" data-gender="all" onclick="setGenderFilter('all')">All PT Clients</div>
@@ -190,12 +178,6 @@ async function db(body){
 
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function normName(c){ return ((c.first_name||'')+' '+(c.last_name||'')).trim().toLowerCase().replace(/\s+/g,' '); }
-
-function setTab(t){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===t));
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.getElementById('view-'+t).classList.add('active');
-}
 
 // Real client records have a few known name variants for the same coach
 // (typos, missing last names) -- normalized here for display/grouping only,
@@ -326,17 +308,13 @@ function renderRoster(){
   const ptClients = ALL_CLIENTS.filter(c => c.status === 'active_pt').filter(matches)
     .filter(c => CURRENT_GENDER_FILTER === 'all' || normalizedGender(c.gender) === CURRENT_GENDER_FILTER)
     .filter(c => !CURRENT_TRAINER_FILTER || normalizedCoach(c.coach) === CURRENT_TRAINER_FILTER);
-  const members = ALL_CLIENTS.filter(c => c.status !== 'active_pt').filter(matches);
   populateTrainerFilter();
 
-  const membersEl = document.getElementById('membersRows');
   const ptEl = document.getElementById('ptClientsRows');
   if (!ALL_CLIENTS.length) {
-    membersEl.innerHTML = '<tr><td colspan="6" class="empty">No clients yet.</td></tr>';
     ptEl.innerHTML = '<tr><td colspan="6" class="empty">No clients yet.</td></tr>';
     return;
   }
-  membersEl.innerHTML = members.length ? members.map(c => rowHtml(c, false)).join('') : '<tr><td colspan="6" class="empty">No members match'+(q?' "'+esc(q)+'"':'')+'.</td></tr>';
   ptEl.innerHTML = ptClients.length ? ptClients.map(c => rowHtml(c, true)).join('') : '<tr><td colspan="6" class="empty">No PT clients match'+(q?' "'+esc(q)+'"':'')+(CURRENT_GENDER_FILTER!=='all'?' in this program':'')+'.</td></tr>';
 
   // Merge buttons only make sense against the full duplicate set, not the
