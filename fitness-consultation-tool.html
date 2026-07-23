@@ -2882,15 +2882,16 @@ function showDecline() {
     'Declined on: ' + today.toLocaleDateString('en-US', opts) + '<br>' +
     '6-week follow-up date: <strong>' + followDate.toLocaleDateString('en-US', opts) + '</strong>';
 
-  document.getElementById('followup-panel').style.display = 'block';
+  // followup-panel auto-show removed — drip campaign handles all follow-up communication silently
   document.getElementById('terms-panel').style.display = 'none';
-  document.getElementById('followup-panel').scrollIntoView({ behavior:'smooth' });
+  // followup-panel stays hidden — date saved to DB, drip picks it up automatically
 
-  // Immediately open calendar for 6-week follow-up
-  const calDate = followDate.toISOString().slice(0,10).replace(/-/g,'');
+  // Calendar auto-open removed — drip campaign handles follow-up
+  //   const calDate = followDate.toISOString().slice(0,10).replace(/-/g,'');
   const calEnd  = followDate.toISOString().slice(0,10).replace(/-/g,'');
-  const calUrl  = 'https://calendar.google.com/calendar/render?action=TEMPLATE'+
-    '&text='+encodeURIComponent('6-Week Follow-Up: '+gv('name'))+
+  // Calendar URL removed — drip handles this
+  // const calUrl  = 'https://calendar.google.com/calendar/render?action=TEMPLATE'+
+    // '&text='+encodeURIComponent('6-Week Follow-Up: '+gv('name'))+
     '&dates='+calDate+'/'+calEnd+
     '&details='+encodeURIComponent('Phone: '+gv('phone')+' | Email: '+gv('email')+' | Goals: '+gv('goals'))+
     '&add='+(gender&&gender.toLowerCase().includes('female')?'healthylifewithdani1%40gmail.com':'tedscholl%40gmail.com');
@@ -3433,10 +3434,8 @@ async function finalizeDecline() {
 
   await sendNotificationEmail('DECLINED', '', '');
 
-  var followUpDate = intakeRow[1];
-  if (followUpDate) {
-    setTimeout(function() { addToCalendar(gv('name'), followUpDate, gv('phone'), gv('email'), gender); }, 800);
-  }
+  // 6-week calendar auto-popup removed — drip campaign handles follow-up communication
+  var followUpDate = intakeRow[1]; // date still saved to DB for drip reference
 
   hideLoading();
 
