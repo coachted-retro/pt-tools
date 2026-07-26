@@ -1399,7 +1399,7 @@ function renderWoList(workouts){
         '<div class="wo-session-title">'+esc(w.title||'Workout')+'</div>'+
         '<div class="wo-session-meta">'+(ex.length?ex.length+' exercise'+(ex.length!==1?'s':''):'')+[vol,rpe].filter(Boolean).map(s=>' · '+s).join('')+'</div>'+
         (ex.length?'<table class="wo-ex-table"><thead><tr><th>Exercise</th><th>Sets</th><th>Reps</th><th>Weight</th></tr></thead><tbody>'+
-          ex.map(e=>'<tr><td>'+esc(e.name||'')+'</td><td>'+esc(String(e.sets||''))+'</td><td>'+esc(String(e.reps||''))+'</td><td>'+esc(String(e.weight||''))+'</td></tr>').join('')+
+          ex.map(e=>'<tr><td>'+esc(e.label||e.name||'')+'</td><td>'+esc(String(e.sets||''))+'</td><td>'+esc(String(e.reps||''))+'</td><td>'+esc(String(e.weight||''))+'</td></tr>').join('')+
         '</tbody></table>':'')+
       '</div>'+
       '<button class="btn" onclick="deleteWorkout('+w.id+')">Del</button>'+

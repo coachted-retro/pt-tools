@@ -236,6 +236,11 @@ const BUNDLES = [
         {name:"Decline Push-Up", sets:3, reps:"15-20", rest:"45s"},
         {name:"Cable Chest Press", sets:3, reps:"12", rest:"45s"}
       ]},
+      { label: "Three Position Cable Fly Complex", exercises: [
+        {name:"High Cable Fly", sets:3, reps:"12-15", rest:"45s", note:"Pulleys at the top. Down and together."},
+        {name:"Mid Cable Fly", sets:3, reps:"12-15", rest:"45s", note:"Pulleys at chest height. Straight across the body."},
+        {name:"Low Cable Fly", sets:3, reps:"12-15", rest:"45s", note:"Pulleys at the bottom. Up and together."}
+      ]},
       { label: "Arms Specialization Day", exercises: [
         {name:"EZ Bar Preacher Curl", sets:4, reps:"10", rest:"60s"},
         {name:"Skull Crushers", sets:4, reps:"10", rest:"60s"},

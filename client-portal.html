@@ -945,7 +945,7 @@ function renderTrainHist(entries){
     const title=e.workout_name||e.focus_areas||e.title||'Session';
     const tag=e.source==='client_self_log'||e.exercises_json?'Self-guided':'With Coach';
     let exNames='';
-    try{ exNames=JSON.parse(e.exercises_json||'[]').slice(0,3).map(x=>x.name).filter(Boolean).join(', '); }catch(er){}
+    try{ exNames=JSON.parse(e.exercises_json||'[]').slice(0,3).map(x=>x.label||x.name).filter(Boolean).join(', '); }catch(er){}
     return '<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:600">'+esc(title)+'</span><span class="badge '+(tag==='Self-guided'?'':'green')+'">'+tag+'</span></div>'+
       '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+esc(fmtDate(date))+(exNames?' · '+esc(exNames):'')+'</div></div>';
   }).join('');
@@ -1312,7 +1312,7 @@ async function loadProgram(){
     document.getElementById('program-body').innerHTML = mine.map(t=>{
       let exs=[]; try{ exs=JSON.parse(t.exercises_json||'[]'); }catch(e){}
       return '<div class="prog-name">'+escapeHtml(t.name||'Program')+'</div>'+
-        exs.map((ex,i)=>'<div class="prog-ex-row"><div class="prog-ex-num">'+(i+1)+'</div><div class="prog-ex-name">'+escapeHtml(ex.name||ex)+'</div></div>').join('');
+        exs.map((ex,i)=>'<div class="prog-ex-row"><div class="prog-ex-num">'+(i+1)+'</div><div class="prog-ex-name">'+escapeHtml(ex.label||ex.name||ex)+'</div></div>').join('');
     }).join('<div style="height:14px"></div>');
   }catch(e){}
 }
